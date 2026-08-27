@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>TS PRICE MANAGER</title>
+    <meta name="description" content="Professional Price & Inventory Manager" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#f59e0b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="TS Price" />
+    <link rel="apple-touch-icon" href="/logoTSPM.png" />
+    <script>
+      (function() {
+        function showCrashOverlay(title, subtitle, detail) {
+          // Remove existing diagnostic panels
+          var existing = document.querySelectorAll('.error-diagnostic-panel');
+          for (var i = 0; i < existing.length; i++) {
+            existing[i].parentNode.removeChild(existing[i]);
+          }
+          var div = document.createElement('div');
+          div.className = 'error-diagnostic-panel';
+          div.style.position = 'fixed';
+          div.style.inset = '0';
+          div.style.background = '#090d16';
+          div.style.color = '#f1f5f9';
+          div.style.padding = '24px';
+          div.style.fontFamily = 'system-ui, -apple-system, monospace';
+          div.style.fontSize = '14px';
+          div.style.overflow = 'auto';
+          div.style.zIndex = '999999';
+          div.style.display = 'flex';
+          div.style.flexDirection = 'column';
+          div.style.gap = '16px';
+          
+          var header = document.createElement('div');
+          header.style.borderBottom = '1px solid #334155';
+          header.style.paddingBottom = '12px';
+          header.innerHTML = '<h3 style="color:#ef4444;font-size:18px;font-weight:900;margin:0;letter-spacing:-0.025em;text-transform:uppercase;">🚨 RUNTIME BOOT EXCEPTION</h3>' +
+            '<p style="margin:4px 0 0 0;color:#94a3b8;font-size:11px;font-weight:bold;letter-spacing:0.05em;text-transform:uppercase;">TS Price Manager Diagnostics Team</p>';
+          
+          var body = document.createElement('div');
+          body.style.display = 'flex';
+          body.style.flexDirection = 'column';
+          body.style.gap = '8px';
+          body.innerHTML = '<p style="margin:0;font-size:15px;font-weight:700;color:#f8fafc;">' + title + '</p>' +
+            '<p style="margin:0;font-size:12px;color:#cbd5e1;font-family:monospace;">' + subtitle + '</p>';
+          
+          var pre = document.createElement('pre');
+          pre.style.background = '#1e293b';
+          pre.style.padding = '16px';
+          pre.style.borderRadius = '12px';
+          pre.style.overflowX = 'auto';
+          pre.style.margin = '0';
+          pre.style.fontSize = '12px';
+          pre.style.lineHeight = '1.5';
+          pre.style.border = '1px solid #334155';
+          pre.style.color = '#fda4af';
+          pre.textContent = detail || 'No stack trace available';
+          
+          var button = document.createElement('button');
+          button.textContent = 'FORCE CLEAR LOCAL STORAGE & RELOAD';
+          button.style.background = '#ef4444';
+          button.style.color = '#ffffff';
+          button.style.border = 'none';
+          button.style.padding = '12px 24px';
+          button.style.borderRadius = '8px';
+          button.style.fontWeight = 'bold';
+          button.style.cursor = 'pointer';
+          button.style.marginTop = '16px';
+          button.style.fontSize = '12px';
+          button.style.letterSpacing = '0.05em';
+          button.onclick = function() {
+            localStorage.clear();
+            window.location.reload();
+          };
+
+          div.appendChild(header);
+          div.appendChild(body);
+          div.appendChild(pre);
+          div.appendChild(button);
+          document.body.appendChild(div);
+        }
+
+        window.addEventListener('error', function(e) {
+          var msg = (e.message || '').toLowerCase();
+          var filename = (e.filename || '').toLowerCase();
+          if (msg.indexOf('websocket') !== -1 || filename.indexOf('@vite') !== -1 || msg.indexOf('hmr') !== -1) {
+            console.warn('Filtered out harmless dev-server HMR error:', e.message);
+            return;
+          }
+          showCrashOverlay(
+            e.message || 'Unknown javascript error',
+            (e.filename || '') + ':' + (e.lineno || '') + ':' + (e.colno || ''),
+            e.error ? e.error.stack : ''
+          );
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+          var reasonStr = String(e.reason || '');
+          var reasonLower = reasonStr.toLowerCase();
+          var stackStr = e.reason && e.reason.stack ? String(e.reason.stack).toLowerCase() : '';
+          
+          if (
+            reasonLower.indexOf('websocket') !== -1 || 
+            reasonLower.indexOf('@vite') !== -1 || 
+            stackStr.indexOf('@vite') !== -1 || 
+            reasonLower.indexOf('hmr') !== -1
+          ) {
+            console.warn('Filtered out harmless dev-server HMR unhandled rejection:', reasonStr);
+            return;
+          }
+          
+          showCrashOverlay(
+            'Unhandled Promise Rejection',
+            reasonStr,
+            e.reason && e.reason.stack ? e.reason.stack : ''
+          );
+        });
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

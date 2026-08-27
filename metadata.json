@@ -1,0 +1,6 @@
+{
+  "name": "TS PRICE MANAGER",
+  "description": "Enterprise-grade inventory and price management system with real-time cloud sync, business logging, and professional data exports.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Optional: Whitelist check if you want to restrict who can use the app
+    // function isWhitelisted() {
+    //   return isSignedIn() && exists(/databases/$(database)/documents/whitelisted_users/$(request.auth.token.email));
+    // }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Entity Validations
+    function isValidItem(data) {
+      return data.keys().hasAll(['categoryId', 'quantity', 'buyingPrice', 'retailPrice']) &&
+             data.categoryId is string && data.categoryId.size() <= 128 &&
+             data.quantity is number && data.quantity >= 0 &&
+             data.buyingPrice is number && data.buyingPrice >= 0 &&
+             data.retailPrice is number && data.retailPrice >= 0 &&
+             (!('name' in data) || (data.name is string && data.name.size() <= 200)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000));
+    }
+
+    function isValidNote(data) {
+      return data.keys().hasAll(['title', 'category', 'priority', 'status']) &&
+             data.title is string && data.title.size() <= 200 &&
+             data.category in ['Stock', 'Payment', 'Customer', 'Supplier', 'Reminder', 'General'] &&
+             data.priority in ['Urgent', 'Important', 'Completed', 'Info'] &&
+             data.status in ['Active', 'Completed'] &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 2000));
+    }
+
+    function isValidSettings(data) {
+      return (!('theme' in data) || data.theme is string) &&
+             (!('language' in data) || data.language is string) &&
+             (!('currency' in data) || data.currency is string) &&
+             (!('pricePrecision' in data) || data.pricePrecision is number);
+    }
+
+    // Collections
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidSettings(incoming());
+      allow update: if isOwner(userId) && isValidSettings(incoming());
+
+      match /items/{itemId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(itemId);
+        allow create: if isOwner(userId) && isValidItem(incoming()) && isValidId(itemId);
+        allow update: if isOwner(userId) && isValidItem(incoming()) && isValidId(itemId);
+        allow delete: if isOwner(userId) && isValidId(itemId);
+      }
+
+      match /notes/{noteId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(noteId);
+        allow create: if isOwner(userId) && isValidNote(incoming()) && isValidId(noteId);
+        allow update: if isOwner(userId) && isValidNote(incoming()) && isValidId(noteId);
+        allow delete: if isOwner(userId) && isValidId(noteId);
+      }
+    }
+  }
+}

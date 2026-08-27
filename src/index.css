@@ -1,0 +1,317 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Outfit", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-serif: "Playfair Display", "Georgia", serif;
+
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+}
+
+:root {
+  /* Default: Midnight Ocean */
+  --primary-rgb: 30, 58, 138;
+  --primary: rgb(var(--primary-rgb));
+  --primary-foreground: #ffffff;
+  --secondary: #1e40af;
+  --accent: var(--primary);
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #1e293b;
+  --border: #e2e8f0;
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --radius: 0.75rem;
+}
+
+html {
+  font-size: var(--base-font-size, 16px);
+}
+
+[data-theme='midnight_blue'] {
+  --primary-rgb: 30, 64, 175;
+  --primary: rgb(var(--primary-rgb));
+  --primary-foreground: #ffffff;
+  --secondary: #1e3a8a;
+  --accent: var(--primary);
+  --background: #020617;
+  --foreground: #cbd5e1;
+  --card: rgba(15, 23, 42, 0.4);
+  --card-foreground: #f1f5f9;
+  --border: rgba(255, 255, 255, 0.05);
+  --shadow: 0 0 30px rgba(30, 64, 175, 0.3);
+  --radius: 1.25rem;
+}
+
+[data-theme='neo_brutalist'] {
+  --primary-rgb: 0, 0, 0;
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+  --secondary: #ff0000;
+  --accent: #00ff00;
+  --background: #ffffff;
+  --foreground: #000000;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --border: #000000;
+  --shadow: 8px 8px 0px #000000;
+  --radius: 0rem;
+}
+
+[data-theme='glass_modern'] {
+  --primary-rgb: 139, 92, 246;
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
+  --secondary: #7c3aed;
+  --accent: #ec4899;
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card: rgba(255, 255, 255, 0.05);
+  --card-foreground: #f8fafc;
+  --border: rgba(255, 255, 255, 0.1);
+  --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --radius: 2rem;
+}
+
+[data-theme='luxury_gold'] {
+  --primary-rgb: 121, 95, 0;
+  --primary: #795f00;
+  --primary-foreground: #fffbeb;
+  --secondary: #451a03;
+  --accent: #fbbf24;
+  --background: #0c0a09;
+  --foreground: #fef3c7;
+  --card: rgba(69, 26, 3, 0.3);
+  --card-foreground: #fffbeb;
+  --border: #795f00;
+  --shadow: 0 0 20px rgba(121, 95, 0, 0.3);
+  --radius: 1.5rem;
+}
+
+[data-theme='emerald_matrix'] {
+  --primary-rgb: 16, 185, 129;
+  --primary: #10b981;
+  --primary-foreground: #020617;
+  --secondary: #064e3b;
+  --accent: #34d399;
+  --background: #000000;
+  --foreground: #d1fae5;
+  --card: #050505;
+  --card-foreground: #10b981;
+  --border: #10b981;
+  --shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+  --radius: 0.25rem;
+}
+
+[data-theme='cyberpunk'] {
+  --primary-rgb: 236, 72, 153;
+  --primary: #ec4899;
+  --primary-foreground: #ffffff;
+  --secondary: #06b6d4;
+  --accent: #f43f5e;
+  --background: #030008;
+  --foreground: #22d3ee;
+  --card: rgba(14, 116, 144, 0.12);
+  --card-foreground: #ffffff;
+  --border: rgba(6, 182, 212, 0.35);
+  --shadow: 0 0 25px rgba(236, 72, 153, 0.4);
+  --radius: 1.25rem;
+}
+
+[data-theme='retro-blue'] {
+  --primary-rgb: 79, 70, 229;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --secondary: #9333ea;
+  --accent: #ec4899;
+  --background: #03001a;
+  --foreground: #e0e7ff;
+  --card: rgba(15, 23, 42, 0.5);
+  --card-foreground: #ffffff;
+  --border: rgba(99, 102, 241, 0.25);
+  --shadow: 0 0 20px rgba(79, 70, 229, 0.3);
+  --radius: 1.25rem;
+}
+
+[data-theme='emerald-gold'] {
+  --primary-rgb: 16, 185, 129;
+  --primary: #10b981;
+  --primary-foreground: #022c22;
+  --secondary: #b45309;
+  --accent: #fbbf24;
+  --background: #01140f;
+  --foreground: #d1fae5;
+  --card: rgba(2, 44, 34, 0.4);
+  --card-foreground: #f0fdf4;
+  --border: rgba(16, 185, 129, 0.2);
+  --shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+  --radius: 1.5rem;
+}
+
+[data-theme='minimalist-ivory'] {
+  --primary-rgb: 45, 90, 78;
+  --primary: #2d5a4e;
+  --primary-foreground: #fcfbf7;
+  --secondary: #8c7853;
+  --accent: #2d5a4e;
+  --background: #fdfcf7;
+  --foreground: #1c2e24;
+  --card: #f8f6f0;
+  --card-foreground: #1c2e24;
+  --border: #dcd9cd;
+  --shadow: 0 4px 12px rgba(45, 90, 78, 0.08);
+  --radius: 0.75rem;
+}
+
+@keyframes gradient-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient-flow {
+  background-size: 400% 400%;
+  animation: gradient-flow 15s ease infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.01); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.note-urgent { @apply border-red-500/50 bg-red-500/10 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]; }
+.note-important { @apply border-amber-500/50 bg-amber-500/10 text-amber-500; }
+.note-completed { @apply border-emerald-500/50 bg-emerald-500/10 text-emerald-500; }
+.note-info { @apply border-blue-500/50 bg-blue-500/10 text-blue-500; }
+
+.priority-urgent { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+.priority-important { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+.priority-completed { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+.priority-info { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.glow-bg-indigo {
+  position: absolute;
+  top: -100px;
+  left: -100px;
+  width: 500px;
+  height: 500px;
+  background: rgba(49, 46, 129, 0.2);
+  border-radius: 9999px;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glow-bg-cyan {
+  position: absolute;
+  bottom: -100px;
+  right: -100px;
+  width: 400px;
+  height: 400px;
+  background: rgba(8, 145, 178, 0.1);
+  border-radius: 9999px;
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  backdrop-filter: blur(12px);
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: var(--radius);
+}
+
+.btn-secondary {
+  background-color: var(--secondary);
+  color: var(--primary-foreground);
+  border-radius: var(--radius);
+}
+
+.accent-glow {
+  box-shadow: 0 0 15px var(--accent);
+}
+
+/* Disable default browser selection and callouts to prevent download, share, & print popups on hold clicks */
+* {
+  -webkit-touch-callout: none !important; /* Prevents callout sheet on iOS/Chrome */
+  -webkit-tap-highlight-color: transparent !important; /* Removes blue tap overlay */
+}
+
+/* Prevent text selection across normal page layout on long-press hold */
+body, html, #root {
+  -webkit-user-select: none !important;
+  -khtml-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Retain full functional text selection for input structures and editable values */
+input, textarea, select, [contenteditable="true"] {
+  -webkit-user-select: text !important;
+  -khtml-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Prevent image dragging which triggers save/download bubble */
+img {
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+  pointer-events: none !important;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+

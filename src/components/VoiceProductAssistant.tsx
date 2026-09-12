@@ -1045,14 +1045,6 @@ export function VoiceProductAssistant({
           <div className="flex items-center gap-2">
             <button 
               onClick={onClose}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--background)] hover:bg-[var(--primary)]/10 text-[var(--foreground)] hover:text-[var(--foreground)] transition-all text-xs font-bold uppercase tracking-wider border border-[var(--border)] shadow-sm"
-              id="voice-header-back-btn"
-            >
-              <Undo size={14} />
-              <span>Back</span>
-            </button>
-            <button 
-              onClick={onClose}
               className="p-1.5 rounded-xl bg-[var(--background)] hover:bg-[var(--primary)]/10 text-[var(--foreground)] hover:text-[var(--foreground)] transition-all border border-[var(--border)] shadow-sm"
               title="Close Panel"
               id="voice-header-close-btn"

@@ -4399,9 +4399,8 @@ export default function BillingScreen({
                       >
                         {/* Name description */}
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-extrabold text-[10px] text-[var(--foreground)] truncate uppercase flex items-center gap-1.5 flex-wrap">
-                            <span>{ci.name}</span>
-                            <span className="text-[8px] font-black text-[var(--foreground)]/50 lowercase border border-[var(--border)] px-1 rounded-md bg-[var(--foreground)]/[0.03]" title="Current Unit">({ci.unit})</span>
+                          <h4 className="font-extrabold text-[10px] text-[var(--foreground)] truncate uppercase">
+                            {ci.name}
                           </h4>
                           
                           <div className="flex items-center gap-1 mt-0.5 flex-wrap">

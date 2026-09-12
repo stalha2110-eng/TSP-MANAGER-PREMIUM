@@ -1055,9 +1055,16 @@ export default function App() {
     backNavManager.setOnTabChangeCallback((tab) => {
       setActiveTab(tab as any);
     });
+    backNavManager.setInitialTab(activeTab);
   }, []);
 
+  // Synchronize activeTab changes to backNavManager so every navigation path is recorded
+  useEffect(() => {
+    backNavManager.onTabChanged(activeTab);
+  }, [activeTab]);
+
   useBackModal(showMenu, () => setShowMenu(false), 'drawer_menu');
+  useBackModal(showMenu && menuTab !== 'profile', () => setMenuTab('profile'), 'drawer_sub_menu');
   useBackModal(showPlusActionMenu, () => setShowPlusActionMenu(false), 'plus_action_menu');
   useBackModal(showSmartBulkEntry, () => setShowSmartBulkEntry(false), 'smart_bulk_entry');
   useBackModal(showNotificationsDropdown, () => setShowNotificationsDropdown(false), 'notifications_dropdown');
@@ -1573,6 +1580,9 @@ export default function App() {
       }
     };
     window.addEventListener('app-add-toast', handleAddedCustomToast);
+    backNavManager.setExitToastCallback((msg) => {
+      addToast(msg, 'info');
+    });
     return () => {
       window.removeEventListener('app-add-toast', handleAddedCustomToast);
     };
@@ -4013,6 +4023,28 @@ export default function App() {
     isExporting ||
     dailyCycleModal?.isOpen
   );
+
+  // Comprehensive Android/PWA Back Navigation Registrations for App Modals and Overlays
+  useBackModal(showRecoveryOverlay, () => setShowRecoveryOverlay(false), 'recovery_overlay');
+  useBackModal(showVoiceAssistant, () => setShowVoiceAssistant(false), 'voice_assistant');
+  useBackModal(showAddItem, () => setShowAddItem(false), 'add_item_modal');
+  useBackModal(editingItem !== null, () => setEditingItem(null), 'edit_item_modal');
+  useBackModal(showAddCategory, () => setShowAddCategory(false), 'add_category_modal');
+  useBackModal(showManageCategories, () => setShowManageCategories(false), 'manage_categories_modal');
+  useBackModal(showComparison, () => setShowComparison(false), 'comparison_modal');
+  useBackModal(showHelp, () => setShowHelp(false), 'help_modal');
+  useBackModal(showTour, () => setShowTour(false), 'tour_modal');
+  useBackModal(showGoalPanel, () => setShowGoalPanel(false), 'goal_panel_modal');
+  useBackModal(showPINScreen, () => setShowPINScreen(false), 'pin_screen_modal');
+  useBackModal(showChangePIN, () => setShowChangePIN(false), 'change_pin_modal');
+  useBackModal(showWelcome, () => setShowWelcome(false), 'welcome_modal');
+  useBackModal(deleteConfirmation.show, () => setDeleteConfirmation({ show: false, type: 'single' }), 'delete_confirm_modal');
+  useBackModal(activeCelebrationMilestone !== null, () => setActiveCelebrationMilestone(null), 'milestone_celebration_modal');
+  useBackModal(exportModal.isOpen, () => setExportModal(prev => ({ ...prev, isOpen: false })), 'export_modal');
+  useBackModal(Boolean(dailyCycleModal?.isOpen), () => setDailyCycleModal(null), 'daily_cycle_modal');
+  useBackModal(selectedItemIds.length > 0, () => setSelectedItemIds([]), 'item_selection_mode');
+  useBackModal(selectedUdharCustomerId !== null, () => setSelectedUdharCustomerId(null), 'udhar_customer_detail');
+  useBackModal(selectedCategory !== null && activeTab === 'home', () => setSelectedCategory(null), 'category_filter');
 
   useEffect(() => {
     // Show tour for new users who haven't seen it

@@ -9,6 +9,7 @@ import { AppState, UdharCustomer, UdharTransaction, Bill } from '../types';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 import { RecoveryService } from '../services/recoveryService';
+import { useBackModal } from '../utils/backNavigationManager';
 
 interface UdharScreenProps {
   state: AppState;
@@ -72,6 +73,15 @@ export default function UdharScreen({
   const [newItemQty, setNewItemQty] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
   const [newItemUnit, setNewItemUnit] = useState('');
+
+  // Android/PWA Back Navigation Registrations for Udhar Screen
+  useBackModal(Boolean(selectedCustomerId), () => setSelectedCustomerId(null), 'udhar_customer_detail_view');
+  useBackModal(showAddCustomerModal, () => setShowAddCustomerModal(false), 'udhar_add_customer_modal');
+  useBackModal(showTransactionModal !== null, () => setShowTransactionModal(null), 'udhar_transaction_modal');
+  useBackModal(editingCustomer !== null, () => setEditingCustomer(null), 'udhar_edit_customer_modal');
+  useBackModal(editingTransaction !== null, () => setEditingTransaction(null), 'udhar_edit_transaction_modal');
+  useBackModal(viewingBill !== null, () => setViewingBill(null), 'udhar_viewing_bill_modal');
+  useBackModal(isEditingBill, () => setIsEditingBill(false), 'udhar_editing_bill_modal');
 
   // Recalculate bill subtotals/totals helper
   const recalculateBill = (items: any[], discount: number, tax: number) => {

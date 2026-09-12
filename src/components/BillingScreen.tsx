@@ -25,6 +25,7 @@ import { AnimatedCalculatorIcon } from './AnimatedCalculatorIcon';
 import { QuickWeightPresets, ItemHoldWeightModal } from './QuickWeightPresets';
 import { parseSearchInput, calculateWeightFromAmount, isWeightBasedUnit, COMMON_WEIGHT_PRESETS, WeightPreset } from '../utils/weightHelpers';
 import { Scale, IndianRupee } from 'lucide-react';
+import { useBackModal } from '../utils/backNavigationManager';
 
 interface BillingScreenProps {
   state: AppState;
@@ -788,6 +789,25 @@ export default function BillingScreen({
   const [selectedHudTable, setSelectedHudTable] = useState<string | null>(null);
   const [swapTargetTableId, setSwapTargetTableId] = useState<string>('');
   const [elapsedTicker, setElapsedTicker] = useState<number>(0);
+
+  // Android/PWA Back Navigation Registrations for Billing Screen Modals and Drawers
+  useBackModal(showAllItemsModal, () => setShowAllItemsModal(false), 'billing_all_items_modal');
+  useBackModal(showManualModal, () => setShowManualModal(false), 'billing_manual_modal');
+  useBackModal(showHoldSessionsDrawer, () => setShowHoldSessionsDrawer(false), 'billing_hold_sessions_drawer');
+  useBackModal(showPrintPreview, () => setShowPrintPreview(false), 'billing_print_preview');
+  useBackModal(showKotDetails, () => setShowKotDetails(false), 'billing_kot_details');
+  useBackModal(mobilePreviewOpen, () => setMobilePreviewOpen(false), 'billing_mobile_preview');
+  useBackModal(isCashAssistantOpen, () => setIsCashAssistantOpen(false), 'billing_cash_assistant');
+  useBackModal(showCleanupDialog, () => setShowCleanupDialog(false), 'billing_cleanup_dialog');
+  useBackModal(customConfirm !== null, () => setCustomConfirm(null), 'billing_custom_confirm');
+  useBackModal(customPrompt !== null, () => setCustomPrompt(null), 'billing_custom_prompt');
+  useBackModal(convertingItemId !== null, () => setConvertingItemId(null), 'billing_converting_item');
+  useBackModal(editingRateItem !== null, () => setEditingRateItem(null), 'billing_editing_rate');
+  useBackModal(holdWeightItem !== null, () => setHoldWeightItem(null), 'billing_hold_weight');
+  useBackModal(activeBillDetail !== null, () => setActiveBillDetail(null), 'billing_active_bill_detail');
+  useBackModal(completedBill !== null, () => setCompletedBill(null), 'billing_completed_bill');
+  useBackModal(billingSubTab !== 'billing', () => setBillingSubTab('billing'), 'billing_subtab_history_calc');
+  useBackModal(selectedHudTable !== null, () => setSelectedHudTable(null), 'billing_rest_hud_table');
 
   // Ticker to force-update elapsed time indicators in real-time
   useEffect(() => {
@@ -4403,117 +4423,11 @@ export default function BillingScreen({
                             {ci.name}
                           </h4>
                           
-                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                            {ci.item.isManual ? (
+                          {ci.item.isManual && (
+                            <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                               <span className="text-[6.5px] font-black uppercase px-1 rounded bg-amber-500/10 text-amber-600 border border-amber-500/15 leading-none py-0.5">
                                 Manual Item
                               </span>
-                            ) : (
-                              <button
-                                onClick={() => setConvertingItemId(convertingItemId === ci.id ? null : ci.id)}
-                                className={cn(
-                                  "text-[7px] font-black px-1.5 py-0.5 rounded leading-none border transition-colors cursor-pointer flex items-center gap-0.5",
-                                  convertingItemId === ci.id 
-                                    ? "bg-amber-500/25 border-amber-500/40 text-[var(--foreground)]" 
-                                    : "bg-slate-500/10 border-slate-500/15 hover:bg-slate-500/20 text-slate-500"
-                                )}
-                              >
-                                <span>Convert Unit</span>
-                                <RefreshCw size={7} />
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Unit Conversion Options Pane */}
-                          {convertingItemId === ci.id && (
-                            <div className="mt-2 p-1.5 bg-[var(--foreground)]/[0.03] border border-[var(--border)] rounded-xl space-y-1 select-none">
-                              <p className="text-[8px] font-bold uppercase opacity-60 px-1">Convert unit from {ci.unit}:</p>
-                              <div className="flex items-center gap-1 flex-wrap">
-                                {(() => {
-                                  const currentUnitLower = ci.unit.toLowerCase();
-                                  const options: { label: string; target: string; factor: number; isCustom?: boolean }[] = [];
-                                  
-                                  if (currentUnitLower === 'kg' || currentUnitLower === 'kilogram' || currentUnitLower === 'kilograms') {
-                                    options.push({ label: 'to Grams (g)', target: 'g', factor: 1000 });
-                                    options.push({ label: 'to Chatak (50g)', target: 'Chatak', factor: 20 });
-                                    options.push({ label: 'to Pounds (lb)', target: 'lb', factor: 2.20462 });
-                                  } else if (currentUnitLower === 'g' || currentUnitLower === 'gram' || currentUnitLower === 'grams') {
-                                    options.push({ label: 'to Kilograms (kg)', target: 'kg', factor: 0.001 });
-                                    options.push({ label: 'to Chatak (50g)', target: 'Chatak', factor: 0.02 });
-                                  } else if (currentUnitLower === 'chatak' || currentUnitLower === 'chattak' || currentUnitLower === 'ctk' || currentUnitLower === 'छटांक' || currentUnitLower === 'छटाक') {
-                                    options.push({ label: 'to Grams (50g)', target: 'g', factor: 50 });
-                                    options.push({ label: 'to Kilograms (kg)', target: 'kg', factor: 0.05 });
-                                    options.push({ label: 'to 250gm', target: '250gm', factor: 0.2 });
-                                  } else if (currentUnitLower === 'ltr' || currentUnitLower === 'litre' || currentUnitLower === 'liters' || currentUnitLower === 'liter') {
-                                    options.push({ label: 'to Milliliters (ml)', target: 'ml', factor: 1000 });
-                                  } else if (currentUnitLower === 'ml' || currentUnitLower === 'milliliter' || currentUnitLower === 'milliliters') {
-                                    options.push({ label: 'to Liters (ltr)', target: 'ltr', factor: 0.001 });
-                                  } else if (currentUnitLower === 'box' || currentUnitLower === 'pack' || currentUnitLower === 'pk' || currentUnitLower === 'crate') {
-                                    options.push({ label: 'to Pcs (Pack of 10)', target: 'pcs', factor: 10 });
-                                    options.push({ label: 'to Pcs (Pack of 12)', target: 'pcs', factor: 12 });
-                                    options.push({ label: 'Custom multiplier...', target: '', factor: 1, isCustom: true });
-                                  } else if (currentUnitLower === 'pcs' || currentUnitLower === 'pc' || currentUnitLower === 'piece' || currentUnitLower === 'pieces') {
-                                    options.push({ label: 'to Box (÷10)', target: 'box', factor: 0.1 });
-                                    options.push({ label: 'to Dozen (÷12)', target: 'doz', factor: 1 / 12 });
-                                    options.push({ label: 'Custom divisor...', target: '', factor: 1, isCustom: true });
-                                  } else if (currentUnitLower === 'doz' || currentUnitLower === 'dozen' || currentUnitLower === 'dz') {
-                                    options.push({ label: 'to Pcs (×12)', target: 'pcs', factor: 12 });
-                                  } else {
-                                    options.push({ label: 'Custom Convert...', target: '', factor: 1, isCustom: true });
-                                  }
-                                  
-                                  return (
-                                    <>
-                                      {options.map((opt, oIdx) => (
-                                        <button
-                                          key={oIdx}
-                                          type="button"
-                                          onClick={() => {
-                                            if (opt.isCustom) {
-                                              showCustomPrompt(
-                                                "Custom Unit Conversion",
-                                                `Convert ${ci.unit} using custom factor. Multiply quantity and divide rate by what factor? (e.g. enter 10 to turn 1 Box of ₹50 into 10 Pcs of ₹5):`,
-                                                "10",
-                                                (inputVal) => {
-                                                  const val = parseFloat(inputVal);
-                                                  if (!isNaN(val) && val > 0) {
-                                                    showCustomPrompt(
-                                                      "Target Unit Name",
-                                                      "Enter the name for the new unit (e.g. pcs, g, box):",
-                                                      "pcs",
-                                                      (unitName) => {
-                                                        if (unitName.trim()) {
-                                                          handleUnitConversion(ci.id, unitName.trim(), val);
-                                                          setConvertingItemId(null);
-                                                        }
-                                                      }
-                                                    );
-                                                  } else {
-                                                    addToast("Invalid conversion factor!", "error");
-                                                  }
-                                                }
-                                              );
-                                            } else {
-                                              handleUnitConversion(ci.id, opt.target, opt.factor);
-                                              setConvertingItemId(null);
-                                            }
-                                          }}
-                                          className="text-[6.5px] font-black uppercase px-1.5 py-0.5 rounded bg-[var(--primary)] hover:bg-[var(--primary)]/95 text-white cursor-pointer select-none"
-                                        >
-                                          {opt.label}
-                                        </button>
-                                      ))}
-                                      <button
-                                        type="button"
-                                        onClick={() => setConvertingItemId(null)}
-                                        className="text-[6.5px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-500 hover:bg-slate-600 text-white cursor-pointer select-none"
-                                      >
-                                        Cancel ×
-                                      </button>
-                                    </>
-                                  );
-                                })()}
-                              </div>
                             </div>
                           )}
 

@@ -4,7 +4,10 @@ import {
   Trash2, DollarSign, Clock, ArrowRightLeft, Sparkles,
   Download, Layers, Plus, Minus, Tag, Landmark, Percent,
   AlertTriangle, Search, Edit3, Cloud, Smartphone, Bookmark,
-  X, Save, Filter, CheckSquare, Square
+  X, Save, Filter, CheckSquare, Square, Receipt,
+  Maximize2, Minimize2, ZoomIn, ZoomOut, Sliders, Volume2, VolumeX,
+  ChevronDown, ChevronUp, FileSpreadsheet, Divide, CornerDownLeft,
+  Activity, BarChart2, Coins, ArrowDownRight, RefreshCw, Zap, CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn, countNumericEntries, formatItemCountLabel } from '../lib/utils';
@@ -13,6 +16,16 @@ import {
   collection, addDoc, updateDoc, deleteDoc, doc, 
   onSnapshot, query, orderBy 
 } from 'firebase/firestore';
+import {
+  evaluateExpression,
+  formatWithPrecision,
+  calculateGstBreakdown,
+  calculateDenominationBreakdown,
+  extractFormulaStatistics,
+  normalizeFloat,
+  type DenominationItem,
+  type FormulaStatistics
+} from '../utils/calculatorEngine';
 
 export interface CalcLog {
   id: string;
@@ -93,6 +106,187 @@ export default function UniversalStoreCalculator() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 2500);
   };
+
+  // Flexible Length & Display Size State
+  type LengthPreset = 'compact' | 'standard' | 'large' | 'xlarge' | 'screen_fit' | 'custom';
+  const [lengthPreset, setLengthPreset] = useState<LengthPreset>(() => {
+    try {
+      return (localStorage.getItem('tsm_calc_length_preset') as LengthPreset) || 'large';
+    } catch {
+      return 'large';
+    }
+  });
+
+  const [customBtnHeight, setCustomBtnHeight] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('tsm_calc_custom_btn_height');
+      return saved ? parseInt(saved, 10) : 74;
+    } catch {
+      return 74;
+    }
+  });
+
+  const [containerWidthMode, setContainerWidthMode] = useState<'standard' | 'wide' | 'full'>(() => {
+    try {
+      return (localStorage.getItem('tsm_calc_container_width') as any) || 'wide';
+    } catch {
+      return 'wide';
+    }
+  });
+
+  // Dynamic Viewport / Screen-Fit Height calculation
+  const [screenFitHeight, setScreenFitHeight] = useState<number>(76);
+  useEffect(() => {
+    const updateScreenFit = () => {
+      const vh = window.innerHeight;
+      // Header, banner, display, margins occupy ~360-400px
+      const availableForKeypad = Math.max(260, vh - 380);
+      const computedBtnH = Math.min(110, Math.max(50, Math.floor((availableForKeypad - 40) / 5)));
+      setScreenFitHeight(computedBtnH);
+    };
+    updateScreenFit();
+    window.addEventListener('resize', updateScreenFit);
+    return () => window.removeEventListener('resize', updateScreenFit);
+  }, []);
+
+  const effectiveBtnHeight = useMemo(() => {
+    switch (lengthPreset) {
+      case 'compact': return 48;
+      case 'standard': return 60;
+      case 'large': return 74;
+      case 'xlarge': return 92;
+      case 'screen_fit': return screenFitHeight;
+      case 'custom': return customBtnHeight;
+      default: return 74;
+    }
+  }, [lengthPreset, screenFitHeight, customBtnHeight]);
+
+  // Persist size settings
+  useEffect(() => {
+    try {
+      localStorage.setItem('tsm_calc_length_preset', lengthPreset);
+      localStorage.setItem('tsm_calc_custom_btn_height', String(customBtnHeight));
+      localStorage.setItem('tsm_calc_container_width', containerWidthMode);
+    } catch {}
+  }, [lengthPreset, customBtnHeight, containerWidthMode]);
+
+  // Sizing controls bar toggle
+  const [showSizingControls, setShowSizingControls] = useState(false);
+
+  // Stepping keypad button height
+  const handleStepHeight = (delta: number) => {
+    setLengthPreset('custom');
+    setCustomBtnHeight(prev => Math.min(120, Math.max(40, prev + delta)));
+  };
+
+  // Quick GST & Math Helpers
+  const handleAddGst = (gstRate: number) => {
+    if (!calcInput.trim()) return;
+    const res = evaluateExpression(calcInput);
+    if (res.success && res.result !== null) {
+      const added = res.result * (1 + gstRate / 100);
+      const rounded = Number(added.toFixed(2));
+      pushToUndoStack(calcInput, calcInput.length);
+      setCalcInput(String(rounded));
+      triggerToast(`+${gstRate}% GST Applied: ₹${rounded}`);
+    }
+  };
+
+  const handleApplyDiscount = (pct: number) => {
+    if (!calcInput.trim()) return;
+    const res = evaluateExpression(calcInput);
+    if (res.success && res.result !== null) {
+      const discounted = res.result * (1 - pct / 100);
+      const rounded = Number(discounted.toFixed(2));
+      pushToUndoStack(calcInput, calcInput.length);
+      setCalcInput(String(rounded));
+      triggerToast(`-${pct}% Discount Applied: ₹${rounded}`);
+    }
+  };
+
+  const handleQuickRounding = (type: 'round' | 'floor' | 'ceil') => {
+    if (!calcInput.trim()) return;
+    const res = evaluateExpression(calcInput);
+    if (res.success && res.result !== null) {
+      let rounded = res.result;
+      if (type === 'round') rounded = Math.round(res.result);
+      else if (type === 'floor') rounded = Math.floor(res.result);
+      else if (type === 'ceil') rounded = Math.ceil(res.result);
+      pushToUndoStack(calcInput, calcInput.length);
+      setCalcInput(String(rounded));
+      triggerToast(`Rounded (${type}): ₹${rounded}`);
+    }
+  };
+
+  const handleNegate = () => {
+    if (!calcInput.trim()) return;
+    const res = evaluateExpression(calcInput);
+    if (res.success && res.result !== null) {
+      const negated = -res.result;
+      pushToUndoStack(calcInput, calcInput.length);
+      setCalcInput(String(negated));
+    }
+  };
+
+  // Precision and Mode
+  type PrecisionMode = 'auto' | '0' | '2' | '3' | '4';
+  const [precisionMode, setPrecisionMode] = useState<PrecisionMode>(() => {
+    try {
+      return (localStorage.getItem('tsm_calc_precision_mode') as PrecisionMode) || 'auto';
+    } catch {
+      return 'auto';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tsm_calc_precision_mode', precisionMode);
+    } catch {}
+  }, [precisionMode]);
+
+  // Sound and Haptic toggles
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('tsm_calc_sound') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tsm_calc_sound', String(soundEnabled));
+    } catch {}
+  }, [soundEnabled]);
+
+  // Advanced Tools Bar toggle
+  const [showAdvancedTools, setShowAdvancedTools] = useState(false);
+
+  // Live Audit Tape toggle
+  const [showAuditTape, setShowAuditTape] = useState(false);
+
+  // Reverse GST Modal state
+  const [showReverseGstModal, setShowReverseGstModal] = useState(false);
+  const [reverseGstRate, setReverseGstRate] = useState<number>(18);
+  const [reverseGstAmountInput, setReverseGstAmountInput] = useState<string>('');
+
+  // Live Real-Time Evaluation
+  const livePreview = useMemo(() => {
+    if (!calcInput.trim() || calcInput === 'Error') return null;
+    const res = evaluateExpression(calcInput);
+    if (res.success && res.result !== null) {
+      return {
+        formatted: formatWithPrecision(res.result, precisionMode),
+        raw: res.result
+      };
+    }
+    return null;
+  }, [calcInput, precisionMode]);
+
+  // Formula statistics for Audit Tape
+  const formulaStats = useMemo(() => {
+    return extractFormulaStatistics(calcInput);
+  }, [calcInput]);
 
   // Sync Device history to localStorage
   useEffect(() => {
@@ -212,6 +406,7 @@ export default function UniversalStoreCalculator() {
 
   // Ultra-Fast Zero Latency Audio & Haptic Feedback
   const playClickSound = useCallback(() => {
+    if (!soundEnabled) return;
     try {
       if (typeof window === 'undefined') return;
       const windowWithAudio = window as unknown as { 
@@ -245,7 +440,7 @@ export default function UniversalStoreCalculator() {
         window.navigator.vibrate(5);
       }
     } catch {}
-  }, []);
+  }, [soundEnabled]);
 
   const calcInputRef = useRef(calcInput);
   const cursorPosRef = useRef(cursorPos);
@@ -475,33 +670,156 @@ export default function UniversalStoreCalculator() {
     const currentVal = calcInputRef.current;
     if (!currentVal) return;
     try {
-      let formulaToEvaluate = currentVal
-        .replace(/×/g, '*')
-        .replace(/÷/g, '/')
-        .replace(/%/g, '/100');
-
-      const cleanFormula = formulaToEvaluate.replace(/[^0-9+\-*/%.()]/g, '');
-      if (!cleanFormula) return;
-
-      const evalOutcome = Function(`"use strict"; return (${cleanFormula})`)();
+      const evalOutcome = evaluateExpression(currentVal);
       
-      if (typeof evalOutcome === 'number' && !isNaN(evalOutcome)) {
-        const resultString = String(parseFloat(evalOutcome.toFixed(4)));
+      if (evalOutcome.success && evalOutcome.result !== null) {
+        const formattedResult = formatWithPrecision(evalOutcome.result, precisionMode);
+        const cleanResultStr = String(evalOutcome.result);
 
-        setRecentLogPreview(`${currentVal} = ${resultString}`);
+        setRecentLogPreview(`${currentVal} = ${formattedResult}`);
         pushToUndoStack(currentVal, cursorPosRef.current);
-        setCalcInput(resultString);
-        setCursorPos(resultString.length);
+        setCalcInput(cleanResultStr);
+        setCursorPos(cleanResultStr.length);
 
         // Save calculation log
-        saveCalculationRecord(currentVal, resultString, activeCalcName, calcNotesInput);
+        saveCalculationRecord(currentVal, formattedResult, activeCalcName, calcNotesInput);
       } else {
-        setCalcInput('Error');
+        setCalcInput(evalOutcome.resultStr || 'Error');
       }
     } catch {
       setCalcInput('Error');
     }
-  }, [playClickSound, activeCalcName, calcNotesInput, pushToUndoStack]);
+  }, [playClickSound, activeCalcName, calcNotesInput, pushToUndoStack, precisionMode]);
+
+  // Advanced Quick GST Addition Helper
+  const handleAppendGst = useCallback((rate: number) => {
+    playClickSound();
+    const currentVal = calcInputRef.current;
+    if (!currentVal) return;
+    const trimmed = currentVal.replace(/[+\-*\/%.\s]+$/, '');
+    const next = `${trimmed} + ${rate}%`;
+    pushToUndoStack(currentVal, cursorPosRef.current);
+    setCalcInput(next);
+    setCursorPos(next.length);
+    triggerToast(`Added +${rate}% GST`);
+  }, [playClickSound, pushToUndoStack]);
+
+  // Advanced Quick Discount Helper
+  const handleAppendDiscount = useCallback((discount: number) => {
+    playClickSound();
+    const currentVal = calcInputRef.current;
+    if (!currentVal) return;
+    const trimmed = currentVal.replace(/[+\-*\/%.\s]+$/, '');
+    const next = `${trimmed} - ${discount}%`;
+    pushToUndoStack(currentVal, cursorPosRef.current);
+    setCalcInput(next);
+    setCursorPos(next.length);
+    triggerToast(`Applied -${discount}% Discount`);
+  }, [playClickSound, pushToUndoStack]);
+
+  // Advanced Whole Rupee Rounding Helper
+  const handleRoundToRupee = useCallback((mode: 'round' | 'ceil' | 'floor') => {
+    playClickSound();
+    const currentVal = calcInputRef.current;
+    if (!currentVal) return;
+    const evalRes = evaluateExpression(currentVal);
+    if (evalRes.success && evalRes.result !== null) {
+      let rounded: number;
+      if (mode === 'ceil') rounded = Math.ceil(evalRes.result);
+      else if (mode === 'floor') rounded = Math.floor(evalRes.result);
+      else rounded = Math.round(evalRes.result);
+
+      const resStr = String(rounded);
+      pushToUndoStack(currentVal, cursorPosRef.current);
+      setCalcInput(resStr);
+      setCursorPos(resStr.length);
+      triggerToast(`Rounded to ₹${rounded}`);
+    }
+  }, [playClickSound, pushToUndoStack]);
+
+  // Advanced Sign Negation Helper (+/-)
+  const handleToggleSign = useCallback(() => {
+    playClickSound();
+    const currentVal = calcInputRef.current;
+    if (!currentVal) return;
+    const evalRes = evaluateExpression(currentVal);
+    if (evalRes.success && evalRes.result !== null) {
+      const negated = normalizeFloat(-evalRes.result, 6);
+      const resStr = String(negated);
+      pushToUndoStack(currentVal, cursorPosRef.current);
+      setCalcInput(resStr);
+      setCursorPos(resStr.length);
+    }
+  }, [playClickSound, pushToUndoStack]);
+
+  // Advanced Square Root Helper (√)
+  const handleSquareRoot = useCallback(() => {
+    playClickSound();
+    const currentVal = calcInputRef.current;
+    if (!currentVal) return;
+    const evalRes = evaluateExpression(currentVal);
+    if (evalRes.success && evalRes.result !== null) {
+      if (evalRes.result < 0) {
+        triggerToast("Cannot calculate square root of negative value", "error");
+        return;
+      }
+      const sqrtVal = normalizeFloat(Math.sqrt(evalRes.result), 6);
+      const resStr = String(sqrtVal);
+      pushToUndoStack(currentVal, cursorPosRef.current);
+      setCalcInput(resStr);
+      setCursorPos(resStr.length);
+      triggerToast(`√(${evalRes.result}) = ${resStr}`);
+    }
+  }, [playClickSound, pushToUndoStack]);
+
+  // Advanced Square Helper (x²)
+  const handleSquare = useCallback(() => {
+    playClickSound();
+    const currentVal = calcInputRef.current;
+    if (!currentVal) return;
+    const evalRes = evaluateExpression(currentVal);
+    if (evalRes.success && evalRes.result !== null) {
+      const sqVal = normalizeFloat(evalRes.result * evalRes.result, 6);
+      const resStr = String(sqVal);
+      pushToUndoStack(currentVal, cursorPosRef.current);
+      setCalcInput(resStr);
+      setCursorPos(resStr.length);
+      triggerToast(`(${evalRes.result})² = ${resStr}`);
+    }
+  }, [playClickSound, pushToUndoStack]);
+
+  // Advanced Reciprocal Helper (1/x)
+  const handleReciprocal = useCallback(() => {
+    playClickSound();
+    const currentVal = calcInputRef.current;
+    if (!currentVal) return;
+    const evalRes = evaluateExpression(currentVal);
+    if (evalRes.success && evalRes.result !== null) {
+      if (evalRes.result === 0) {
+        triggerToast("Cannot divide by zero", "error");
+        return;
+      }
+      const recVal = normalizeFloat(1 / evalRes.result, 6);
+      const resStr = String(recVal);
+      pushToUndoStack(currentVal, cursorPosRef.current);
+      setCalcInput(resStr);
+      setCursorPos(resStr.length);
+      triggerToast(`1 / (${evalRes.result}) = ${resStr}`);
+    }
+  }, [playClickSound, pushToUndoStack]);
+
+  // Quick Zoom Scale Helpers
+  const handleZoomIn = () => {
+    playClickSound();
+    setLengthPreset('custom');
+    setCustomBtnHeight(prev => Math.min(115, prev + 6));
+  };
+
+  const handleZoomOut = () => {
+    playClickSound();
+    setLengthPreset('custom');
+    setCustomBtnHeight(prev => Math.max(44, prev - 6));
+  };
 
   // Keyboard shortcut listener for zero latency typing
   useEffect(() => {
@@ -763,15 +1081,18 @@ export default function UniversalStoreCalculator() {
   const FastKey = ({ 
     label, 
     onPress, 
-    className 
+    className,
+    style
   }: { 
     label: React.ReactNode; 
     onPress: () => void; 
     className?: string;
+    style?: React.CSSProperties;
   }) => {
     return (
       <button
         type="button"
+        style={style}
         onClick={(e) => {
           e.preventDefault();
           onPress();
@@ -787,7 +1108,12 @@ export default function UniversalStoreCalculator() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-20">
+    <div className={cn(
+      "mx-auto space-y-5 pb-20 transition-all duration-200",
+      containerWidthMode === 'full' ? "w-full max-w-none px-2 sm:px-4" :
+      containerWidthMode === 'wide' ? "max-w-6xl px-2 sm:px-4" :
+      "max-w-4xl px-2 sm:px-4"
+    )}>
       {/* Toast Notification */}
       <AnimatePresence>
         {toast && (
@@ -1172,6 +1498,138 @@ export default function UniversalStoreCalculator() {
         )}
       </AnimatePresence>
 
+      {/* Reverse GST Calculator Modal */}
+      <AnimatePresence>
+        {showReverseGstModal && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[var(--card)] border border-[var(--border)] p-6 rounded-3xl shadow-2xl max-w-md w-full space-y-4 text-left"
+            >
+              <div className="flex justify-between items-center pb-2 border-b border-[var(--border)]">
+                <h3 className="text-sm font-black uppercase text-[var(--foreground)] flex items-center gap-2">
+                  <Landmark className="text-amber-500" size={18} /> Reverse GST Tax Calculator
+                </h3>
+                <button
+                  onClick={() => setShowReverseGstModal(false)}
+                  className="p-1 rounded-lg hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/60 cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div>
+                  <label className="font-black uppercase text-[var(--foreground)]/70 block mb-1">
+                    MRP / Total Inclusive Price (₹)
+                  </label>
+                  <input
+                    type="number"
+                    value={reverseGstAmountInput}
+                    onChange={e => setReverseGstAmountInput(e.target.value)}
+                    placeholder="e.g. 1180"
+                    className="w-full text-base font-bold font-mono p-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] focus:border-amber-500"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="font-black uppercase text-[var(--foreground)]/70 block mb-1.5">
+                    Select GST Rate (%)
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[5, 12, 18, 28].map(rate => (
+                      <button
+                        key={rate}
+                        type="button"
+                        onClick={() => setReverseGstRate(rate)}
+                        className={cn(
+                          "py-2 rounded-xl font-mono text-xs font-black transition-all cursor-pointer border",
+                          reverseGstRate === rate
+                            ? "bg-amber-500 text-white border-amber-600 shadow-md"
+                            : "bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)] border-[var(--border)]"
+                        )}
+                      >
+                        {rate}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Live Breakdown Card */}
+                {(() => {
+                  const inputVal = parseFloat(reverseGstAmountInput) || 0;
+                  const gstCalc = calculateGstBreakdown(inputVal, reverseGstRate, 'extract');
+                  const halfGst = normalizeFloat(gstCalc.gstAmount / 2, 2);
+                  return (
+                    <div className="p-4 rounded-2xl bg-[var(--foreground)]/[0.03] border border-[var(--border)] space-y-2 font-mono">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-[var(--foreground)]/70 font-bold">Base Pre-Tax Price:</span>
+                        <span className="text-emerald-500 font-black text-sm">₹{gstCalc.baseAmount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-[var(--foreground)]/70 font-bold">Total GST ({reverseGstRate}%):</span>
+                        <span className="text-amber-500 font-black text-sm">₹{gstCalc.gstAmount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[11px] text-[var(--foreground)]/60 pl-2">
+                        <span>CGST ({(reverseGstRate / 2).toFixed(1)}%):</span>
+                        <span>₹{halfGst.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[11px] text-[var(--foreground)]/60 pl-2">
+                        <span>SGST ({(reverseGstRate / 2).toFixed(1)}%):</span>
+                        <span>₹{halfGst.toFixed(2)}</span>
+                      </div>
+                      <div className="pt-2 border-t border-[var(--border)] flex justify-between items-center font-black text-xs text-[var(--foreground)]">
+                        <span>Gross MRP:</span>
+                        <span>₹{gstCalc.totalAmount.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const inputVal = parseFloat(reverseGstAmountInput) || 0;
+                    const gstCalc = calculateGstBreakdown(inputVal, reverseGstRate, 'extract');
+                    const halfGst = normalizeFloat(gstCalc.gstAmount / 2, 2);
+                    const breakdownText = `GST Breakdown (${reverseGstRate}%):
+Base Pre-Tax: ₹${gstCalc.baseAmount.toFixed(2)}
+Total GST: ₹${gstCalc.gstAmount.toFixed(2)} (CGST ₹${halfGst.toFixed(2)} + SGST ₹${halfGst.toFixed(2)})
+Total MRP: ₹${gstCalc.totalAmount.toFixed(2)}`;
+                    navigator.clipboard.writeText(breakdownText);
+                    triggerToast("GST Breakdown copied to clipboard!");
+                  }}
+                  className="py-3 rounded-xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--border)] font-mono text-xs font-black cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Copy size={14} /> COPY TEXT
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const inputVal = parseFloat(reverseGstAmountInput) || 0;
+                    const gstCalc = calculateGstBreakdown(inputVal, reverseGstRate, 'extract');
+                    const baseStr = String(gstCalc.baseAmount);
+                    pushToUndoStack(calcInputRef.current, cursorPosRef.current);
+                    setCalcInput(baseStr);
+                    setCursorPos(baseStr.length);
+                    setShowReverseGstModal(false);
+                    triggerToast(`Applied Base Price ₹${baseStr} to Calculator`);
+                  }}
+                  className="py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-mono text-xs font-black shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Check size={14} /> USE BASE PRICE
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Main Header Banner */}
       <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-6 md:p-8 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -1223,9 +1681,471 @@ export default function UniversalStoreCalculator() {
       {activeTab === 'calculator' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Calculator Screen & Keypad */}
-          <div className="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] p-6 rounded-3xl shadow-lg space-y-5">
-            {/* Digital LED Display */}
-            <div className="bg-zinc-950 text-emerald-400 p-5 rounded-2xl border border-zinc-800 space-y-2 shadow-inner">
+          <div className="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] p-4 sm:p-6 rounded-3xl shadow-lg space-y-4">
+            
+            {/* Top Toolbar: Sizing & Display Flexibility Bar */}
+            <div className="flex items-center justify-between gap-2 p-2 rounded-2xl bg-[var(--foreground)]/[0.03] border border-[var(--border)] flex-wrap">
+              {/* Presets & Zoom */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-black uppercase text-[var(--foreground)]/60 px-1.5 flex items-center gap-1">
+                  <Maximize2 size={12} className="text-amber-500" /> Size:
+                </span>
+                
+                {/* Preset Chips */}
+                {(['compact', 'standard', 'large', 'xlarge'] as const).map((preset) => {
+                  const labels = { compact: 'Compact', standard: 'Normal', large: 'Large', xlarge: 'Giant POS' };
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setLengthPreset(preset)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-xl text-xs font-black transition-all cursor-pointer border",
+                        lengthPreset === preset
+                          ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                          : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
+                      )}
+                      title={`Set button height to ${preset === 'compact' ? '48px' : preset === 'standard' ? '60px' : preset === 'large' ? '74px' : '92px'}`}
+                    >
+                      {labels[preset]}
+                    </button>
+                  );
+                })}
+
+                {/* Auto Fit Screen */}
+                <button
+                  type="button"
+                  onClick={() => setLengthPreset('screen_fit')}
+                  className={cn(
+                    "px-2.5 py-1 rounded-xl text-xs font-black transition-all cursor-pointer border flex items-center gap-1",
+                    lengthPreset === 'screen_fit'
+                      ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                      : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
+                  )}
+                  title="Auto-scale buttons to fit your device screen height"
+                >
+                  <Smartphone size={12} /> Fit Screen
+                </button>
+
+                {/* Step Zoom Buttons */}
+                <div className="flex items-center ml-1 bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => handleStepHeight(-6)}
+                    className="px-2 py-1 hover:bg-[var(--foreground)]/10 text-xs font-black text-[var(--foreground)] cursor-pointer border-r border-[var(--border)]"
+                    title="Decrease button and display size (-6px)"
+                  >
+                    <ZoomOut size={12} />
+                  </button>
+                  <span className="px-1.5 text-[10px] font-mono font-bold text-[var(--foreground)]/70">
+                    {effectiveBtnHeight}px
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleStepHeight(6)}
+                    className="px-2 py-1 hover:bg-[var(--foreground)]/10 text-xs font-black text-[var(--foreground)] cursor-pointer border-l border-[var(--border)]"
+                    title="Increase button and display size (+6px)"
+                  >
+                    <ZoomIn size={12} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Toggles: Settings, Tools, Audit Tape, Sound */}
+              <div className="flex items-center gap-1.5">
+                {/* Sound Toggle */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !soundEnabled;
+                    setSoundEnabled(next);
+                    triggerToast(next ? "Keypad Sound Enabled 🔊" : "Keypad Muted 🔇");
+                  }}
+                  className={cn(
+                    "p-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                    soundEnabled
+                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                      : "bg-[var(--card)] text-[var(--foreground)]/40 border-[var(--border)]"
+                  )}
+                  title={soundEnabled ? "Sound Enabled (Click to mute)" : "Muted (Click to enable audio)"}
+                >
+                  {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                </button>
+
+                {/* Advanced Quick Tools Bar Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedTools(prev => !prev)}
+                  className={cn(
+                    "px-2.5 py-1 rounded-xl text-xs font-black uppercase flex items-center gap-1 border transition-all cursor-pointer",
+                    showAdvancedTools
+                      ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                      : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
+                  )}
+                  title="Toggle GST Tax, Discounts & Rounding tools"
+                >
+                  <Sparkles size={12} />
+                  <span className="hidden sm:inline">Quick Tools</span>
+                  <span className="sm:hidden">Tools</span>
+                </button>
+
+                {/* Audit Tape Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowAuditTape(prev => !prev)}
+                  className={cn(
+                    "px-2.5 py-1 rounded-xl text-xs font-black uppercase flex items-center gap-1 border transition-all cursor-pointer",
+                    showAuditTape
+                      ? "bg-emerald-600 text-white border-emerald-700 shadow-xs"
+                      : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
+                  )}
+                  title="Toggle itemized formula breakdown tape"
+                >
+                  <Receipt size={12} />
+                  <span className="hidden sm:inline">Tape</span>
+                </button>
+
+                {/* Settings & Precision Drawer Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowSizingControls(prev => !prev)}
+                  className={cn(
+                    "p-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                    showSizingControls
+                      ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                      : "bg-[var(--card)] text-[var(--foreground)]/70 hover:text-[var(--foreground)] border-[var(--border)]"
+                  )}
+                  title="Calculator display sizing & precision settings"
+                >
+                  <Sliders size={15} />
+                </button>
+              </div>
+            </div>
+
+            {/* Sizing & Precision Drawer (When Expanded) */}
+            <AnimatePresence>
+              {showSizingControls && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden p-4 rounded-2xl bg-[var(--foreground)]/[0.02] border border-[var(--border)] space-y-4 text-left text-xs"
+                >
+                  <div className="flex justify-between items-center pb-2 border-b border-[var(--border)]">
+                    <span className="font-black uppercase text-[var(--foreground)] flex items-center gap-2">
+                      <Sliders size={14} className="text-amber-500" /> Display & Keypad Customizer
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowSizingControls(false)}
+                      className="text-[var(--foreground)]/50 hover:text-[var(--foreground)] cursor-pointer"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* Continuous Button Height Slider */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <label className="font-black uppercase text-[var(--foreground)]/70">
+                          Button Height: <span className="text-amber-500 font-mono">{effectiveBtnHeight}px</span>
+                        </label>
+                      </div>
+                      <input
+                        type="range"
+                        min="44"
+                        max="110"
+                        step="2"
+                        value={effectiveBtnHeight}
+                        onChange={(e) => {
+                          setCustomBtnHeight(Number(e.target.value));
+                          setLengthPreset('custom');
+                        }}
+                        className="w-full accent-amber-500 cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[10px] text-[var(--foreground)]/40 font-mono">
+                        <span>44px (Compact)</span>
+                        <span>75px</span>
+                        <span>110px (Giant)</span>
+                      </div>
+                    </div>
+
+                    {/* Width Preset */}
+                    <div className="space-y-1.5">
+                      <label className="font-black uppercase text-[var(--foreground)]/70 block">
+                        Layout Width
+                      </label>
+                      <div className="grid grid-cols-3 gap-1">
+                        {(['standard', 'wide', 'full'] as const).map(w => (
+                          <button
+                            key={w}
+                            type="button"
+                            onClick={() => setContainerWidthMode(w)}
+                            className={cn(
+                              "py-1.5 rounded-xl font-black uppercase text-[10px] border transition-all cursor-pointer",
+                              containerWidthMode === w
+                                ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                                : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
+                            )}
+                          >
+                            {w === 'standard' ? 'Normal' : w === 'wide' ? 'Wide' : 'Full'}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-[var(--foreground)]/50">
+                        Adjusts horizontal space for desk or mobile display.
+                      </p>
+                    </div>
+
+                    {/* Precision Mode */}
+                    <div className="space-y-1.5">
+                      <label className="font-black uppercase text-[var(--foreground)]/70 block">
+                        Decimal Precision
+                      </label>
+                      <div className="grid grid-cols-4 gap-1">
+                        {(['auto', '0', '2', '4'] as const).map(p => (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => setPrecisionMode(p)}
+                            className={cn(
+                              "py-1.5 rounded-xl font-mono font-black text-[10px] border transition-all cursor-pointer",
+                              precisionMode === p
+                                ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                                : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
+                            )}
+                          >
+                            {p === 'auto' ? 'Auto' : p === '0' ? '₹0' : p === '2' ? '.00' : '.0000'}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-[var(--foreground)]/50">
+                        Controls rounding precision on = evaluate.
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Advanced Store Tools Bar (When Expanded) */}
+            <AnimatePresence>
+              {showAdvancedTools && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden p-3 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-2.5 text-left"
+                >
+                  {/* GST Tax Row */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 min-w-[70px] flex items-center gap-1">
+                      <Landmark size={12} /> Add GST:
+                    </span>
+                    {[5, 12, 18, 28].map(gst => (
+                      <button
+                        key={gst}
+                        type="button"
+                        onClick={() => handleAddGst(gst)}
+                        className="px-2.5 py-1 rounded-xl bg-[var(--card)] hover:bg-amber-500 hover:text-white text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-black font-mono transition-all cursor-pointer shadow-xs active:scale-95"
+                      >
+                        +{gst}% GST
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReverseGstAmountInput(calcInput || '1000');
+                        setShowReverseGstModal(true);
+                      }}
+                      className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-black uppercase transition-all cursor-pointer shadow-xs flex items-center gap-1 ml-auto"
+                    >
+                      <Search size={11} /> Reverse GST (MRP)
+                    </button>
+                  </div>
+
+                  {/* Discounts Row */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-amber-500/15">
+                    <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 min-w-[70px] flex items-center gap-1">
+                      <Percent size={12} /> Discount:
+                    </span>
+                    {[5, 10, 15, 20, 25, 50].map(disc => (
+                      <button
+                        key={disc}
+                        type="button"
+                        onClick={() => handleApplyDiscount(disc)}
+                        className="px-2.5 py-1 rounded-xl bg-[var(--card)] hover:bg-emerald-600 hover:text-white text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-black font-mono transition-all cursor-pointer shadow-xs active:scale-95"
+                      >
+                        -{disc}%
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Quick Rounding & Extra Math Row */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-amber-500/15">
+                    <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 min-w-[70px] flex items-center gap-1">
+                      <Coins size={12} /> Rounding:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickRounding('round')}
+                      className="px-2.5 py-1 rounded-xl bg-[var(--card)] hover:bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--border)] text-xs font-black font-mono transition-all cursor-pointer"
+                    >
+                      Round ₹
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickRounding('ceil')}
+                      className="px-2.5 py-1 rounded-xl bg-[var(--card)] hover:bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--border)] text-xs font-black font-mono transition-all cursor-pointer"
+                    >
+                      Ceil ↑
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickRounding('floor')}
+                      className="px-2.5 py-1 rounded-xl bg-[var(--card)] hover:bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--border)] text-xs font-black font-mono transition-all cursor-pointer"
+                    >
+                      Floor ↓
+                    </button>
+
+                    <div className="flex items-center gap-1 ml-auto">
+                      <button
+                        type="button"
+                        onClick={handleNegate}
+                        className="px-2 py-1 rounded-xl bg-[var(--card)] hover:bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--border)] text-xs font-black font-mono transition-all cursor-pointer"
+                        title="Toggle positive/negative (+/-)"
+                      >
+                        ±
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSquareRoot}
+                        className="px-2 py-1 rounded-xl bg-[var(--card)] hover:bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--border)] text-xs font-black font-mono transition-all cursor-pointer"
+                        title="Square Root (√x)"
+                      >
+                        √
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSquare}
+                        className="px-2 py-1 rounded-xl bg-[var(--card)] hover:bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--border)] text-xs font-black font-mono transition-all cursor-pointer"
+                        title="Square (x²)"
+                      >
+                        x²
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleReciprocal}
+                        className="px-2 py-1 rounded-xl bg-[var(--card)] hover:bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--border)] text-xs font-black font-mono transition-all cursor-pointer"
+                        title="Reciprocal (1/x)"
+                      >
+                        1/x
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Live Audit Tape Drawer (When Expanded) */}
+            <AnimatePresence>
+              {showAuditTape && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden p-4 rounded-2xl bg-zinc-900 border border-zinc-700 text-left space-y-3"
+                >
+                  <div className="flex justify-between items-center text-xs font-mono text-zinc-300 pb-2 border-b border-zinc-800">
+                    <span className="font-bold flex items-center gap-1.5 text-amber-400">
+                      <Receipt size={14} /> Itemized Audit Tally Tape
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const stats = extractFormulaStatistics(calcInput);
+                          let text = `--- AUDIT TAPE ---\n`;
+                          let running = 0;
+                          stats.items.forEach((amt, idx) => {
+                            running += amt;
+                            text += `#${idx + 1}: ₹${amt.toFixed(2)} (Subtotal: ₹${running.toFixed(2)})\n`;
+                          });
+                          text += `Total: ₹${stats.total.toFixed(2)} (${stats.count} items)\n`;
+                          navigator.clipboard.writeText(text);
+                          triggerToast("Audit Tape copied to clipboard!");
+                        }}
+                        className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 cursor-pointer flex items-center gap-1"
+                      >
+                        <Copy size={10} /> Copy Tape
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowAuditTape(false)}
+                        className="text-zinc-500 hover:text-white cursor-pointer"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const stats = extractFormulaStatistics(calcInput);
+                    if (stats.count === 0) {
+                      return (
+                        <div className="text-center py-4 text-xs font-mono text-zinc-500">
+                          Enter numbers and operators (e.g. 150 + 280 + 95) to see live itemized tally breakdown.
+                        </div>
+                      );
+                    }
+                    let runningSub = 0;
+                    return (
+                      <div className="space-y-3 font-mono text-xs">
+                        <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
+                          {stats.items.map((amt, idx) => {
+                            runningSub += amt;
+                            return (
+                              <div key={idx} className="flex justify-between items-center text-zinc-300 py-0.5 border-b border-zinc-800/60">
+                                <span className="text-zinc-500 text-[11px]">#{idx + 1}</span>
+                                <span className="text-amber-300 font-bold">₹{amt.toFixed(2)}</span>
+                                <span className="text-zinc-400 text-[11px]">Running: ₹{runningSub.toFixed(2)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Summary Statistics Card */}
+                        <div className="grid grid-cols-4 gap-2 pt-2 border-t border-zinc-800 text-[11px]">
+                          <div className="bg-zinc-800/60 p-2 rounded-xl text-center">
+                            <span className="text-zinc-400 block text-[9px] uppercase font-sans">Total</span>
+                            <span className="text-emerald-400 font-bold">₹{stats.total.toFixed(2)}</span>
+                          </div>
+                          <div className="bg-zinc-800/60 p-2 rounded-xl text-center">
+                            <span className="text-zinc-400 block text-[9px] uppercase font-sans">Items</span>
+                            <span className="text-amber-400 font-bold">{stats.count}</span>
+                          </div>
+                          <div className="bg-zinc-800/60 p-2 rounded-xl text-center">
+                            <span className="text-zinc-400 block text-[9px] uppercase font-sans">Average</span>
+                            <span className="text-zinc-200 font-bold">₹{stats.average.toFixed(2)}</span>
+                          </div>
+                          <div className="bg-zinc-800/60 p-2 rounded-xl text-center">
+                            <span className="text-zinc-400 block text-[9px] uppercase font-sans">Min / Max</span>
+                            <span className="text-zinc-300 font-bold text-[10px]">₹{stats.min} / ₹{stats.max}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Digital LED Display (Length/Height Responsive) */}
+            <div 
+              className="bg-zinc-950 text-emerald-400 rounded-2xl border border-zinc-800 space-y-2 shadow-inner transition-all duration-150"
+              style={{ padding: `${Math.max(16, Math.floor(effectiveBtnHeight * 0.28))}px` }}
+            >
               <div className="flex justify-between items-center text-xs font-sans">
                 {/* Left side: Name button */}
                 {activeCalcName ? (
@@ -1233,6 +2153,7 @@ export default function UniversalStoreCalculator() {
                     <Tag size={12} />
                     <span className="truncate max-w-[150px]">{activeCalcName}</span>
                     <button
+                      type="button"
                       onClick={() => setShowNameModal(true)}
                       className="ml-1 text-amber-400 hover:text-white cursor-pointer"
                       title="Edit Name"
@@ -1251,8 +2172,19 @@ export default function UniversalStoreCalculator() {
                   </button>
                 )}
 
-                {/* Right side: Live Item Counter & Memory Indicator */}
+                {/* Right side: Live prospective calculation preview, item counter & memory indicator */}
                 <div className="flex items-center gap-2">
+                  {/* Live Prospective Evaluation Preview */}
+                  {livePreview && (
+                    <span 
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-mono font-bold select-none"
+                      title="Real-time prospective calculation result"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      = ₹{livePreview.formatted}
+                    </span>
+                  )}
+
                   {/* LIVE ITEM COUNTER BADGE */}
                   <div 
                     id="universal-calc-item-counter-badge"
@@ -1278,12 +2210,22 @@ export default function UniversalStoreCalculator() {
 
               {/* Formula & Status Preview */}
               <div className="text-right text-xs text-zinc-400 font-bold truncate min-h-[18px]">
-                {recentLogPreview || (calcInput ? 'Tap display to edit digits with finger' : 'Ready')}
+                {recentLogPreview || (calcInput ? 'Tap display to position cursor with finger' : 'Ready')}
               </div>
 
-              {/* Main Editable Display (inputMode="none" prevents virtual keyboard) */}
-              <div className="flex items-center justify-end text-3xl md:text-4xl font-black font-mono tracking-tight text-emerald-400 pt-1">
-                <span className="mr-1 select-none text-emerald-500/60 font-mono text-2xl md:text-3xl">₹</span>
+              {/* Main Editable Display with Dynamic Typography */}
+              <div className={cn(
+                "flex items-center justify-end font-black font-mono tracking-tight text-emerald-400 pt-1 transition-all",
+                effectiveBtnHeight >= 85 ? "text-5xl md:text-6xl" :
+                effectiveBtnHeight >= 68 ? "text-4xl md:text-5xl" :
+                "text-3xl md:text-4xl"
+              )}>
+                <span className={cn(
+                  "mr-1 select-none text-emerald-500/60 font-mono transition-all",
+                  effectiveBtnHeight >= 85 ? "text-3xl md:text-4xl" :
+                  effectiveBtnHeight >= 68 ? "text-2xl md:text-3xl" :
+                  "text-xl md:text-2xl"
+                )}>₹</span>
                 <input
                   ref={displayInputRef}
                   type="text"
@@ -1303,27 +2245,43 @@ export default function UniversalStoreCalculator() {
               </div>
             </div>
 
-            {/* Main Keypad Grid - Zero Latency Instant Response */}
-            <div className="grid grid-cols-4 gap-2.5 font-mono text-lg font-black">
+            {/* Main Keypad Grid - Flexible Height & Zero Latency */}
+            <div className="grid grid-cols-4 gap-2 sm:gap-3 font-mono">
               <FastKey
                 label="AC CLEAR"
                 onPress={() => handleStandardOp('C')}
-                className="h-[44.5px] w-[66.6px] rounded-2xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-600 border border-rose-500/20 text-xs font-black uppercase flex items-center justify-center"
+                style={{ height: `${effectiveBtnHeight}px` }}
+                className={cn(
+                  "w-full rounded-2xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-600 border border-rose-500/20 font-black uppercase flex items-center justify-center transition-all",
+                  effectiveBtnHeight >= 80 ? "text-sm sm:text-base" : "text-xs"
+                )}
               />
               <FastKey
                 label="⌫"
                 onPress={() => handleStandardOp('⌫')}
-                className="h-12 rounded-2xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--border)] flex items-center justify-center"
+                style={{ height: `${effectiveBtnHeight}px` }}
+                className={cn(
+                  "w-full rounded-2xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--border)] flex items-center justify-center transition-all font-black",
+                  effectiveBtnHeight >= 80 ? "text-2xl" : "text-xl"
+                )}
               />
               <FastKey
                 label="%"
                 onPress={() => handleStandardOp('%')}
-                className="h-12 rounded-2xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--border)] flex items-center justify-center"
+                style={{ height: `${effectiveBtnHeight}px` }}
+                className={cn(
+                  "w-full rounded-2xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)] border border-[var(--border)] flex items-center justify-center transition-all font-black",
+                  effectiveBtnHeight >= 80 ? "text-2xl" : "text-xl"
+                )}
               />
               <FastKey
                 label="÷"
                 onPress={() => handleStandardOp('/')}
-                className="h-12 rounded-2xl bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 border border-amber-500/20 flex items-center justify-center"
+                style={{ height: `${effectiveBtnHeight}px` }}
+                className={cn(
+                  "w-full rounded-2xl bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 border border-amber-500/20 flex items-center justify-center transition-all font-black",
+                  effectiveBtnHeight >= 80 ? "text-3xl" : "text-2xl"
+                )}
               />
 
               {['7', '8', '9'].map(n => (
@@ -1331,13 +2289,21 @@ export default function UniversalStoreCalculator() {
                   key={n}
                   label={n}
                   onPress={() => handleStandardOp(n)}
-                  className="h-12 rounded-2xl bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--border)] shadow-sm flex items-center justify-center"
+                  style={{ height: `${effectiveBtnHeight}px` }}
+                  className={cn(
+                    "w-full rounded-2xl bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--border)] shadow-xs flex items-center justify-center transition-all font-black",
+                    effectiveBtnHeight >= 85 ? "text-3xl" : effectiveBtnHeight >= 68 ? "text-2xl" : "text-xl"
+                  )}
                 />
               ))}
               <FastKey
                 label="×"
                 onPress={() => handleStandardOp('*')}
-                className="h-12 rounded-2xl bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 border border-amber-500/20 flex items-center justify-center"
+                style={{ height: `${effectiveBtnHeight}px` }}
+                className={cn(
+                  "w-full rounded-2xl bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 border border-amber-500/20 flex items-center justify-center transition-all font-black",
+                  effectiveBtnHeight >= 80 ? "text-3xl" : "text-2xl"
+                )}
               />
 
               {['4', '5', '6'].map(n => (
@@ -1345,13 +2311,21 @@ export default function UniversalStoreCalculator() {
                   key={n}
                   label={n}
                   onPress={() => handleStandardOp(n)}
-                  className="h-12 rounded-2xl bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--border)] shadow-sm flex items-center justify-center"
+                  style={{ height: `${effectiveBtnHeight}px` }}
+                  className={cn(
+                    "w-full rounded-2xl bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--border)] shadow-xs flex items-center justify-center transition-all font-black",
+                    effectiveBtnHeight >= 85 ? "text-3xl" : effectiveBtnHeight >= 68 ? "text-2xl" : "text-xl"
+                  )}
                 />
               ))}
               <FastKey
                 label="-"
                 onPress={() => handleStandardOp('-')}
-                className="h-12 rounded-2xl bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 border border-amber-500/20 flex items-center justify-center"
+                style={{ height: `${effectiveBtnHeight}px` }}
+                className={cn(
+                  "w-full rounded-2xl bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 border border-amber-500/20 flex items-center justify-center transition-all font-black",
+                  effectiveBtnHeight >= 80 ? "text-3xl" : "text-2xl"
+                )}
               />
 
               {['1', '2', '3'].map(n => (
@@ -1359,34 +2333,58 @@ export default function UniversalStoreCalculator() {
                   key={n}
                   label={n}
                   onPress={() => handleStandardOp(n)}
-                  className="h-12 rounded-2xl bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--border)] shadow-sm flex items-center justify-center"
+                  style={{ height: `${effectiveBtnHeight}px` }}
+                  className={cn(
+                    "w-full rounded-2xl bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--border)] shadow-xs flex items-center justify-center transition-all font-black",
+                    effectiveBtnHeight >= 85 ? "text-3xl" : effectiveBtnHeight >= 68 ? "text-2xl" : "text-xl"
+                  )}
                 />
               ))}
               <FastKey
                 label="+"
                 onPress={() => handleStandardOp('+')}
-                className="h-12 rounded-2xl bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 border border-amber-500/20 flex items-center justify-center"
+                style={{ height: `${effectiveBtnHeight}px` }}
+                className={cn(
+                  "w-full rounded-2xl bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 border border-amber-500/20 flex items-center justify-center transition-all font-black",
+                  effectiveBtnHeight >= 80 ? "text-3xl" : "text-2xl"
+                )}
               />
 
               <FastKey
                 label="0"
                 onPress={() => handleStandardOp('0')}
-                className="h-12 rounded-2xl bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--border)] shadow-sm flex items-center justify-center"
+                style={{ height: `${effectiveBtnHeight}px` }}
+                className={cn(
+                  "w-full rounded-2xl bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--border)] shadow-xs flex items-center justify-center transition-all font-black",
+                  effectiveBtnHeight >= 85 ? "text-3xl" : effectiveBtnHeight >= 68 ? "text-2xl" : "text-xl"
+                )}
               />
               <FastKey
                 label="00"
                 onPress={() => handleStandardOp('00')}
-                className="h-12 rounded-2xl bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--border)] shadow-sm flex items-center justify-center"
+                style={{ height: `${effectiveBtnHeight}px` }}
+                className={cn(
+                  "w-full rounded-2xl bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--border)] shadow-xs flex items-center justify-center transition-all font-black",
+                  effectiveBtnHeight >= 85 ? "text-2xl" : effectiveBtnHeight >= 68 ? "text-xl" : "text-lg"
+                )}
               />
               <FastKey
                 label="."
                 onPress={() => handleStandardOp('.')}
-                className="h-12 rounded-2xl bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--border)] shadow-sm flex items-center justify-center"
+                style={{ height: `${effectiveBtnHeight}px` }}
+                className={cn(
+                  "w-full rounded-2xl bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border border-[var(--border)] shadow-xs flex items-center justify-center transition-all font-black",
+                  effectiveBtnHeight >= 80 ? "text-3xl" : "text-2xl"
+                )}
               />
               <FastKey
                 label="="
                 onPress={handleEvaluateMath}
-                className="h-12 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black shadow-lg shadow-amber-500/20 text-xl flex items-center justify-center"
+                style={{ height: `${effectiveBtnHeight}px` }}
+                className={cn(
+                  "w-full rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black shadow-lg shadow-amber-500/20 flex items-center justify-center transition-all",
+                  effectiveBtnHeight >= 80 ? "text-3xl" : "text-2xl"
+                )}
               />
             </div>
 

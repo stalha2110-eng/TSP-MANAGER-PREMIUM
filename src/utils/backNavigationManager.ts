@@ -10,10 +10,12 @@ export interface ModalEntry {
 
 class BackNavigationManager {
   private modalStack: ModalEntry[] = [];
-  private tabStack: string[] = ['billing'];
+  private tabStack: string[] = ['home'];
   private isHandlingPopState = false;
   private isProgrammaticBack = false;
   private onTabChangeCallback: ((tab: string) => void) | null = null;
+  private exitToastCallback: ((msg: string) => void) | null = null;
+  private lastBackPressTime = 0;
   private initialized = false;
 
   constructor() {
@@ -27,8 +29,8 @@ class BackNavigationManager {
     // Initialize root history states for PWA Standalone Mode
     try {
       if (!window.history.state || !window.history.state.pwaType) {
-        window.history.replaceState({ pwaType: 'root_base', tab: 'billing', depth: 0 }, '');
-        window.history.pushState({ pwaType: 'root', tab: 'billing', depth: 1 }, '');
+        window.history.replaceState({ pwaType: 'root_base', tab: 'home', depth: 0 }, '');
+        window.history.pushState({ pwaType: 'root', tab: 'home', depth: 1 }, '');
       }
     } catch (e) {
       console.warn('History API init warning:', e);
@@ -54,12 +56,29 @@ class BackNavigationManager {
     this.onTabChangeCallback = cb;
   }
 
+  public setExitToastCallback(cb: (msg: string) => void) {
+    this.exitToastCallback = cb;
+  }
+
   public getCurrentTab(): string {
-    return this.tabStack[this.tabStack.length - 1] || 'billing';
+    return this.tabStack[this.tabStack.length - 1] || 'home';
   }
 
   public getActiveModalCount(): number {
     return this.modalStack.length;
+  }
+
+  public setInitialTab(tab: string) {
+    if (this.tabStack.length <= 1) {
+      this.tabStack = [tab];
+      try {
+        if (typeof window !== 'undefined' && window.history.state) {
+          window.history.replaceState({ ...window.history.state, tab }, '');
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
   }
 
   // Register a modal when it opens
@@ -153,8 +172,24 @@ class BackNavigationManager {
         return;
       }
 
-      // 3. If on home tab ('billing') and tabStack has only 1 entry and no modals open:
-      // Allow browser/PWA default action (which exits the app gracefully to device launcher).
+      // 3. If on home root tab with only 1 entry and no modals open:
+      // Prevent accidental exit / unexpected reload on single back press by requiring double-tap back
+      const now = Date.now();
+      if (now - this.lastBackPressTime < 2000) {
+        // User tapped back twice in 2 seconds -> allow normal browser exit
+        return;
+      }
+
+      this.lastBackPressTime = now;
+
+      // Re-establish history buffer so single tap back doesn't exit or unload iframe
+      if (typeof window !== 'undefined') {
+        window.history.pushState({ pwaType: 'root', tab: this.getCurrentTab(), depth: 1 }, '');
+      }
+
+      if (this.exitToastCallback) {
+        this.exitToastCallback('Press back again to exit');
+      }
     } finally {
       this.isHandlingPopState = false;
     }

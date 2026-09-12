@@ -14,6 +14,7 @@ import {
 import { keyPoolManager } from "../services/apiKeyPoolService";
 import { playFeedbackEvent } from "../services/soundFeedbackService";
 import { Button } from "./ui/Button";
+import { useBackModal } from "../utils/backNavigationManager";
 
 function cleanTranscriptText(text: string): string {
   if (!text) return "";
@@ -316,6 +317,10 @@ export function VoiceProductAssistant({
   // Custom Selection mapping for duplicate responses (create new vs update existing prices)
   // Maps draft temporary ID -> 'create_new' | 'update_prices'
   const [duplicateDecisions, setDuplicateDecisions] = useState<Record<string, 'create_new' | 'update_prices'>>({});
+
+  // Android/PWA Back Navigation Registrations for Voice Assistant
+  useBackModal(editingDraftId !== null, () => setEditingDraftId(null), 'voice_editing_draft');
+  useBackModal(activeTab !== 'assistant', () => setActiveTab('assistant'), 'voice_subtab');
 
   // High-fidelity pipeline loading and verification feedback states
   const [isSavingToInventory, setIsSavingToInventory] = useState(false);

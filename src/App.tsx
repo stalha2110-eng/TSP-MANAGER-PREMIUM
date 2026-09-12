@@ -139,6 +139,7 @@ import { AnimatedHomeIcon } from './components/AnimatedHomeIcon';
 import { AnimatedAnalyticsIcon } from './components/AnimatedAnalyticsIcon';
 import { AnimatedUdharIcon } from './components/AnimatedUdharIcon';
 import { AnimatedPlusIcon } from './components/AnimatedPlusIcon';
+import { AnimatedVoiceAssistantButton } from './components/AnimatedVoiceAssistantButton';
 import { playFeedbackEvent, playSynthesizedSound, playWelcomeAnnouncement } from './services/soundFeedbackService';
 import { getCalculatedAchievements, Milestone, downloadCertificateOfMilestone, ensureIsoString } from './lib/achievementUtils';
 import { getUnbilledEntries, saveUnbilledEntries } from './lib/unbilledStorage';
@@ -1391,11 +1392,6 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [activeTab]);
 
-  // Advanced tactile Drag-to-Mic state engine
-  const [isDraggingButton, setIsDraggingButton] = useState(false);
-  const [dragYOffset, setDragYOffset] = useState(0);
-  const firstSoundPlayedRef = useRef(false);
-  const triggerThresholdRef = useRef(false);
   const [dailyCycleModal, setDailyCycleModal] = useState<{
     type: 'opening' | 'closing';
     isOpen: boolean;
@@ -3990,6 +3986,34 @@ export default function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [showTour, setShowTour] = useState(false);
 
+  // Centralized check for whether any modal, drawer, or full-screen overlay is active
+  const isAnyModalOpen = Boolean(
+    showVoiceAssistant ||
+    showSmartBulkEntry ||
+    showAddItem ||
+    editingItem ||
+    showAddNote ||
+    showAddCategory ||
+    showManageCategories ||
+    showComparison ||
+    showHelp ||
+    showTour ||
+    showGoalPanel ||
+    showMenu ||
+    showNotificationsDropdown ||
+    showHistoryDrawer ||
+    showPINScreen ||
+    showWelcome ||
+    showChangePIN ||
+    showRecoveryCenter ||
+    showRecoveryOverlay ||
+    deleteConfirmation.show ||
+    activeCelebrationMilestone ||
+    exportModal.isOpen ||
+    isExporting ||
+    dailyCycleModal?.isOpen
+  );
+
   useEffect(() => {
     // Show tour for new users who haven't seen it
     if (state.settings.hasSeenOnboarding === false && !isInitializing) {
@@ -5512,216 +5536,45 @@ export default function App() {
       />
 
       {/* Floating Action Buttons */}
-      {activeTab === 'home' && !showMenu && !showNotificationsDropdown && !showHistoryDrawer && !showGoalPanel && !showComparison && !showAddItem && !showAddNote && (
-        <div className="fixed bottom-24 right-6 z-[100] flex flex-col items-center select-none overflow-visible">
-          {/* 1. Advanced Mic Target Halo Area (revealed when dragging begins) */}
-          <AnimatePresence>
-            {isDraggingButton && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.6, y: 30 }}
-                animate={{
-                  opacity: 1,
-                  scale: dragYOffset <= -80 ? 1.15 : 1,
-                  y: -110, // absolute target height relative to bottom-24 container
-                }}
-                exit={{ opacity: 0, scale: 0.5, y: 40 }}
-                transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-                className="absolute flex flex-col items-center justify-center z-10 pointer-events-none"
-              >
-                {/* Sonic ripple rings radiating when threshold is crossed */}
-                {dragYOffset <= -80 && (
-                  <>
-                    <span className="absolute h-20 w-20 rounded-full bg-amber-500/20 animate-ping" />
-                    <motion.div
-                      animate={{ scale: [1, 1.6], opacity: [0.5, 0] }}
-                      transition={{ repeat: Infinity, duration: 1.2, ease: "easeOut" }}
-                      className="absolute h-24 w-24 rounded-full border-2 border-amber-500/30"
-                    />
-                    <motion.div
-                      animate={{ scale: [1, 2.2], opacity: [0.3, 0] }}
-                      transition={{ repeat: Infinity, duration: 1.6, ease: "easeOut", delay: 0.3 }}
-                      className="absolute h-24 w-24 rounded-full border border-amber-400/20"
-                    />
-                  </>
-                )}
+      {activeTab === 'home' && !isAnyModalOpen && (
+        <div className="fixed bottom-24 right-6 z-[100] flex flex-col items-center gap-3 select-none overflow-visible">
+          {/* 1. Dedicated Animated Voice Assistant Mic Button positioned directly ABOVE the Plus button */}
+          <AnimatedVoiceAssistantButton
+            id="floating-voice-product-assistant-mic-btn"
+            onClick={() => {
+              setShowVoiceAssistant(true);
+              try {
+                playFeedbackEvent('bill_saved', state.settings);
+              } catch (e) {
+                // Fallback
+              }
+            }}
+          />
 
-                {/* Main Mic Target Sphere Container */}
-                <div
-                  className={`h-16 w-16 rounded-full flex items-center justify-center border-2 transition-all duration-300 shadow-2xl relative ${
-                    dragYOffset <= -80
-                      ? 'bg-gradient-to-tr from-amber-500 via-amber-600 to-yellow-400 text-white border-amber-300 scale-110 shadow-amber-500/50'
-                      : 'bg-neutral-900/90 text-amber-500 border-amber-500/40 shadow-black/80'
-                  }`}
-                >
-                  {/* Subtle inner gloss highlight */}
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
-
-                  {/* Micro-dancing soundwaves around active mic */}
-                  {dragYOffset <= -80 ? (
-                    <motion.div
-                      animate={{ y: [0, -4, 4, -4, 0] }}
-                      transition={{ repeat: Infinity, duration: 0.5, ease: "easeInOut" }}
-                    >
-                      <Mic size={28} className="drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)] text-neutral-950 font-black" />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      animate={{ scale: [0.95, 1.05] }}
-                      transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                    >
-                      <Mic size={24} className="opacity-80" />
-                    </motion.div>
-                  )}
-
-                  {/* Absolute positioning glowing pulse */}
-                  <span className={`absolute -inset-1 rounded-full filter blur-md pointer-events-none transition-opacity duration-300 ${
-                    dragYOffset <= -80 ? 'bg-amber-400/40 opacity-100' : 'bg-amber-500/15 opacity-50'
-                  }`} />
-                </div>
-
-                {/* Contextual dynamic text indicators */}
-                <div className="absolute -top-12 whitespace-nowrap bg-neutral-900/95 border border-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-2xl flex flex-col items-center gap-0.5">
-                  <span className={`text-[10px] font-black uppercase tracking-wider transition-colors duration-150 ${
-                    dragYOffset <= -80 ? 'text-amber-400' : 'text-neutral-300'
-                  }`}>
-                    {dragYOffset <= -80 ? '🎤 RELEASE TO SPEAK' : 'बोलकर उत्पाद जोड़ें'}
-                  </span>
-                  <span className="text-[8px] opacity-60 font-medium font-mono text-neutral-200">
-                    {dragYOffset <= -80 ? 'Instant Voice Pos Assistant' : 'Slide up to record audio'}
-                  </span>
-                </div>
-              </motion.div>
-          )}
-          </AnimatePresence>
-
-          {/* 2. Stretching Plasma caramel Connector Stream (SVG) - physically pulls button to target */}
-          {isDraggingButton && (
-            <div className="absolute inset-0 pointer-events-none z-[5] overflow-visible" style={{ height: '0px', width: '56px' }}>
-              <svg
-                width="56"
-                height={Math.max(1, Math.abs(dragYOffset))}
-                viewBox={`0 0 56 ${Math.max(1, Math.abs(dragYOffset))}`}
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="absolute bottom-1/2 left-1/2 -translate-x-1/2 translate-y-1/2 overflow-visible"
-                style={{
-                  transform: `translate(-50%, ${dragYOffset / 2}px)`,
-                  opacity: Math.min(1, Math.abs(dragYOffset) / 10),
-                }}
-              >
-                <defs>
-                  <linearGradient id="plasmaGlow" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={dragYOffset <= -80 ? 0.9 : 0.6} />
-                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={dragYOffset <= -80 ? 0.9 : 0.6} />
-                  </linearGradient>
-                </defs>
-                <motion.path
-                  d={`
-                    M 16 ${Math.abs(dragYOffset)}
-                    Q ${28 - Math.max(2, 10 - Math.abs(dragYOffset) * 0.06)} ${Math.abs(dragYOffset) / 2}, 20 0
-                    L 36 0
-                    Q ${28 + Math.max(2, 10 - Math.abs(dragYOffset) * 0.06)} ${Math.abs(dragYOffset) / 2}, 40 ${Math.abs(dragYOffset)}
-                    Z
-                  `}
-                  fill="url(#plasmaGlow)"
-                  filter="drop-shadow(0 0 4px rgba(245, 158, 11, 0.4))"
-                />
-              </svg>
-            </div>
-          )}
-
-          {/* 3. Drag Guide Trail Overlay (Ambient Dots when inactive or dragging) */}
-          <AnimatePresence>
-            {isDraggingButton && dragYOffset > -80 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.4 }}
-                exit={{ opacity: 0 }}
-                className="absolute bottom-12 h-16 w-0.5 border-l-2 border-dashed border-amber-500/50 pointer-events-none"
-              />
-            )}
-          </AnimatePresence>
-
-          {/* 4. Draggable Plus Button (The core interactive element) */}
+          {/* 2. Main Animated Plus Button (Click to open menu: Smart Entry / Full Entry) */}
           <motion.div
-            drag="y"
-            dragConstraints={{ top: -140, bottom: 0 }}
-            dragElastic={0.12}
-            dragSnapToOrigin
-            onDragStart={() => {
-              setIsDraggingButton(true);
-              setDragYOffset(0);
-              firstSoundPlayedRef.current = false;
-              triggerThresholdRef.current = false;
-              
-              // Trigger slight start pulse haptic
-              if (navigator.vibrate) navigator.vibrate([15]);
-            }}
-            onDrag={(event, info) => {
-              const currentY = info.offset.y;
-              setDragYOffset(currentY);
-
-              // Play a clicking/haptic feedback EXACTLY when crossing the threshold (-80px)
-              if (currentY <= -80 && !triggerThresholdRef.current) {
-                triggerThresholdRef.current = true;
-                if (navigator.vibrate) navigator.vibrate([40]);
-                try {
-                  playFeedbackEvent('product_added', state.settings);
-                } catch (e) {
-                  // Fallback
-                }
-              } else if (currentY > -80 && triggerThresholdRef.current) {
-                triggerThresholdRef.current = false;
-              }
-            }}
-            onDragEnd={(event, info) => {
-              setIsDraggingButton(false);
-              const finalY = info.offset.y;
-              setDragYOffset(0);
-
-              if (finalY <= -80) {
-                // Success: Trigger voice assistant modal!
-                setShowVoiceAssistant(true);
-                if (navigator.vibrate) navigator.vibrate([20, 50, 20]);
-                try {
-                  playFeedbackEvent('bill_saved', state.settings);
-                } catch (e) {
-                  // Fallback
-                }
-              } else {
-                // Return start pulse physical click
-                if (navigator.vibrate) navigator.vibrate([10]);
-              }
-              
-              triggerThresholdRef.current = false;
-            }}
-            onTap={() => {
+            onClick={() => {
               setShowPlusActionMenu(prev => !prev);
             }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            className={`h-14 w-14 rounded-full z-20 cursor-grab active:cursor-grabbing outline-none select-none relative flex items-center justify-center transition-all duration-200 ${
+            className={`h-14 w-14 rounded-full z-20 cursor-pointer outline-none select-none relative flex items-center justify-center transition-all duration-200 ${
               showPlusActionMenu ? 'bg-rose-500 shadow-lg shadow-rose-500/50 text-white' : ''
-            } ${
-              isDraggingButton ? 'scale-105' : ''
             }`}
           >
-            {/* Real-time scaling color overlay beneath button matching stretch */}
+            {/* Real-time scaling color overlay beneath button */}
             <motion.div 
-              style={{ scale: isDraggingButton ? 1.05 : 1 }}
               className={`absolute inset-0 rounded-full transition-all duration-300 ${
                 showPlusActionMenu
                   ? 'bg-rose-600 shadow-xl shadow-rose-500/50'
-                  : dragYOffset <= -80
-                    ? 'bg-gradient-to-tr from-amber-500 to-amber-600 shadow-xl shadow-amber-500/50'
-                    : 'bg-transparent'
+                  : 'bg-transparent'
               }`}
             />
             {/* Standard Animated plus icon / Close Icon when menu is open */}
             {showPlusActionMenu ? (
               <X size={26} className="text-white font-black z-20" />
             ) : (
-              <AnimatedPlusIcon size={26} isAtMicThreshold={dragYOffset <= -80} />
+              <AnimatedPlusIcon size={26} />
             )}
           </motion.div>
 
@@ -5804,7 +5657,7 @@ export default function App() {
           </AnimatePresence>
         </div>
       )}
-      {activeTab === 'notes' && !showMenu && !showNotificationsDropdown && !showHistoryDrawer && !showGoalPanel && !showComparison && (
+      {activeTab === 'notes' && !isAnyModalOpen && (
         <Button 
           className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-2xl accent-glow bg-amber-500 hover:bg-amber-600"
           onClick={() => setShowAddNote(true)}

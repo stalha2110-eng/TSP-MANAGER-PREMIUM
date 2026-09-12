@@ -75,34 +75,40 @@ export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
  * Normalizes unit names into standardized TS Price Manager units
  */
 export function normalizeUnit(word: string): string {
-  const w = word.toLowerCase().trim();
+  if (!word) return "KG";
+  let w = word.toLowerCase().trim();
+  
+  // Strip common speech-to-text prefixes like "perk", "per", "pr", "/", "for", "प्रति", "दर"
+  w = w.replace(/^(?:perk|per|pr|\/|for|प्रति|दर|का|के)\s+/i, "").trim();
+  // Strip trailing punctuation
+  w = w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "").trim();
   
   // KG
-  if (/^kg|kilo|kilogram|kg\.?|किलो|किग्रा|कलो$/i.test(w)) return "KG";
+  if (/^(?:kg|kilo|kilogram|kg\.?|किलो|किग्रा|कलो|kilos)$/i.test(w)) return "KG";
   // Chatak
-  if (/^chatak|chattak|ctk|छटांक|छटाक$/i.test(w)) return "Chatak";
+  if (/^(?:chatak|chattak|ctk|छटांक|छटाक)$/i.test(w)) return "Chatak";
   // GM
-  if (/^g|gm|gms|gram|grams|ग्राम|ग्राम्स|ग्राम्$/i.test(w)) return "GM";
+  if (/^(?:g|gm|gms|gram|grams|ग्राम|ग्राम्स|ग्राम्)$/i.test(w)) return "GM";
   // LTR
-  if (/^l|ltr|litre|liter|liters|लीटर$/i.test(w)) return "LTR";
+  if (/^(?:l|ltr|litre|liter|liters|लीटर)$/i.test(w)) return "LTR";
   // ML
-  if (/^ml|milliliter|millilitre|मिलीलीटर|एमएल$/i.test(w)) return "ML";
+  if (/^(?:ml|milliliter|millilitre|मिलीलीटर|एमएल)$/i.test(w)) return "ML";
   // PCS
-  if (/^pc|pcs|piece|pieces|piece|नग|पीस|पीसेस$/i.test(w)) return "PCS";
+  if (/^(?:pc|pcs|piece|pieces|नग|पीस|पीसेस)$/i.test(w)) return "PCS";
   // PKT
-  if (/^pkt|packet|packets|pack|पैकेट|पॉकेट$/i.test(w)) return "PKT";
+  if (/^(?:pkt|packet|packets|pack|packs|पैकेट|पॉकेट)$/i.test(w)) return "PKT";
   // BOX
-  if (/^box|boxes|बॉक्स|पेटी$/i.test(w)) return "BOX";
+  if (/^(?:box|boxes|बॉक्स|पेटी|dabba|dibba|डिब्बा)$/i.test(w)) return "BOX";
   // CRT
-  if (/^carton|cartons|crt|कार्टन|क्रेट$/i.test(w)) return "CRT";
+  if (/^(?:carton|cartons|crt|कार्टन|क्रेट)$/i.test(w)) return "CRT";
   // DZN
-  if (/^dozen|dzn|दर्जन$/i.test(w)) return "DZN";
+  if (/^(?:dozen|dzn|दर्जन|darjan)$/i.test(w)) return "DZN";
   // BDL
-  if (/^bundle|bundles|बंडल|बण्डल$/i.test(w)) return "BDL";
+  if (/^(?:bundle|bundles|बंडल|बण्डल)$/i.test(w)) return "BDL";
   // TRY
-  if (/^tray|trays|ट्रे$/i.test(w)) return "TRY";
+  if (/^(?:tray|trays|ट्रे)$/i.test(w)) return "TRY";
   // UNT
-  if (/^unit|units|यूनिट$/i.test(w)) return "UNT";
+  if (/^(?:unit|units|यूनिट)$/i.test(w)) return "UNT";
   
   return "KG"; // default fallback
 }
@@ -195,18 +201,156 @@ export function parseVoiceTranscript(text: string, existingItems: Item[] = []): 
 
 /**
  * Parses a single statement like "Badam retail 900 kilo wholesale 850 cost 800"
+ * or "kashmiri coconut retail 300rs perk kg , wholesale 1,500rs per box, cost 1,200rs per box"
  */
 function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceDraftProduct | null {
-  // Normalize string but keep numbers and standard text
-  let txt = phrase.replace(/,|-/g, " ");
-  
-  // Regex keywords configuration
-  const retailKeywords = /(?:retail|selling|sell|रिटेल|विक्री|बेचना|भाव|रेट)/gi;
-  const wholesaleKeywords = /(?:wholesale|होलसेल|थोक|व्होलसेल)/gi;
-  const costKeywords = /(?:cost|buying|bought|purchase|buying price|खरीद|खरीदी|कॉस्ट|लागत)/gi;
-  
-  // Units vocabulary check
-  const unitKeywords = /(?:kg|kilo|kilogram|किग्रा|किलो|chatak|chattak|ctk|छटांक|छटाक|gram|gm|ग्राम|piece|pc|pcs|पीस|नग|packet|pkt|पैकेट|box|बॉक्स|carton|कार्टन|dozen|दर्जन|liter|ltr|लीटर|ml|एमएल|bundle|बंडल|tray|ट्रे|unit|यूनिट)/gi;
+  if (!phrase || !phrase.trim()) return null;
+
+  // 1. Normalize comma-formatted numbers: e.g. "1,500" -> "1500", "1,200" -> "1200"
+  let cleanPhrase = phrase.replace(/(\d+),(\d{2,3})/g, "$1$2");
+
+  // 2. Separate attached currency symbols: e.g. "300rs" -> "300 rs", "1500rs" -> "1500 rs"
+  cleanPhrase = cleanPhrase.replace(/(\d+)(rs|inr|pkr|\/-)/gi, "$1 $2");
+
+  // Keywords configuration
+  const retailRegex = /\b(?:retail|selling|sell|रिटेल|विक्री|बेचना|भाव|रेट)\b/i;
+  const wholesaleRegex = /\b(?:wholesale|होलसेल|थोक|व्होलसेल)\b/i;
+  const costRegex = /\b(?:cost|buying|bought|purchase|buying\s+price|खरीद|खरीदी|कॉस्ट|लागत)\b/i;
+  const unitRegex = /(?:(?:perk|per|pr|\/)\s+)?(?:kg|kilo|kilogram|किग्रा|किलो|chatak|chattak|ctk|छटांक|छटाक|gram|gm|grams|ग्राम|piece|pc|pcs|pieces|पीस|नग|packet|packets|pack|pkt|पैकेट|box|boxes|बॉक्स|पेटी|dabba|dibba|carton|cartons|crt|कार्टन|dozen|दर्जन|darjan|liter|litre|ltr|लीटर|ml|एमएल|bundle|बंडल|tray|ट्रे|unit|यूनिट)\b/gi;
+
+  // Check if phrase contains the "retail" keyword rule
+  const retailMatch = cleanPhrase.match(retailRegex);
+
+  if (retailMatch && retailMatch.index !== undefined && retailMatch.index > 0) {
+    // =========================================================================
+    // EXPLICIT RULE: Words spoken before the "retail" keyword are the Product Name!
+    // E.g.: "kashmiri coconut retail 300rs perk kg..." -> Product Name: "Kashmiri Coconut"
+    // =========================================================================
+    let rawNameBeforeRetail = cleanPhrase.substring(0, retailMatch.index).trim();
+
+    // Strip leading action/trigger filler words
+    rawNameBeforeRetail = rawNameBeforeRetail
+      .replace(/^(?:please\s+)?(?:add|insert|create|new|item|product|naya\s+item|likho|daalo|bhai|sun\s+bhai|kripya|ek|item\s+name|naam)\s+/i, "")
+      .replace(/^[,.\-:]+/, "")
+      .replace(/[,.\-:]+$/, "")
+      .trim();
+
+    if (rawNameBeforeRetail.length > 0) {
+      // Find all keyword markers in the phrase
+      interface Marker {
+        type: 'retail' | 'wholesale' | 'cost';
+        index: number;
+        length: number;
+      }
+      const markers: Marker[] = [];
+
+      let m: RegExpExecArray | null;
+      const gRetail = new RegExp(retailRegex.source, 'gi');
+      while ((m = gRetail.exec(cleanPhrase)) !== null) {
+        markers.push({ type: 'retail', index: m.index, length: m[0].length });
+      }
+
+      const gWholesale = new RegExp(wholesaleRegex.source, 'gi');
+      while ((m = gWholesale.exec(cleanPhrase)) !== null) {
+        markers.push({ type: 'wholesale', index: m.index, length: m[0].length });
+      }
+
+      const gCost = new RegExp(costRegex.source, 'gi');
+      while ((m = gCost.exec(cleanPhrase)) !== null) {
+        markers.push({ type: 'cost', index: m.index, length: m[0].length });
+      }
+
+      // Sort markers chronologically by their position in the text
+      markers.sort((a, b) => a.index - b.index);
+
+      let rPrice = 0;
+      let rUnit = "KG";
+      let wPrice = 0;
+      let wUnit = "KG";
+      let cPrice = 0;
+      let cUnit = "KG";
+      let unitExplicitlyFound = false;
+
+      // Extract each section's numbers and units
+      for (let i = 0; i < markers.length; i++) {
+        const current = markers[i];
+        const nextIndex = i + 1 < markers.length ? markers[i + 1].index : cleanPhrase.length;
+        const segment = cleanPhrase.substring(current.index + current.length, nextIndex);
+
+        // Find numbers in this section
+        const numMatch = segment.match(/(\d+(?:\.\d+)?)/);
+        const parsedPrice = numMatch ? parseFloat(numMatch[1]) : 0;
+
+        // Find unit in this section
+        const segmentUnitMatch = segment.match(unitRegex);
+        let parsedUnit = "";
+        if (segmentUnitMatch && segmentUnitMatch.length > 0) {
+          parsedUnit = normalizeUnit(segmentUnitMatch[0]);
+          unitExplicitlyFound = true;
+        }
+
+        if (current.type === 'retail') {
+          if (parsedPrice > 0) rPrice = parsedPrice;
+          if (parsedUnit) rUnit = parsedUnit;
+        } else if (current.type === 'wholesale') {
+          if (parsedPrice > 0) wPrice = parsedPrice;
+          if (parsedUnit) wUnit = parsedUnit;
+        } else if (current.type === 'cost') {
+          if (parsedPrice > 0) cPrice = parsedPrice;
+          if (parsedUnit) cUnit = parsedUnit;
+        }
+      }
+
+      // If price was found in the text overall
+      if (rPrice > 0 || wPrice > 0 || cPrice > 0) {
+        // Fallback unit propagation if only retail or overall unit was mentioned
+        const basePrimaryUnit = rUnit || (unitExplicitlyFound ? (wUnit || cUnit) : "KG");
+        if (!wUnit) wUnit = basePrimaryUnit;
+        if (!cUnit) cUnit = basePrimaryUnit;
+        if (!rUnit) rUnit = basePrimaryUnit;
+
+        // Estimates if wholesale or cost are missing
+        if (wPrice === 0 && rPrice > 0) {
+          wPrice = Math.floor(rPrice * 0.9);
+        }
+        if (cPrice === 0 && rPrice > 0) {
+          cPrice = Math.floor(rPrice * 0.8);
+        }
+
+        // Format name to proper Title Case
+        const formattedName = rawNameBeforeRetail
+          .split(/\s+/)
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(' ')
+          .trim();
+
+        return {
+          id: 'voice_' + Math.random().toString(36).substr(2, 9),
+          name: formattedName,
+          retailPrice: rPrice,
+          retailPriceUnit: rUnit,
+          wholesalePrice: wPrice,
+          wholesalePriceUnit: wUnit,
+          buyingPrice: cPrice,
+          buyingPriceUnit: cUnit,
+          unit: basePrimaryUnit,
+          categoryId: '',
+          confidence: {
+            name: 100,
+            retailPrice: 100,
+            wholesalePrice: wPrice > 0 ? 100 : 70,
+            buyingPrice: cPrice > 0 ? 100 : 70
+          },
+          originalText: phrase
+        };
+      }
+    }
+  }
+
+  // =========================================================================
+  // FALLBACK PARSER: Handles phrases without "retail" keyword (e.g. "Badam 900")
+  // =========================================================================
+  let txt = cleanPhrase.replace(/,|-/g, " ");
   
   // Extract all numbers
   const numberRegex = /(\d+(?:\.\d+)?)/g;
@@ -216,9 +360,8 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
     matches.push(match[1]);
   }
   
-  if (matches.length === 0) return null; // No price data detected, cannot be a valid product entry
+  if (matches.length === 0) return null; // No price data detected
   
-  // Map extracted values
   const prices = matches.map(Number);
   
   let retailPrice = 0;
@@ -236,7 +379,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
   
   // Find unit mentioned anywhere to apply as base default
   let baseUnit = "KG";
-  const unitMatches = txt.match(unitKeywords);
+  const unitMatches = txt.match(unitRegex);
   if (unitMatches && unitMatches.length > 0) {
     baseUnit = normalizeUnit(unitMatches[0]);
     retailUnit = baseUnit;
@@ -246,13 +389,14 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
   
   // Search for prices associating matching keywords nearby
   const words = txt.split(/\s+/);
+  const retailKeywords = /(?:retail|selling|sell|रिटेल|विक्री|बेचना|भाव|रेट)/gi;
+  const wholesaleKeywords = /(?:wholesale|होलसेल|थोक|व्होलसेल)/gi;
+  const costKeywords = /(?:cost|buying|bought|purchase|buying price|खरीद|खरीदी|कॉस्ट|लागत)/gi;
   
-  // Associate numbers to their categories using index/distance proximity
   const priceAssignments = prices.map(price => {
     const priceStr = price.toString();
     const idx = words.indexOf(priceStr);
     
-    // Look backwards up to 3 words
     let category: 'retail' | 'wholesale' | 'cost' | 'unknown' = 'unknown';
     if (idx !== -1) {
       for (let i = Math.max(0, idx - 3); i < idx; i++) {
@@ -262,7 +406,6 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
         else if (costKeywords.test(word)) category = 'cost';
       }
       
-      // If still unknown, look forward 2 words
       if (category === 'unknown') {
         for (let i = idx + 1; i <= Math.min(words.length - 1, idx + 2); i++) {
           const word = words[i].toLowerCase();
@@ -272,10 +415,9 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
         }
       }
       
-      // Look for a specific unit attached directly next, e.g., "900 kilo" or "900piece"
       for (let i = Math.max(0, idx - 1); i <= Math.min(words.length - 1, idx + 1); i++) {
          const w = words[i].toLowerCase();
-         if (unitKeywords.test(w) && i !== idx) {
+         if (unitRegex.test(w) && i !== idx) {
            const parsedUnit = normalizeUnit(w);
            if (parsedUnit) {
              if (category === 'retail') retailUnit = parsedUnit;
@@ -289,7 +431,6 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
     return { price, category };
   });
   
-  // Set values according to detected proximity associations
   priceAssignments.forEach(pa => {
     if (pa.category === 'retail') {
       retailPrice = pa.price;
@@ -303,17 +444,14 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
     }
   });
   
-  // Fallback if price categorization is partial/absent: arrange descending or order of mention
   const unassigned = priceAssignments.filter(pa => pa.category === 'unknown');
   if (unassigned.length > 0) {
     if (!retailPrice && !wholesalePrice && !buyingPrice) {
-      // 3 numbers standard order: Retail (highest) -> Wholesale (middle) -> Cost (lowest)
       const sortedPrices = [...prices].sort((a, b) => b - a);
       if (sortedPrices.length >= 1) { retailPrice = sortedPrices[0]; confRetail = 85; }
       if (sortedPrices.length >= 2) { wholesalePrice = sortedPrices[1]; confWholesale = 80; }
       if (sortedPrices.length >= 3) { buyingPrice = sortedPrices[2]; confBuying = 75; }
     } else {
-      // Apply to first available empty slot
       unassigned.forEach(ua => {
         if (!retailPrice) { retailPrice = ua.price; confRetail = 70; }
         else if (!wholesalePrice) { wholesalePrice = ua.price; confWholesale = 65; }
@@ -322,30 +460,23 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
     }
   }
   
-  // CLEAN PRODUCT NAME EXTRACTION:
-  // Strip all price words, price category keywords, units, and numbers to extract name
   let nameBlock = txt;
-  
-  // Remove numbers
   prices.forEach(p => {
     nameBlock = nameBlock.replace(new RegExp('\\b' + p + '\\b', 'g'), '');
   });
   
-  // Strip keywords
   const allStripPatterns = [
-    retailKeywords, wholesaleKeywords, costKeywords, unitKeywords,
+    retailKeywords, wholesaleKeywords, costKeywords, unitRegex,
     /\b(?:per|for|rs\.?|in|का|की|के|में|per kilo|kilo|piece|g|kg|gm|piece)\b/gi,
-    /\b(?:kaju|badam|cashew|raisins|pista|akhrot|anjeer|haldi)\b/gi // remove lowercase match if we map to dictionary
+    /\b(?:kaju|badam|cashew|raisins|pista|akhrot|anjeer|haldi)\b/gi
   ];
   
   allStripPatterns.forEach(pat => {
     nameBlock = nameBlock.replace(pat, ' ');
   });
   
-  // Clean double spaces, edge cases
   let cleanedName = nameBlock.trim().replace(/\s+/g, ' ');
   
-  // Dictionary matcher/reconstruction
   const originalWords = txt.split(/\s+/);
   let matchedKeyword = "";
   for (const w of originalWords) {
@@ -356,7 +487,6 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
     }
   }
   
-  // Combine mapped dictionary keyword if any, or general cleaned text
   let finalName = cleanedName;
   if (matchedKeyword) {
     if (!finalName || finalName.length < 2) {
@@ -370,9 +500,8 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
      finalName = "Unknown Spoken Product";
      confName = 30;
   } else {
-    // Capitalize first letter of words
     finalName = finalName.split(' ')
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
       .join(' ')
       .trim();
   }
@@ -387,7 +516,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
     buyingPrice,
     buyingPriceUnit: buyingUnit,
     unit: baseUnit,
-    categoryId: '', // to be populated
+    categoryId: '',
     confidence: {
       name: confName,
       retailPrice: confRetail,

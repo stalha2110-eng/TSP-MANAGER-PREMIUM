@@ -1020,7 +1020,7 @@ export function VoiceProductAssistant({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-2 sm:p-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-md p-2 sm:p-4"
     >
       <motion.div 
         initial={{ scale: 0.95, y: 15 }}
@@ -1332,9 +1332,9 @@ export function VoiceProductAssistant({
                     ) : null}
                   </div>
                 ) : (
-                  <div className="opacity-50 space-y-1 text-[var(--foreground)] text-center max-w-xl px-4">
-                    <p className="text-xs font-semibold">Tap the mic to start listing. You can say your product detail in a single voice entry!</p>
-                    <p className="text-[10px] font-mono opacity-85">Example: "Kaju A grade retail 1200 per kilo wholesale 1100 cost 1000"</p>
+                  <div className="opacity-60 space-y-1.5 text-[var(--foreground)] text-center max-w-xl px-4">
+                    <p className="text-xs font-semibold">Tap the mic to start listing. Anything you say before the word <strong>"retail"</strong> is set as the product name!</p>
+                    <p className="text-[10px] font-mono opacity-90 text-amber-600 dark:text-amber-400">Example: "Kashmiri coconut retail 300rs per kg, wholesale 1,500rs per box, cost 1,200rs per box"</p>
                   </div>
                 )}
 
@@ -1349,12 +1349,12 @@ export function VoiceProductAssistant({
               <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex gap-3 text-sm">
                 <HelpCircle className="text-amber-500 shrink-0 mt-0.5" size={18} />
                 <div className="space-y-1">
-                  <p className="font-extrabold text-amber-500/95 text-xs uppercase tracking-widest">💡 Speech Prompt Guide (Hindi / English / Marathi / Hinglish)</p>
+                  <p className="font-extrabold text-amber-500/95 text-xs uppercase tracking-widest">💡 Speech Prompt Rule (Hindi / English / Marathi / Hinglish)</p>
                   <p className="text-xs text-[var(--foreground)]/80">
-                    Just mention the <strong>name</strong> and numbers near keywords like <strong>retail, wholesale, and cost</strong>. Include units if desirable.
+                    Words spoken <strong>before the "retail" keyword</strong> are automatically extracted as the <strong>Product Name</strong>. Say prices and units after <strong>retail, wholesale, and cost</strong>.
                   </p>
-                  <p className="text-[11px] text-[var(--foreground)]/50 font-mono">
-                    "Kaju A grade retail 1200 kilo, wholesale 1100, cost 1000"
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 font-mono">
+                    "Kashmiri coconut retail 300rs per kg, wholesale 1,500rs per box, cost 1,200rs per box"
                   </p>
                 </div>
               </div>

@@ -21,7 +21,7 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
   },
   inventory: {
     en: "Inventory",
-    hi: "सामान / स्टॉक",
+    hi: "सामान",
     mr: "सामान / स्टॉक",
     "hi-en": "Stock"
   },

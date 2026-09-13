@@ -5,16 +5,104 @@ import {
   AlertTriangle, XCircle, ShoppingCart, Tag, Layers, ArrowLeft,
   ReceiptText, Download, Printer, ChevronRight, FileText, ChevronDown,
   ArrowUpRight, ExternalLink, ArrowDownRight, CreditCard, Scale, IndianRupee, Mic, MicOff,
-  ArrowLeftRight
+  ArrowLeftRight, Maximize2, Minimize2, ChevronUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Item, Category, LanguageType } from '../types';
 import { cn, formatNumber } from '../lib/utils';
 import { cleanAndValidateText } from '../services/languageEngine';
 import { QuickWeightPresets, ItemHoldWeightModal } from './QuickWeightPresets';
-import { parseSearchInput, calculateWeightFromAmount } from '../utils/weightHelpers';
+import { parseSearchInput, calculateWeightFromAmount, WeightPreset } from '../utils/weightHelpers';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
+const CatalogCardQuantityInput: React.FC<{
+  quantity: number;
+  unitPrice: number;
+  unit?: string;
+  precision?: number;
+  customPresets?: WeightPreset[];
+  onChange: (newQty: number) => void;
+  onDecrement: () => void;
+  onIncrement: () => void;
+}> = ({ quantity, unitPrice, unit = 'pcs', precision = 0, customPresets, onChange, onDecrement, onIncrement }) => {
+  const [localVal, setLocalVal] = useState<string>(quantity.toString());
+
+  useEffect(() => {
+    setLocalVal(quantity.toString());
+  }, [quantity]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valStr = e.target.value;
+    setLocalVal(valStr);
+    const parsed = parseFloat(valStr);
+    if (!isNaN(parsed) && parsed > 0) {
+      onChange(parsed);
+    }
+  };
+
+  const handleBlur = () => {
+    const parsed = parseFloat(localVal);
+    if (isNaN(parsed) || parsed <= 0) {
+      setLocalVal(quantity.toString());
+    } else {
+      onChange(parsed);
+    }
+  };
+
+  return (
+    <div 
+      className="flex items-center gap-0.5 bg-[var(--foreground)]/5 border border-[var(--primary)]/35 rounded-lg p-0.5 shadow-2xs select-none"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDecrement();
+        }}
+        className="h-4.5 w-4 rounded hover:bg-[var(--foreground)]/10 text-[var(--foreground)] flex items-center justify-center cursor-pointer transition-colors"
+        title="Decrease quantity"
+      >
+        <Minus size={7} />
+      </button>
+
+      <input
+        type="number"
+        step="any"
+        className="w-7 text-center text-[8.5px] font-mono font-black text-[var(--foreground)] bg-transparent border-none outline-none focus:ring-0 p-0"
+        value={localVal}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        onClick={(e) => e.stopPropagation()}
+        title="Type weight or quantity"
+      />
+
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onIncrement();
+        }}
+        className="h-4.5 w-4 rounded hover:bg-[var(--foreground)]/10 text-[var(--foreground)] flex items-center justify-center cursor-pointer transition-colors"
+        title="Increase quantity"
+      >
+        <Plus size={7} />
+      </button>
+
+      <QuickWeightPresets
+        currentQty={quantity}
+        unitPrice={unitPrice}
+        unit={unit}
+        precision={precision}
+        onSelectQty={onChange}
+        compact={true}
+        align="right"
+        customPresets={customPresets}
+      />
+    </div>
+  );
+};
 
 export interface CatalogCartItem {
   id: string;
@@ -177,8 +265,32 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
 
   // Live Draft Invoice Preview Popup states inside catalog
   const [isDraftPreviewOpen, setIsDraftPreviewOpen] = useState(false);
+  const [isDraftFullScreen, setIsDraftFullScreen] = useState(false);
+  const [draftDragStartY, setDraftDragStartY] = useState<number | null>(null);
   const [showDesktopLiveInvoice, setShowDesktopLiveInvoice] = useState(true);
   const [livePreviewTheme, setLivePreviewTheme] = useState<'thermal' | 'laser'>('thermal');
+
+  const handleDraftDragStart = (clientY: number) => {
+    setDraftDragStartY(clientY);
+  };
+
+  const handleDraftDragEnd = (clientY: number) => {
+    if (draftDragStartY === null) return;
+    const delta = clientY - draftDragStartY;
+    // Dragged upwards -> expand to full screen
+    if (delta < -35) {
+      setIsDraftFullScreen(true);
+    } 
+    // Dragged downwards -> collapse to half screen or close
+    else if (delta > 45) {
+      if (isDraftFullScreen) {
+        setIsDraftFullScreen(false);
+      } else {
+        setIsDraftPreviewOpen(false);
+      }
+    }
+    setDraftDragStartY(null);
+  };
 
   // Handler to direct user directly to Ticket Receipt List on billing dashboard
   const handleDirectToTicketReceiptList = (e?: React.MouseEvent) => {
@@ -658,7 +770,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                                     {displayName}
                                   </span>
                                   <span className="text-[9px] px-1.5 py-0.2 rounded font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-mono">
-                                    ₹{formatNumber(itemPrice, precision)} /{item.unit || 'pcs'}
+                                    ₹{formatNumber(itemPrice, precision)} / {item.unit || 'pcs'}
                                   </span>
                                   {helperPill && (
                                     <span className="text-[9px] px-1.5 py-0.2 rounded font-black uppercase bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-mono animate-pulse">
@@ -842,7 +954,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                         whileTap={{ scale: 0.96 }}
                         transition={{ type: "spring", stiffness: 450, damping: 22 }}
                         className={cn(
-                          "p-2 rounded-xl bg-[var(--card)] border cursor-pointer active:scale-95 transition-all text-left flex flex-col justify-between h-[5.2rem] group relative overflow-hidden select-none",
+                          "p-2 rounded-xl bg-[var(--card)] border cursor-pointer active:scale-95 transition-all text-left flex flex-col justify-between min-h-[5.4rem] group relative overflow-hidden select-none",
                           countInCart > 0
                             ? "border-[var(--primary)] ring-2 ring-[var(--primary)]/25 bg-[var(--primary)]/[0.03]"
                             : isOut 
@@ -867,12 +979,18 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                           </div>
                           
                           <div className="flex items-center justify-between text-[7px] font-bold text-[var(--foreground)]/50 uppercase tracking-wide mt-0.5">
-                            <span className="truncate max-w-[65px] sm:max-w-[80px]">
+                            <span className="truncate max-w-[70px]">
                               {catName}
                             </span>
-                            <span className="lowercase shrink-0">
-                              ({item.unit || 'pcs'})
-                            </span>
+                            {isOut ? (
+                              <span className="px-1 py-0.2 rounded text-[6px] font-black uppercase bg-rose-500/15 text-rose-600 border border-rose-500/20 leading-none shrink-0 ml-auto">
+                                Out
+                              </span>
+                            ) : isLow ? (
+                              <span className="px-1 py-0.2 rounded text-[6px] font-black uppercase bg-amber-500/15 text-amber-600 border border-amber-500/20 leading-none shrink-0 ml-auto">
+                                LOW
+                              </span>
+                            ) : null}
                           </div>
                         </div>
 
@@ -883,69 +1001,67 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                               ₹{formatNumber(activePrice, settings?.pricePrecision || 0)}
                             </span>
                             <span className="text-[6.5px] font-black opacity-50 lowercase mt-0.5">
-                              per {activePriceUnit}
+                              / {activePriceUnit}
                             </span>
                           </div>
                           
                           <div className="flex items-center gap-0.5">
-                            {isOut ? (
-                              <span className="px-1 py-0.2 rounded text-[6px] font-black uppercase bg-rose-500/15 text-rose-600">
-                                Out
-                              </span>
-                            ) : isLow ? (
-                              <span className="px-1 py-0.2 rounded text-[6px] font-black uppercase bg-amber-500/15 text-amber-600">
-                                Low
-                              </span>
-                            ) : null}
-
-                            {onPeek && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onPeek({ type: 'item', payload: item });
-                                }}
-                                className="h-4.5 w-4.5 rounded bg-[var(--foreground)]/5 border border-[var(--border)] hover:bg-[var(--primary)] hover:text-white transition-all flex items-center justify-center text-[var(--foreground)]/55 cursor-pointer"
-                                title="Quick View Details"
-                              >
-                                <Eye size={9} />
-                              </button>
-                            )}
-
                             {countInCart > 0 ? (
-                              <div 
-                                className="flex items-center gap-0.5 bg-[var(--primary)] text-white px-1 py-0.5 rounded-md shadow-xs"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {onUpdateCartQuantity && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onUpdateCartQuantity(item.id, countInCart - 1);
-                                    }}
-                                    className="h-3.5 w-3.5 rounded hover:bg-black/20 flex items-center justify-center transition-colors cursor-pointer"
-                                  >
-                                    <Minus size={7} />
-                                  </button>
-                                )}
-                                <span className="text-[8px] font-black font-mono px-0.5">
-                                  {countInCart}
-                                </span>
+                              <CatalogCardQuantityInput
+                                quantity={countInCart}
+                                unitPrice={activePrice}
+                                unit={item.unit || 'pcs'}
+                                precision={settings?.pricePrecision || 0}
+                                customPresets={settings?.customWeightPresets}
+                                onChange={(newQty) => {
+                                  if (onUpdateCartQuantity) {
+                                    onUpdateCartQuantity(item.id, newQty);
+                                  } else {
+                                    onAddToCart(item, undefined, newQty, true);
+                                  }
+                                }}
+                                onDecrement={() => {
+                                  const nextQty = Math.max(0, parseFloat((countInCart - 1).toFixed(3)));
+                                  if (onUpdateCartQuantity) {
+                                    onUpdateCartQuantity(item.id, nextQty);
+                                  } else {
+                                    onAddToCart(item, undefined, nextQty, true);
+                                  }
+                                }}
+                                onIncrement={() => {
+                                  const nextQty = parseFloat((countInCart + 1).toFixed(3));
+                                  if (onUpdateCartQuantity) {
+                                    onUpdateCartQuantity(item.id, nextQty);
+                                  } else {
+                                    onAddToCart(item, undefined, nextQty, true);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                                <QuickWeightPresets
+                                  currentQty={1}
+                                  unitPrice={activePrice}
+                                  unit={item.unit || 'pcs'}
+                                  precision={settings?.pricePrecision || 0}
+                                  onSelectQty={(qty) => {
+                                    onAddToCart(item, undefined, qty, true);
+                                  }}
+                                  compact={true}
+                                  align="right"
+                                  customPresets={settings?.customWeightPresets}
+                                />
                                 <button
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onAddToCart(item, e);
                                   }}
-                                  className="h-3.5 w-3.5 rounded hover:bg-black/20 flex items-center justify-center transition-colors cursor-pointer"
+                                  className="h-4.5 px-1.5 rounded-md bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 hover:bg-[var(--primary)] hover:text-white flex items-center justify-center text-[7.5px] font-black uppercase transition-colors cursor-pointer"
+                                  title="Add to ticket"
                                 >
-                                  <Plus size={7} />
+                                  + Add
                                 </button>
-                              </div>
-                            ) : (
-                              <div className="h-4.5 px-1.5 rounded-md bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 flex items-center justify-center text-[7.5px] font-black uppercase group-hover:bg-[var(--primary)] group-hover:text-white transition-colors">
-                                + Add
                               </div>
                             )}
                           </div>
@@ -1172,34 +1288,54 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 0.7 }}
                   exit={{ opacity: 0 }}
-                  onClick={() => setIsDraftPreviewOpen(false)}
+                  onClick={() => {
+                    setIsDraftPreviewOpen(false);
+                    setIsDraftFullScreen(false);
+                  }}
                   className="fixed inset-0 bg-black/85 backdrop-blur-xs"
                 />
 
-                {/* Slide-Up / Centered Invoice Modal Container */}
+                {/* Slide-Up / Centered Invoice Modal Container with Full Screen Drag & Toggle */}
                 <motion.div
                   key="draft-preview-container"
                   initial={{ y: "100%", opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: "100%", opacity: 0 }}
                   transition={{ type: "spring", damping: 25, stiffness: 220 }}
-                  className="relative z-10 w-full max-w-lg bg-[var(--card)] rounded-t-[2.5rem] sm:rounded-3xl border-t-2 sm:border-2 border-[var(--primary)] p-4 max-h-[88vh] overflow-y-auto shadow-2xl flex flex-col justify-between text-left"
+                  className={cn(
+                    "relative z-10 w-full bg-[var(--card)] border-t-2 sm:border-2 border-[var(--primary)] shadow-2xl flex flex-col justify-between text-left transition-all duration-300 overflow-hidden",
+                    isDraftFullScreen
+                      ? "h-[100dvh] max-h-[100dvh] max-w-3xl rounded-none sm:rounded-3xl p-3 sm:p-5"
+                      : "max-h-[60vh] sm:max-h-[65vh] max-w-lg rounded-t-[2.5rem] sm:rounded-3xl p-4"
+                  )}
                 >
+                  {/* Interactive Drag Handle */}
                   <div 
-                    className="w-12 h-1 bg-[var(--foreground)]/15 rounded-full mx-auto mb-3 cursor-pointer animate-pulse sm:hidden" 
-                    onClick={() => setIsDraftPreviewOpen(false)} 
-                  />
+                    className="w-full pt-1.5 pb-2 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing select-none group touch-none shrink-0"
+                    onTouchStart={(e) => handleDraftDragStart(e.touches[0].clientY)}
+                    onTouchEnd={(e) => {
+                      if (e.changedTouches.length > 0) handleDraftDragEnd(e.changedTouches[0].clientY);
+                    }}
+                    onPointerDown={(e) => {
+                      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+                      handleDraftDragStart(e.clientY);
+                    }}
+                    onPointerUp={(e) => handleDraftDragEnd(e.clientY)}
+                    onClick={() => setIsDraftFullScreen(prev => !prev)}
+                  >
+                    <div className="w-14 h-1.5 bg-[var(--foreground)]/20 group-hover:bg-[var(--primary)] rounded-full transition-all duration-200" />
+                  </div>
 
                   {/* Header with Title & Thermal/Laser Mode */}
-                  <div className="space-y-4 font-sans p-1">
-                    <div className="flex items-center justify-between pb-2 border-b border-[var(--border)] select-none">
+                  <div className="space-y-4 font-sans p-1 flex flex-col flex-1 overflow-hidden">
+                    <div className="flex items-center justify-between pb-2 border-b border-[var(--border)] select-none shrink-0">
                       <div className="flex items-center gap-1.5">
-                        <ReceiptText size={14} className="text-emerald-500 animate-pulse" />
+                        <ReceiptText size={15} className="text-emerald-500 animate-pulse" />
                         <span className="text-emerald-500 font-extrabold uppercase text-[9px] sm:text-[10px] tracking-wider">
                           Live Invoice Preview
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <div className="flex bg-[var(--foreground)]/5 p-0.5 rounded-lg border border-[var(--border)] text-[7.5px] font-black uppercase gap-1">
                           <button
                             type="button"
@@ -1222,10 +1358,24 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                             A4 Laser
                           </button>
                         </div>
+                        {/* FULLSCREEN TOGGLE BUTTON */}
                         <button
                           type="button"
-                          onClick={() => setIsDraftPreviewOpen(false)}
-                          className="h-7 w-7 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                          onClick={() => setIsDraftFullScreen(!isDraftFullScreen)}
+                          className="h-7 w-7 rounded-xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)] flex items-center justify-center transition-colors cursor-pointer border border-[var(--border)]"
+                          title={isDraftFullScreen ? "Collapse to Half Screen (छोटा करें)" : "Expand to Full Screen (पूरा स्क्रीन करें)"}
+                          aria-label="Toggle Full Screen"
+                        >
+                          {isDraftFullScreen ? <Minimize2 size={13} strokeWidth={2.5} /> : <Maximize2 size={13} strokeWidth={2.5} />}
+                        </button>
+                        {/* CLOSE BUTTON */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsDraftPreviewOpen(false);
+                            setIsDraftFullScreen(false);
+                          }}
+                          className="h-7 w-7 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-rose-500/20"
                           title="Close Preview"
                         >
                           <X size={14} strokeWidth={2.5} />
@@ -1235,7 +1385,8 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
 
                     {/* Invoice Paper Canvas */}
                     <div className={cn(
-                      "transition-all duration-300 p-4 border border-[var(--border)] rounded-2xl relative overflow-hidden text-left",
+                      "transition-all duration-300 p-4 border border-[var(--border)] rounded-2xl relative overflow-y-auto no-scrollbar text-left flex-1",
+                      isDraftFullScreen ? "max-h-[75vh]" : "max-h-[46vh]",
                       livePreviewTheme === 'thermal' 
                         ? "bg-zinc-50 text-zinc-950 font-mono text-[9.5px] border-dashed border-zinc-300 shadow-inner"
                         : "bg-white text-zinc-800 font-sans text-xs border-zinc-200 shadow-md"
@@ -1283,7 +1434,10 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                           <span className="col-span-2 text-center">Qty</span>
                           <span className="col-span-4 text-right">Total</span>
                         </div>
-                        <div className="space-y-1.5 max-h-[22vh] overflow-y-auto no-scrollbar">
+                        <div className={cn(
+                          "space-y-1.5 overflow-y-auto no-scrollbar transition-all duration-300",
+                          isDraftFullScreen ? "max-h-[46vh] sm:max-h-[52vh]" : "max-h-[18vh] sm:max-h-[22vh]"
+                        )}>
                           {cart.length === 0 ? (
                             <div className="py-6 text-center text-zinc-400 font-mono text-[9px]">
                               No items in draft bill yet.
@@ -1336,7 +1490,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                     </div>
 
                     {/* Action Buttons in Modal Drawer */}
-                    <div className="flex gap-2 pt-1">
+                    <div className="flex gap-2 pt-1 shrink-0">
                       <button 
                         type="button"
                         onClick={downloadLivePDF} 

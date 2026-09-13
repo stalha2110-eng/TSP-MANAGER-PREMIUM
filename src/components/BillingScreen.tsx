@@ -5,7 +5,8 @@ import {
   PackagePlus, Trash, Sparkles, Printer, Share2, Mic, MicOff,
   Clock, Download, Calendar, RefreshCw, FileText, Coins,
   Cloud, CloudOff, Layers, Pin, Copy, PauseCircle, Eye, Calculator,
-  History, Receipt, CreditCard, ReceiptCent, Terminal, LayoutGrid
+  History, Receipt, CreditCard, ReceiptCent, Terminal, LayoutGrid,
+  Maximize2, Minimize2, ChevronUp, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppState, Item, Bill, TransactionItem, Note, DraftBill } from '../types';
@@ -769,7 +770,31 @@ export default function BillingScreen({
   // --- Live Invoice Preview & Floating Calculator States ---
   const [showLivePreview, setShowLivePreview] = useState(true);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const [isLivePreviewFullScreen, setIsLivePreviewFullScreen] = useState(false);
+  const [livePreviewDragStartY, setLivePreviewDragStartY] = useState<number | null>(null);
   const [livePreviewTheme, setLivePreviewTheme] = useState<'laser' | 'thermal'>('thermal');
+
+  const handleLivePreviewDragStart = (clientY: number) => {
+    setLivePreviewDragStartY(clientY);
+  };
+
+  const handleLivePreviewDragEnd = (clientY: number) => {
+    if (livePreviewDragStartY === null) return;
+    const delta = clientY - livePreviewDragStartY;
+    // Dragged upwards -> expand to full screen
+    if (delta < -35) {
+      setIsLivePreviewFullScreen(true);
+    } 
+    // Dragged downwards -> collapse to half screen or close
+    else if (delta > 45) {
+      if (isLivePreviewFullScreen) {
+        setIsLivePreviewFullScreen(false);
+      } else {
+        setMobilePreviewOpen(false);
+      }
+    }
+    setLivePreviewDragStartY(null);
+  };
 
   // --- Restaurant & Cafe Seating / KOT Dispatcher States ---
   const [kotTicketNo, setKotTicketNo] = useState(() => {
@@ -4135,7 +4160,7 @@ export default function BillingScreen({
                             ₹{formatNumber(billingMode === 'wholesale' ? (item.wholesalePrice || item.retailPrice) : item.retailPrice, state.settings?.pricePrecision || 0)}
                           </span>
                           <span className="text-[7.5px] font-black opacity-50 lowercase mt-0.5" style={{ fontSize: '7px' }}>
-                            per {billingMode === 'wholesale' ? (item.wholesalePriceUnit || item.unit || 'pcs') : (item.retailPriceUnit || item.unit || 'pcs')}
+                            / {billingMode === 'wholesale' ? (item.wholesalePriceUnit || item.unit || 'pcs') : (item.retailPriceUnit || item.unit || 'pcs')}
                           </span>
                         </div>
                         
@@ -4554,7 +4579,7 @@ export default function BillingScreen({
                               style={{ fontSize: '7px' }}
                               title="Click to edit unit & rates"
                             >
-                              <span>per {ci.unit || 'pcs'}</span>
+                              <span>/ {ci.unit || 'pcs'}</span>
                               <Edit2 size={6} className="opacity-60" />
                             </button>
                           </div>
@@ -4969,16 +4994,16 @@ export default function BillingScreen({
                 onClick={handleCheckout}
                 disabled={cart.length === 0}
                 style={{
-                  height: '36.5px',
-                  width: '315.818px',
-                  fontSize: '14px',
-                  lineHeight: '14px',
+                  height: '46px',
+                  width: '100%',
+                  fontSize: '15px',
+                  lineHeight: '16px',
                   fontFamily: "'Hind Vadodara', sans-serif",
                   backgroundColor: '#0006bc'
                 }}
-                className="rounded-xl hover:opacity-90 disabled:opacity-35 disabled:cursor-not-allowed text-white font-black uppercase tracking-wider cursor-pointer shadow-lg transition-all flex items-center justify-center"
+                className="w-full rounded-xl hover:opacity-90 active:scale-[0.99] disabled:opacity-35 disabled:cursor-not-allowed text-white font-black uppercase tracking-wider cursor-pointer shadow-lg transition-all flex items-center justify-center"
               >
-                💾 Save / Checkout (सुरक्षित करें)
+                SAVE BILL
               </button>
             </div>
 
@@ -5240,18 +5265,41 @@ export default function BillingScreen({
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.6 }}
               exit={{ opacity: 0 }}
-              onClick={() => setMobilePreviewOpen(false)}
+              onClick={() => {
+                setMobilePreviewOpen(false);
+                setIsLivePreviewFullScreen(false);
+              }}
               className="fixed inset-0 bg-black/80 backdrop-blur-xs"
             />
-            {/* Slide-Up container */}
+            {/* Slide-Up container with Dynamic Full-Screen Drag and Maximize */}
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 220 }}
-              className="relative z-10 w-full max-w-lg bg-[var(--card)] rounded-t-[2.5rem] border-t-2 border-[var(--primary)] p-4 max-h-[85vh] overflow-y-auto shadow-2xl flex flex-col justify-between text-left"
+              className={cn(
+                "relative z-10 w-full bg-[var(--card)] border-t-2 sm:border-2 border-[var(--primary)] shadow-2xl flex flex-col justify-between text-left transition-all duration-300 overflow-hidden",
+                isLivePreviewFullScreen
+                  ? "h-[100dvh] max-h-[100dvh] max-w-3xl rounded-none sm:rounded-3xl p-3 sm:p-5"
+                  : "max-h-[60vh] sm:max-h-[65vh] max-w-lg rounded-t-[2.5rem] p-4"
+              )}
             >
-              <div className="w-12 h-1 bg-[var(--foreground)]/15 rounded-full mx-auto mb-4 cursor-pointer animate-pulse" onClick={() => setMobilePreviewOpen(false)} />
+              {/* Interactive Drag Handle */}
+              <div 
+                className="w-full pt-1.5 pb-2 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing select-none group touch-none shrink-0"
+                onTouchStart={(e) => handleLivePreviewDragStart(e.touches[0].clientY)}
+                onTouchEnd={(e) => {
+                  if (e.changedTouches.length > 0) handleLivePreviewDragEnd(e.changedTouches[0].clientY);
+                }}
+                onPointerDown={(e) => {
+                  (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+                  handleLivePreviewDragStart(e.clientY);
+                }}
+                onPointerUp={(e) => handleLivePreviewDragEnd(e.clientY)}
+                onClick={() => setIsLivePreviewFullScreen(prev => !prev)}
+              >
+                <div className="w-14 h-1.5 bg-[var(--foreground)]/20 group-hover:bg-[var(--primary)] rounded-full transition-all" />
+              </div>
               
               {(() => {
                 const discountAmount = (subtotal * discountPercent) / 100;
@@ -5293,17 +5341,48 @@ export default function BillingScreen({
                 };
 
                 return (
-                  <div className="space-y-4 font-sans p-2">
-                    <div className="flex items-center justify-between pb-2 border-b border-[var(--border)] select-none">
-                      <span className="text-emerald-500 font-extrabold uppercase text-[9px] tracking-wider">Live Invoice Preview</span>
-                      <div className="flex bg-[var(--foreground)]/5 p-0.5 rounded-lg border border-[var(--border)] text-[7px] font-black uppercase gap-1">
-                        <button onClick={() => setLivePreviewTheme('thermal')} className={cn("px-2 py-0.5 rounded tracking-wide leading-none", livePreviewTheme === 'thermal' ? "bg-[var(--primary)] text-white" : "text-[var(--foreground)]/50")}>Thermal</button>
-                        <button onClick={() => setLivePreviewTheme('laser')} className={cn("px-2 py-0.5 rounded tracking-wide leading-none", livePreviewTheme === 'laser' ? "bg-[var(--primary)] text-white" : "text-[var(--foreground)]/50")}>A4 Laser</button>
+                  <div className="space-y-4 font-sans p-2 flex flex-col flex-1 overflow-hidden">
+                    <div className="flex items-center justify-between pb-2 border-b border-[var(--border)] select-none shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        <ReceiptText size={15} className="text-emerald-500 animate-pulse" />
+                        <span className="text-emerald-500 font-extrabold uppercase text-[9px] sm:text-[10px] tracking-wider">
+                          Live Invoice Preview
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex bg-[var(--foreground)]/5 p-0.5 rounded-lg border border-[var(--border)] text-[7px] font-black uppercase gap-1">
+                          <button onClick={() => setLivePreviewTheme('thermal')} className={cn("px-2 py-0.5 rounded tracking-wide leading-none", livePreviewTheme === 'thermal' ? "bg-[var(--primary)] text-white" : "text-[var(--foreground)]/50")}>Thermal</button>
+                          <button onClick={() => setLivePreviewTheme('laser')} className={cn("px-2 py-0.5 rounded tracking-wide leading-none", livePreviewTheme === 'laser' ? "bg-[var(--primary)] text-white" : "text-[var(--foreground)]/50")}>A4 Laser</button>
+                        </div>
+                        {/* FULLSCREEN TOGGLE BUTTON */}
+                        <button
+                          type="button"
+                          onClick={() => setIsLivePreviewFullScreen(!isLivePreviewFullScreen)}
+                          className="h-7 w-7 rounded-xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)] flex items-center justify-center transition-colors cursor-pointer border border-[var(--border)]"
+                          title={isLivePreviewFullScreen ? "Collapse to Half Screen (छोटा करें)" : "Expand to Full Screen (पूरा स्क्रीन करें)"}
+                          aria-label="Toggle Full Screen"
+                        >
+                          {isLivePreviewFullScreen ? <Minimize2 size={13} strokeWidth={2.5} /> : <Maximize2 size={13} strokeWidth={2.5} />}
+                        </button>
+                        {/* CLOSE BUTTON */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMobilePreviewOpen(false);
+                            setIsLivePreviewFullScreen(false);
+                          }}
+                          className="h-7 w-7 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 flex items-center justify-center transition-colors cursor-pointer border border-rose-500/20"
+                          title="Close Preview"
+                          aria-label="Close Preview"
+                        >
+                          <X size={14} strokeWidth={2.5} />
+                        </button>
                       </div>
                     </div>
 
                     <div className={cn(
-                      "transition-all duration-300 p-4 border border-[var(--border)] rounded-2xl relative overflow-hidden text-left",
+                      "transition-all duration-300 p-4 border border-[var(--border)] rounded-2xl relative overflow-y-auto no-scrollbar text-left flex-1",
+                      isLivePreviewFullScreen ? "max-h-[75vh]" : "max-h-[46vh]",
                       livePreviewTheme === 'thermal' 
                         ? "bg-zinc-50 text-zinc-950 font-mono text-[9.5px] border-dashed border-zinc-300 shadow-inner"
                         : "bg-white text-zinc-800 font-sans text-xs border-zinc-200 shadow-md"
@@ -5329,7 +5408,10 @@ export default function BillingScreen({
                           <span className="col-span-2 text-center">Qty</span>
                           <span className="col-span-4 text-right">Total</span>
                         </div>
-                        <div className="space-y-1.5 max-h-[18vh] overflow-y-auto no-scrollbar">
+                        <div className={cn(
+                          "space-y-1.5 overflow-y-auto no-scrollbar transition-all duration-300",
+                          isLivePreviewFullScreen ? "max-h-[46vh] sm:max-h-[52vh]" : "max-h-[18vh] sm:max-h-[22vh]"
+                        )}>
                           {cart.map((ci) => (
                             <div key={`thermal-receipt-${ci.id}`} className="grid grid-cols-12 text-[8.5px] font-sans text-zinc-800 border-b border-dashed border-zinc-100 pb-1">
                               <span className="col-span-6 font-bold truncate">{ci.name}</span>
@@ -5358,7 +5440,7 @@ export default function BillingScreen({
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0">
                       <button onClick={downloadLivePDF} className="flex-1 py-1.5 text-[8.5px] font-black uppercase tracking-wider bg-slate-900 border text-white rounded-lg cursor-pointer">Download PDF</button>
                       <button onClick={() => { setMobilePreviewOpen(false); handleCheckout(); }} className="flex-1 py-1.5 text-[8.5px] font-black uppercase tracking-wider bg-[var(--primary)] text-white rounded-lg cursor-pointer">Invoice Finish</button>
                     </div>

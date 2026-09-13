@@ -1322,7 +1322,7 @@ Do you want to permanently delete these ${group.bills.length} bills from history
                               <div key={ci.id} className="p-2 border border-[var(--border)] bg-[var(--card)] rounded-xl flex items-center justify-between gap-2 shadow-inner">
                                 <div className="min-w-0 flex-1">
                                   <div className="text-[10.5px] font-extrabold truncate uppercase">{ci.name}</div>
-                                  <div className="text-[8.5px] font-mono opacity-50">₹{ci.price} per {ci.unit}</div>
+                                  <div className="text-[8.5px] font-mono opacity-50">₹{ci.price} / {ci.unit}</div>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <button

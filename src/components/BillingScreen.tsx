@@ -5380,6 +5380,8 @@ export default function BillingScreen({
         onAddToCart={addToCart}
         onUpdateCartQuantity={updateCartQuantity}
         billingMode={billingMode}
+        onBillingModeChange={setBillingMode}
+        onToggleBillingMode={() => setBillingMode(prev => prev === 'wholesale' ? 'retail' : 'wholesale')}
         currentLang={currentLang}
         settings={state.settings}
         onPeek={onPeek}

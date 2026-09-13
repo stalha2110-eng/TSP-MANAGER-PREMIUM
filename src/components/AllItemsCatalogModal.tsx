@@ -4,7 +4,8 @@ import {
   Sparkles, Filter, SlidersHorizontal, ArrowUpDown, CheckCircle2, 
   AlertTriangle, XCircle, ShoppingCart, Tag, Layers, ArrowLeft,
   ReceiptText, Download, Printer, ChevronRight, FileText, ChevronDown,
-  ArrowUpRight, ExternalLink, ArrowDownRight, CreditCard, Scale, IndianRupee, Mic, MicOff
+  ArrowUpRight, ExternalLink, ArrowDownRight, CreditCard, Scale, IndianRupee, Mic, MicOff,
+  ArrowLeftRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Item, Category, LanguageType } from '../types';
@@ -34,6 +35,8 @@ export interface AllItemsCatalogModalProps {
   onAddToCart: (item: Item, e?: React.MouseEvent, customQty?: number, replaceQty?: boolean) => void;
   onUpdateCartQuantity?: (itemId: string, newQty: number) => void;
   billingMode: 'auto' | 'retail' | 'wholesale';
+  onBillingModeChange?: (mode: 'retail' | 'wholesale' | 'auto') => void;
+  onToggleBillingMode?: () => void;
   currentLang: LanguageType;
   settings: any;
   onPeek?: (preview: { type: 'item' | 'customer' | 'bill' | 'notification' | 'analytics'; payload: any } | null) => void;
@@ -57,6 +60,8 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
   onAddToCart,
   onUpdateCartQuantity,
   billingMode,
+  onBillingModeChange,
+  onToggleBillingMode,
   currentLang,
   settings,
   onPeek,
@@ -79,6 +84,16 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
 
   // Parse multiplier / weight / amount shorthands (Power Cashier Mode & ₹50 ka Kaju conversion)
   const parsedSearch = useMemo(() => parseSearchInput(searchQuery), [searchQuery]);
+
+  // Toggle between retail and wholesale rates
+  const handleToggleBillingMode = () => {
+    const nextMode = billingMode === 'wholesale' ? 'retail' : 'wholesale';
+    if (onBillingModeChange) {
+      onBillingModeChange(nextMode);
+    } else if (onToggleBillingMode) {
+      onToggleBillingMode();
+    }
+  };
 
   // Voice Search / Mic dictation handler
   const handleVoiceSearch = () => {
@@ -330,25 +345,44 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
           transition={{ type: "spring", stiffness: 380, damping: 28 }}
           className="relative z-10 w-full max-w-[96vw] xl:max-w-7xl h-[88vh] sm:h-[90vh] max-h-[860px] rounded-3xl bg-[var(--background)] border border-[var(--border)] shadow-2xl flex flex-col overflow-hidden text-[var(--foreground)]"
         >
-          {/* BIG CORNER CLOSE BUTTON (Very upper right corner) */}
-          <button
-            onClick={onClose}
-            className="absolute top-2 right-2.5 z-30 h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 border border-rose-500/30 flex items-center justify-center transition-all shadow-md hover:scale-105 active:scale-95 cursor-pointer"
-            title="Close Catalog (Esc)"
-            aria-label="Close"
-          >
-            <X size={22} strokeWidth={2.5} />
-          </button>
+          {/* TOP RIGHT CORNER CONTROLS: CLOSE 'X' BUTTON & GO TO TICKET RECEIPT LIST BUTTON */}
+          <div className="absolute top-2.5 right-2.5 sm:right-3 z-40 flex flex-col items-center gap-2">
+            {/* CLOSE BUTTON */}
+            <button
+              onClick={onClose}
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 border border-rose-500/30 flex items-center justify-center transition-all shadow-md hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+              title="Close (Esc)"
+              aria-label="Close"
+            >
+              <X size={22} strokeWidth={2.5} />
+            </button>
+
+            {/* GO TO TICKET RECEIPT LIST BUTTON (Just below the close 'x' button, made bigger) */}
+            <button
+              type="button"
+              onClick={handleDirectToTicketReceiptList}
+              className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-gradient-to-tr from-[var(--primary)] via-indigo-600 to-violet-600 hover:from-[var(--primary)]/90 hover:to-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25 active:scale-95 transition-all cursor-pointer shrink-0 border-2 border-white/20 select-none group hover:scale-105"
+              title="Go to Ticket Receipt List on Billing Dashboard (बिल रसीद सूची पर जाएं)"
+              aria-label="Go to Ticket Receipt List"
+            >
+              <ShoppingCart size={22} className="text-amber-200 drop-shadow-sm transition-transform group-hover:scale-110" />
+              {cart.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 px-1.5 min-w-[20px] h-5 rounded-full bg-rose-600 text-white text-[9.5px] font-black font-mono flex items-center justify-center border-2 border-[var(--background)] shadow-md animate-pulse">
+                  {cart.length}
+                </span>
+              )}
+            </button>
+          </div>
 
           {/* HEADER BAR */}
-          <div className="shrink-0 pl-3 sm:pl-4 pr-14 py-2 sm:py-2.5 bg-[var(--card)] border-b border-[var(--border)] flex flex-wrap items-center justify-between gap-2 select-none">
+          <div className="shrink-0 pl-3 sm:pl-4 pr-16 sm:pr-18 py-2 sm:py-2.5 bg-[var(--card)] border-b border-[var(--border)] flex flex-wrap items-center justify-between gap-2 select-none">
             <div className="flex items-center gap-2.5">
               <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-2xl bg-gradient-to-tr from-[var(--primary)] to-indigo-500 text-white flex items-center justify-center shadow-md shrink-0">
                 <LayoutGrid size={18} />
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xs sm:text-sm font-black uppercase tracking-tight text-[var(--foreground)]">
-                  {cleanAndValidateText("Store Items Catalog", currentLang, settings)}
+                  {cleanAndValidateText("All Items", currentLang, settings)}
                 </h2>
                 <span className="px-2 py-0.2 rounded-full text-[9px] font-black bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20">
                   {items.length} {cleanAndValidateText("Items", currentLang, settings)}
@@ -356,18 +390,8 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
               </div>
             </div>
 
-            {/* Price Mode, Add Custom Item Button (Icon Only), Live Preview Toggle & Sort Selector */}
+            {/* Header Action Controls: Live Preview Toggle, Add Custom Item, and Retail ⇄ Wholesale Toggle */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-xl bg-[var(--foreground)]/5 border border-[var(--border)] text-[8.5px] font-black uppercase">
-                <span className="opacity-60">Price:</span>
-                <span className={cn(
-                  "px-1.5 py-0.2 rounded-md",
-                  billingMode === 'wholesale' ? "bg-amber-500/20 text-amber-500 border border-amber-500/30" : "bg-emerald-500/20 text-emerald-500 border border-emerald-500/30"
-                )}>
-                  {billingMode === 'wholesale' ? "Wholesale" : "Retail"}
-                </span>
-              </div>
-
               {/* Live Invoice Preview Toggle Button on Desktop */}
               <button
                 type="button"
@@ -404,26 +428,34 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                 </button>
               )}
 
-              {/* TICKET RECEIPT LIST LARGE TROLLEY ICON BUTTON (Flagship Direct Navigation Action in Right Corner) */}
+              {/* RETAIL TO WHOLESALE OR VICE VERSA TOGGLE BUTTON */}
               <button
                 type="button"
-                onClick={handleDirectToTicketReceiptList}
-                className="relative h-8.5 w-9 sm:h-9.5 sm:w-10 rounded-xl bg-gradient-to-tr from-[var(--primary)] via-indigo-600 to-violet-600 hover:from-[var(--primary)]/90 hover:to-indigo-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 active:scale-95 transition-all cursor-pointer shrink-0 border border-white/20 select-none"
-                title="Go to Ticket Receipt List on Billing Dashboard (बिल रसीद सूची पर जाएं)"
-                aria-label="Go to Ticket Receipt List"
+                onClick={handleToggleBillingMode}
+                className={cn(
+                  "h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl border text-[10px] sm:text-xs font-black uppercase tracking-tight flex items-center gap-1.5 transition-all shadow-xs cursor-pointer select-none active:scale-95 shrink-0",
+                  billingMode === 'wholesale'
+                    ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white border-amber-600 shadow-amber-500/25"
+                    : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white border-emerald-700 shadow-emerald-600/25"
+                )}
+                title={billingMode === 'wholesale'
+                  ? "Current: Wholesale Rate. Click to switch to Retail Rate (थोक से खुदरा भाव पर बदलें)"
+                  : "Current: Retail Rate. Click to switch to Wholesale Rate (खुदरा से थोक भाव पर बदलें)"}
+                aria-label="Switch between Retail and Wholesale pricing mode"
               >
-                <ShoppingCart size={20} className="text-amber-200 drop-shadow-sm transition-transform group-hover:scale-110" />
-                {cart.length > 0 ? (
-                  <span className="absolute -top-1.5 -right-1.5 px-1.5 min-w-[18px] h-4 rounded-full bg-rose-600 text-white text-[8.5px] font-black font-mono flex items-center justify-center border-2 border-[var(--card)] shadow-md animate-pulse">
-                    {cart.length}
-                  </span>
-                ) : null}
+                <ArrowLeftRight size={13} className="shrink-0" />
+                <span className="leading-none font-black">
+                  {billingMode === 'wholesale' ? "Wholesale" : "Retail"}
+                </span>
+                <span className="text-[8.5px] font-mono opacity-85 leading-none hidden sm:inline">
+                  ⇄ {billingMode === 'wholesale' ? "Retail" : "Wholesale"}
+                </span>
               </button>
             </div>
           </div>
 
           {/* SEARCH & CATEGORIES STRIP */}
-          <div className="shrink-0 px-3 py-2 bg-[var(--card)]/60 border-b border-[var(--border)] space-y-1.5 relative z-30">
+          <div className="shrink-0 pl-3 pr-16 sm:pr-18 py-2 bg-[var(--card)]/60 border-b border-[var(--border)] space-y-1.5 relative z-30">
             {/* Full-width Search Bar with Power Shorthand & Predictive Bill-Ready Autocomplete */}
             <div className="relative w-full">
               <div className="relative flex items-center w-full pl-3 pr-2 py-1 rounded-xl bg-[var(--background)] border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/20 transition-all">

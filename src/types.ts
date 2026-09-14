@@ -138,6 +138,7 @@ export interface AppSettings {
     visible: boolean;
     size: 'small' | 'medium' | 'large';
   }[];
+  dashboardCardsVersion?: number;
 
   // Custom Biz Settings Hub Card Order (for drag & drop prioritization)
   bizHubCardsOrder?: string[];

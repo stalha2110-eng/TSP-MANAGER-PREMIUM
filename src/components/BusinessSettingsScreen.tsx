@@ -300,31 +300,89 @@ export default function BusinessSettingsScreen({
 
   // Handle Dashboard card toggling / resizing
   const handleToggleDashboardCard = (cardId: string) => {
-    const defaultCards = state.settings.dashboardCards || [
-      { id: 'sales', title: 'Daily Sales Revenue', visible: true, size: 'large' },
-      { id: 'profit', title: 'Gross Profit Margins', visible: true, size: 'medium' },
-      { id: 'low_stock', title: 'Low Stock Alerts', visible: true, size: 'medium' }
-    ];
+    const currentCards = state.settings.dashboardCards && state.settings.dashboardCards.length > 0
+      ? [...state.settings.dashboardCards]
+      : allPossibleDashboardCards.map(c => ({
+          id: c.id,
+          title: c.label,
+          visible: c.id === 'inventory_value',
+          size: (c.id === 'sales' || c.id === 'business_journey' ? 'large' : (c.id === 'printer_status' || c.id === 'cloud_sync_status' || c.id === 'backup_status' ? 'small' : 'medium')) as 'small' | 'medium' | 'large'
+        }));
 
-    const updated = defaultCards.map(c => 
-      c.id === cardId ? { ...c, visible: !c.visible } : c
-    );
+    let found = false;
+    const updated = currentCards.map(c => {
+      if (c.id === cardId) {
+        found = true;
+        return { ...c, visible: !c.visible };
+      }
+      return c;
+    });
 
-    // If card doesn't exist in the list yet, insert it
-    if (!updated.some(c => c.id === cardId)) {
-      updated.push({ id: cardId, title: cardId.toUpperCase().replace('_', ' '), visible: true, size: 'medium' });
+    // If card doesn't exist in the list yet, insert it with enabled state
+    if (!found) {
+      const def = allPossibleDashboardCards.find(c => c.id === cardId);
+      updated.push({
+        id: cardId,
+        title: def?.label || cardId,
+        visible: true,
+        size: (cardId === 'sales' || cardId === 'business_journey' ? 'large' : (cardId === 'printer_status' || cardId === 'cloud_sync_status' || cardId === 'backup_status' ? 'small' : 'medium')) as 'small' | 'medium' | 'large'
+      });
     }
 
-    onUpdateSettings({ dashboardCards: updated });
+    // Also synchronize dashboardCardsConfig hidden state
+    const currentConfig = state.settings.dashboardCardsConfig || [];
+    const updatedConfig = [...currentConfig];
+    const toggledCard = updated.find(c => c.id === cardId);
+    const isNowVisible = toggledCard ? toggledCard.visible : false;
+
+    const existingCfgIdx = updatedConfig.findIndex(cfg => cfg.id === cardId);
+    if (existingCfgIdx >= 0) {
+      updatedConfig[existingCfgIdx] = {
+        ...updatedConfig[existingCfgIdx],
+        hidden: !isNowVisible
+      };
+    } else {
+      updatedConfig.push({
+        id: cardId,
+        size: toggledCard?.size || 'medium',
+        pinned: false,
+        hidden: !isNowVisible
+      });
+    }
+
+    onUpdateSettings({ 
+      dashboardCards: updated,
+      dashboardCardsConfig: updatedConfig,
+      dashboardCardsVersion: 2
+    });
   };
 
   // Handle resize of Dashboard cards
   const handleResizeDashboardCard = (cardId: string, size: 'small' | 'medium' | 'large') => {
-    const defaultCards = state.settings.dashboardCards || [];
-    const updated = defaultCards.map(c => 
+    const currentCards = state.settings.dashboardCards && state.settings.dashboardCards.length > 0
+      ? [...state.settings.dashboardCards]
+      : allPossibleDashboardCards.map(c => ({
+          id: c.id,
+          title: c.label,
+          visible: c.id === 'inventory_value',
+          size: (c.id === 'sales' || c.id === 'business_journey' ? 'large' : 'medium') as 'small' | 'medium' | 'large'
+        }));
+
+    const updated = currentCards.map(c => 
       c.id === cardId ? { ...c, size } : c
     );
-    onUpdateSettings({ dashboardCards: updated });
+
+    // Also synchronize dashboardCardsConfig size
+    const currentConfig = state.settings.dashboardCardsConfig || [];
+    const updatedConfig = currentConfig.map(cfg => 
+      cfg.id === cardId ? { ...cfg, size } : cfg
+    );
+
+    onUpdateSettings({ 
+      dashboardCards: updated,
+      dashboardCardsConfig: updatedConfig,
+      dashboardCardsVersion: 2
+    });
   };
 
   // --- Default Order & Reorder Handlers for the 8 Biz Hub Cards ---
@@ -455,13 +513,90 @@ export default function BusinessSettingsScreen({
   ];
 
   const allPossibleDashboardCards = [
-    { id: 'sales', label: 'Daily Sales Revenue' },
-    { id: 'profit', label: 'Gross Profit Calculations' },
-    { id: 'low_stock', label: 'Low Stock warnings' },
-    { id: 'large_transactions', label: 'Large/Bulk Transactions' },
-    { id: 'bulk_inventory', label: 'Bulk Inventory valuation' },
-    { id: 'customer_balances', label: 'Udhar Outstanding accounts' },
-    { id: 'inventory_value', label: 'Store Asset valuation' }
+    { 
+      id: 'inventory_value', 
+      label: 'Store Asset Valuation / Inventory Value', 
+      desc: 'Total inventory valuation, stock worth, and SKU count', 
+      icon: '💎' 
+    },
+    { 
+      id: 'sales', 
+      label: 'Daily Sales Revenue', 
+      desc: "Today's sales turnover, collections, and billing total", 
+      icon: '📊' 
+    },
+    { 
+      id: 'profit', 
+      label: 'Gross Profit Calculations', 
+      desc: 'Estimated gross margins, markup gains, and net profitability', 
+      icon: '💰' 
+    },
+    { 
+      id: 'bills', 
+      label: 'Invoices & Bills Summary', 
+      desc: 'Count of today invoices and customer checkout volume', 
+      icon: '🧾' 
+    },
+    { 
+      id: 'low_stock', 
+      label: 'Low Stock Warnings & Alerts', 
+      desc: 'Items approaching or below their replenishment threshold buffer', 
+      icon: '⚠️' 
+    },
+    { 
+      id: 'out_of_stock', 
+      label: 'Out of Stock Critical Alerts', 
+      desc: 'Completely depleted SKUs requiring immediate purchase orders', 
+      icon: '⛔' 
+    },
+    { 
+      id: 'pending_udhar', 
+      label: 'Udhar Outstanding Accounts', 
+      desc: 'Uncollected customer credit dues and overdue khata ledgers', 
+      icon: '📕' 
+    },
+    { 
+      id: 'notifications', 
+      label: 'Store Alerts & Notifications', 
+      desc: 'Urgent system broadcasts, reminders, and unread alerts', 
+      icon: '🔔' 
+    },
+    { 
+      id: 'business_health', 
+      label: 'Store Operational Health Score', 
+      desc: 'Overall business stability index, balance score, and operational metric', 
+      icon: '❇️' 
+    },
+    { 
+      id: 'printer_status', 
+      label: 'POS Receipt Printer Status', 
+      desc: 'Thermal printer hardware connection, ESC/POS bridge, and paper readiness', 
+      icon: '🖨️' 
+    },
+    { 
+      id: 'cloud_sync_status', 
+      label: 'Cloud Sync Gateway Status', 
+      desc: 'Real-time cloud database backup, sync latency, and multi-device connection', 
+      icon: '☁️' 
+    },
+    { 
+      id: 'backup_status', 
+      label: 'Office & Cloud Backup Status', 
+      desc: 'System snapshot health, last verified export, and disaster recovery state', 
+      icon: '📁' 
+    },
+    { 
+      id: 'recent_activity', 
+      label: 'Recent Operations & Activity', 
+      desc: 'Audit trail of recent inventory changes, billings, and store operations', 
+      icon: '🔄' 
+    },
+    { 
+      id: 'business_journey', 
+      label: 'Business Journey & Store Tier', 
+      desc: 'Milestone tracker, Kirana King progress bar, and achievement rank', 
+      icon: '🌟' 
+    }
   ];
 
   // --- JOURNEY CENTER CALCULATION LOGIC ---
@@ -2789,57 +2924,106 @@ export default function BusinessSettingsScreen({
       {/* ==================== SUBTAB: DASHBOARD CARD MANAGEMENT ==================== */}
       {activeSubTab === 'dashboard' && (
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-[2rem] p-6 space-y-6 shadow-sm">
-          <div>
-            <h3 className="text-base font-black uppercase tracking-tight flex items-center gap-2">
-              <Briefcase size={18} className="text-[var(--primary)]" /> Custom Dashboard Card Deck
-            </h3>
-            <p className="text-[9px] opacity-45 uppercase font-bold tracking-wider mt-1">
-              Select cards to keep visible on the main landing statistics grid, and choose grid sizing vectors.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--border)]">
+            <div>
+              <h3 className="text-base font-black uppercase tracking-tight flex items-center gap-2">
+                <Briefcase size={18} className="text-[var(--primary)]" /> Custom Dashboard Card Deck
+              </h3>
+              <p className="text-[10px] opacity-60 uppercase font-bold tracking-wider mt-1">
+                Select cards to display on the main dashboard below Favorite Shortcuts. (By default, only Store Asset Valuation is shown).
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20">
+                {allPossibleDashboardCards.filter(c => {
+                  const card = (state.settings.dashboardCards || []).find(sc => sc.id === c.id);
+                  return card !== undefined ? card.visible : c.id === 'inventory_value';
+                }).length} / {allPossibleDashboardCards.length} Active
+              </span>
+            </div>
           </div>
 
           <div className="space-y-3">
             {allPossibleDashboardCards.map(statCard => {
-              const currentCards = state.settings.dashboardCards || [
-                { id: 'sales', title: 'Daily Sales Revenue', visible: true, size: 'large' },
-                { id: 'profit', title: 'Gross Profit Calculations', visible: true, size: 'medium' },
-                { id: 'low_stock', title: 'Low Stock alerts', visible: true, size: 'medium' }
-              ];
+              const currentCards = state.settings.dashboardCards || [];
               const cardConfig = currentCards.find(c => c.id === statCard.id);
-              const isVisible = cardConfig ? cardConfig.visible : false;
-              const cardSize = cardConfig ? cardConfig.size : 'medium';
+              const isVisible = cardConfig !== undefined ? cardConfig.visible : statCard.id === 'inventory_value';
+              const cardSize = cardConfig?.size || (statCard.id === 'sales' || statCard.id === 'business_journey' ? 'large' : (statCard.id === 'printer_status' || statCard.id === 'cloud_sync_status' || statCard.id === 'backup_status' ? 'small' : 'medium'));
 
               return (
-                <div key={statCard.id} className="p-4 bg-[var(--background)] border border-[var(--border)] rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                <div 
+                  key={statCard.id} 
+                  className={cn(
+                    "p-4 border rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all duration-200",
+                    isVisible 
+                      ? "bg-[var(--card)] border-[var(--primary)]/30 shadow-sm" 
+                      : "bg-[var(--background)]/60 border-[var(--border)] opacity-65 hover:opacity-100"
+                  )}
+                >
+                  <div className="flex items-center gap-3.5 flex-1 min-w-0">
                     <input 
                       type="checkbox"
                       id={`check-card-${statCard.id}`}
                       checked={isVisible}
                       onChange={() => handleToggleDashboardCard(statCard.id)}
-                      className="h-4 w-4 rounded accent-[var(--primary)] border-[var(--border)] text-[var(--primary)] cursor-pointer"
+                      className="h-5 w-5 rounded accent-[var(--primary)] border-[var(--border)] text-[var(--primary)] cursor-pointer shrink-0"
                     />
-                    <label htmlFor={`check-card-${statCard.id}`} className="text-xs uppercase font-extrabold select-none cursor-pointer">
-                      {statCard.label}
-                    </label>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-[var(--foreground)]/5 border border-[var(--border)]">
+                      {statCard.icon}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <label htmlFor={`check-card-${statCard.id}`} className="text-xs uppercase font-black select-none cursor-pointer tracking-wide truncate">
+                          {statCard.label}
+                        </label>
+                        {statCard.id === 'inventory_value' && (
+                          <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-md bg-[var(--primary)]/15 text-[var(--primary)] shrink-0">
+                            Default
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] opacity-60 font-medium tracking-normal mt-0.5 line-clamp-1">
+                        {statCard.desc}
+                      </p>
+                    </div>
                   </div>
 
-                  {isVisible && (
-                    <div className="flex items-center gap-1 bg-[var(--card)] p-1 rounded-lg border border-[var(--border)] self-end sm:self-auto">
-                      {(['small', 'medium', 'large'] as const).map(sz => (
-                        <button
-                          key={sz}
-                          onClick={() => handleResizeDashboardCard(statCard.id, sz)}
-                          className={cn(
-                            "text-[8px] font-black uppercase tracking-wider py-1 px-2.5 rounded-md transition-all cursor-pointer",
-                            cardSize === sz ? "bg-[var(--primary)] text-white" : "opacity-30 hover:opacity-100"
-                          )}
-                        >
-                          {sz}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+                    {isVisible ? (
+                      <div className="flex items-center gap-1 bg-[var(--background)] p-1 rounded-xl border border-[var(--border)]">
+                        {(['small', 'medium', 'large'] as const).map(sz => (
+                          <button
+                            key={sz}
+                            type="button"
+                            onClick={() => handleResizeDashboardCard(statCard.id, sz)}
+                            className={cn(
+                              "text-[8px] font-black uppercase tracking-wider py-1 px-2.5 rounded-lg transition-all cursor-pointer",
+                              cardSize === sz ? "bg-[var(--primary)] text-white shadow-sm" : "opacity-40 hover:opacity-100"
+                            )}
+                          >
+                            {sz}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-[9px] font-bold uppercase tracking-wider opacity-40 px-2 py-1">
+                        Hidden
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleDashboardCard(statCard.id)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                        isVisible 
+                          ? "bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)]/20" 
+                          : "bg-[var(--foreground)]/5 text-[var(--foreground)]/60 hover:bg-[var(--foreground)]/10"
+                      )}
+                    >
+                      {isVisible ? "Active" : "Enable"}
+                    </button>
+                  </div>
                 </div>
               );
             })}

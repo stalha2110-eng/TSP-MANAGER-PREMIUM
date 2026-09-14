@@ -94,7 +94,7 @@ async function startServer() {
       throw error;
     }
 
-    const candidateModels = ["gemini-3.6-flash", "gemini-flash-latest"];
+    const candidateModels = ["gemini-3.8-flash", "gemini-flash-latest"];
     let lastError: any = null;
 
     for (let keyIdx = 0; keyIdx < keyPool.length; keyIdx++) {
@@ -343,7 +343,7 @@ Ensure correct spelling corrections of typical Indian speech recognition typos (
       let response: any = null;
       try {
         response = await testAi.models.generateContent({
-          model: "gemini-3.6-flash",
+          model: "gemini-3.8-flash",
           contents: "Respond with OK if active.",
         });
       } catch (e) {

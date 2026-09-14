@@ -27,6 +27,7 @@ interface DynamicStoreDashboardProps {
   onUpdateState: (updates: Partial<AppState>) => void;
   setActiveTab: (tab: any) => void;
   precision: number;
+  onOpenDeckSettings?: () => void;
 }
 
 export default function DynamicStoreDashboard({
@@ -34,7 +35,8 @@ export default function DynamicStoreDashboard({
   onUpdateSettings,
   onUpdateState,
   setActiveTab,
-  precision
+  precision,
+  onOpenDeckSettings
 }: DynamicStoreDashboardProps) {
 
   const settings = state.settings;
@@ -386,6 +388,17 @@ export default function DynamicStoreDashboard({
       // Manual hide option check
       if (cfg.hidden) return false;
 
+      // Check Custom Dashboard Card Deck:
+      // By default: ONLY 'inventory_value' is visible.
+      // Other cards are ONLY shown if explicitly enabled (visible === true) in settings.dashboardCards.
+      const deckConfig = settings.dashboardCards?.find(c => c.id === cfg.id);
+      if (deckConfig !== undefined) {
+        if (!deckConfig.visible) return false;
+      } else {
+        // Not configured in deck: only inventory_value is visible by default!
+        if (cfg.id !== 'inventory_value') return false;
+      }
+
       // Show specific card toggles check
       if (cfg.id === 'recent_activity' && settings.dashboardShowRecentActivity === false) return false;
       if (cfg.id === 'business_health' && settings.dashboardShowBusinessHealth === false) return false;
@@ -443,6 +456,7 @@ export default function DynamicStoreDashboard({
     }
   }, [
     activeCardsConfig,
+    settings.dashboardCards,
     settings.dashboardMode,
     settings.dashboardAutoHideEmptyCards,
     settings.dashboardShowRecentActivity,
@@ -467,13 +481,25 @@ export default function DynamicStoreDashboard({
     const idx = orderSizes.indexOf(currentSize);
     const nextSize = orderSizes[(idx + 1) % orderSizes.length];
 
-    const updated = activeCardsConfig.map(cfg => {
+    const updatedConfig = activeCardsConfig.map(cfg => {
       if (cfg.id === id) {
         return { ...cfg, size: nextSize };
       }
       return cfg;
     });
-    onUpdateSettings({ dashboardCardsConfig: updated });
+
+    const updatedDeck = (settings.dashboardCards || []).map(c => {
+      if (c.id === id) {
+        return { ...c, size: nextSize };
+      }
+      return c;
+    });
+
+    onUpdateSettings({ 
+      dashboardCardsConfig: updatedConfig,
+      dashboardCards: updatedDeck,
+      dashboardCardsVersion: 2
+    });
   };
 
   const handleTogglePin = (id: string) => {
@@ -573,7 +599,41 @@ export default function DynamicStoreDashboard({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+
+      {/* Active Dashboard Cards Header & Quick Link to Biz Settings */}
+      <div className="flex items-center justify-between px-2 pt-1 pb-1">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-[var(--primary)] animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
+            Active Dashboard Cards ({sortedCards.length})
+          </span>
+        </div>
+        {onOpenDeckSettings && (
+          <button
+            onClick={onOpenDeckSettings}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[var(--primary)] bg-[var(--primary)]/10 hover:bg-[var(--primary)]/20 border border-[var(--primary)]/20 rounded-xl transition-all cursor-pointer"
+          >
+            <Sliders size={11} />
+            <span>Customize Dashboard Deck</span>
+          </button>
+        )}
+      </div>
+
+      {sortedCards.length === 0 && (
+        <div className="p-8 text-center bg-[var(--card)] border border-[var(--border)] rounded-3xl space-y-3">
+          <p className="text-sm font-bold opacity-60">No dashboard cards are currently enabled.</p>
+          {onOpenDeckSettings && (
+            <button
+              onClick={onOpenDeckSettings}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--primary)] text-white text-xs font-black uppercase tracking-wider rounded-xl cursor-pointer"
+            >
+              <Sliders size={12} />
+              <span>Enable Cards in Custom Deck</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Grid of adaptively prioritized Cards */}
       <motion.div 
@@ -584,7 +644,8 @@ export default function DynamicStoreDashboard({
         <AnimatePresence mode="popLayout">
           {sortedCards.map((cardCfg, index) => {
             const cardId = cardCfg.id as CardId;
-            const size = cardCfg.size || 'medium';
+            const cardDeckEntry = settings.dashboardCards?.find(c => c.id === cardId);
+            const size = cardDeckEntry?.size || cardCfg.size || 'medium';
             const isCardExpanded = expandedCards[cardId];
             const isPinned = cardCfg.pinned;
             const score = designScores[cardId] || 0;

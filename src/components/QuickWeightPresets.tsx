@@ -31,6 +31,8 @@ interface QuickWeightPresetsProps {
   align?: 'left' | 'right' | 'center';
   label?: string;
   customPresets?: WeightPreset[];
+  className?: string;
+  style?: React.CSSProperties;
 }
 
 export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
@@ -42,7 +44,9 @@ export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
   compact = false,
   align = 'right',
   label,
-  customPresets
+  customPresets,
+  className,
+  style
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'weights' | 'amount'>('weights');
@@ -173,8 +177,10 @@ export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
             : "h-6 px-2 text-[9px] font-black uppercase tracking-wider",
           isOpen
             ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-sm"
-            : "bg-[var(--foreground)]/5 hover:bg-[var(--primary)]/15 text-[var(--foreground)]/85 hover:text-[var(--primary)] border-[var(--border)]"
+            : "bg-[var(--foreground)]/5 hover:bg-[var(--primary)]/15 text-[var(--foreground)]/85 hover:text-[var(--primary)] border-[var(--border)]",
+          className
         )}
+        style={style}
         title="Quick Weight Presets & Rupee Converter"
       >
         <Scale size={compact ? 10 : 11} className={cn("shrink-0", isOpen ? "text-white" : "text-amber-500")} />

@@ -111,6 +111,10 @@ const CartQuantityInput: React.FC<{
           compact={true}
           align="right"
           customPresets={customPresets}
+          style={{
+            height: '24.5px',
+            paddingLeft: '6.25px',
+          }}
         />
       )}
     </div>

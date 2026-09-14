@@ -4517,6 +4517,12 @@ export default function BillingScreen({
                                     ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/35 hover:bg-amber-500/25 hover:border-amber-500/60"
                                     : "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/35 hover:bg-sky-500/25 hover:border-sky-500/60"
                                 )}
+                                style={{
+                                  width: '48.9886px',
+                                  paddingRight: '5.5px',
+                                  paddingLeft: '3.5px',
+                                  marginLeft: '-10px',
+                                }}
                                 title={`Current: ${isWholesale ? 'Wholesale' : 'Retail'} rate (₹${formatNumber(ci.price, precision)}). Click to switch to ${isWholesale ? 'Retail' : 'Wholesale'}.`}
                               >
                                 <span className="truncate">{isWholesale ? 'Wholesale' : 'Retail'}</span>

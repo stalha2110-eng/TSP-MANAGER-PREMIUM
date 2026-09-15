@@ -112,7 +112,7 @@ const CartQuantityInput: React.FC<{
           align="right"
           customPresets={customPresets}
           style={{
-            height: '24.5px',
+            height: '25.4886px',
             paddingLeft: '6.25px',
           }}
         />
@@ -190,6 +190,10 @@ const EditCartQuantityInput: React.FC<{
           onSelectQty={onChange}
           compact={true}
           align="center"
+          style={{
+            height: '25.4886px',
+            paddingLeft: '6.25px',
+          }}
         />
       )}
     </div>

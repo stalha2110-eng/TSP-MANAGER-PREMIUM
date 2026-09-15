@@ -583,7 +583,7 @@ export default function BillingScreen({
     return '';
   });
   const [taxPercent, setTaxPercent] = useState<number>(() => activeDraftSession.taxPercent || 0);
-  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'UPI' | 'Credit'>(() => activeDraftSession.paymentMethod || 'Cash');
+  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Credit'>(() => (activeDraftSession.paymentMethod === 'Credit' ? 'Credit' : 'Cash'));
   const [billingMode, setBillingMode] = useState<'retail' | 'wholesale' | 'auto'>(() => {
     if (activeDraftSession.billingMode) return activeDraftSession.billingMode;
     return state.settings.businessMode === 'wholesale' ? 'wholesale' : 'auto';
@@ -632,7 +632,7 @@ export default function BillingScreen({
         setDiscountRupeesInput('');
       }
       setTaxPercent(target.taxPercent || 0);
-      setPaymentMethod(target.paymentMethod || 'Cash');
+      setPaymentMethod(target.paymentMethod === 'Credit' ? 'Credit' : 'Cash');
       setBillingMode(target.billingMode || 'auto');
       setUdharDueDate(target.udharDueDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
       
@@ -781,6 +781,40 @@ export default function BillingScreen({
   const [isLivePreviewFullScreen, setIsLivePreviewFullScreen] = useState(false);
   const [livePreviewDragStartY, setLivePreviewDragStartY] = useState<number | null>(null);
   const [livePreviewTheme, setLivePreviewTheme] = useState<'laser' | 'thermal'>('thermal');
+
+  // Mobile preview capsule gesture handlers (swipe/drag up anywhere or tap)
+  const capsuleTouchStartY = useRef<number | null>(null);
+  const capsuleDraggedUpRef = useRef<boolean>(false);
+
+  const handleCapsuleTouchStart = (clientY: number) => {
+    capsuleTouchStartY.current = clientY;
+    capsuleDraggedUpRef.current = false;
+  };
+
+  const handleCapsuleTouchMove = (clientY: number) => {
+    if (capsuleTouchStartY.current !== null) {
+      const deltaY = clientY - capsuleTouchStartY.current;
+      if (deltaY < -15) {
+        capsuleDraggedUpRef.current = true;
+      }
+    }
+  };
+
+  const handleCapsuleTouchEnd = (clientY?: number) => {
+    if (capsuleTouchStartY.current !== null && clientY !== undefined) {
+      const deltaY = clientY - capsuleTouchStartY.current;
+      if (deltaY < -20 || capsuleDraggedUpRef.current) {
+        setMobilePreviewOpen(true);
+        capsuleTouchStartY.current = null;
+        return;
+      }
+    } else if (capsuleDraggedUpRef.current) {
+      setMobilePreviewOpen(true);
+      capsuleTouchStartY.current = null;
+      return;
+    }
+    capsuleTouchStartY.current = null;
+  };
 
   const handleLivePreviewDragStart = (clientY: number) => {
     setLivePreviewDragStartY(clientY);
@@ -3042,7 +3076,7 @@ export default function BillingScreen({
                                 setCustomerPhone(hd.customerPhone || '');
                                 setDiscountPercent(hd.discountPercent || 0);
                                 setTaxPercent(hd.taxPercent || 0);
-                                setPaymentMethod(hd.paymentMethod || 'Cash');
+                                setPaymentMethod(hd.paymentMethod === 'Credit' ? 'Credit' : 'Cash');
                                 setBillingMode(hd.billingMode || 'auto');
                                 setShowHoldSessionsDrawer(false);
                               }}
@@ -4755,25 +4789,29 @@ export default function BillingScreen({
             </div>
 
             {/* Direct Pay modes grids */}
-            <div className="space-y-1 select-none">
-              <label className="text-[7px] font-black uppercase tracking-wider opacity-60 block">{getTranslation('paymentModeTitle')}</label>
-              <div className="grid grid-cols-3 gap-1">
+            <div className="space-y-1.5 select-none">
+              <label className="text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider opacity-70 block">
+                {getTranslation('paymentModeTitle')}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
                 {[
                   { m: 'Cash', l: 'Cash (💵)' },
-                  { m: 'UPI', l: 'UPI (📲)' },
                   { m: 'Credit', l: 'Udhar (📝)' }
                 ].map(pMode => (
                   <button
                     key={pMode.m}
+                    type="button"
                     onClick={() => setPaymentMethod(pMode.m as any)}
                     className={cn(
-                      "p-1.5 rounded-lg border text-[8px] font-black text-center uppercase tracking-tighter cursor-pointer transition-all",
+                      "py-2.5 px-3 rounded-xl border text-xs sm:text-[13px] font-black text-center uppercase tracking-wide cursor-pointer transition-all flex items-center justify-center gap-1.5 min-h-[42px] shadow-xs active:scale-98 select-none",
                       paymentMethod === pMode.m 
-                        ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow" 
-                        : "bg-[var(--card)] border-[var(--border)] text-[var(--foreground)]/60 hover:text-[var(--foreground)]"
+                        ? pMode.m === 'Credit'
+                          ? "bg-amber-600 text-white border-amber-600 shadow-md ring-2 ring-amber-500/25"
+                          : "bg-[var(--primary)] text-white border-[var(--primary)] shadow-md ring-2 ring-[var(--primary)]/25"
+                        : "bg-[var(--card)] border-[var(--border)] text-[var(--foreground)]/70 hover:text-[var(--foreground)] hover:bg-[var(--foreground)]/5"
                     )}
                   >
-                    {pMode.l}
+                    <span>{pMode.l}</span>
                   </button>
                 ))}
               </div>
@@ -5260,24 +5298,74 @@ export default function BillingScreen({
 
       </div>
 
-      {/* MOBILE EXPANDABLE CAPSLUE SUMMARY FOOTER BAR */}
-      {cart.length > 0 && (
-        <div 
-          style={{ height: '60px' }}
-          className="lg:hidden fixed bottom-18 left-4 right-4 z-40 bg-zinc-950/95 text-white p-3 rounded-full flex items-center justify-between border border-zinc-800 shadow-xl backdrop-blur-md"
+      {/* MOBILE EXPANDABLE CAPSULE SUMMARY FOOTER BAR */}
+      {cart.length > 0 && !mobilePreviewOpen && (
+        <motion.div 
+          drag="y"
+          dragConstraints={{ top: -80, bottom: 0 }}
+          dragElastic={0.25}
+          onDragEnd={(_e, info) => {
+            // Dragged upwards or flicked upwards
+            if (info.offset.y < -15 || info.velocity.y < -120) {
+              setMobilePreviewOpen(true);
+            }
+          }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setMobilePreviewOpen(true)}
+          onTouchStart={(e) => handleCapsuleTouchStart(e.touches[0].clientY)}
+          onTouchMove={(e) => handleCapsuleTouchMove(e.touches[0].clientY)}
+          onTouchEnd={(e) => {
+            if (e.changedTouches.length > 0) {
+              handleCapsuleTouchEnd(e.changedTouches[0].clientY);
+            } else {
+              handleCapsuleTouchEnd();
+            }
+          }}
+          style={{ height: '62px' }}
+          className="lg:hidden fixed bottom-18 left-4 right-4 z-40 bg-zinc-950/95 text-white px-4 py-2.5 rounded-full flex items-center justify-between border border-zinc-800/80 shadow-2xl backdrop-blur-md cursor-pointer select-none group active:shadow-amber-500/10 hover:border-zinc-700 transition-all touch-none"
+          role="button"
+          tabIndex={0}
+          aria-label="Open Live Invoice Draft"
         >
-          <div className="pl-4 text-left">
-            <span className="text-[7.5px] font-black uppercase text-amber-500 tracking-wider leading-none">Active Bill</span>
-            <p className="text-xs font-black font-mono leading-none mt-1">₹{formatNumber(total, precision)} ({cart.length} items)</p>
+          {/* Swipe-up visual up arrow (^) at top edge */}
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none">
+            <div className="w-6 h-4 bg-zinc-900/95 border border-zinc-700/80 rounded-t-lg flex items-center justify-center text-amber-400 shadow-md">
+              <ChevronUp size={14} className="stroke-[3] animate-bounce" />
+            </div>
           </div>
+
+          <div className="text-left flex items-center gap-2.5">
+            <div className="w-7.5 h-7.5 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <ShoppingCart size={14} className="drop-shadow-xs" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 leading-none">
+                <span className="text-[8px] font-black uppercase text-amber-400 tracking-wider">
+                  Active Bill
+                </span>
+                <span className="text-[7.5px] font-bold text-zinc-400 uppercase tracking-tighter opacity-80">
+                  • Swipe up or tap
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm font-black font-mono leading-none mt-1">
+                ₹{formatNumber(total, precision)} <span className="text-zinc-400 font-sans font-bold text-[10px]">({cart.length} {cart.length === 1 ? 'item' : 'items'})</span>
+              </p>
+            </div>
+          </div>
+
           <button
-            onClick={() => setMobilePreviewOpen(true)}
-            className="px-4 py-1.5 bg-[var(--primary)] text-white text-[8px] font-black uppercase rounded-full tracking-widest shadow-md transition-all active:scale-95 flex items-center gap-1 shrink-0 cursor-pointer select-none"
+            type="button"
+            onClick={(e) => {
+              // Click inside button also triggers smoothly
+              e.stopPropagation();
+              setMobilePreviewOpen(true);
+            }}
+            className="px-4 py-2 bg-[var(--primary)] hover:brightness-110 text-white text-[9px] font-black uppercase rounded-full tracking-wider shadow-md transition-all active:scale-95 flex items-center gap-1.5 shrink-0 cursor-pointer select-none ring-2 ring-[var(--primary)]/30"
           >
-            <Eye size={10} />
+            <Eye size={12} />
             <span>View Draft</span>
           </button>
-        </div>
+        </motion.div>
       )}
 
       {/* MOBILE DRAWER SHEET SLIDE-UP */}
@@ -5308,9 +5396,9 @@ export default function BillingScreen({
                   : "h-[82vh] max-h-[86vh] max-w-lg rounded-t-[2.5rem] p-4"
               )}
             >
-              {/* Interactive Drag Handle */}
+              {/* Interactive Drag Handle with Up Arrow (^) */}
               <div 
-                className="w-full pt-1.5 pb-2 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing select-none group touch-none shrink-0"
+                className="w-full pt-1 pb-1 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing select-none group touch-none shrink-0"
                 onTouchStart={(e) => handleLivePreviewDragStart(e.touches[0].clientY)}
                 onTouchEnd={(e) => {
                   if (e.changedTouches.length > 0) handleLivePreviewDragEnd(e.changedTouches[0].clientY);
@@ -5321,8 +5409,13 @@ export default function BillingScreen({
                 }}
                 onPointerUp={(e) => handleLivePreviewDragEnd(e.clientY)}
                 onClick={() => setIsLivePreviewFullScreen(prev => !prev)}
+                title={isLivePreviewFullScreen ? "Click to minimize preview" : "Click or swipe up to maximize preview"}
               >
-                <div className="w-14 h-1.5 bg-[var(--foreground)]/20 group-hover:bg-[var(--primary)] rounded-full transition-all" />
+                {isLivePreviewFullScreen ? (
+                  <ChevronDown size={20} className="text-[var(--foreground)]/40 group-hover:text-[var(--primary)] transition-all" />
+                ) : (
+                  <ChevronUp size={20} className="text-[var(--foreground)]/40 group-hover:text-[var(--primary)] transition-all animate-bounce" />
+                )}
               </div>
               
               {(() => {
@@ -5825,17 +5918,21 @@ export default function BillingScreen({
 
                   {/* Summary updates */}
                   <div className="flex justify-between items-center border-t border-[var(--border)] pt-3 flex-wrap gap-2 select-none">
-                    <div className="flex bg-[var(--foreground)]/5 rounded-lg border border-[var(--border)] p-0.5 text-[8px] font-black uppercase">
-                      {['Cash', 'UPI', 'Credit'].map(mode => (
+                    <div className="flex bg-[var(--foreground)]/5 rounded-lg border border-[var(--border)] p-0.5 text-[9px] font-black uppercase">
+                      {[
+                        { m: 'Cash', l: 'Cash (💵)' },
+                        { m: 'Credit', l: 'Udhar (📝)' }
+                      ].map(mode => (
                         <button
-                          key={mode}
-                          onClick={() => setEditPaymentMethod(mode as any)}
+                          key={mode.m}
+                          type="button"
+                          onClick={() => setEditPaymentMethod(mode.m as any)}
                           className={cn(
-                            "px-2 py-1 rounded transition-all cursor-pointer",
-                            editPaymentMethod === mode ? "bg-[var(--primary)] text-white shadow" : "text-[var(--foreground)]/50"
+                            "px-3 py-1.5 rounded-md transition-all cursor-pointer",
+                            editPaymentMethod === mode.m ? "bg-[var(--primary)] text-white shadow-xs font-black" : "text-[var(--foreground)]/60 hover:text-[var(--foreground)]"
                           )}
                         >
-                          {mode}
+                          {mode.l}
                         </button>
                       ))}
                     </div>

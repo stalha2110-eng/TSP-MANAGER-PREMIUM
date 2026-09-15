@@ -5,7 +5,7 @@ import {
   AlertTriangle, XCircle, ShoppingCart, Tag, Layers, ArrowLeft,
   ReceiptText, Download, Printer, ChevronRight, FileText, ChevronDown,
   ArrowUpRight, ExternalLink, ArrowDownRight, CreditCard, Scale, IndianRupee, Mic, MicOff,
-  ArrowLeftRight, Maximize2, Minimize2, ChevronUp
+  ArrowLeftRight, Maximize2, Minimize2, ChevronUp, Coins
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Item, Category, LanguageType } from '../types';
@@ -137,6 +137,7 @@ export interface AllItemsCatalogModalProps {
   discountPercent?: number;
   taxPercent?: number;
   onCheckout?: () => void;
+  onOpenRateSelect?: (item: Item) => void;
 }
 
 export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
@@ -161,7 +162,8 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
   paymentMethod = 'Cash',
   discountPercent = 0,
   taxPercent = 0,
-  onCheckout
+  onCheckout,
+  onOpenRateSelect
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -240,6 +242,17 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
     }
   };
 
+  const lastItemClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
+  const singleClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (singleClickTimeoutRef.current) {
+        clearTimeout(singleClickTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleItemCardClick = (item: Item, e: React.MouseEvent) => {
     if (isLongPressRef.current) {
       e.preventDefault();
@@ -248,19 +261,44 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
       return;
     }
 
-    const itemPrice = billingMode === 'wholesale' ? (item.wholesalePrice || item.retailPrice) : item.retailPrice;
-    let targetQty = 1;
-    if (parsedSearch.mode === 'target_budget' && parsedSearch.targetPrice) {
-      targetQty = calculateWeightFromAmount(parsedSearch.targetPrice, itemPrice || 1, 3);
-    } else if (parsedSearch.quantity) {
-      targetQty = parsedSearch.quantity;
+    const now = Date.now();
+    // Check if double-clicked within 320ms on the same item card
+    if (lastItemClickRef.current.id === item.id && (now - lastItemClickRef.current.time) < 320) {
+      if (singleClickTimeoutRef.current) {
+        clearTimeout(singleClickTimeoutRef.current);
+        singleClickTimeoutRef.current = null;
+      }
+      lastItemClickRef.current = { id: '', time: 0 };
+      if (onOpenRateSelect) {
+        onOpenRateSelect(item);
+      }
+      return;
     }
 
-    onAddToCart(item, e, targetQty, parsedSearch.mode !== 'plain');
-    if (parsedSearch.mode !== 'plain') {
-      setSearchQuery('');
-      setIsSearchFocused(false);
+    lastItemClickRef.current = { id: item.id, time: now };
+    if (singleClickTimeoutRef.current) {
+      clearTimeout(singleClickTimeoutRef.current);
     }
+
+    const clickEventTarget = { clientX: e.clientX, clientY: e.clientY };
+    const savedParsedSearch = { ...parsedSearch };
+
+    singleClickTimeoutRef.current = setTimeout(() => {
+      const itemPrice = billingMode === 'wholesale' ? (item.wholesalePrice || item.retailPrice) : item.retailPrice;
+      let targetQty = 1;
+      if (savedParsedSearch.mode === 'target_budget' && savedParsedSearch.targetPrice) {
+        targetQty = calculateWeightFromAmount(savedParsedSearch.targetPrice, itemPrice || 1, 3);
+      } else if (savedParsedSearch.quantity) {
+        targetQty = savedParsedSearch.quantity;
+      }
+
+      onAddToCart(item, clickEventTarget as any, targetQty, savedParsedSearch.mode !== 'plain');
+      if (savedParsedSearch.mode !== 'plain') {
+        setSearchQuery('');
+        setIsSearchFocused(false);
+      }
+      singleClickTimeoutRef.current = null;
+    }, 220);
   };
 
   // Live Draft Invoice Preview Popup states inside catalog
@@ -763,15 +801,34 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                                   setIsSearchFocused(false);
                                 }
                               }}
+                              onDoubleClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (onOpenRateSelect) {
+                                  onOpenRateSelect(item);
+                                }
+                              }}
+                              title="Click to add | Double-click to Select Rate / दर बदलें"
                             >
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="text-xs font-black text-[var(--foreground)] truncate max-w-[200px]">
                                     {displayName}
                                   </span>
-                                  <span className="text-[9px] px-1.5 py-0.2 rounded font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-mono">
-                                    ₹{formatNumber(itemPrice, precision)} / {item.unit || 'pcs'}
-                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (onOpenRateSelect) {
+                                        onOpenRateSelect(item);
+                                      }
+                                    }}
+                                    className="text-[9px] px-1.5 py-0.2 rounded font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-mono hover:bg-emerald-500/25 cursor-pointer flex items-center gap-1 transition-colors"
+                                    title="Click to Select Rate / दर बदलें"
+                                  >
+                                    <span>₹{formatNumber(itemPrice, precision)} / {item.unit || 'pcs'}</span>
+                                    <Coins size={8} className="text-emerald-500 shrink-0" />
+                                  </button>
                                   {helperPill && (
                                     <span className="text-[9px] px-1.5 py-0.2 rounded font-black uppercase bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-mono animate-pulse">
                                       ⚡ {helperPill}
@@ -945,6 +1002,18 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                           setHoldModalItem(item);
                         }}
                         onClick={(e) => handleItemCardClick(item, e)}
+                        onDoubleClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (singleClickTimeoutRef.current) {
+                            clearTimeout(singleClickTimeoutRef.current);
+                            singleClickTimeoutRef.current = null;
+                          }
+                          lastItemClickRef.current = { id: '', time: 0 };
+                          if (onOpenRateSelect) {
+                            onOpenRateSelect(item);
+                          }
+                        }}
                         whileHover={{ 
                           y: -2, 
                           scale: 1.02, 
@@ -963,7 +1032,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                                 ? "border-amber-500/20 bg-amber-500/[0.01]" 
                                 : "border-[var(--border)]"
                         )}
-                        title="Tap to add | Press & Hold for weight presets"
+                        title="Tap to add | Double-click to Select Rate (दर बदलें) | Press & Hold for weight presets"
                       >
                         {/* Top Header inside Window Card */}
                         <div>
@@ -996,14 +1065,32 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
 
                         {/* Bottom Pricing & Action Section inside Window Card */}
                         <div className="flex items-end justify-between w-full mt-0.5 z-20">
-                          <div className="flex flex-col">
-                            <span className="text-[10.5px] sm:text-[11px] font-mono font-black text-[var(--foreground)] leading-none">
-                              ₹{formatNumber(activePrice, settings?.pricePrecision || 0)}
-                            </span>
-                            <span className="text-[6.5px] font-black opacity-50 lowercase mt-0.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (singleClickTimeoutRef.current) {
+                                clearTimeout(singleClickTimeoutRef.current);
+                                singleClickTimeoutRef.current = null;
+                              }
+                              lastItemClickRef.current = { id: '', time: 0 };
+                              if (onOpenRateSelect) {
+                                onOpenRateSelect(item);
+                              }
+                            }}
+                            className="flex flex-col text-left group/rate cursor-pointer p-0.5 -m-0.5 rounded hover:bg-[var(--foreground)]/5 transition-colors"
+                            title="Click or Double-click to Select Rate / दर बदलें"
+                          >
+                            <div className="flex items-center gap-0.5">
+                              <span className="text-[10.5px] sm:text-[11px] font-mono font-black text-[var(--foreground)] group-hover/rate:text-[var(--primary)] leading-none transition-colors">
+                                ₹{formatNumber(activePrice, settings?.pricePrecision || 0)}
+                              </span>
+                              <Coins size={9} className="text-[var(--primary)] opacity-40 group-hover/rate:opacity-100 transition-opacity shrink-0" />
+                            </div>
+                            <span className="text-[6.5px] font-black opacity-50 lowercase mt-0.5 group-hover/rate:opacity-80">
                               / {activePriceUnit}
                             </span>
-                          </div>
+                          </button>
                           
                           <div className="flex items-center gap-0.5">
                             {countInCart > 0 ? (

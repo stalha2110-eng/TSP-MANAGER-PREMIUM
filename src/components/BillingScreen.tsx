@@ -363,6 +363,7 @@ export default function BillingScreen({
     wholesalePriceUnit: string;
     activeRateType: 'retail' | 'wholesale';
     isManual: boolean;
+    isInCart?: boolean;
   } | null>(null);
   const [unitSearchQuery, setUnitSearchQuery] = useState('');
   
@@ -466,6 +467,42 @@ export default function BillingScreen({
     }
   };
 
+  const lastBillingItemClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
+  const singleBillingClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (singleBillingClickTimeoutRef.current) {
+        clearTimeout(singleBillingClickTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleOpenRateSelect = (item: Item) => {
+    const curRetail = item.retailPrice ?? 0;
+    const curWholesale = item.wholesalePrice ?? curRetail;
+    const curRetailUnit = item.retailPriceUnit || item.unit || 'pcs';
+    const curWholesaleUnit = item.wholesalePriceUnit || item.unit || 'pcs';
+    
+    // Check if already in cart
+    const cartItem = cart.find(c => c.id === item.id);
+    const isWholesale = billingMode === 'wholesale';
+
+    setEditingRateItem({
+      id: item.id,
+      name: item.name,
+      currentPrice: cartItem ? cartItem.price : (isWholesale ? curWholesale : curRetail),
+      retailPrice: curRetail,
+      retailPriceUnit: curRetailUnit,
+      wholesalePrice: curWholesale,
+      wholesalePriceUnit: curWholesaleUnit,
+      activeRateType: isWholesale ? 'wholesale' : 'retail',
+      isManual: false,
+      isInCart: !!cartItem
+    });
+    setUnitSearchQuery('');
+  };
+
   const handleItemCardClick = (item: Item, e: React.MouseEvent) => {
     if (isLongPressRef.current) {
       e.preventDefault();
@@ -473,7 +510,27 @@ export default function BillingScreen({
       isLongPressRef.current = false;
       return;
     }
-    addToCart(item, e);
+
+    const now = Date.now();
+    if (lastBillingItemClickRef.current.id === item.id && (now - lastBillingItemClickRef.current.time) < 320) {
+      if (singleBillingClickTimeoutRef.current) {
+        clearTimeout(singleBillingClickTimeoutRef.current);
+        singleBillingClickTimeoutRef.current = null;
+      }
+      lastBillingItemClickRef.current = { id: '', time: 0 };
+      handleOpenRateSelect(item);
+      return;
+    }
+
+    lastBillingItemClickRef.current = { id: item.id, time: now };
+    if (singleBillingClickTimeoutRef.current) {
+      clearTimeout(singleBillingClickTimeoutRef.current);
+    }
+    const clickCoords = { clientX: e.clientX, clientY: e.clientY };
+    singleBillingClickTimeoutRef.current = setTimeout(() => {
+      addToCart(item, clickCoords as any);
+      singleBillingClickTimeoutRef.current = null;
+    }, 220);
   };
 
   const addToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
@@ -4152,6 +4209,16 @@ export default function BillingScreen({
                         setHoldWeightItem(item);
                       }}
                       onClick={(e) => handleItemCardClick(item, e)}
+                      onDoubleClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (singleBillingClickTimeoutRef.current) {
+                          clearTimeout(singleBillingClickTimeoutRef.current);
+                          singleBillingClickTimeoutRef.current = null;
+                        }
+                        lastBillingItemClickRef.current = { id: '', time: 0 };
+                        handleOpenRateSelect(item);
+                      }}
                       whileHover={{ 
                         y: -3, 
                         scale: 1.02, 
@@ -4170,7 +4237,7 @@ export default function BillingScreen({
                               ? "border-amber-500/20 bg-amber-500/[0.01]" 
                               : "border-[var(--border)]"
                       )}
-                      title="Tap to add | Press & Hold for weight presets"
+                      title="Tap to add | Double-click to Select Rate (दर बदलें) | Press & Hold for weight presets"
                     >
                       <div>
                         {/* Title & In-Cart Badge */}
@@ -4197,14 +4264,30 @@ export default function BillingScreen({
 
                       {/* Info & warnings on grid */}
                       <div className="flex items-end justify-between w-full mt-1 z-20">
-                        <div className="flex flex-col">
-                          <span className="text-[11px] font-mono font-black text-[var(--foreground)] leading-none">
-                            ₹{formatNumber(billingMode === 'wholesale' ? (item.wholesalePrice || item.retailPrice) : item.retailPrice, state.settings?.pricePrecision || 0)}
-                          </span>
-                          <span className="text-[7.5px] font-black opacity-50 lowercase mt-0.5" style={{ fontSize: '7px' }}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (singleBillingClickTimeoutRef.current) {
+                              clearTimeout(singleBillingClickTimeoutRef.current);
+                              singleBillingClickTimeoutRef.current = null;
+                            }
+                            lastBillingItemClickRef.current = { id: '', time: 0 };
+                            handleOpenRateSelect(item);
+                          }}
+                          className="flex flex-col text-left group/rate cursor-pointer p-0.5 -m-0.5 rounded hover:bg-[var(--foreground)]/5 transition-colors"
+                          title="Click or Double-click to Select Rate / दर बदलें"
+                        >
+                          <div className="flex items-center gap-0.5">
+                            <span className="text-[11px] font-mono font-black text-[var(--foreground)] group-hover/rate:text-[var(--primary)] leading-none transition-colors">
+                              ₹{formatNumber(billingMode === 'wholesale' ? (item.wholesalePrice || item.retailPrice) : item.retailPrice, state.settings?.pricePrecision || 0)}
+                            </span>
+                            <Coins size={9} className="text-[var(--primary)] opacity-40 group-hover/rate:opacity-100 transition-opacity shrink-0" />
+                          </div>
+                          <span className="text-[7.5px] font-black opacity-50 lowercase mt-0.5 group-hover/rate:opacity-80" style={{ fontSize: '7px' }}>
                             / {billingMode === 'wholesale' ? (item.wholesalePriceUnit || item.unit || 'pcs') : (item.retailPriceUnit || item.unit || 'pcs')}
                           </span>
-                        </div>
+                        </button>
                         
                         <div className="flex items-center gap-1">
                           {onPeek && (
@@ -5663,6 +5746,7 @@ export default function BillingScreen({
         discountPercent={discountPercent}
         taxPercent={taxPercent}
         onCheckout={handleCheckout}
+        onOpenRateSelect={handleOpenRateSelect}
         onOpenManualModal={() => {
           setManualName('');
           setManualPrice('');
@@ -6861,16 +6945,20 @@ export default function BillingScreen({
               {/* Item Info Banner */}
               <div className="p-2.5 bg-[var(--foreground)]/[0.03] border border-[var(--border)] rounded-xl flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[8px] uppercase font-black opacity-55">Item in Bill</p>
+                  <p className="text-[8px] uppercase font-black opacity-55">
+                    {editingRateItem.isInCart ? "Item in Current Bill (बिल में सामान)" : "Catalog Item (ऑल आइटम्स / स्टॉक)"}
+                  </p>
                   <p className="text-xs font-black text-[var(--foreground)] tracking-tight uppercase truncate">{editingRateItem.name}</p>
                 </div>
                 <span className={cn(
                   "px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider border shrink-0",
                   editingRateItem.isManual 
                     ? "bg-amber-500/10 text-amber-600 border-amber-500/20" 
-                    : "bg-sky-500/10 text-sky-600 border-sky-500/20"
+                    : editingRateItem.isInCart
+                      ? "bg-sky-500/10 text-sky-600 border-sky-500/20"
+                      : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                 )}>
-                  {editingRateItem.isManual ? "Manual Line" : "Catalog Item"}
+                  {editingRateItem.isManual ? "Manual Line" : editingRateItem.isInCart ? "In Bill" : "All Items"}
                 </span>
               </div>
 
@@ -7185,27 +7273,57 @@ export default function BillingScreen({
                       ? cleanWholesaleUnit
                       : cleanRetailUnit;
 
-                    setCart(prev => prev.map(item => {
-                      if (item.id === editingRateItem.id) {
-                        const updatedItemRef = {
-                          ...item.item,
-                          retailPrice: editingRateItem.retailPrice,
-                          wholesalePrice: editingRateItem.wholesalePrice,
-                          retailPriceUnit: cleanRetailUnit,
-                          wholesalePriceUnit: cleanWholesaleUnit,
-                          unit: cleanRetailUnit
-                        };
-                        return {
-                          ...item,
-                          price: activePrice,
-                          unit: activeUnit,
-                          item: updatedItemRef
-                        };
+                    setCart(prev => {
+                      const exists = prev.some(item => item.id === editingRateItem.id);
+                      if (exists) {
+                        return prev.map(item => {
+                          if (item.id === editingRateItem.id) {
+                            const updatedItemRef = {
+                              ...item.item,
+                              retailPrice: editingRateItem.retailPrice,
+                              wholesalePrice: editingRateItem.wholesalePrice,
+                              retailPriceUnit: cleanRetailUnit,
+                              wholesalePriceUnit: cleanWholesaleUnit,
+                              unit: cleanRetailUnit
+                            };
+                            return {
+                              ...item,
+                              price: activePrice,
+                              unit: activeUnit,
+                              item: updatedItemRef
+                            };
+                          }
+                          return item;
+                        });
+                      } else {
+                        const catalogItem = state.items.find(i => i.id === editingRateItem.id);
+                        if (catalogItem) {
+                          const updatedItemRef = {
+                            ...catalogItem,
+                            retailPrice: editingRateItem.retailPrice,
+                            wholesalePrice: editingRateItem.wholesalePrice,
+                            retailPriceUnit: cleanRetailUnit,
+                            wholesalePriceUnit: cleanWholesaleUnit,
+                            unit: cleanRetailUnit
+                          };
+                          return [
+                            ...prev,
+                            {
+                              id: catalogItem.id,
+                              name: catalogItem.name,
+                              price: activePrice,
+                              cost: catalogItem.buyingPrice || 0,
+                              quantity: 1,
+                              unit: activeUnit,
+                              item: updatedItemRef
+                            }
+                          ];
+                        }
+                        return prev;
                       }
-                      return item;
-                    }));
+                    });
 
-                    addToast(`Applied ₹${formatNumber(activePrice, precision)}/${activeUnit} to this bill!`, "info");
+                    addToast(`Applied temporary rate ₹${formatNumber(activePrice, precision)}/${activeUnit} to this bill!`, "info");
                     setEditingRateItem(null);
                   }}
                   className="py-2.5 px-3 bg-[var(--foreground)]/5 border border-[var(--border)] rounded-xl text-[9px] font-black uppercase tracking-wider hover:bg-[var(--foreground)]/10 text-[var(--foreground)] active:scale-95 transition-all cursor-pointer text-center"
@@ -7226,25 +7344,31 @@ export default function BillingScreen({
                       ? cleanWholesaleUnit
                       : cleanRetailUnit;
 
-                    setCart(prev => prev.map(item => {
-                      if (item.id === editingRateItem.id) {
-                        const updatedItemRef = {
-                          ...item.item,
-                          retailPrice: editingRateItem.retailPrice,
-                          wholesalePrice: editingRateItem.wholesalePrice,
-                          retailPriceUnit: cleanRetailUnit,
-                          wholesalePriceUnit: cleanWholesaleUnit,
-                          unit: cleanRetailUnit
-                        };
-                        return {
-                          ...item,
-                          price: activePrice,
-                          unit: activeUnit,
-                          item: updatedItemRef
-                        };
+                    setCart(prev => {
+                      const exists = prev.some(item => item.id === editingRateItem.id);
+                      if (exists) {
+                        return prev.map(item => {
+                          if (item.id === editingRateItem.id) {
+                            const updatedItemRef = {
+                              ...item.item,
+                              retailPrice: editingRateItem.retailPrice,
+                              wholesalePrice: editingRateItem.wholesalePrice,
+                              retailPriceUnit: cleanRetailUnit,
+                              wholesalePriceUnit: cleanWholesaleUnit,
+                              unit: cleanRetailUnit
+                            };
+                            return {
+                              ...item,
+                              price: activePrice,
+                              unit: activeUnit,
+                              item: updatedItemRef
+                            };
+                          }
+                          return item;
+                        });
                       }
-                      return item;
-                    }));
+                      return prev;
+                    });
 
                     if (!editingRateItem.isManual) {
                       saveRatesAndUnitPermanently(
@@ -7254,6 +7378,7 @@ export default function BillingScreen({
                         editingRateItem.wholesalePrice,
                         cleanWholesaleUnit
                       );
+                      addToast(`Rate permanently updated for ${editingRateItem.name} in inventory!`, "success");
                     } else {
                       addToast("Rates applied to bill; manual lines cannot be saved to catalog.", "warning");
                     }

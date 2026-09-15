@@ -4451,8 +4451,18 @@ export default function BillingScreen({
                         className="p-2.5 bg-[var(--card)] border border-[var(--border)] rounded-xl flex items-center justify-between gap-2 shadow-inner hover:border-[var(--primary)]/10 transition-colors select-none"
                       >
                         {/* Name description */}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-extrabold text-[10px] text-[var(--foreground)] truncate uppercase">
+                        <div className="flex-1 min-w-0 pr-0.5">
+                          <h4 
+                            className={cn(
+                              "font-extrabold uppercase text-[var(--foreground)] break-words [overflow-wrap:anywhere] line-clamp-3",
+                              (ci.name?.length || 0) > 28
+                                ? "text-[8px] sm:text-[8.5px] leading-[1.15]"
+                                : (ci.name?.length || 0) > 12
+                                  ? "text-[8.5px] sm:text-[9.5px] leading-[1.22]"
+                                  : "text-[9.5px] sm:text-[10px] leading-snug"
+                            )}
+                            title={ci.name}
+                          >
                             {ci.name}
                           </h4>
                           
@@ -5667,7 +5677,15 @@ export default function BillingScreen({
                     <div className="border border-[var(--border)] rounded-xl overflow-hidden divide-y divide-[var(--border)] bg-[var(--card)]">
                       {editCart.map((eci, ecIdx) => (
                         <div key={`edit-cart-item-${eci.id || 'eci'}-${ecIdx}`} className="p-2.5 grid grid-cols-12 gap-2 text-xs items-center">
-                          <div className="col-span-5 font-bold uppercase truncate">{eci.name}</div>
+                          <div 
+                            className={cn(
+                              "col-span-5 font-bold uppercase break-words [overflow-wrap:anywhere] line-clamp-3",
+                              (eci.name?.length || 0) > 25 ? "text-[9px] leading-tight" : (eci.name?.length || 0) > 14 ? "text-[10px] leading-tight" : "text-xs"
+                            )}
+                            title={eci.name}
+                          >
+                            {eci.name}
+                          </div>
                           <div className="col-span-4 flex justify-center">
                             <EditCartQuantityInput
                               quantity={eci.quantity}

@@ -1168,7 +1168,12 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                         ) : (
                           cart.map((ci, ciIdx) => (
                             <div key={`catalog-desk-receipt-${ci.id || 'ci'}-${ciIdx}`} className="grid grid-cols-12 text-[7.5px] font-sans text-zinc-800 border-b border-dashed border-zinc-100 pb-0.5">
-                              <span className="col-span-6 font-bold truncate text-zinc-900">{ci.name}</span>
+                              <span 
+                                className="col-span-6 font-bold text-zinc-900 break-words [overflow-wrap:anywhere] line-clamp-3 leading-tight"
+                                title={ci.name}
+                              >
+                                {ci.name}
+                              </span>
                               <span className="col-span-2 text-center font-mono opacity-80 text-zinc-700">{ci.quantity} {ci.unit || 'Pcs'}</span>
                               <span className="col-span-4 text-right font-black font-mono text-zinc-950">₹{formatNumber(ci.price * ci.quantity, precision)}</span>
                             </div>
@@ -1445,7 +1450,12 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                           ) : (
                             cart.map((ci, ciIdx) => (
                               <div key={`catalog-receipt-item-${ci.id || 'ci'}-${ciIdx}`} className="grid grid-cols-12 text-[8.5px] font-sans text-zinc-800 border-b border-dashed border-zinc-100 pb-1">
-                                <span className="col-span-6 font-bold truncate">{ci.name}</span>
+                                <span 
+                                  className="col-span-6 font-bold text-zinc-900 break-words [overflow-wrap:anywhere] line-clamp-3 leading-tight"
+                                  title={ci.name}
+                                >
+                                  {ci.name}
+                                </span>
                                 <span className="col-span-2 text-center font-mono">{ci.quantity} {ci.unit || 'Pcs'}</span>
                                 <span className="col-span-4 text-right font-black font-mono">₹{formatNumber(ci.price * ci.quantity, precision)}</span>
                               </div>

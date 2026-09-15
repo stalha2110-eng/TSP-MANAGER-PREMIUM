@@ -6308,17 +6308,28 @@ export default function BillingScreen({
               className="relative w-full max-w-sm bg-[var(--background)] border border-[var(--border)] rounded-[2rem] p-5 shadow-2xl z-10 flex flex-col justify-between space-y-4 max-h-[90vh]"
             >
               {/* Layout Header */}
-              <div className="flex items-center justify-between border-b border-[var(--border)] pb-2">
-                <div className="flex items-center gap-1.5 font-black">
+              <div className="flex items-center justify-between border-b border-[var(--border)] pb-2 gap-2">
+                <div className="flex items-center gap-1.5 font-black min-w-0">
                   <ReceiptText size={15} className="text-[var(--primary)] shrink-0" />
-                  <span className="text-xs font-black uppercase tracking-wider">Checkout Ticket Preview</span>
+                  <span className="text-xs font-black uppercase tracking-wider truncate">Checkout Bill Preview</span>
                 </div>
-                <button
-                  onClick={() => setShowPrintPreview(false)}
-                  className="p-1 hover:bg-[var(--foreground)]/5 rounded-lg text-[9.5px] font-black text-rose-500 uppercase cursor-pointer"
-                >
-                  Cancel ❌
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => downloadBillPdf(previewBillData)}
+                    className="py-1 px-2.5 rounded-lg border border-[var(--border)] bg-[var(--foreground)]/[0.04] hover:bg-[var(--foreground)]/[0.08] text-[var(--foreground)] hover:text-[var(--primary)] text-[9.5px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer shadow-2xs active:scale-95"
+                    title="Download PDF"
+                  >
+                    <Download size={11} />
+                    <span>PDF</span>
+                  </button>
+                  <button
+                    onClick={() => setShowPrintPreview(false)}
+                    className="p-1 hover:bg-[var(--foreground)]/5 rounded-lg text-[9.5px] font-black text-rose-500 uppercase cursor-pointer"
+                  >
+                    Cancel ❌
+                  </button>
+                </div>
               </div>
 
               {/* Scrollable Receipt Body Roll */}
@@ -6364,22 +6375,12 @@ export default function BillingScreen({
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => downloadBillPdf(previewBillData)}
-                    className="py-2.5 rounded-xl border border-[var(--border)] text-[9px] font-black uppercase tracking-wider hover:bg-[var(--foreground)]/5 flex items-center justify-center gap-1 cursor-pointer transition-all"
-                  >
-                    <Download size={12} />
-                    Download PDF
-                  </button>
-
-                  <button
-                    onClick={() => setShowPrintPreview(false)}
-                    className="py-2.5 rounded-xl border border-[var(--border)] text-[9px] font-black uppercase tracking-wider hover:bg-rose-500/10 text-rose-500 flex items-center justify-center gap-1 cursor-pointer transition-all"
-                  >
-                    Cancel / Edit
-                  </button>
-                </div>
+                <button
+                  onClick={() => setShowPrintPreview(false)}
+                  className="w-full py-2.5 rounded-xl border border-[var(--border)] text-[9.5px] font-black uppercase tracking-wider hover:bg-rose-500/10 text-rose-500 flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-98"
+                >
+                  Cancel
+                </button>
               </div>
             </motion.div>
           </div>

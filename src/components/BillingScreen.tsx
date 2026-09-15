@@ -5162,7 +5162,7 @@ export default function BillingScreen({
 
                       {/* Line items list */}
                       <div className="pt-2">
-                        <div className="grid grid-cols-12 font-black uppercase border-b pb-1 mb-1 text-[7.5px] tracking-wide text-zinc-500">
+                        <div className="grid grid-cols-12 font-black uppercase border-b pb-1 mb-1 text-[8px] tracking-wide text-zinc-500">
                           <span className="col-span-6">Item Name</span>
                           <span className="col-span-2 text-center">Qty</span>
                           <span className="col-span-2 text-right">Rate</span>
@@ -5172,12 +5172,12 @@ export default function BillingScreen({
                           {cart.map((ci) => (
                             <div
                               key={`std-receipt-${ci.id}`}
-                              className="grid grid-cols-12 text-[8.5px] font-sans text-zinc-800 border-b border-dashed border-zinc-100 last:border-0 pb-1"
+                              className="grid grid-cols-12 text-[9px] font-sans text-zinc-800 border-b border-dashed border-zinc-100 last:border-0 pb-1 items-center"
                             >
-                              <span className="col-span-6 font-bold truncate text-zinc-900">{ci.name}</span>
-                              <span className="col-span-2 text-center font-mono opacity-80 text-zinc-805">{ci.quantity} {ci.unit}</span>
-                              <span className="col-span-2 text-right font-mono text-[8px] text-zinc-805">₹{ci.price}</span>
-                              <span className="col-span-2 text-right font-black font-mono text-zinc-950">₹{ci.price * ci.quantity}</span>
+                              <span className="col-span-6 font-bold text-zinc-900 break-words leading-tight line-clamp-2 pr-1">{ci.name}</span>
+                              <span className="col-span-2 text-center font-mono opacity-80 text-zinc-805 text-[8.5px]">{ci.quantity} {ci.unit}</span>
+                              <span className="col-span-2 text-right font-mono text-[8.5px] text-zinc-805">₹{ci.price}</span>
+                              <span className="col-span-2 text-right font-black font-mono text-zinc-950 text-[9.5px]">₹{ci.price * ci.quantity}</span>
                             </div>
                           ))}
                         </div>
@@ -5185,24 +5185,24 @@ export default function BillingScreen({
 
                       {/* Summary calculations block */}
                       <div className="pt-2 border-t border-dashed border-zinc-350 space-y-1 mt-1">
-                        <div className="flex justify-between items-center text-[8.5px] text-zinc-600 font-bold">
+                        <div className="flex justify-between items-center text-[9px] text-zinc-600 font-bold">
                           <span>Total ({cart.length} items):</span>
                           <span className="font-mono text-zinc-900">Subtotal: ₹{subtotal}</span>
                         </div>
                         {discountPercent > 0 && (
-                          <div className="flex justify-between items-center text-[8.5px] font-bold text-emerald-650">
+                          <div className="flex justify-between items-center text-[9px] font-bold text-emerald-650">
                             <span>Discount Given ({discountPercent}%):</span>
                             <span className="font-mono text-emerald-600">-₹{discountAmount.toFixed(2)}</span>
                           </div>
                         )}
                         {taxPercent > 0 && (
-                          <div className="flex justify-between items-center text-[8.5px] font-semibold text-zinc-600">
+                          <div className="flex justify-between items-center text-[9px] font-semibold text-zinc-600">
                             <span>GST ({taxPercent}%):</span>
                             <span className="font-mono text-zinc-900">+₹{taxAmount.toFixed(2)}</span>
                           </div>
                         )}
                         <div className="flex justify-between items-center bg-zinc-950 text-white p-2 rounded-lg mt-1 border border-zinc-800">
-                          <span className="text-[7.5px] font-black tracking-widest text-amber-500 uppercase">PAYABLE</span>
+                          <span className="text-[8.5px] font-black tracking-widest text-amber-500 uppercase">PAYABLE</span>
                           <span className="text-xs font-black font-mono text-white">₹{formatNumber(total, precision)}</span>
                         </div>
                       </div>
@@ -5305,7 +5305,7 @@ export default function BillingScreen({
                 "relative z-10 w-full bg-[var(--card)] border-t-2 sm:border-2 border-[var(--primary)] shadow-2xl flex flex-col justify-between text-left transition-all duration-300 overflow-hidden",
                 isLivePreviewFullScreen
                   ? "h-[100dvh] max-h-[100dvh] max-w-3xl rounded-none sm:rounded-3xl p-3 sm:p-5"
-                  : "max-h-[60vh] sm:max-h-[65vh] max-w-lg rounded-t-[2.5rem] p-4"
+                  : "h-[82vh] max-h-[86vh] max-w-lg rounded-t-[2.5rem] p-4"
               )}
             >
               {/* Interactive Drag Handle */}
@@ -5365,28 +5365,28 @@ export default function BillingScreen({
                 };
 
                 return (
-                  <div className="space-y-4 font-sans p-2 flex flex-col flex-1 overflow-hidden">
+                  <div className="space-y-3 font-sans p-2 sm:p-3 flex flex-col flex-1 overflow-hidden">
                     <div className="flex items-center justify-between pb-2 border-b border-[var(--border)] select-none shrink-0">
-                      <div className="flex items-center gap-1.5">
-                        <ReceiptText size={15} className="text-emerald-500 animate-pulse" />
-                        <span className="text-emerald-500 font-extrabold uppercase text-[9px] sm:text-[10px] tracking-wider">
-                          Live Invoice Preview
+                      <div className="flex items-center gap-2">
+                        <ReceiptText size={18} className="text-emerald-500 animate-pulse" />
+                        <span className="text-emerald-500 font-extrabold uppercase text-xs sm:text-sm tracking-wide">
+                          Live Invoice Terminal
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <div className="flex bg-[var(--foreground)]/5 p-0.5 rounded-lg border border-[var(--border)] text-[7px] font-black uppercase gap-1">
-                          <button onClick={() => setLivePreviewTheme('thermal')} className={cn("px-2 py-0.5 rounded tracking-wide leading-none", livePreviewTheme === 'thermal' ? "bg-[var(--primary)] text-white" : "text-[var(--foreground)]/50")}>Thermal</button>
-                          <button onClick={() => setLivePreviewTheme('laser')} className={cn("px-2 py-0.5 rounded tracking-wide leading-none", livePreviewTheme === 'laser' ? "bg-[var(--primary)] text-white" : "text-[var(--foreground)]/50")}>A4 Laser</button>
+                        <div className="flex bg-[var(--foreground)]/5 p-0.5 rounded-lg border border-[var(--border)] text-[9px] font-black uppercase gap-1">
+                          <button onClick={() => setLivePreviewTheme('thermal')} className={cn("px-2.5 py-1 rounded tracking-wide leading-none transition-colors", livePreviewTheme === 'thermal' ? "bg-[var(--primary)] text-white shadow-xs" : "text-[var(--foreground)]/60 hover:text-[var(--foreground)]")}>Thermal</button>
+                          <button onClick={() => setLivePreviewTheme('laser')} className={cn("px-2.5 py-1 rounded tracking-wide leading-none transition-colors", livePreviewTheme === 'laser' ? "bg-[var(--primary)] text-white shadow-xs" : "text-[var(--foreground)]/60 hover:text-[var(--foreground)]")}>A4 Laser</button>
                         </div>
                         {/* FULLSCREEN TOGGLE BUTTON */}
                         <button
                           type="button"
                           onClick={() => setIsLivePreviewFullScreen(!isLivePreviewFullScreen)}
-                          className="h-7 w-7 rounded-xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)] flex items-center justify-center transition-colors cursor-pointer border border-[var(--border)]"
+                          className="h-8 w-8 rounded-xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)] flex items-center justify-center transition-colors cursor-pointer border border-[var(--border)]"
                           title={isLivePreviewFullScreen ? "Collapse to Half Screen (छोटा करें)" : "Expand to Full Screen (पूरा स्क्रीन करें)"}
                           aria-label="Toggle Full Screen"
                         >
-                          {isLivePreviewFullScreen ? <Minimize2 size={13} strokeWidth={2.5} /> : <Maximize2 size={13} strokeWidth={2.5} />}
+                          {isLivePreviewFullScreen ? <Minimize2 size={14} strokeWidth={2.5} /> : <Maximize2 size={14} strokeWidth={2.5} />}
                         </button>
                         {/* CLOSE BUTTON */}
                         <button
@@ -5395,78 +5395,151 @@ export default function BillingScreen({
                             setMobilePreviewOpen(false);
                             setIsLivePreviewFullScreen(false);
                           }}
-                          className="h-7 w-7 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 flex items-center justify-center transition-colors cursor-pointer border border-rose-500/20"
+                          className="h-8 w-8 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 flex items-center justify-center transition-colors cursor-pointer border border-rose-500/20"
                           title="Close Preview"
                           aria-label="Close Preview"
                         >
-                          <X size={14} strokeWidth={2.5} />
+                          <X size={15} strokeWidth={2.5} />
                         </button>
                       </div>
                     </div>
 
                     <div className={cn(
-                      "transition-all duration-300 p-4 border border-[var(--border)] rounded-2xl relative overflow-y-auto no-scrollbar text-left flex-1",
-                      isLivePreviewFullScreen ? "max-h-[75vh]" : "max-h-[46vh]",
+                      "transition-all duration-300 p-4 border border-[var(--border)] rounded-2xl relative overflow-y-auto custom-scrollbar text-left flex-1",
+                      isLivePreviewFullScreen ? "max-h-[75vh]" : "max-h-[58vh]",
                       livePreviewTheme === 'thermal' 
-                        ? "bg-zinc-50 text-zinc-950 font-mono text-[9.5px] border-dashed border-zinc-300 shadow-inner"
-                        : "bg-white text-zinc-800 font-sans text-xs border-zinc-200 shadow-md"
+                        ? "bg-zinc-50 text-zinc-950 font-mono text-xs sm:text-[13px] border-dashed border-zinc-300 shadow-inner"
+                        : "bg-white text-zinc-900 font-sans text-xs sm:text-[13px] border-zinc-200 shadow-md"
                     )}>
-                      <div className="text-center space-y-1 pb-3 border-b border-dashed border-zinc-300 select-none">
-                        <h3 className="font-black uppercase leading-none text-zinc-900 text-xs mb-1">{state.settings.storeName || 'TS Price Manager'}</h3>
-                        <p className="opacity-70 text-[7px] uppercase tracking-wider font-extrabold text-zinc-500">{state.settings.storeAddress || '101, Business Hub, Terminal C'}</p>
+                      {/* Store Header with Large, Prominent Branding */}
+                      <div className="text-center space-y-1 pb-3 border-b-2 border-dashed border-zinc-300 select-none">
+                        <h3 className="font-black uppercase leading-tight text-zinc-950 text-base sm:text-lg tracking-tight mb-1">
+                          {state.settings.storeName || 'TS Price Manager'}
+                        </h3>
+                        <p className="text-[11px] sm:text-xs uppercase tracking-wider font-bold text-zinc-600">
+                          {state.settings.storeAddress || '101, Business Hub, Terminal C'}
+                        </p>
+                        <p className="text-[11px] sm:text-xs font-mono font-bold text-zinc-600">
+                          Phone: {state.settings.storePhone || '+91 9876543210'}
+                        </p>
                       </div>
 
-                      <div className="py-2 border-b border-dashed border-zinc-200 grid grid-cols-2 gap-1 text-[7px] font-bold text-zinc-600 border-dashed">
-                        <div>
-                          <p>BILL#: <span className="text-zinc-950 font-black">#DRAFT-{Date.now().toString().slice(-4)}</span></p>
-                          <p>PAYMENT: <span className="text-zinc-950 font-black uppercase text-amber-600">{paymentMethod}</span></p>
+                      {/* Bill Metadata */}
+                      <div className="py-2.5 border-b border-dashed border-zinc-300 grid grid-cols-2 gap-2 text-xs font-bold text-zinc-700">
+                        <div className="space-y-0.5">
+                          <p>BILL#: <span className="text-zinc-950 font-black font-mono">#DRAFT-{Date.now().toString().slice(-4)}</span></p>
+                          <p>PAYMENT: <span className="text-amber-600 dark:text-amber-700 font-black uppercase">{paymentMethod}</span></p>
                         </div>
-                        <div className="text-right">
-                          <p>DATE: {new Date().toLocaleDateString()}</p>
+                        <div className="text-right space-y-0.5">
+                          <p>DATE: <span className="text-zinc-900 font-bold">{new Date().toLocaleDateString()}</span></p>
+                          <p>TIME: <span className="text-zinc-900 font-bold">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></p>
                         </div>
                       </div>
 
-                      <div className="pt-2">
-                        <div className="grid grid-cols-12 font-black uppercase border-b pb-1 mb-1 text-[7px] tracking-wide text-zinc-500">
-                          <span className="col-span-6">Item Name</span>
+                      {/* Customer Credentials (if specified or walk-in) */}
+                      {(customerName || customerPhone) && (
+                        <div className="my-2.5 p-2.5 bg-zinc-100/90 border border-zinc-300 rounded-xl text-xs text-zinc-800 space-y-0.5">
+                          <p className="font-black text-[9.5px] uppercase opacity-60 tracking-wider text-zinc-600">Customer Details</p>
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className="font-black text-zinc-950 text-xs sm:text-[13px]">{customerName || 'Walk-in Customer'}</span>
+                            {customerPhone && <span className="font-mono font-bold text-zinc-700 text-xs">{customerPhone}</span>}
+                          </div>
+                          {paymentMethod === 'Credit' && (
+                            <p className="text-rose-600 font-black uppercase mt-1 text-[11px] animate-pulse">
+                              📅 DUE DATE: {udharDueDate || 'Pending'}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Line Items Table with Large Legible Detail */}
+                      <div className="pt-2.5">
+                        <div className="grid grid-cols-12 font-black uppercase border-b-2 border-dashed border-zinc-300 pb-1.5 mb-2 text-xs tracking-wider text-zinc-600">
+                          <span className="col-span-6">Item Description</span>
                           <span className="col-span-2 text-center">Qty</span>
-                          <span className="col-span-4 text-right">Total</span>
+                          <span className="col-span-4 text-right">Amount</span>
                         </div>
                         <div className={cn(
-                          "space-y-1.5 overflow-y-auto no-scrollbar transition-all duration-300",
-                          isLivePreviewFullScreen ? "max-h-[46vh] sm:max-h-[52vh]" : "max-h-[18vh] sm:max-h-[22vh]"
+                          "space-y-2 overflow-y-auto custom-scrollbar transition-all duration-300",
+                          isLivePreviewFullScreen ? "max-h-[46vh] sm:max-h-[52vh]" : "max-h-[24vh] sm:max-h-[28vh]"
                         )}>
                           {cart.map((ci) => (
-                            <div key={`thermal-receipt-${ci.id}`} className="grid grid-cols-12 text-[8.5px] font-sans text-zinc-800 border-b border-dashed border-zinc-100 pb-1">
-                              <span className="col-span-6 font-bold truncate">{ci.name}</span>
-                              <span className="col-span-2 text-center font-mono">{ci.quantity}</span>
-                              <span className="col-span-4 text-right font-black font-mono">₹{ci.price * ci.quantity}</span>
+                            <div 
+                              key={`thermal-receipt-${ci.id}`} 
+                              className="grid grid-cols-12 text-xs font-sans text-zinc-800 border-b border-dashed border-zinc-200 pb-1.5 items-center gap-1"
+                            >
+                              <div className="col-span-6">
+                                <span className="font-bold text-zinc-950 text-xs sm:text-[13px] leading-snug break-words [overflow-wrap:anywhere] line-clamp-3 block">
+                                  {ci.name}
+                                </span>
+                                <span className="text-[10px] font-mono text-zinc-500 block mt-0.5">
+                                  @ ₹{formatNumber(ci.price, precision)} / {ci.unit || 'pcs'}
+                                </span>
+                              </div>
+                              <span className="col-span-2 text-center font-mono font-black text-xs sm:text-[13px] text-zinc-900">
+                                {ci.quantity} {ci.unit || ''}
+                              </span>
+                              <span className="col-span-4 text-right font-black font-mono text-xs sm:text-[13px] text-zinc-950">
+                                ₹{formatNumber(ci.price * ci.quantity, precision)}
+                              </span>
                             </div>
                           ))}
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t border-dashed border-zinc-300 space-y-1 mt-1">
-                        <div className="flex justify-between items-center text-[8px] text-zinc-650 font-bold">
-                          <span>Total ({cart.length} items):</span>
-                          <span className="font-mono">Subtotal: ₹{subtotal}</span>
+                      {/* Summary Calculations Block */}
+                      <div className="pt-3 border-t-2 border-dashed border-zinc-300 space-y-1.5 mt-2">
+                        <div className="flex justify-between items-center text-xs sm:text-[13px] text-zinc-700 font-bold">
+                          <span>Total Items ({cart.length}):</span>
+                          <span className="font-mono font-black text-zinc-950">Subtotal: ₹{formatNumber(subtotal, precision)}</span>
                         </div>
                         {discountPercent > 0 && (
-                          <div className="flex justify-between items-center text-[8px] font-bold text-emerald-600">
+                          <div className="flex justify-between items-center text-xs sm:text-[13px] font-bold text-emerald-700">
                             <span>Discount Given ({discountPercent}%):</span>
-                            <span className="font-mono">-₹{discountAmount.toFixed(2)}</span>
+                            <span className="font-mono font-black text-emerald-700">-₹{formatNumber(discountAmount, precision)}</span>
                           </div>
                         )}
-                        <div className="flex justify-between items-center bg-zinc-950 text-white p-2 rounded-lg mt-1 border border-zinc-800">
-                          <span className="text-[7.5px] font-black text-amber-500">PAYABLE</span>
-                          <span className="text-sm font-black font-mono">₹{formatNumber(totalVal, precision)}</span>
+                        {taxPercent > 0 && (
+                          <div className="flex justify-between items-center text-xs sm:text-[13px] font-bold text-zinc-700">
+                            <span>GST / Tax ({taxPercent}%):</span>
+                            <span className="font-mono font-black text-zinc-950">+₹{formatNumber(taxAmount, precision)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center bg-zinc-950 text-white px-3.5 py-2.5 rounded-xl mt-2 border border-zinc-800 shadow-md">
+                          <div className="flex flex-col text-left">
+                            <span className="text-[10px] sm:text-[11px] font-black tracking-widest text-amber-400 uppercase">Grand Total</span>
+                            <span className="text-[9px] text-zinc-400 font-mono">Payable</span>
+                          </div>
+                          <span className="text-base sm:text-xl font-black font-mono text-white tracking-tight">₹{formatNumber(totalVal, precision)}</span>
                         </div>
+                      </div>
+
+                      {/* Barcode & Footer note */}
+                      <div className="pt-3 pb-1 flex flex-col items-center select-none opacity-50">
+                        <div className="flex items-center gap-[1.5px] h-4">
+                          {[1,2,1,3,1,1,2,3,1,2,1,1,2,1,2,1,1,3,1,1,2,1,3].map((w, i) => (
+                            <div key={i} className="bg-zinc-800 h-full" style={{ width: `${w}px` }} />
+                          ))}
+                        </div>
+                        <p className="text-[9px] sm:text-[10px] font-mono tracking-[0.25em] text-zinc-600 mt-1 uppercase">* TS-PM-OFFICIAL-INVOICE *</p>
                       </div>
                     </div>
 
-                    <div className="flex gap-2 shrink-0">
-                      <button onClick={downloadLivePDF} className="flex-1 py-1.5 text-[8.5px] font-black uppercase tracking-wider bg-slate-900 border text-white rounded-lg cursor-pointer">Download PDF</button>
-                      <button onClick={() => { setMobilePreviewOpen(false); handleCheckout(); }} className="flex-1 py-1.5 text-[8.5px] font-black uppercase tracking-wider bg-[var(--primary)] text-white rounded-lg cursor-pointer">Invoice Finish</button>
+                    <div className="flex gap-2 shrink-0 pt-1">
+                      <button 
+                        onClick={downloadLivePDF} 
+                        className="flex-1 py-2.5 sm:py-3 text-xs sm:text-sm font-black uppercase tracking-wider bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-sm flex items-center justify-center gap-1.5 cursor-pointer min-h-[42px] active:scale-98 transition-transform"
+                      >
+                        <Download size={14} />
+                        <span>Download PDF</span>
+                      </button>
+                      <button 
+                        onClick={() => { setMobilePreviewOpen(false); handleCheckout(); }} 
+                        className="flex-1 py-2.5 sm:py-3 text-xs sm:text-sm font-black uppercase tracking-wider bg-[var(--primary)] hover:opacity-90 text-white rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer min-h-[42px] active:scale-98 transition-transform"
+                      >
+                        <Printer size={14} />
+                        <span>Invoice Finish</span>
+                      </button>
                     </div>
                   </div>
                 );

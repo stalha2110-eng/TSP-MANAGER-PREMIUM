@@ -315,3 +315,85 @@ img {
   animation: fadeIn 0.25s ease-out forwards;
 }
 
+/* ========================================================================= */
+/* DESKTOP / LAPTOP SCREEN SIZE FORMATTING & LARGE BUTTONS OPTIMIZATION      */
+/* Saved strictly to local device storage, never to Firebase / Firestore     */
+/* ========================================================================= */
+html.desktop-size-mode,
+body.desktop-size-mode,
+.desktop-size-mode {
+  --base-font-size: 16.5px;
+  --radius: 0.875rem;
+}
+
+/* Ensure no root or container clipping in desktop size mode */
+.desktop-size-mode {
+  overflow-x: clip !important;
+}
+
+/* Clear high-visibility desktop buttons (primary, CTA, and dialog buttons) */
+.desktop-size-mode button:not(.no-desktop-scale):not([class*="w-"]):not([class*="h-"]),
+.desktop-size-mode .btn:not(.no-desktop-scale) {
+  min-height: 44px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+@media (min-width: 768px) {
+  /* On laptop and desktop screens, enlarge primary action buttons while maintaining grid stability */
+  .desktop-size-mode button.desktop-large-btn,
+  .desktop-size-mode button[type="submit"],
+  .desktop-size-mode #btn-save-bill,
+  .desktop-size-mode button:has(svg):not([class*="h-"]):not([class*="w-"]) {
+    min-height: 48px;
+    font-size: 0.95rem;
+    font-weight: 800;
+  }
+
+  /* Form inputs optimized for laptop typing */
+  .desktop-size-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  .desktop-size-mode select,
+  .desktop-size-mode textarea {
+    min-height: 46px;
+    font-size: 0.95rem;
+  }
+
+  /* Expansive laptop container format for widescreen displays without horizontal overflow */
+  .desktop-size-mode .max-w-7xl {
+    max-width: 96rem;
+  }
+  .desktop-size-mode .max-w-6xl {
+    max-width: 90rem;
+  }
+
+  /* Laptop navigation items */
+  .desktop-size-mode nav button {
+    min-height: 42px;
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
+}
+
+/* Ensure all buttons inside item cards, action bars, and tables are clearly visible */
+.desktop-size-mode .opacity-0.group-hover\:opacity-100,
+.desktop-size-mode .sm\:opacity-0.group-hover\:opacity-100 {
+  opacity: 0.85 !important;
+}
+
+/* High-contrast focus and visible scrollbar indicators for laptop trackpads and mice */
+.desktop-size-mode ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.desktop-size-mode ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 9999px;
+}
+.desktop-size-mode ::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.35);
+  border-radius: 9999px;
+}
+.desktop-size-mode ::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 120, 0.6);
+}
+

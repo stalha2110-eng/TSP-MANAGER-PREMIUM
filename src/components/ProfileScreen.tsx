@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   User, Mail, LogOut, LogIn, ShieldCheck, Lock, CheckCircle, XCircle, 
   EyeOff, Eye, Download, ChevronRight, MessageSquare, Share2, RefreshCw, 
-  Store, Cloud, Database, Phone, MapPin, Clock, Sun, Moon, Bell, Save 
+  Store, Cloud, Database, Phone, MapPin, Clock, Sun, Moon, Bell, Save,
+  Monitor
 } from 'lucide-react';
 import { auth, loginWithGoogle } from '../firebase';
 import { EmailAuthProvider, linkWithCredential, updatePassword } from 'firebase/auth';
@@ -546,7 +547,9 @@ export function ProfileScreen({
   onShareProductList, 
   isSharing, 
   onUpdate, 
-  onLogout 
+  onLogout,
+  isDesktopSize,
+  onToggleDesktopSize
 }: { 
   state: AppState; 
   t: any; 
@@ -556,7 +559,40 @@ export function ProfileScreen({
   isSharing: boolean;
   onUpdate: (updates: Partial<AppSettings>) => void;
   onLogout: () => Promise<void>;
+  isDesktopSize?: boolean;
+  onToggleDesktopSize?: () => void;
 }) {
+  const [localDesktopSize, setLocalDesktopSize] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ts_desktop_size_mode') === 'true';
+    }
+    return false;
+  });
+
+  const currentDesktopSize = isDesktopSize !== undefined ? isDesktopSize : localDesktopSize;
+
+  const handleToggleDesktop = () => {
+    if (onToggleDesktopSize) {
+      onToggleDesktopSize();
+    } else {
+      const next = !localDesktopSize;
+      setLocalDesktopSize(next);
+      localStorage.setItem('ts_desktop_size_mode', next ? 'true' : 'false');
+      if (next) {
+        document.documentElement.classList.add('desktop-size-mode');
+        document.body.classList.add('desktop-size-mode');
+      } else {
+        document.documentElement.classList.remove('desktop-size-mode');
+        document.body.classList.remove('desktop-size-mode');
+      }
+    }
+    try {
+      playFeedbackEvent('notification', state.settings);
+    } catch (e) {
+      // silent fallback
+    }
+  };
+
   const handleAuth = async () => {
     if (state.user) {
       await onLogout();
@@ -751,6 +787,69 @@ export function ProfileScreen({
                </div>
                <ChevronRight size={16} className="opacity-20 group-hover:translate-x-1 transition-transform" />
             </button>
+         </div>
+
+         {/* ========================================================================= */}
+         {/* DESKTOP SIZE BUTTON (Large Interface & Large Buttons for Desktop Screens) */}
+         {/* Positioned directly below "Share with Customer" button as requested       */}
+         {/* Stored strictly in local device storage, NEVER in Firebase/Firestore       */}
+         {/* ========================================================================= */}
+         <div 
+           id="desktop-size-section"
+           className="p-6 bg-[var(--card)] border-2 border-[var(--border)] rounded-[2rem] transition-all hover:border-[var(--primary)]/40 shadow-sm relative overflow-hidden"
+         >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+               <div className="flex items-start sm:items-center gap-4">
+                  <div className={cn(
+                    "h-14 w-14 rounded-2xl flex items-center justify-center transition-all shrink-0 shadow-md",
+                    currentDesktopSize
+                      ? "bg-gradient-to-tr from-amber-500 to-yellow-400 text-black font-black"
+                      : "bg-[var(--primary)]/10 text-[var(--primary)]"
+                  )}>
+                     <Monitor size={28} className={currentDesktopSize ? "animate-pulse" : ""} />
+                  </div>
+                  <div>
+                     <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-base font-black uppercase tracking-tight text-[var(--foreground)]">
+                           Desktop Size
+                        </h3>
+                        <span className={cn(
+                          "px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors",
+                          currentDesktopSize
+                            ? "bg-amber-500/20 text-amber-500 border border-amber-500/30"
+                            : "bg-[var(--border)] text-[var(--foreground)]/60"
+                        )}>
+                           {currentDesktopSize ? "Large Format Active (ON)" : "Standard Format (OFF)"}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[9px] font-bold">
+                           Local Storage Only 🔒
+                        </span>
+                     </div>
+                     <p className="text-xs text-[var(--foreground)]/70 mt-1 max-w-xl font-medium leading-relaxed">
+                        Large screen format with enlarged buttons, spacious touch targets, and high-visibility typography for desktop computers, laptops & POS counter monitors.
+                     </p>
+                     <p className="text-[10px] text-[var(--foreground)]/50 mt-0.5 italic">
+                        डेस्कटॉप साइज: बड़े बटन और बड़ा इंटरफेस (केवल इसी डिवाइस पर सुरक्षित)
+                     </p>
+                  </div>
+               </div>
+
+               {/* The "Desktop Size" Interactive Action Button */}
+               <button
+                  id="btn-desktop-size-toggle"
+                  type="button"
+                  onClick={handleToggleDesktop}
+                  className={cn(
+                    "w-full sm:w-auto px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 transition-all shadow-md active:scale-95 cursor-pointer shrink-0",
+                    currentDesktopSize
+                      ? "bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 text-black shadow-amber-500/20 hover:scale-[1.02] ring-2 ring-amber-400/40"
+                      : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 shadow-[var(--primary)]/20 hover:scale-[1.02]"
+                  )}
+               >
+                  <Monitor size={20} />
+                  <span>{currentDesktopSize ? "Desktop Size: Active (ON)" : "Desktop Size: Enable (OFF)"}</span>
+               </button>
+            </div>
          </div>
       </div>
 

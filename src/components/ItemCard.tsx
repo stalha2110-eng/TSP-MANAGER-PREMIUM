@@ -232,7 +232,7 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
               </div>
             </div>
           </div>
-          <div className="flex gap-1.5 shrink-0 z-10 transition-all duration-200 opacity-60 sm:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-focus:opacity-100 focus-within:opacity-100">
+          <div className="flex gap-1.5 shrink-0 z-10 transition-all duration-200 opacity-90 group-hover:opacity-100 group-focus-within:opacity-100 focus-within:opacity-100">
             {onPeek && (
               <Button 
                 variant="outline" 

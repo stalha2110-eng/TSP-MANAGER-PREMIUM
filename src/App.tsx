@@ -95,7 +95,8 @@ import {
   Volume2,
   VolumeX,
   Play,
-  Mail
+  Mail,
+  Monitor
 } from 'lucide-react';
 import XLSX from 'xlsx-js-style';
 import { BUSINESS_MODES } from './services/businessModeConfig';
@@ -1084,6 +1085,46 @@ export default function App() {
       window.removeEventListener('app-add-toast', handleAddedCustomToast);
     };
   }, [addToast]);
+
+  // --- Desktop Size Mode (Large Screen Size Format, Large Buttons & Large Interface) ---
+  // Stored strictly in local device storage (localStorage), NEVER in Firebase or Firestore
+  const [isDesktopSize, setIsDesktopSize] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ts_desktop_size_mode') === 'true';
+    }
+    return false;
+  });
+
+  const handleToggleDesktopSize = useCallback((explicitVal?: boolean) => {
+    setIsDesktopSize(prev => {
+      const next = explicitVal !== undefined ? explicitVal : !prev;
+      try {
+        localStorage.setItem('ts_desktop_size_mode', next ? 'true' : 'false');
+      } catch (e) {
+        console.warn('Failed to save desktop size preference to localStorage', e);
+      }
+      if (next) {
+        document.documentElement.classList.add('desktop-size-mode');
+        document.body.classList.add('desktop-size-mode');
+        addToast("🖥️ Desktop Size Mode: Large buttons & large interface enabled", "success");
+      } else {
+        document.documentElement.classList.remove('desktop-size-mode');
+        document.body.classList.remove('desktop-size-mode');
+        addToast("Standard Size format restored", "info");
+      }
+      return next;
+    });
+  }, [addToast]);
+
+  useEffect(() => {
+    if (isDesktopSize) {
+      document.documentElement.classList.add('desktop-size-mode');
+      document.body.classList.add('desktop-size-mode');
+    } else {
+      document.documentElement.classList.remove('desktop-size-mode');
+      document.body.classList.remove('desktop-size-mode');
+    }
+  }, [isDesktopSize]);
 
   // --- Beautiful Real-time Notification Popups State & Listeners ---
   const [popupNotifications, setPopupNotifications] = useState<InAppNotification[]>([]);
@@ -2368,8 +2409,9 @@ export default function App() {
       comfortable: '18px',
       compact: '14px'
     };
-    document.documentElement.style.setProperty('--base-font-size', fontSizes[state.settings.fontSize || 'standard']);
-  }, [state.settings.theme, state.settings.accentColor, state.settings.fontSize]);
+    const activeBaseFontSize = isDesktopSize ? '18.5px' : fontSizes[state.settings.fontSize || 'standard'];
+    document.documentElement.style.setProperty('--base-font-size', activeBaseFontSize);
+  }, [state.settings.theme, state.settings.accentColor, state.settings.fontSize, isDesktopSize]);
 
   // Automatic background cleanup of KOT/Kitchen dispatch reminder notes when not in restaurant/cafe mode
   useEffect(() => {
@@ -3638,7 +3680,10 @@ export default function App() {
   return (
     <div 
       data-theme={state.settings.theme}
-      className="min-h-screen pb-20 overflow-hidden relative transition-colors duration-700"
+      className={cn(
+        "min-h-screen pb-20 overflow-hidden relative transition-colors duration-700",
+        isDesktopSize && "desktop-size-mode"
+      )}
     >
 
       {/* 🔄 SMART FLOATING UNDO/REDO TOAST PORTAL */}
@@ -6190,6 +6235,17 @@ export default function App() {
                         setShowMenu(false);
                         addToast("Opened Daily Scratchpad Notes", "success");
                       }
+                    },
+                    {
+                      id: 'desktop-size-toggle',
+                      title: '🖥️ Desktop Size Mode (Large Buttons)',
+                      category: 'Display & Interface',
+                      description: 'Toggle large screen size format with enlarged buttons for desktop and counter monitors',
+                      keywords: ['desktop size', 'large button', 'desktop screen', 'large interface', 'monitor', 'screen size', 'desktop'],
+                      onClick: () => {
+                        handleToggleDesktopSize();
+                        setMenuTab('profile');
+                      }
                     }
                   ];
 
@@ -6324,6 +6380,8 @@ export default function App() {
                       isSharing={isSharing}
                       onUpdate={handleUpdateSettings}
                       onLogout={handleLogout}
+                      isDesktopSize={isDesktopSize}
+                      onToggleDesktopSize={handleToggleDesktopSize}
                     />
                   </div>
                 ) : menuTab === 'business_settings' ? (

@@ -220,7 +220,7 @@ export function NoteCard({
                </div>
             )}
          </div>
-         <div className={cn("flex gap-1.5 transition-opacity duration-500", isPreview ? "opacity-0 group-hover:opacity-100" : "opacity-0 group-hover:opacity-100")}>
+         <div className="flex gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity duration-300">
             <button onClick={() => onUpdate(note.id, { status: note.status === 'Completed' ? 'Active' : 'Completed' })} className="p-2.5 bg-green-500/5 hover:bg-green-500 hover:text-white rounded-xl transition-all active:scale-90">
                <CheckCircle2 size={16} />
             </button>

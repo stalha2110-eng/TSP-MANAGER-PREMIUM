@@ -3782,7 +3782,7 @@ export default function BillingScreen({
         
         {/* LEFT COLUMN: ACTIVE PRODUCTS LIST & QUICK HELPER BUTTONS (7/12) - INDEPENDENT SCROLL CONTAINER */}
         <div className={cn(
-          "col-span-12 lg:h-[calc(100vh-140px)] lg:flex lg:flex-col space-y-3 transition-all duration-300",
+          "col-span-12 lg:min-h-[calc(100vh-140px)] lg:flex lg:flex-col space-y-3 transition-all duration-300",
           (showLivePreview && cart.length > 0) ? "lg:col-span-4 xl:col-span-4" : "lg:col-span-7"
         )}>
           
@@ -4407,7 +4407,7 @@ export default function BillingScreen({
         <div 
           id="ticket-receipt-list"
           className={cn(
-            "col-span-12 card p-4 bg-[var(--card)] border border-[var(--border)] rounded-2xl flex flex-col justify-between lg:h-[calc(100vh-140px)] lg:sticky lg:top-4 overflow-y-auto custom-scrollbar shadow-sm transition-all duration-300",
+            "col-span-12 card p-4 bg-[var(--card)] border border-[var(--border)] rounded-2xl flex flex-col justify-between lg:max-h-[calc(100vh-100px)] lg:sticky lg:top-20 overflow-y-auto custom-scrollbar shadow-sm transition-all duration-300",
             (showLivePreview && cart.length > 0) ? "lg:col-span-4 xl:col-span-4" : "lg:col-span-5"
           )}
         >

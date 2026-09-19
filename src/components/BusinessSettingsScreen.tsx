@@ -2895,7 +2895,7 @@ export default function BusinessSettingsScreen({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 opacity-0 group-hover/cat:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 opacity-90 group-hover/cat:opacity-100 transition-opacity">
                   <button
                     onClick={() => {
                       setEditingCategory(cat);

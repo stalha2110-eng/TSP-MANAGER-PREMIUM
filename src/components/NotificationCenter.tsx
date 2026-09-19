@@ -594,7 +594,7 @@ export default function NotificationCenter({
                               {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} &bull; {new Date(notif.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                             </span>
 
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-2 opacity-90 group-hover:opacity-100 transition-opacity">
                               {!notif.isRead && !notif.isDynamicAlert && (
                                 <button
                                   onClick={(e) => {

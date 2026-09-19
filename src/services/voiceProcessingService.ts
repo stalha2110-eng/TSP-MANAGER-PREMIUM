@@ -83,6 +83,14 @@ export function normalizeUnit(word: string): string {
   // Strip trailing punctuation
   w = w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "").trim();
   
+  // PAV KILO -> 250gm (Critical Rule: pav kilo = 250gm, used to set retail price)
+  if (/^(?:pav\s*kilo|paav\s*kilo|pao\s*kilo|pau\s*kilo|pa\s*kilo|paa\s*kilo|paw\s*kilo|pav|paav|pao|pau|पाव\s*किलो|पावकिलो|पाव|quarter\s*kilo|quarter|250\s*(?:gm|g|gram|grams)|250gm|250g)$/i.test(w)) {
+    return "250gm";
+  }
+  // AADHA KILO -> 500gm
+  if (/^(?:aadha\s*kilo|adha\s*kilo|aadhe\s*kilo|adhe\s*kilo|आधा\s*किलो|half\s*kilo|half|500\s*(?:gm|g|gram|grams)|500gm|500g)$/i.test(w)) {
+    return "500gm";
+  }
   // KG
   if (/^(?:kg|kilo|kilogram|kg\.?|किलो|किग्रा|कलो|kilos)$/i.test(w)) return "KG";
   // Chatak
@@ -113,28 +121,30 @@ export function normalizeUnit(word: string): string {
   return "KG"; // default fallback
 }
 
-// Indian numeric spoken words to number mapping
+// Indian numeric spoken words to number mapping (Hindi, Marathi, Hinglish)
 const INDIAN_NUM_WORDS: Record<string, number> = {
   // Hindi / Hinglish numbers
-  'ek': 1, 'do': 2, 'teen': 3, 'tin': 3, 'char': 4, 'panch': 5, 'paanch': 5,
-  'che': 6, 'chhah': 6, 'sat': 7, 'saat': 7, 'aath': 8, 'ath': 8, 'nau': 9, 'nav': 9,
-  'das': 10, 'gyarah': 11, 'barah': 12, 'terah': 13, 'chaudah': 14, 'pandrah': 15,
-  'solah': 16, 'satrah': 17, 'atharah': 18, 'unnis': 19, 'bees': 20, 'bis': 20,
-  'pachis': 25, 'tees': 30, 'tis': 30, 'paintis': 35, 'chalis': 40, 'chaalis': 40,
-  'pentalis': 45, 'pachas': 50, 'panchavan': 55, 'saath': 60, 'shatt': 60,
-  'painsath': 65, 'sattar': 70, 'pachattar': 75, 'assi': 80, 'pachasi': 85,
-  'nabbe': 90, 'pichanve': 95, 'sau': 100, 'so': 100, 'dedh sau': 150,
+  'ek': 1, 'do': 2, 'don': 2, 'teen': 3, 'tin': 3, 'char': 4, 'panch': 5, 'paanch': 5, 'paach': 5,
+  'che': 6, 'chhah': 6, 'saha': 6, 'sat': 7, 'saat': 7, 'aath': 8, 'ath': 8, 'nau': 9, 'nav': 9,
+  'das': 10, 'daha': 10, 'gyarah': 11, 'akra': 11, 'barah': 12, 'bara': 12, 'terah': 13, 'tera': 13,
+  'chaudah': 14, 'chauda': 14, 'pandrah': 15, 'pandra': 15, 'solah': 16, 'sola': 16, 'satrah': 17, 'satra': 17,
+  'atharah': 18, 'athra': 18, 'unnis': 19, 'ekonis': 19, 'bees': 20, 'vees': 20, 'vis': 20, 'bis': 20,
+  'pachis': 25, 'panchis': 25, 'panchvis': 25, 'tees': 30, 'tis': 30, 'paintis': 35, 'chalis': 40, 'chaalis': 40,
+  'pentalis': 45, 'pachas': 50, 'pannaas': 50, 'panchavan': 55, 'saath': 60, 'sath': 60, 'shatt': 60,
+  'painsath': 65, 'sattar': 70, 'pachattar': 75, 'assi': 80, 'aanshi': 80, 'pachasi': 85,
+  'nabbe': 90, 'navvad': 90, 'pichanve': 95, 'sau': 100, 'so': 100, 'shambhar': 100, 'dedh sau': 150,
   'do sau': 200, 'dhai sau': 250, 'teen sau': 300, 'char sau': 400,
   'panch sau': 500, 'hazar': 1000, 'hajaar': 1000,
-  // Hindi script numbers
-  'एक': 1, 'दो': 2, 'तीन': 3, 'चार': 4, 'पांच': 5, 'छह': 6, 'सात': 7, 'आठ': 8, 'नौ': 9,
-  'दस': 10, 'बीस': 20, 'पच्चीस': 25, 'तीस': 30, 'चालीस': 40, 'पचास': 50, 'साठ': 60,
-  'सत्तर': 70, 'अस्सी': 80, 'नब्बे': 90, 'सौ': 100, 'हजार': 1000
+  // Hindi & Marathi script numbers
+  'एक': 1, 'दोन': 2, 'दो': 2, 'तीन': 3, 'चार': 4, 'पांच': 5, 'पाच': 5, 'छह': 6, 'सहा': 6, 'सात': 7, 'आठ': 8, 'नौ': 9, 'नऊ': 9,
+  'दस': 10, 'दहा': 10, 'अकरा': 11, 'बारा': 12, 'तेरा': 13, 'चौदा': 14, 'पंधरा': 15, 'सोळा': 16, 'सतरा': 17, 'अठरा': 18, 'एकोणीस': 19,
+  'बीस': 20, 'वीस': 20, 'पच्चीस': 25, 'पंचवीस': 25, 'तीस': 30, 'चालीस': 40, 'चाळीस': 40, 'पचास': 50, 'पन्नास': 50, 'साठ': 60,
+  'सत्तर': 70, 'अस्सी': 80, 'ऐंशी': 80, 'नब्बे': 90, 'नव्वद': 90, 'सौ': 100, 'शंभर': 100, 'हजार': 1000
 };
 
 /**
  * Fast Client-Side Regex Pre-Parser for Simple Voice Inputs.
- * Detects common single or dual item inputs (e.g. "Badam 900", "Aloo 50 kilo", "Amul milk 32 packet")
+ * Detects common single or dual item inputs (e.g. "Badam 900", "Tamatar pav kilo 20", "Aloo 50 kilo")
  * and extracts structured product drafts without consuming server AI quota!
  */
 export function fastClientVoiceParser(text: string, existingItems: Item[] = []): VoiceDraftProduct[] | null {
@@ -160,19 +170,93 @@ export function fastClientVoiceParser(text: string, existingItems: Item[] = []):
   return null;
 }
 const DICTIONARY: Record<string, string> = {
+  // Dry Fruits
   badam: "Badam",
+  badaam: "Badam",
   kaju: "Kaju",
+  kaaju: "Kaju",
   cashew: "Cashew",
   pista: "Pista",
   pistachio: "Pistachio",
   kishmish: "Kishmish",
+  kismis: "Kishmish",
   raisins: "Raisins",
   akhrot: "Akhrot",
   walnut: "Walnut",
   anjeer: "Anjeer",
   fig: "Fig",
+  makhana: "Makhana",
+  khajoor: "Khajoor",
+  // Vegetables
+  tamatar: "Tamatar",
+  tomato: "Tomato",
+  aloo: "Aloo",
+  alu: "Aloo",
+  batata: "Batata",
+  potato: "Potato",
+  pyaz: "Pyaz",
+  pyaaz: "Pyaz",
+  kanda: "Kanda",
+  onion: "Onion",
+  mirchi: "Mirchi",
+  mirch: "Mirchi",
+  chilli: "Chilli",
+  lasan: "Lasan",
+  lahsun: "Lehsun",
+  lehsun: "Lehsun",
+  garlic: "Garlic",
+  adrak: "Adrak",
+  ginger: "Ginger",
+  bhindi: "Bhindi",
+  gobhi: "Gobhi",
+  palak: "Palak",
+  matar: "Matar",
+  nimbu: "Nimbu",
+  gajar: "Gajar",
+  kheera: "Kheera",
+  // Spices & Groceries
   haldi: "Haldi",
-  turmeric: "Turmeric"
+  turmeric: "Turmeric",
+  jeera: "Jeera",
+  jira: "Jeera",
+  dhaniya: "Dhaniya",
+  dhania: "Dhaniya",
+  rai: "Rai",
+  methi: "Methi",
+  hing: "Hing",
+  elaichi: "Elaichi",
+  laung: "Laung",
+  dalchini: "Dalchini",
+  chawal: "Chawal",
+  rice: "Rice",
+  atta: "Atta",
+  aata: "Atta",
+  maida: "Maida",
+  besan: "Besan",
+  suji: "Suji",
+  rava: "Rava",
+  toor: "Toor Dal",
+  moong: "Moong Dal",
+  urad: "Urad Dal",
+  chana: "Chana Dal",
+  rajma: "Rajma",
+  tel: "Tel",
+  oil: "Oil",
+  ghee: "Ghee",
+  doodh: "Doodh",
+  milk: "Milk",
+  dahi: "Dahi",
+  paneer: "Paneer",
+  shakhar: "Shakhar",
+  sugar: "Sugar",
+  cheeni: "Cheeni",
+  chini: "Cheeni",
+  chai: "Chai Patti",
+  tea: "Tea",
+  namak: "Namak",
+  salt: "Salt",
+  poha: "Poha",
+  sabudana: "Sabudana"
 };
 
 /**
@@ -216,7 +300,10 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
   const retailRegex = /\b(?:retail|selling|sell|रिटेल|विक्री|बेचना|भाव|रेट)\b/i;
   const wholesaleRegex = /\b(?:wholesale|होलसेल|थोक|व्होलसेल)\b/i;
   const costRegex = /\b(?:cost|buying|bought|purchase|buying\s+price|खरीद|खरीदी|कॉस्ट|लागत)\b/i;
-  const unitRegex = /(?:(?:perk|per|pr|\/)\s+)?(?:kg|kilo|kilogram|किग्रा|किलो|chatak|chattak|ctk|छटांक|छटाक|gram|gm|grams|ग्राम|piece|pc|pcs|pieces|पीस|नग|packet|packets|pack|pkt|पैकेट|box|boxes|बॉक्स|पेटी|dabba|dibba|carton|cartons|crt|कार्टन|dozen|दर्जन|darjan|liter|litre|ltr|लीटर|ml|एमएल|bundle|बंडल|tray|ट्रे|unit|यूनिट)\b/gi;
+  const unitRegex = /(?:(?:perk|per|pr|\/)\s+)?(?:pav\s*kilo|paav\s*kilo|pao\s*kilo|pau\s*kilo|paw\s*kilo|pa\s*kilo|paa\s*kilo|pav|paav|pao|पाव\s*किलो|पावकिलो|पाव|quarter\s*kilo|quarter|250\s*(?:gm|g|gram|grams)|250gm|250g|aadha\s*kilo|adha\s*kilo|aadhe\s*kilo|adhe\s*kilo|आधा\s*किलो|half\s*kilo|500\s*(?:gm|g|gram|grams)|500gm|500g|kg|kilo|kilogram|किग्रा|किलो|chatak|chattak|ctk|छटांक|छटाक|gram|gm|grams|ग्राम|piece|pc|pcs|pieces|पीस|नग|packet|packets|pack|pkt|पैकेट|box|boxes|बॉक्स|पेटी|dabba|dibba|carton|cartons|crt|कार्टन|dozen|दर्जन|darjan|liter|litre|ltr|लीटर|ml|एमएल|bundle|बंडल|tray|ट्रे|unit|यूनिट)\b/gi;
+
+  const pavKiloRegex = /\b(?:pav\s*kilo|paav\s*kilo|pao\s*kilo|pau\s*kilo|paw\s*kilo|pa\s*kilo|paa\s*kilo|pav|paav|pao|पाव\s*किलो|पावकिलो|पाव|quarter\s*kilo|250\s*(?:gm|g|gram|grams)|250gm|250g)\b/i;
+  const isPavKiloMentioned = pavKiloRegex.test(cleanPhrase);
 
   // Check if phrase contains the "retail" keyword rule
   const retailMatch = cleanPhrase.match(retailRegex);
@@ -228,9 +315,10 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
     // =========================================================================
     let rawNameBeforeRetail = cleanPhrase.substring(0, retailMatch.index).trim();
 
-    // Strip leading action/trigger filler words
+    // Strip leading action/trigger filler words and quantity prefixes
     rawNameBeforeRetail = rawNameBeforeRetail
       .replace(/^(?:please\s+)?(?:add|insert|create|new|item|product|naya\s+item|likho|daalo|bhai|sun\s+bhai|kripya|ek|item\s+name|naam)\s+/i, "")
+      .replace(pavKiloRegex, "")
       .replace(/^[,.\-:]+/, "")
       .replace(/[,.\-:]+$/, "")
       .trim();
@@ -264,7 +352,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
       markers.sort((a, b) => a.index - b.index);
 
       let rPrice = 0;
-      let rUnit = "KG";
+      let rUnit = isPavKiloMentioned ? "250gm" : "KG";
       let wPrice = 0;
       let wUnit = "KG";
       let cPrice = 0;
@@ -292,6 +380,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
         if (current.type === 'retail') {
           if (parsedPrice > 0) rPrice = parsedPrice;
           if (parsedUnit) rUnit = parsedUnit;
+          else if (isPavKiloMentioned) rUnit = "250gm";
         } else if (current.type === 'wholesale') {
           if (parsedPrice > 0) wPrice = parsedPrice;
           if (parsedUnit) wUnit = parsedUnit;
@@ -304,7 +393,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
       // If price was found in the text overall
       if (rPrice > 0 || wPrice > 0 || cPrice > 0) {
         // Fallback unit propagation if only retail or overall unit was mentioned
-        const basePrimaryUnit = rUnit || (unitExplicitlyFound ? (wUnit || cUnit) : "KG");
+        const basePrimaryUnit = rUnit || (unitExplicitlyFound ? (wUnit || cUnit) : (isPavKiloMentioned ? "250gm" : "KG"));
         if (!wUnit) wUnit = basePrimaryUnit;
         if (!cUnit) cUnit = basePrimaryUnit;
         if (!rUnit) rUnit = basePrimaryUnit;
@@ -348,7 +437,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
   }
 
   // =========================================================================
-  // FALLBACK PARSER: Handles phrases without "retail" keyword (e.g. "Badam 900")
+  // FALLBACK PARSER: Handles phrases without "retail" keyword (e.g. "Badam 900", "Tamatar pav kilo 20")
   // =========================================================================
   let txt = cleanPhrase.replace(/,|-/g, " ");
   
@@ -368,9 +457,9 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
   let wholesalePrice = 0;
   let buyingPrice = 0;
   
-  let retailUnit = "KG";
-  let wholesaleUnit = "KG";
-  let buyingUnit = "KG";
+  let retailUnit = isPavKiloMentioned ? "250gm" : "KG";
+  let wholesaleUnit = isPavKiloMentioned ? "250gm" : "KG";
+  let buyingUnit = isPavKiloMentioned ? "250gm" : "KG";
   
   let confName = 90;
   let confRetail = 50;
@@ -378,7 +467,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
   let confBuying = 50;
   
   // Find unit mentioned anywhere to apply as base default
-  let baseUnit = "KG";
+  let baseUnit = isPavKiloMentioned ? "250gm" : "KG";
   const unitMatches = txt.match(unitRegex);
   if (unitMatches && unitMatches.length > 0) {
     baseUnit = normalizeUnit(unitMatches[0]);
@@ -404,6 +493,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
         if (retailKeywords.test(word)) category = 'retail';
         else if (wholesaleKeywords.test(word)) category = 'wholesale';
         else if (costKeywords.test(word)) category = 'cost';
+        else if (pavKiloRegex.test(word)) category = 'retail'; // "pav kilo" implies retail price
       }
       
       if (category === 'unknown') {
@@ -412,10 +502,11 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
           if (retailKeywords.test(word)) category = 'retail';
           else if (wholesaleKeywords.test(word)) category = 'wholesale';
           else if (costKeywords.test(word)) category = 'cost';
+          else if (pavKiloRegex.test(word)) category = 'retail'; // "pav kilo" implies retail price
         }
       }
       
-      for (let i = Math.max(0, idx - 1); i <= Math.min(words.length - 1, idx + 1); i++) {
+      for (let i = Math.max(0, idx - 2); i <= Math.min(words.length - 1, idx + 2); i++) {
          const w = words[i].toLowerCase();
          if (unitRegex.test(w) && i !== idx) {
            const parsedUnit = normalizeUnit(w);
@@ -444,6 +535,15 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
     }
   });
   
+  // "PAV KILO" RULE: If user says "pav kilo", it means 250gm and users use this to set the RETAIL PRICE!
+  if (isPavKiloMentioned) {
+    retailUnit = "250gm";
+    if (!retailPrice && prices.length > 0) {
+      retailPrice = prices[0];
+      confRetail = 100;
+    }
+  }
+
   const unassigned = priceAssignments.filter(pa => pa.category === 'unknown');
   if (unassigned.length > 0) {
     if (!retailPrice && !wholesalePrice && !buyingPrice) {
@@ -459,6 +559,13 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
       });
     }
   }
+
+  if (retailPrice > 0 && wholesalePrice === 0) {
+    wholesalePrice = Math.floor(retailPrice * 0.9);
+  }
+  if (retailPrice > 0 && buyingPrice === 0) {
+    buyingPrice = Math.floor(retailPrice * 0.8);
+  }
   
   let nameBlock = txt;
   prices.forEach(p => {
@@ -466,9 +573,9 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
   });
   
   const allStripPatterns = [
-    retailKeywords, wholesaleKeywords, costKeywords, unitRegex,
-    /\b(?:per|for|rs\.?|in|का|की|के|में|per kilo|kilo|piece|g|kg|gm|piece)\b/gi,
-    /\b(?:kaju|badam|cashew|raisins|pista|akhrot|anjeer|haldi)\b/gi
+    retailKeywords, wholesaleKeywords, costKeywords, unitRegex, pavKiloRegex,
+    /\b(?:per|for|rs\.?|rupees|rupaye|rupay|in|का|की|के|में|per kilo|kilo|piece|g|kg|gm|piece)\b/gi,
+    /^(?:please\s+)?(?:add|insert|create|new|item|product|naya\s+item|likho|daalo|bhai|sun\s+bhai|kripya|ek|item\s+name|naam)\s+/i
   ];
   
   allStripPatterns.forEach(pat => {
@@ -515,7 +622,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
     wholesalePriceUnit: wholesaleUnit,
     buyingPrice,
     buyingPriceUnit: buyingUnit,
-    unit: baseUnit,
+    unit: isPavKiloMentioned ? "250gm" : baseUnit,
     categoryId: '',
     confidence: {
       name: confName,

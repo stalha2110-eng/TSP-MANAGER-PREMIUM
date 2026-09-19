@@ -21,6 +21,19 @@ function cleanTranscriptText(text: string): string {
   
   // Normalize whitespaces
   let cleaned = text.trim().replace(/\s+/g, " ");
+
+  // Phonetic & Dialect Normalization for Indian Speech Recognition:
+  // Normalize "paw kilo", "pao kilo", "paav kilo", "pau kilo", "pa kilo", "paa kilo", "पाव किलो", "पावकिलो" -> "pav kilo"
+  cleaned = cleaned.replace(/\b(?:paw\s*kilo|paov?\s*kilo|pau\s*kilo|pa\s*kilo|paa\s*kilo|paw|paov?|paa?v|pau)\b/gi, "pav kilo");
+  cleaned = cleaned.replace(/\b(?:पाव\s*किलो|पावकिलो)\b/gi, "pav kilo");
+  cleaned = cleaned.replace(/\b(?:पाव)\b/gi, "pav");
+  // Normalize "retel", "ratel", "reteil", "रिटेल" -> "retail"
+  cleaned = cleaned.replace(/\b(?:retel|ratel|reteil|रिटेल)\b/gi, "retail");
+  // Normalize "holsel", "holsale", "whoalsale", "व्होलसेल", "होलसेल" -> "wholesale"
+  cleaned = cleaned.replace(/\b(?:holsel|holsale|whoalsale|व्होलसेल|होलसेल)\b/gi, "wholesale");
+  // Common mishearings
+  cleaned = cleaned.replace(/\b(?:tamator)\b/gi, "tamatar");
+  cleaned = cleaned.replace(/\b(?:aadhe\s*kilo|adha\s*kilo|aadha\s*kilo)\b/gi, "aadha kilo");
   
   // Step 1: Deduplicate single word stutters/repeats, e.g. "kesar kesar kesar" -> "kesar"
   let words = cleaned.split(" ");
@@ -554,6 +567,7 @@ export function VoiceProductAssistant({
     const rec = new SpeechClass();
     rec.continuous = true;
     rec.interimResults = true;
+    rec.maxAlternatives = 3;
     rec.lang = micLocale;
 
     rec.__working = false;
@@ -613,8 +627,21 @@ export function VoiceProductAssistant({
       }
 
       for (let i = 0; i < event.results.length; ++i) {
-        const transcriptSegment = event.results[i][0].transcript || "";
-        if (event.results[i].isFinal) {
+        const resultItem = event.results[i];
+        let transcriptSegment = resultItem[0]?.transcript || "";
+        
+        // Multi-alternative fallback: if primary mishears but alt contains grocery/unit keywords, prefer alt
+        if (resultItem.length > 1) {
+          for (let a = 1; a < resultItem.length; a++) {
+            const alt = resultItem[a]?.transcript || "";
+            if (/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm)\b/i.test(alt) && !/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm)\b/i.test(transcriptSegment)) {
+              transcriptSegment = alt;
+              break;
+            }
+          }
+        }
+
+        if (resultItem.isFinal) {
           sessionFinal += (sessionFinal ? " " : "") + transcriptSegment.trim();
         } else {
           sessionInterim += (sessionInterim ? " " : "") + transcriptSegment.trim();
@@ -1262,7 +1289,7 @@ export function VoiceProductAssistant({
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-600"></span>
                           </span>
-                          <span>Listening Hands-free (Stop speaking to auto-parse)</span>
+                          <span>🎧 Listening Carefully & Accurately (Pause to auto-parse)</span>
                         </div>
                         {/* Immersive Subtitles overlay with dark background */}
                         <div className="p-4 rounded-2xl bg-black/85 backdrop-blur-md border border-white/10 text-left space-y-2 min-h-[5.5rem] shadow-2xl">
@@ -1345,14 +1372,27 @@ export function VoiceProductAssistant({
               {/* QUICK HINT CARD */}
               <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex gap-3 text-sm">
                 <HelpCircle className="text-amber-500 shrink-0 mt-0.5" size={18} />
-                <div className="space-y-1">
-                  <p className="font-extrabold text-amber-500/95 text-xs uppercase tracking-widest">💡 Speech Prompt Rule (Hindi / English / Marathi / Hinglish)</p>
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <p className="font-extrabold text-amber-500/95 text-xs uppercase tracking-widest">💡 Voice Assistant Guide (Hindi / English / Marathi / Hinglish)</p>
+                    <span className="px-2 py-0.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-full text-[10px] font-bold">
+                      Pav Kilo = 250gm (Retail)
+                    </span>
+                  </div>
                   <p className="text-xs text-[var(--foreground)]/80">
-                    Words spoken <strong>before the "retail" keyword</strong> are automatically extracted as the <strong>Product Name</strong>. Say prices and units after <strong>retail, wholesale, and cost</strong>.
+                    Saying <strong>"pav kilo"</strong> automatically sets the <strong>retail price for 250gm</strong>. You can also say words before <strong>"retail"</strong> to set the product name!
                   </p>
-                  <p className="text-[11px] text-amber-600 dark:text-amber-400 font-mono">
-                    "Kashmiri coconut retail 300rs per kg, wholesale 1,500rs per box, cost 1,200rs per box"
-                  </p>
+                  <div className="flex flex-wrap gap-2 text-[11px] font-mono pt-0.5">
+                    <span className="bg-[var(--card)] px-2 py-0.5 rounded border border-[var(--border)] text-amber-600 dark:text-amber-400">
+                      "Tamatar pav kilo 20"
+                    </span>
+                    <span className="bg-[var(--card)] px-2 py-0.5 rounded border border-[var(--border)] text-amber-600 dark:text-amber-400">
+                      "Aloo 10 rupaye pav kilo"
+                    </span>
+                    <span className="bg-[var(--card)] px-2 py-0.5 rounded border border-[var(--border)] text-amber-600 dark:text-amber-400">
+                      "Kashmiri coconut retail 300rs per kg"
+                    </span>
+                  </div>
                 </div>
               </div>
 

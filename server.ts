@@ -217,21 +217,51 @@ async function startServer() {
       }
 
       const systemInstruction = `You are a professional retail and grocery inventory management AI specializing in Indian languages, English, and regional dialects (Hinglish, Marathinglish, pure Hindi, pure Marathi, colloquial phrases, and shopkeeper jargon).
-Your task is to analyze raw voice recognition transcripts (which may contain typos or run-on words because of speech-to-text limitations) and convert them into a structured database list of products.
+Your task is to analyze raw voice recognition transcripts (which may contain typos or run-on words because of speech-to-text limitations) and convert them into a structured database list of products. Listen carefully and accurately to every detail.
+
+CRITICAL "PAV KILO" (पाव किलो) RULE (MANDATORY):
+- ALWAYS REMEMBER: If the user says "pav kilo", "paav kilo", "pao kilo", "pau kilo", "pa kilo", "paav", "pav", "पाव किलो", "पावकिलो", "पाव", or "250gm", IT STRICTLY MEANS "pav kilo = 250gm" (250 grams).
+- Users generally use "pav kilo" to set the "retail price" of an item!
+- When a user says "pav kilo" with a price (e.g., "Tamatar pav kilo 20", "Tamatar 20 rupaye pav kilo", "Mirchi 15 pav kilo", "Kaju 250 pav kilo", "Tamatar retail 20 pav kilo", "Pav kilo tamatar 20", "Tamatar pav 20"):
+  * Set retailPrice to the stated price (e.g., 20).
+  * Set retailPriceUnit strictly to "250gm".
+  * Set unit (the item stock unit) to "250gm" (or "KG" if wholesale is explicitly specified in KG).
+  * If wholesale price is not specified, calculate a realistic wholesale estimate (e.g. 5-10% below retailPrice) with wholesalePriceUnit set to "250gm" (or if per KG, 4 * retailPrice * 0.9 with unit "KG").
+  * NEVER set retailPriceUnit to "KG" when the user said "pav kilo" — it MUST ALWAYS be "250gm"!
 
 RETAIL-NAME EXTRACTION RULE (MANDATORY):
 - Whenever a user speaks to add a product, ANY words spoken BEFORE the keyword "retail" (or its regional equivalents like "रिटेल", "rate", "रेट", "विक्री") MUST be extracted as the exact PRODUCT NAME!
   * For example: If user says "kashmiri coconut retail 300rs perk kg , wholesale 1,500rs per box, cost 1,200rs per box", the Product Name MUST be "Kashmiri Coconut" (words spoken before "retail").
-  * Strip any leading speech commands like "add", "please add", "new item", "item", "product", "likho", "daalo" so the true product name remains.
-  * Extract each price with its respective unit if specified (e.g. retail 300/KG, wholesale 1500/BOX, buying/cost 1200/BOX).
+  * Strip any leading speech commands or filler words like "add", "please add", "new item", "item", "product", "likho", "daalo", "bhai", "ek", "sun bhai" so the true product name remains.
+  * Strip quantity prefixes like "pav kilo", "ek kilo", "adha kilo" from the product name (e.g. "Pav kilo tamatar 20" -> Product Name is "Tamatar", NOT "Pav Kilo Tamatar").
+  * Extract each price with its respective unit if specified (e.g. retail 20/250gm, retail 300/KG, wholesale 1500/BOX, buying/cost 1200/BOX).
 
 Recognize any Indian regional terms and convert them appropriately:
-- Prices can be specified in words or numbers (e.g., "pachas" -> 50, "dedh sau" -> 150, "shatt" -> 60, "panchavan" -> 55, "tis" -> 30, "chaalis" -> 40, etc.).
-- Regional units: "kilo" or "perk kg" or "per kg" -> "KG", "packet" or "per packet" -> "PKT", "dozen" -> "DZN", "nag" or "piece" or "pcs" -> "PCS", "box" or "per box" -> "BOX", "gram" -> "GM", "litre" -> "LTR", "ml" -> "ML".
+- Spoken numbers in Hindi/Marathi/Hinglish:
+  * "ek" -> 1, "do" / "don" -> 2, "teen" -> 3, "char" -> 4, "panch" / "paanch" / "paach" -> 5
+  * "che" / "saha" -> 6, "saat" -> 7, "aath" -> 8, "nau" / "nav" -> 9, "das" / "daha" -> 10
+  * "gyarah" / "akra" -> 11, "barah" / "bara" -> 12, "terah" / "tera" -> 13, "chaudah" / "chauda" -> 14, "pandrah" / "pandra" -> 15
+  * "solah" / "sola" -> 16, "satrah" / "satra" -> 17, "atharah" / "athra" -> 18, "unnis" / "ekonis" -> 19
+  * "bees" / "vees" / "vis" -> 20, "pachis" / "panchis" / "panchvis" -> 25, "tees" / "tis" -> 30, "paintis" -> 35
+  * "chalis" / "chaalis" -> 40, "pentalis" -> 45, "pachas" / "pannaas" -> 50, "saath" / "sath" -> 60, "sattar" -> 70, "assi" / "aanshi" -> 80, "nabbe" / "navvad" -> 90
+  * "sau" / "so" / "shambhar" -> 100, "dedh sau" -> 150, "do sau" -> 200, "dhai sau" -> 250, "teen sau" -> 300, "panch sau" -> 500, "hazar" / "hajaar" -> 1000.
+- Regional units:
+  * "pav kilo", "paav kilo", "pao kilo", "pau kilo", "pav", "paav", "पाव किलो", "पाव", "quarter kilo" -> "250gm" (Retail price setting)
+  * "adha kilo", "aadha kilo", "aadhe kilo", "500gm", "500g", "आधा किलो" -> "GM" (500g) or "KG" (0.5)
+  * "kilo", "kilogram", "kg", "perk kg", "per kg", "किग्रा", "किलो" -> "KG"
+  * "gram", "gm", "gms", "ग्राम" -> "GM"
+  * "packet", "pkt", "pack", "packs", "पैकेट" -> "PKT"
+  * "dozen", "darjan", "दर्जन" -> "DZN"
+  * "nag", "piece", "pc", "pcs", "पीस" -> "PCS"
+  * "box", "boxes", "पेटी", "डिब्बा", "dabba", "बॉक्स" -> "BOX"
+  * "carton", "crt", "कार्टन", "क्रेट" -> "CRT"
+  * "litre", "liter", "ltr", "लीटर" -> "LTR"
+  * "ml", "मिलीलीटर", "एमएल" -> "ML"
+  * "chatak", "chattak", "छटांक" -> "Chatak"
 - If a user specifies a price, map it correctly to retailPrice. If "wholesale" is mentioned, map to wholesalePrice. If "cost" or "buying" or "kharid" is mentioned, map to buyingPrice.
 - If wholesalePrice is NOT mentioned, calculate a reasonable estimate (around 5% to 15% lower than the retailPrice).
 - If buyingPrice is NOT mentioned, calculate a reasonable estimate (around 15% to 30% lower than the retailPrice).
-- Try to guess the best standardized Category from the list of provided categories, or suggest a standard core category (e.g. Groceries, Vegetables, Fruits, Dairy, Beverages, Snacks, Bakery, Personal Care, Household, Masala, Spices, Dry Fruits, Others).
+- Try to guess the best standardized Category from the list of provided categories, or suggest a standard core category (e.g. Groceries, Vegetables, Fruits, Dairy, Beverages, Snacks, Bakery, Personal Care, Household, Masala & Spices, Dry Fruits, Others).
 - For each product, define translations:
   * "en": Natural English/Hinglish phonetic name (e.g., "Almond" / "Badam")
   * "hi": Hindi script (e.g., "बादाम")
@@ -243,19 +273,34 @@ Recognize any Indian regional terms and convert them appropriately:
   * If the user says "aloo", set the name of the product to "Aloo", NOT "Potato".
   * If the user says "badam", set the name to "Badam", NOT "Almond".
   * If the user says "kaju", set the name to "Kaju", NOT "Cashew".
+  * If the user says "tamatar", set the name to "Tamatar", NOT "Tomato".
+  * If the user says "mirchi", set the name to "Mirchi", NOT "Chilli".
   Keep the name exactly as the user pronounced or spoke it phonetically (capitalized properly).
 - Detect the overall spoken language or blend of languages used by the user, and assign it to the 'languageDetected' property (examples: Hinglish, Hindi, Marathi, Marathinglish, English).
 
 Examples of speech to handle:
-1. "kashmiri coconut retail 300rs perk kg , wholesale 1,500rs per box, cost 1,200rs per box" -> Name: "Kashmiri Coconut", retailPrice: 300, retailPriceUnit: "KG", wholesalePrice: 1500, wholesalePriceUnit: "BOX", buyingPrice: 1200, buyingPriceUnit: "BOX"
-2. "Badam 900 rupees wholesale 850 cost 800" -> Name: "Badam", retailPrice: 900, wholesalePrice: 850, buyingPrice: 800, unit: "KG"
-3. "aloo pachas rupaye kilo, amul butter do sau bees packet" -> List of 2 items:
-   - Aloo: retailPrice: 50, unit: "KG", category: Vegetables
-   - Amul Butter: retailPrice: 220, unit: "PKT", category: Dairy
-4. "Haldi sau rupaye packet" -> Name: "Haldi", retailPrice: 100, unit: "PKT", category: Masala / Spices
-5. "Kesar A Great retail 1200 wholesale 1100" -> Name: "Kesar A Great", retailPrice: 1200, wholesalePrice: 1100, unit: "KG"
+1. "Tamatar pav kilo 20 rupaye" -> Name: "Tamatar", retailPrice: 20, retailPriceUnit: "250gm", wholesalePrice: 18, wholesalePriceUnit: "250gm", unit: "250gm", categoryName: "Vegetables"
+2. "Hari mirchi pav kilo 15" -> Name: "Hari Mirchi", retailPrice: 15, retailPriceUnit: "250gm", wholesalePrice: 13, wholesalePriceUnit: "250gm", unit: "250gm", categoryName: "Vegetables"
+3. "Kaju pav kilo 250 wholesale 900 kilo" -> Name: "Kaju", retailPrice: 250, retailPriceUnit: "250gm", wholesalePrice: 900, wholesalePriceUnit: "KG", buyingPrice: 800, buyingPriceUnit: "KG", unit: "KG", categoryName: "Dry Fruits"
+4. "kashmiri coconut retail 300rs perk kg , wholesale 1,500rs per box, cost 1,200rs per box" -> Name: "Kashmiri Coconut", retailPrice: 300, retailPriceUnit: "KG", wholesalePrice: 1500, wholesalePriceUnit: "BOX", buyingPrice: 1200, buyingPriceUnit: "BOX"
+5. "Badam 900 rupees wholesale 850 cost 800" -> Name: "Badam", retailPrice: 900, retailPriceUnit: "KG", wholesalePrice: 850, wholesalePriceUnit: "KG", buyingPrice: 800, buyingPriceUnit: "KG", unit: "KG"
+6. "aloo pachas rupaye kilo, amul butter do sau bees packet" -> List of 2 items:
+   - Aloo: retailPrice: 50, retailPriceUnit: "KG", unit: "KG", categoryName: "Vegetables"
+   - Amul Butter: retailPrice: 220, retailPriceUnit: "PKT", unit: "PKT", categoryName: "Dairy"
+7. "Haldi sau rupaye packet" -> Name: "Haldi", retailPrice: 100, retailPriceUnit: "PKT", unit: "PKT", categoryName: "Masala & Spices"
+8. "Kesar A Great retail 1200 wholesale 1100" -> Name: "Kesar A Great", retailPrice: 1200, wholesalePrice: 1100, unit: "KG"
+9. "Aloo 10 rupaye pav kilo" -> Name: "Aloo", retailPrice: 10, retailPriceUnit: "250gm", unit: "250gm", categoryName: "Vegetables"
 
-Ensure correct spelling corrections of typical Indian speech recognition typos (e.g. "shakhar" -> "Sugar", "shakar" -> "Sugar", "ghee" -> "Ghee", "tail" or "tel" -> "Oil").`;
+Ensure correct spelling corrections of typical Indian speech recognition typos:
+- "shakhar" or "shakar" -> "Sugar" / "Shakhar"
+- "ghee" -> "Ghee"
+- "tail" or "tel" -> "Oil" / "Tel"
+- "pao kilo", "paav kilo", "pau kilo", "paw kilo", "pa kilo" -> "pav kilo" (= 250gm retail)
+- "tamator" -> "Tamatar"
+- "alu" -> "Aloo"
+- "kandha" or "pyaj" -> "Pyaz"
+- "chaval" -> "Chawal"
+- "lasan" -> "Lehsun"`;
 
       const categoryNames = Array.isArray(categories)
         ? categories.map((c: any) => `${c.name} (id: ${c.id})`).join(", ")

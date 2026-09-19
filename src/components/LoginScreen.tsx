@@ -31,7 +31,8 @@ import {
   sendPasswordResetEmail, 
   updateProfile 
 } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface LoginScreenProps {
   onGoogleLogin: () => Promise<void>;
@@ -83,6 +84,7 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
     setSuccessMessage(null);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
+      localStorage.removeItem('ts_guest_logged_in');
       localStorage.setItem('ts_last_logged_in_email', email.trim());
       setSuccessMessage("Authenticated successfully! Welcome back... / लॉगिन सफल!");
     } catch (err: any) {
@@ -135,17 +137,32 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
       const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
       const user = userCredential.user;
       await updateProfile(user, { displayName: fullName.trim() });
+      localStorage.removeItem('ts_guest_logged_in');
       localStorage.setItem('ts_last_logged_in_email', email.trim());
+
+      // Pre-initialize basic profile metadata in Firestore
+      try {
+        if (db) {
+          await setDoc(doc(db, 'users', user.uid), {
+            storeOwnerName: fullName.trim(),
+            autoCloudSync: true,
+            lastUpdated: new Date().toISOString()
+          }, { merge: true });
+        }
+      } catch (fsErr) {
+        console.warn("Firestore profile pre-init note:", fsErr);
+      }
+
       setSuccessMessage("Account created successfully! Welcome... / खाता सफलतापूर्वक बनाया गया!");
     } catch (err: any) {
       console.error("Registration failed:", err);
       let msg = err.message;
       if (err.code === 'auth/email-already-in-use') {
-        msg = "This email is already registered / यह ईमेल पहले से ही पंजीकृत है।";
+        msg = "This email is already registered. Please sign in / यह ईमेल पहले से ही पंजीकृत है। कृपया साइन इन करें।";
       } else if (err.code === 'auth/invalid-email') {
         msg = "Invalid email format / अमान्य ईमेल प्रारूप।";
       } else if (err.code === 'auth/weak-password') {
-        msg = "Password is too weak / पासवर्ड बहुत कमजोर है।";
+        msg = "Password is too weak. Please use at least 8 characters / पासवर्ड बहुत कमजोर है।";
       } else if (err.code === 'auth/operation-not-allowed') {
         msg = "Email/Password sign-in is currently disabled in your Firebase Console. Action required: Go to Firebase Console > Authentication > Sign-in Method > Enable 'Email/Password' & save / फ़ायरबेस कंसोल में 'ईमेल/पासवर्ड' लॉगिन प्रदाता को सक्षम करें।";
       }
@@ -499,10 +516,25 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
                             setSuccessMessage(null);
                           }}
                           disabled={isLoggingInGoogle || isLoggingInGuest}
-                          className="w-full relative flex items-center justify-center gap-2.5 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 hover:border-slate-300 transition-all font-black text-xs uppercase tracking-widest py-4 px-6 rounded-2xl cursor-pointer active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-sm group"
+                          className="w-full relative flex items-center justify-center gap-2.5 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 hover:border-slate-300 transition-all font-black text-xs uppercase tracking-widest py-3.5 px-6 rounded-2xl cursor-pointer active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-sm group"
                         >
                           <Mail size={13} className="text-indigo-600 group-hover:scale-110 transition-all" />
                           <span>Sign In with Email</span>
+                        </button>
+
+                        {/* Sign Up with Email option */}
+                        <button
+                          id="email-signup-option-btn"
+                          onClick={() => {
+                            setAuthMode('register');
+                            setErrorMessage(null);
+                            setSuccessMessage(null);
+                          }}
+                          disabled={isLoggingInGoogle || isLoggingInGuest}
+                          className="w-full relative flex items-center justify-center gap-2.5 bg-indigo-50/60 hover:bg-indigo-50 text-indigo-950 border border-indigo-200/80 hover:border-indigo-300 transition-all font-black text-xs uppercase tracking-widest py-3.5 px-6 rounded-2xl cursor-pointer active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-sm group"
+                        >
+                          <UserPlus size={14} className="text-indigo-600 group-hover:scale-110 transition-all" />
+                          <span>Sign Up with Email</span>
                         </button>
 
                         {/* Aesthetic Section Line Divider */}

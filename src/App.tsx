@@ -3681,7 +3681,7 @@ export default function App() {
     <div 
       data-theme={state.settings.theme}
       className={cn(
-        "min-h-screen pb-20 overflow-hidden relative transition-colors duration-700",
+        "min-h-screen pb-24 md:pb-28 overflow-x-clip relative transition-colors duration-700",
         isDesktopSize && "desktop-size-mode"
       )}
     >
@@ -4143,7 +4143,7 @@ export default function App() {
 
 
       {/* Main Content */}
-      <main className="container mx-auto p-4 overflow-hidden">
+      <main className="container mx-auto p-3 sm:p-4 overflow-visible">
         {isTabLoading ? (
           <div className="py-2">
             {activeTab === 'home' && <SkeletonCatalog />}

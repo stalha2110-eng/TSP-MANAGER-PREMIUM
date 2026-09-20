@@ -194,7 +194,8 @@ export function NotificationBar({
                           if (alert.type === 'item') dismissId = `price-${alert.id}-${alert.timestamp}`;
                           onDismiss(dismissId);
                         }}
-                        className="opacity-0 group-hover/item:opacity-100 p-2 hover:text-red-500 transition-all rounded-lg hover:bg-red-500/10"
+                        className="opacity-80 group-hover/item:opacity-100 p-2 hover:text-red-500 transition-all rounded-lg hover:bg-red-500/10 cursor-pointer"
+                        title="Dismiss notification"
                       >
                         <X size={16} />
                       </button>

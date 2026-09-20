@@ -2681,8 +2681,8 @@ export default function BillingScreen({
 
           {/* 📁 MULTI-WINDOW POS DRAFT BILLING TABS & SMART REGISTER DECK */}
           <div 
-            style={{ marginTop: '-6px', marginBottom: '12px', minHeight: '126.903px', width: '349.273px' }}
-            className="bg-[var(--card)]/80 backdrop-blur-md rounded-2xl border border-[var(--border)] p-3.5 space-y-2.5 shadow-lg relative overflow-hidden group"
+            style={{ marginTop: '-6px', marginBottom: '12px' }}
+            className="w-full bg-[var(--card)]/80 backdrop-blur-md rounded-2xl border border-[var(--border)] p-3.5 space-y-2.5 shadow-lg relative overflow-hidden group"
           >
         <div className="absolute top-0 right-0 h-32 w-32 bg-[var(--primary)]/5 rounded-full blur-2xl pointer-events-none" />
         
@@ -3783,7 +3783,7 @@ export default function BillingScreen({
         {/* LEFT COLUMN: ACTIVE PRODUCTS LIST & QUICK HELPER BUTTONS (7/12) - INDEPENDENT SCROLL CONTAINER */}
         <div className={cn(
           "col-span-12 lg:min-h-[calc(100vh-140px)] lg:flex lg:flex-col space-y-3 transition-all duration-300",
-          (showLivePreview && cart.length > 0) ? "lg:col-span-4 xl:col-span-4" : "lg:col-span-7"
+          (showLivePreview && cart.length > 0) ? "lg:col-span-4 xl:col-span-5" : "lg:col-span-7"
         )}>
           
           {/* STICKY TOP CONTROLS: SEARCH BAR, RECENT SEARCHES & CATEGORY FILTER */}
@@ -5158,7 +5158,7 @@ export default function BillingScreen({
 
         {/* DESKTOP/TABLET SIDE-BY-SIDE LIVE PREVIEW PANEL */}
         {showLivePreview && cart.length > 0 && (
-          <div className="hidden lg:block lg:col-span-4 xl:col-span-4 animate-in slide-in-from-right-4 duration-300">
+          <div className="hidden lg:block lg:col-span-4 xl:col-span-3 animate-in slide-in-from-right-4 duration-300">
             {(() => {
               const discountAmount = (subtotal * discountPercent) / 100;
               const taxAmount = ((subtotal - discountAmount) * taxPercent) / 100;

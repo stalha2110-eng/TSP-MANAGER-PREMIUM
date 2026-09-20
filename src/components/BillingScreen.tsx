@@ -4766,78 +4766,70 @@ export default function BillingScreen({
                     <label className="text-[7.5px] font-black uppercase opacity-70">
                       {getTranslation('discountLabel')}
                     </label>
-                    {/* Toggle Mode: ₹ (Rupees) vs % (Percentage) */}
-                    <div className="flex bg-[var(--card)] p-0.5 rounded-md border border-[var(--border)] shadow-xs">
-                      <button
-                        type="button"
-                        onClick={() => handleDiscountModeChange('rupees')}
-                        title="Rupees Discount (₹)"
-                        className={cn(
-                          "px-1.5 py-0.5 rounded text-[8px] font-black transition-all flex items-center gap-0.5 cursor-pointer",
-                          discountMode === 'rupees' 
-                            ? "bg-[var(--primary)] text-white shadow-xs" 
-                            : "text-[var(--foreground)]/50 hover:text-[var(--foreground)]"
-                        )}
-                      >
-                        ₹
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDiscountModeChange('percent')}
-                        title="Percentage Discount (%)"
-                        className={cn(
-                          "px-1.5 py-0.5 rounded text-[8px] font-black transition-all flex items-center gap-0.5 cursor-pointer",
-                          discountMode === 'percent' 
-                            ? "bg-[var(--primary)] text-white shadow-xs" 
-                            : "text-[var(--foreground)]/50 hover:text-[var(--foreground)]"
-                        )}
-                      >
-                        %
-                      </button>
-                    </div>
+                    <span className="text-[7px] font-bold opacity-40 uppercase">
+                      {discountMode === 'rupees' ? 'Rupees (₹)' : 'Percent (%)'}
+                    </span>
                   </div>
 
-                  {discountMode === 'rupees' ? (
-                    <div className="space-y-0.5">
-                      <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-black opacity-50">₹</span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          placeholder="0"
-                          value={discountRupeesInput}
-                          onChange={(e) => handleRupeesDiscountChange(e.target.value)}
-                          className="w-full rounded-lg bg-[var(--card)] border border-[var(--border)] px-2 py-1 pl-5 text-[10px] text-[var(--foreground)] font-bold outline-none font-mono focus:border-[var(--primary)] text-right"
-                        />
+                  <div className="space-y-0.5">
+                    {/* Discount Input with ₹ and % toggle button inside at the left side */}
+                    <div className="relative flex items-center rounded-lg bg-[var(--card)] border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:ring-1 focus-within:ring-[var(--primary)]/20 transition-all shadow-2xs overflow-hidden">
+                      {/* Integrated Rupees & Percentage Button at the Left */}
+                      <div className="flex items-center bg-[var(--foreground)]/5 p-0.5 m-0.5 rounded-md shrink-0 border border-[var(--border)]/60">
+                        <button
+                          type="button"
+                          onClick={() => handleDiscountModeChange('rupees')}
+                          title="Rupees Discount (₹)"
+                          className={cn(
+                            "px-1.5 py-0.5 rounded text-[8px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
+                            discountMode === 'rupees' 
+                              ? "bg-[var(--primary)] text-white shadow-xs" 
+                              : "text-[var(--foreground)]/50 hover:text-[var(--foreground)]"
+                          )}
+                        >
+                          ₹
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDiscountModeChange('percent')}
+                          title="Percentage Discount (%)"
+                          className={cn(
+                            "px-1.5 py-0.5 rounded text-[8px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
+                            discountMode === 'percent' 
+                              ? "bg-[var(--primary)] text-white shadow-xs" 
+                              : "text-[var(--foreground)]/50 hover:text-[var(--foreground)]"
+                          )}
+                        >
+                          %
+                        </button>
                       </div>
-                      {discountPercent > 0 && (
-                        <div className="text-[7.5px] font-mono text-emerald-600 dark:text-emerald-400 font-bold text-right truncate">
-                          ≈ {Number(discountPercent.toFixed(2))}% off
-                        </div>
-                      )}
+
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        max={discountMode === 'percent' ? "100" : undefined}
+                        placeholder="0"
+                        value={discountMode === 'rupees' ? discountRupeesInput : (discountPercent || '')}
+                        onChange={(e) => {
+                          if (discountMode === 'rupees') {
+                            handleRupeesDiscountChange(e.target.value);
+                          } else {
+                            handlePercentDiscountChange(e.target.value);
+                          }
+                        }}
+                        className="w-full bg-transparent px-2 py-1 text-[10px] text-[var(--foreground)] font-bold outline-none font-mono text-right"
+                      />
                     </div>
-                  ) : (
-                    <div className="space-y-0.5">
-                      <div className="relative">
-                        <Percent className="absolute left-2 top-1/2 -translate-y-1/2 opacity-30" size={10} />
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          placeholder="0"
-                          value={discountPercent || ''}
-                          onChange={(e) => handlePercentDiscountChange(e.target.value)}
-                          className="w-full rounded-lg bg-[var(--card)] border border-[var(--border)] px-2 py-1 pl-6 text-[10px] text-[var(--foreground)] font-bold outline-none font-mono focus:border-[var(--primary)] text-right"
-                        />
+
+                    {discountPercent > 0 && (
+                      <div className="text-[7.5px] font-mono text-emerald-600 dark:text-emerald-400 font-bold text-right truncate">
+                        {discountMode === 'rupees' 
+                          ? `≈ ${Number(discountPercent.toFixed(2))}% off` 
+                          : `≈ ₹${discountAmount.toFixed(2)} off`}
                       </div>
-                      {discountPercent > 0 && (
-                        <div className="text-[7.5px] font-mono text-emerald-600 dark:text-emerald-400 font-bold text-right truncate">
-                          ≈ ₹{discountAmount.toFixed(2)} off
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
                 
                 {/* Tax Section */}

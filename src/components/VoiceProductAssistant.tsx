@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   X, Mic, MicOff, Settings, Trash2, Edit2, Check, CheckCircle2, 
-  AlertTriangle, Volume2, Sparkles, Sliders, FileText, HelpCircle, 
+  AlertTriangle, Volume2, Sparkles, Sliders, FileText, 
   CornerDownRight, RefreshCw, Undo, Save, Info, PlusCircle, CheckCircle
 } from "lucide-react";
 import { Item, Category } from "../types";
@@ -1367,33 +1367,6 @@ export function VoiceProductAssistant({
                     <AlertTriangle size={14} /> {recognitionError}
                   </p>
                 )}
-              </div>
-
-              {/* QUICK HINT CARD */}
-              <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex gap-3 text-sm">
-                <HelpCircle className="text-amber-500 shrink-0 mt-0.5" size={18} />
-                <div className="space-y-1.5 flex-1">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <p className="font-extrabold text-amber-500/95 text-xs uppercase tracking-widest">💡 Voice Assistant Guide (Hindi / English / Marathi / Hinglish)</p>
-                    <span className="px-2 py-0.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-full text-[10px] font-bold">
-                      Pav Kilo = 250gm (Retail)
-                    </span>
-                  </div>
-                  <p className="text-xs text-[var(--foreground)]/80">
-                    Saying <strong>"pav kilo"</strong> automatically sets the <strong>retail price for 250gm</strong>. You can also say words before <strong>"retail"</strong> to set the product name!
-                  </p>
-                  <div className="flex flex-wrap gap-2 text-[11px] font-mono pt-0.5">
-                    <span className="bg-[var(--card)] px-2 py-0.5 rounded border border-[var(--border)] text-amber-600 dark:text-amber-400">
-                      "Tamatar pav kilo 20"
-                    </span>
-                    <span className="bg-[var(--card)] px-2 py-0.5 rounded border border-[var(--border)] text-amber-600 dark:text-amber-400">
-                      "Aloo 10 rupaye pav kilo"
-                    </span>
-                    <span className="bg-[var(--card)] px-2 py-0.5 rounded border border-[var(--border)] text-amber-600 dark:text-amber-400">
-                      "Kashmiri coconut retail 300rs per kg"
-                    </span>
-                  </div>
-                </div>
               </div>
 
               {/* CORRECTION STATUS BAR */}

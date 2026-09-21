@@ -994,6 +994,10 @@ export default function BillingScreen({
   useEffect(() => {
     const syncSettings = () => {
       try {
+        if (state.settings?.printerSettings) {
+          setPrintSettings({ ...DEFAULT_PRINT_SETTINGS, ...state.settings.printerSettings });
+          return;
+        }
         const saved = localStorage.getItem('price_manager_printer_config');
         if (saved) {
           setPrintSettings({ ...DEFAULT_PRINT_SETTINGS, ...JSON.parse(saved) });
@@ -1003,7 +1007,7 @@ export default function BillingScreen({
     window.addEventListener('focus', syncSettings);
     syncSettings();
     return () => window.removeEventListener('focus', syncSettings);
-  }, []);
+  }, [state.settings?.printerSettings]);
 
   // Filter 24-hour logs
   const olderThan24HoursBills = useMemo(() => {

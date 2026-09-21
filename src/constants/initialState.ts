@@ -202,6 +202,21 @@ export const getInitialState = (): AppState => {
     }
   }
 
+  // Restore & ensure unified printer settings persistence
+  try {
+    const savedPrinterConfig = localStorage.getItem('price_manager_printer_config');
+    if (savedPrinterConfig) {
+      const parsedPrinter = JSON.parse(savedPrinterConfig);
+      if (parsedPrinter && typeof parsedPrinter === 'object') {
+        settings.printerSettings = { ...(settings.printerSettings || {}), ...parsedPrinter };
+      }
+    } else if (settings.printerSettings) {
+      localStorage.setItem('price_manager_printer_config', JSON.stringify(settings.printerSettings));
+    }
+  } catch (e) {
+    console.warn("Failed to synchronize initial printer settings", e);
+  }
+
   let items = [];
   let notes = [];
   let bills = [];

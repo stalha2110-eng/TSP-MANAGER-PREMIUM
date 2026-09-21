@@ -2187,6 +2187,13 @@ export default function App() {
       if (snap.exists()) {
         const data = snap.data();
         setState(prev => ({ ...prev, settings: { ...prev.settings, ...data } }));
+        if (data.printerSettings) {
+          try {
+            localStorage.setItem('price_manager_printer_config', JSON.stringify(data.printerSettings));
+          } catch (e) {
+            console.warn("Failed to store cloud printer config locally", e);
+          }
+        }
       }
     }, (error) => {
       if (auth.currentUser) {
@@ -6390,6 +6397,7 @@ export default function App() {
                       state={state} 
                       t={t} 
                       onUpdateState={handleUpdateComponentState}
+                      onUpdateSettings={handleUpdateSettings}
                     />
                   </div>
                 ) : menuTab === 'day_closing' ? (

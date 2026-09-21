@@ -3,21 +3,26 @@ import {
   Printer, Bluetooth, Usb, Wifi, Check, Trash2, Plus, 
   Languages, Image as ImageIcon, Clock, AlignLeft, AlignCenter, 
   AlignRight, RefreshCw, AlertTriangle, Eye, ShieldCheck, CreditCard, 
-  Sliders, Settings2
+  Sliders, Settings2, RotateCcw
 } from 'lucide-react';
-import { AppState } from '../types';
+import { AppState, AppSettings } from '../types';
 import { printerService, DEFAULT_PRINT_SETTINGS, PrintSettings, PrinterDevice } from '../services/printerService';
 import { cn } from '../lib/utils';
 
 interface PrinterSettingsScreenProps {
   state: AppState;
   t: any;
-  onUpdateState: (updates: any) => void;
+  onUpdateState?: (updates: any) => void;
+  onUpdateSettings?: (updates: Partial<AppSettings>) => void;
 }
 
-export default function PrinterSettingsScreen({ state, t, onUpdateState }: PrinterSettingsScreenProps) {
-  // Read saved settings or fallback to defaults
+export default function PrinterSettingsScreen({ state, t, onUpdateState, onUpdateSettings }: PrinterSettingsScreenProps) {
+  // Read saved settings from user profile state or fallback to localStorage / defaults
   const [printSettings, setPrintSettings] = useState<PrintSettings>(() => {
+    const fromState = state.settings?.printerSettings;
+    if (fromState && typeof fromState === 'object') {
+      return { ...DEFAULT_PRINT_SETTINGS, ...fromState };
+    }
     const saved = localStorage.getItem('price_manager_printer_config');
     if (saved) {
       try {
@@ -36,6 +41,16 @@ export default function PrinterSettingsScreen({ state, t, onUpdateState }: Print
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [customIP, setCustomIP] = useState('');
 
+  // Keep local state in sync when cloud or user settings update
+  useEffect(() => {
+    if (state.settings?.printerSettings) {
+      setPrintSettings(prev => ({
+        ...prev,
+        ...state.settings.printerSettings
+      }));
+    }
+  }, [state.settings?.printerSettings]);
+
   // Subscribe to printer connectivity status
   useEffect(() => {
     const unsub = printerService.subscribe((dev) => {
@@ -44,11 +59,29 @@ export default function PrinterSettingsScreen({ state, t, onUpdateState }: Print
     return () => unsub();
   }, []);
 
-  // Save changes to localStorage and push to global app settings state if available
+  // Save changes to localStorage and push to global app settings state / cloud Firestore
   const updateConfig = (updates: Partial<PrintSettings>) => {
     const next = { ...printSettings, ...updates };
     setPrintSettings(next);
-    localStorage.setItem('price_manager_printer_config', JSON.stringify(next));
+
+    // 1. Always store locally in dedicated printer config key for instant access
+    try {
+      localStorage.setItem('price_manager_printer_config', JSON.stringify(next));
+    } catch (e) {
+      console.warn("Failed to write to localStorage", e);
+    }
+
+    // 2. Always persist to user's AppSettings and cloud database
+    if (onUpdateSettings) {
+      onUpdateSettings({ printerSettings: next });
+    } else if (onUpdateState) {
+      onUpdateState({
+        settings: {
+          ...state.settings,
+          printerSettings: next
+        }
+      });
+    }
 
     // Clear messages
     setErrorMessage(null);
@@ -57,6 +90,37 @@ export default function PrinterSettingsScreen({ state, t, onUpdateState }: Print
     // Provide haptic vibration feed
     if (navigator.vibrate) {
       navigator.vibrate(15);
+    }
+  };
+
+  // Restore factory default settings and persist immediately
+  const handleResetToDefault = () => {
+    const defaultSettings = { ...DEFAULT_PRINT_SETTINGS };
+    setPrintSettings(defaultSettings);
+
+    try {
+      localStorage.setItem('price_manager_printer_config', JSON.stringify(defaultSettings));
+    } catch (e) {
+      console.warn("Failed to write default settings to localStorage", e);
+    }
+
+    if (onUpdateSettings) {
+      onUpdateSettings({ printerSettings: defaultSettings });
+    } else if (onUpdateState) {
+      onUpdateState({
+        settings: {
+          ...state.settings,
+          printerSettings: defaultSettings
+        }
+      });
+    }
+
+    setErrorMessage(null);
+    setSuccessMessage('Default printer settings restored and saved successfully.');
+    clearMessagesAfterDelay();
+
+    if (navigator.vibrate) {
+      navigator.vibrate(25);
     }
   };
 
@@ -308,13 +372,28 @@ export default function PrinterSettingsScreen({ state, t, onUpdateState }: Print
   return (
     <div className="space-y-6 text-[var(--foreground)] pb-24">
       {/* Header Banner */}
-      <div className="flex items-center gap-3 bg-[var(--primary)] text-white p-4 rounded-3xl shadow-md">
-        <div className="h-10 w-10 bg-white/20 rounded-2xl flex items-center justify-center">
-          <Printer size={20} className="animate-pulse" />
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-[var(--primary)] text-white p-4 rounded-3xl shadow-md">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+            <Printer size={20} className="animate-pulse" />
+          </div>
+          <div>
+            <h3 className="font-extrabold text-sm uppercase tracking-wider leading-none">Universal Printing Control</h3>
+            <p className="text-[10px] opacity-80 uppercase font-black tracking-widest mt-1">POS, Bluetooth, USB & Hybrid Web Layers</p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-extrabold text-sm uppercase tracking-wider leading-none">Universal Printing Control</h3>
-          <p className="text-[10px] opacity-80 uppercase font-black tracking-widest mt-1">POS, Bluetooth, USB & Hybrid Web Layers</p>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            id="printer-default-reset-btn"
+            onClick={handleResetToDefault}
+            className="px-3.5 py-2 rounded-2xl bg-white/15 hover:bg-white/25 active:scale-95 border border-white/30 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-sm select-none"
+            title="Restore factory default printer settings"
+          >
+            <RotateCcw size={14} className="stroke-[2.5]" />
+            <span>Default</span>
+          </button>
         </div>
       </div>
 

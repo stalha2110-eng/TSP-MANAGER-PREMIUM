@@ -152,6 +152,9 @@ export interface AppSettings {
   // Custom Categories Mapping
   customCategories?: Category[];
 
+  // Printer Settings
+  printerSettings?: any;
+
   // --- Premium Sound & Feedback System Settings ---
   soundFeedbackMode?: 'silent' | 'vibrate_only' | 'vibrate_sound';
   soundStylePack?: 'classic_pos' | 'modern' | 'professional';

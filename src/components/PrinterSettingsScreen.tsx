@@ -3,7 +3,7 @@ import {
   Printer, Bluetooth, Usb, Wifi, Check, Trash2, Plus, 
   Languages, Image as ImageIcon, Clock, AlignLeft, AlignCenter, 
   AlignRight, RefreshCw, AlertTriangle, Eye, ShieldCheck, CreditCard, 
-  Sliders, Settings2, RotateCcw
+  Sliders, Settings2, RotateCcw, X
 } from 'lucide-react';
 import { AppState, AppSettings } from '../types';
 import { printerService, DEFAULT_PRINT_SETTINGS, PrintSettings, PrinterDevice } from '../services/printerService';
@@ -40,6 +40,7 @@ export default function PrinterSettingsScreen({ state, t, onUpdateState, onUpdat
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [customIP, setCustomIP] = useState('');
+  const [showLivePreviewModal, setShowLivePreviewModal] = useState(false);
 
   // Keep local state in sync when cloud or user settings update
   useEffect(() => {
@@ -208,30 +209,6 @@ export default function PrinterSettingsScreen({ state, t, onUpdateState, onUpdat
   const logoFileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingLogo, setIsDraggingLogo] = useState(false);
 
-  // Generate crisp standard preset logo PNG for thermal receipts
-  const generatePresetLogoPng = (emojiOrSymbol: string, title: string) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 240;
-    canvas.height = 120;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return '';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, 240, 120);
-    
-    // Draw Icon
-    ctx.font = '48px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(emojiOrSymbol, 120, 48);
-    
-    // Draw Title
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.fillText(title.toUpperCase(), 120, 95);
-    
-    return canvas.toDataURL('image/png');
-  };
-
   // Robust client-side canvas compressor for any file size (even 10MB phone camera shots)
   const processImageFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -370,7 +347,7 @@ export default function PrinterSettingsScreen({ state, t, onUpdateState, onUpdat
   };
 
   return (
-    <div className="space-y-6 text-[var(--foreground)] pb-24">
+    <div className="space-y-6 text-[var(--foreground)] pb-36">
       {/* Header Banner */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-[var(--primary)] text-white p-4 rounded-3xl shadow-md">
         <div className="flex items-center gap-3">
@@ -562,7 +539,18 @@ export default function PrinterSettingsScreen({ state, t, onUpdateState, onUpdat
         <div className="p-3 bg-[var(--foreground)]/5 border border-[var(--border)] rounded-2xl space-y-2">
           <div className="flex justify-between items-center text-[8.5px] font-black uppercase tracking-wider opacity-60">
             <span>Live Thermal Preview / रसीद पूर्वावलोकन</span>
-            <span className="text-[7.5px] bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-0.5 rounded font-bold font-mono uppercase">{printSettings.paperSize} Roll</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowLivePreviewModal(true)}
+                className="text-[7.5px] bg-[var(--primary)]/10 hover:bg-[var(--primary)]/20 text-[var(--primary)] px-2 py-0.5 rounded font-black uppercase transition-all cursor-pointer flex items-center gap-1"
+                title="Open floating live thermal preview popup"
+              >
+                <Eye size={10} />
+                <span>Pop Up</span>
+              </button>
+              <span className="text-[7.5px] bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-0.5 rounded font-bold font-mono uppercase">{printSettings.paperSize} Roll</span>
+            </div>
           </div>
 
           <div className="relative border-2 border-[var(--border)] bg-white rounded-xl shadow-inner overflow-hidden flex flex-col items-center">
@@ -902,41 +890,6 @@ export default function PrinterSettingsScreen({ state, t, onUpdateState, onUpdat
                   </div>
                 </div>
               )}
-
-              {/* Quick Preset Symbols */}
-              <div className="space-y-1.5 pt-1">
-                <span className="text-[8px] font-black uppercase text-[var(--foreground)] opacity-50 block">Or pick a standard store symbol:</span>
-                <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
-                  {[
-                    { icon: '🛒', label: 'Grocery' },
-                    { icon: '🏪', label: 'Retail' },
-                    { icon: '🥦', label: 'Veggies' },
-                    { icon: '☕', label: 'Cafe' },
-                    { icon: '💊', label: 'Pharma' },
-                    { icon: '👗', label: 'Fashion' },
-                    { icon: '⚡', label: 'Electro' },
-                    { icon: '📦', label: 'General' },
-                  ].map((preset) => (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      onClick={() => {
-                        const pngData = generatePresetLogoPng(preset.icon, preset.label);
-                        if (pngData) {
-                          updateConfig({ logoBase64: pngData });
-                          setSuccessMessage(`Applied ${preset.label} symbol logo!`);
-                          clearMessagesAfterDelay();
-                        }
-                      }}
-                      className="p-1.5 rounded-xl border border-[var(--border)] hover:border-[var(--primary)]/60 bg-[var(--card)] hover:bg-[var(--primary)]/5 flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
-                      title={`Use ${preset.label} symbol as receipt logo`}
-                    >
-                      <span className="text-base group-hover:scale-110 transition-transform">{preset.icon}</span>
-                      <span className="text-[7.5px] font-bold opacity-70 group-hover:opacity-100 truncate w-full mt-0.5">{preset.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           </>
         )}
@@ -1661,6 +1614,156 @@ export default function PrinterSettingsScreen({ state, t, onUpdateState, onUpdat
           Print Diagnostic Test Ticket
         </button>
       </div>
+
+      {/* FLOATING ACTION BUTTON AT THE BOTTOM: LIVE THERMAL PREVIEW (Only on Printer Settings) */}
+      <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40">
+        <button
+          type="button"
+          id="floating-thermal-preview-btn"
+          onClick={() => setShowLivePreviewModal(true)}
+          className="group px-4 py-2.5 sm:px-5 sm:py-3 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-black text-xs uppercase tracking-wider shadow-2xl flex items-center gap-2.5 hover:scale-105 active:scale-95 transition-all border border-white/20 dark:border-zinc-800 cursor-pointer select-none backdrop-blur-md whitespace-nowrap"
+          title="Open Live Thermal Preview Popup"
+        >
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <Eye size={15} className="group-hover:scale-110 transition-transform shrink-0" />
+          <span className="whitespace-nowrap">Live Thermal Preview</span>
+          <span className="text-[9.5px] bg-white/20 dark:bg-zinc-900/20 px-2 py-0.5 rounded-full font-mono font-bold shrink-0 whitespace-nowrap">
+            {printSettings.paperSize}
+          </span>
+        </button>
+      </div>
+
+      {/* POPUP MODAL: LIVE THERMAL PREVIEW */}
+      {showLivePreviewModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setShowLivePreviewModal(false)}
+        >
+          <div 
+            className="relative w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-[var(--foreground)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-[var(--border)] bg-[var(--foreground)]/[0.03] gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0">
+                  <Printer size={16} />
+                </div>
+                <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider whitespace-nowrap">
+                  Live Thermal Preview
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {/* Roll size switcher */}
+                <div className="flex items-center bg-[var(--foreground)]/10 p-0.5 rounded-xl border border-[var(--border)] shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => updateConfig({ paperSize: '58mm' })}
+                    className={cn(
+                      "px-2 sm:px-2.5 py-1 rounded-lg text-[9.5px] sm:text-[10px] font-black uppercase transition-all cursor-pointer whitespace-nowrap",
+                      printSettings.paperSize === '58mm' 
+                        ? "bg-[var(--primary)] text-white shadow-xs" 
+                        : "text-[var(--foreground)]/60 hover:text-[var(--foreground)]"
+                    )}
+                  >
+                    58mm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateConfig({ paperSize: '80mm' })}
+                    className={cn(
+                      "px-2 sm:px-2.5 py-1 rounded-lg text-[9.5px] sm:text-[10px] font-black uppercase transition-all cursor-pointer whitespace-nowrap",
+                      printSettings.paperSize === '80mm' 
+                        ? "bg-[var(--primary)] text-white shadow-xs" 
+                        : "text-[var(--foreground)]/60 hover:text-[var(--foreground)]"
+                    )}
+                  >
+                    80mm
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  id="close-preview-modal-btn"
+                  onClick={() => setShowLivePreviewModal(false)}
+                  className="w-8 h-8 rounded-xl bg-[var(--foreground)]/10 hover:bg-[var(--foreground)]/20 text-[var(--foreground)] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                  title="Close Preview"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body: Receipt Roll Container */}
+            <div className="p-4 overflow-y-auto flex-1 flex flex-col items-center bg-zinc-200/60 dark:bg-zinc-950/70">
+              <div className="w-full flex flex-col items-center">
+                <div 
+                  className="relative border-2 border-zinc-300 dark:border-zinc-700 bg-white rounded-xl shadow-xl overflow-hidden flex flex-col items-center w-full transition-all"
+                  style={{
+                    maxWidth: printSettings.paperSize === '80mm' ? '100%' : '270px'
+                  }}
+                >
+                  <iframe
+                    className="w-full bg-white transition-all duration-300"
+                    style={{
+                      height: '420px',
+                      border: 'none',
+                    }}
+                    srcDoc={printerService.generateReceiptHtml({
+                      billNumber: '1024',
+                      id: 'preview-id-123',
+                      timestamp: new Date().toISOString(),
+                      customerName: 'Rajesh Kumar',
+                      customerPhone: '9820098200',
+                      paymentMethod: 'UPI',
+                      subtotal: 150.00,
+                      discount: 10,
+                      tax: 5,
+                      total: 141.75,
+                      items: [
+                        { itemId: '1', name: 'Premium Basmati Biryani Rice Slim Row wrapping checks', quantity: 2, price: 60.00, cost: 120.00, unit: 'kg' },
+                        { itemId: '2', name: 'Tata Pure White Iodized Salt Premium Sack', quantity: 1, price: 30.00, cost: 30.00, unit: 'bag' }
+                      ]
+                    }, printSettings)}
+                    title="Modal Live Receipt Layout Frame"
+                  />
+                  <div className="w-full h-5 bg-gradient-to-t from-zinc-100 to-transparent pointer-events-none flex justify-between items-center px-4 font-mono text-[8px] text-zinc-400 select-none border-t border-dashed border-zinc-300">
+                    <span>✀ - - - - - - Tear Line - - - - - - </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--border)] bg-[var(--card)]">
+              <span className="text-[9px] font-mono opacity-50 uppercase font-bold truncate pr-2">
+                Live auto-refresh enabled
+              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleTestPrint}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                >
+                  <RefreshCw size={11} />
+                  <span>Test Print</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowLivePreviewModal(false)}
+                  className="px-3.5 py-1.5 rounded-xl bg-[var(--foreground)]/10 hover:bg-[var(--foreground)]/15 text-[var(--foreground)] text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

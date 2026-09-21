@@ -12,8 +12,6 @@ import {
   Upload,
   Download,
   XCircle,
-  HelpCircle,
-  ArrowRight,
   Lock,
   Volume2,
   Play,
@@ -47,13 +45,13 @@ import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 
 export default function SettingsScreen({ 
-  state, t, onUpdate, onShowHelp, onResetPIN,
+  state, t, onUpdate, onResetPIN,
   onExportExcel, onExportPDF, onImport, onBackup, onRestore, onClearCache,
   isSyncing, isExporting,
   activeSubTab: externalActiveSubTab,
   onChangeSubTab
 }: { 
-  state: AppState; t: any; onUpdate: (u: any) => void; onShowHelp: () => void; onResetPIN: () => void;
+  state: AppState; t: any; onUpdate: (u: any) => void; onResetPIN: () => void;
   onExportExcel: () => void;
   onExportPDF: () => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -1676,26 +1674,6 @@ export default function SettingsScreen({
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Global Support & Documentation */}
-        <section className="space-y-6 pt-12 border-t border-[var(--border)]">
-           <Button 
-             variant="outline" 
-             onClick={onShowHelp}
-             className="w-full h-20 rounded-[2.5rem] border-[var(--border)] bg-[var(--card)] hover:bg-[var(--primary)]/10 hover:border-[var(--primary)] hover:text-[var(--primary)] flex items-center justify-between px-8 group transition-all"
-           >
-             <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-[var(--background)] text-[var(--foreground)] flex items-center justify-center group-hover:bg-[var(--primary)] group-hover:text-white transition-colors">
-                  <HelpCircle size={24} />
-                </div>
-                <div className="text-left select-none">
-                  <p className="font-black uppercase tracking-tighter text-sm text-[var(--foreground)]">{t.help || "Help aur Guide"}</p>
-                  <p className="text-[10px] font-bold opacity-40 uppercase text-[var(--foreground)]">Learn pro tricks and data security</p>
-                </div>
-             </div>
-             <ArrowRight size={20} className="opacity-0 group-hover:opacity-100 transition-all -translate-x-4 group-hover:translate-x-0 text-[var(--foreground)]" />
-           </Button>
-        </section>
 
         {/* Add Custom API Key Modal */}
         <AnimatePresence>

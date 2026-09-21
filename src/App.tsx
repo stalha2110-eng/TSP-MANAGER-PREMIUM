@@ -216,8 +216,6 @@ import { INITIAL_SETTINGS, INITIAL_STATE, getInitialState, deduplicateById, Aler
 import { NotificationBar } from './components/NotificationBar';
 import { SplashScreen } from './components/SplashScreen';
 import { ExportCostChoiceModal } from './components/ExportCostChoiceModal';
-import { HelpModal } from './components/HelpModal';
-import { AppHelpTutorial } from './components/AppHelpTutorial';
 import { OnboardingTour } from './components/OnboardingTour';
 import { ComparisonModal } from './components/ComparisonModal';
 import { ItemFormModal } from './components/ItemFormModal';
@@ -504,7 +502,7 @@ export default function App() {
   } | null>(null);
 
   const [showMenu, setShowMenu] = useState(false);
-  const [menuTab, setMenuTab] = useState<'profile' | 'settings' | 'business_settings' | 'printer' | 'day_closing' | 'help'>('profile');
+  const [menuTab, setMenuTab] = useState<'profile' | 'settings' | 'business_settings' | 'printer' | 'day_closing'>('profile');
   const [settingsSubTab, setSettingsSubTab] = useState<'interface' | 'security' | 'sound' | 'data'>('interface');
   const [businessSubTab, setBusinessSubTab] = useState<'overview' | 'journey' | 'profile' | 'features' | 'categories' | 'dashboard' | 'actions' | 'knowledge' | 'recovery'>('overview');
   const [drawerSearchQuery, setDrawerSearchQuery] = useState('');
@@ -3532,7 +3530,6 @@ export default function App() {
   // --- Filtered Items ---
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
   const [showTour, setShowTour] = useState(false);
 
   // Centralized check for whether any modal, drawer, or full-screen overlay is active
@@ -3545,7 +3542,6 @@ export default function App() {
     showAddCategory ||
     showManageCategories ||
     showComparison ||
-    showHelp ||
     showTour ||
     showGoalPanel ||
     showMenu ||
@@ -3571,7 +3567,6 @@ export default function App() {
   useBackModal(showAddCategory, () => setShowAddCategory(false), 'add_category_modal');
   useBackModal(showManageCategories, () => setShowManageCategories(false), 'manage_categories_modal');
   useBackModal(showComparison, () => setShowComparison(false), 'comparison_modal');
-  useBackModal(showHelp, () => setShowHelp(false), 'help_modal');
   useBackModal(showTour, () => setShowTour(false), 'tour_modal');
   useBackModal(showGoalPanel, () => setShowGoalPanel(false), 'goal_panel_modal');
   useBackModal(showPINScreen, () => setShowPINScreen(false), 'pin_screen_modal');
@@ -5336,17 +5331,6 @@ export default function App() {
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {showHelp && (
-          <HelpModal 
-            key="help-modal"
-            onClose={() => setShowHelp(false)}
-            onNavigateTab={(tab) => { setActiveTab(tab as any); setShowHelp(false); }}
-            onOpenVoice={() => { setShowVoiceAssistant(true); setShowHelp(false); }}
-            t={t}
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
         {exportModal.isOpen && (
           <ExportCostChoiceModal 
             key="export-cost-choice-modal"
@@ -5621,20 +5605,6 @@ export default function App() {
                     )}
                   >
                     🌙 Day Close
-                  </button>
-                  <button 
-                    id="drawer-menu-help-tab-btn"
-                    onClick={() => {
-                      setShowHelp(true);
-                      setShowMenu(false);
-                    }}
-                    className={cn(
-                      "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1",
-                      "border-transparent text-[var(--foreground)]/60 hover:text-[var(--primary)] hover:border-[var(--primary)]"
-                    )}
-                  >
-                    <span>❓</span>
-                    <span>Help</span>
                   </button>
                 </div>
 
@@ -6140,18 +6110,6 @@ export default function App() {
                       }
                     },
                     {
-                      id: 'set-help-guide',
-                      title: '❓ App Guide & Video Tutorials (Full Screen)',
-                      category: 'Help',
-                      description: 'Interactive animated live video tutorials on how to add products with voice assistant and create bills in full screen size',
-                      keywords: ['help', 'tutorial', 'video', 'how to use', 'how to add products', 'how to create bill', 'demo', 'guide', 'voice demo', 'full screen'],
-                      onClick: () => {
-                        setShowHelp(true);
-                        setShowMenu(false);
-                        addToast("Opened Live Tutorial in Full Screen Size", "success");
-                      }
-                    },
-                    {
                       id: 'tool-calculator',
                       title: 'Universal Calculator (with Undo & Redo)',
                       category: 'Tools',
@@ -6402,7 +6360,6 @@ export default function App() {
                     onUpdate={handleUpdateSettings} 
                     activeSubTab={settingsSubTab}
                     onChangeSubTab={setSettingsSubTab} 
-                    onShowHelp={() => { setShowHelp(true); setShowMenu(false); }}
                     onResetPIN={() => {
                       setShowMenu(false);
                       if (state.settings.pin) {
@@ -6444,17 +6401,7 @@ export default function App() {
                       t={t}
                     />
                   </div>
-                ) : (
-                  <div className="pt-2">
-                    <AppHelpTutorial 
-                      initialFullscreen={true}
-                      onClose={() => setMenuTab('profile')}
-                      onNavigateTab={(tab) => { setActiveTab(tab as any); setShowMenu(false); }}
-                      onOpenVoice={() => { setShowVoiceAssistant(true); setShowMenu(false); }}
-                      t={t}
-                    />
-                  </div>
-                )}
+                ) : null}
               </div>
 
               <div className="pt-6 border-t border-[var(--border)] text-[9px] font-black uppercase text-center opacity-30 tracking-[0.2em]">

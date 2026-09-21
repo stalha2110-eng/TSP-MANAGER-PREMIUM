@@ -735,7 +735,7 @@ export default function BusinessSettingsScreen({
       iconBg: 'bg-indigo-500/10',
       iconText: 'text-indigo-500',
       badgeStyle: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
-      searchTerms: 'knowledge hub help guides faq tutorials video'
+      searchTerms: 'knowledge hub guides manuals documentation store directory'
     },
     recovery: {
       id: 'recovery',
@@ -1345,7 +1345,7 @@ export default function BusinessSettingsScreen({
                 {activeSubTab === 'actions' && '⚡ Cashier Shortcuts'}
                 {activeSubTab === 'dashboard' && '📊 Home Screen Cards'}
                 {activeSubTab === 'journey' && '🌱 Setup Checklist & Growth'}
-                {activeSubTab === 'knowledge' && '📖 Help & How-To Guides'}
+                {activeSubTab === 'knowledge' && '🧠 Store Knowledge Hub'}
                 {activeSubTab === 'recovery' && '🛡️ Restore Deleted Data'}
                 {activeSubTab === 'features' && '⚙️ Advanced Feature Switches'}
               </span>
@@ -1409,7 +1409,7 @@ export default function BusinessSettingsScreen({
                 activeSubTab === 'knowledge' ? "bg-[var(--primary)] text-white shadow-xs" : "opacity-60 hover:opacity-100"
               )}
             >
-              📖 Help
+              🧠 Knowledge
             </button>
             <button
               onClick={() => setActiveSubTab('recovery')}

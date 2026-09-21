@@ -6198,7 +6198,7 @@ export default function App() {
                       id: 'desktop-size-toggle',
                       title: '🖥️ Desktop Size Mode (Large Buttons)',
                       category: 'Display & Interface',
-                      description: 'Toggle large screen size format with enlarged buttons for desktop and counter monitors',
+                      description: 'Large buttons and screen formats',
                       keywords: ['desktop size', 'large button', 'desktop screen', 'large interface', 'monitor', 'screen size', 'desktop'],
                       onClick: () => {
                         handleToggleDesktopSize();

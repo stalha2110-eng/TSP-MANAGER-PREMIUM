@@ -26,10 +26,9 @@ export function OnboardingTour({
   const [selectedLang, setSelectedLang] = useState<LanguageType>('en');
   const [selectedCurrency, setSelectedCurrency] = useState('INR');
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>('retro-blue');
-  const [printerFormat, setPrinterFormat] = useState('80mm');
 
-  // Total 6 steps (0 to 5)
-  const totalSteps = 6;
+  // Total 5 steps (0 to 4)
+  const totalSteps = 5;
 
   const handleFinishWizard = () => {
     // Update settings cleanly
@@ -190,34 +189,7 @@ export function OnboardingTour({
 
             )}
             {step === 4 && (
-              <motion.div key="step-4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4 select-none">
-                <h3 className="text-lg font-black uppercase tracking-tight">Receipt Roll Format Configuration</h3>
-                <p className="text-xs text-[var(--foreground)]/60">Configure your spool layout to prevent clipped text or printing overlaps.</p>
-                
-                <div className="flex gap-3 justify-center pt-4">
-                  {[
-                    { id: '58mm', label: '📟 58mm Roll', desc: 'Compact thermal receipts (Kiran)' },
-                    { id: '80mm', label: '📠 80mm Tape', desc: 'Standard POS wholesale printers' },
-                    { id: 'A4', label: '📄 A4 Standard', desc: 'Standard laser laserjet printers' }
-                  ].map(fm => (
-                    <button
-                      key={fm.id}
-                      onClick={() => setPrinterFormat(fm.id)}
-                      className={cn(
-                        "p-4 rounded-xl border transition cursor-pointer select-none flex-1 text-center font-bold text-xs",
-                        printerFormat === fm.id ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] bg-[var(--foreground)]/5 text-[var(--foreground)]/70 hover:bg-[var(--foreground)]/10"
-                      )}
-                    >
-                      <p className="font-extrabold mb-1">{fm.label}</p>
-                      <p className="text-[9px] opacity-60 font-semibold">{fm.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-
-            )}
-            {step === 5 && (
-              <motion.div key="step-5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4 text-center">
+              <motion.div key="step-4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4 text-center">
                 <div className="h-14 w-14 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-2 animate-bounce">
                   <CheckCircle size={32} />
                 </div>

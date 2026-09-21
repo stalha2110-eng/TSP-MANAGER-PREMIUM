@@ -826,10 +826,7 @@ export function ProfileScreen({
                         </span>
                      </div>
                      <p className="text-xs text-[var(--foreground)]/70 mt-1 max-w-xl font-medium leading-relaxed">
-                        Large screen format with enlarged buttons, spacious touch targets, and high-visibility typography for desktop computers, laptops & POS counter monitors.
-                     </p>
-                     <p className="text-[10px] text-[var(--foreground)]/50 mt-0.5 italic">
-                        डेस्कटॉप साइज: बड़े बटन और बड़ा इंटरफेस (केवल इसी डिवाइस पर सुरक्षित)
+                        Large buttons and screen formats
                      </p>
                   </div>
                </div>

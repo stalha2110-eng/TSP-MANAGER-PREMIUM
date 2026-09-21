@@ -4775,13 +4775,16 @@ export default function BillingScreen({
                     {/* Discount Input with ₹ and % toggle button inside at the left side */}
                     <div className="relative flex items-center rounded-lg bg-[var(--card)] border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:ring-1 focus-within:ring-[var(--primary)]/20 transition-all shadow-2xs overflow-hidden">
                       {/* Integrated Rupees & Percentage Button at the Left */}
-                      <div className="flex items-center bg-[var(--foreground)]/5 p-0.5 m-0.5 rounded-md shrink-0 border border-[var(--border)]/60">
+                      <div 
+                        style={{ height: '18.804px' }}
+                        className="flex items-center bg-[var(--foreground)]/5 p-0.5 m-0.5 rounded-md shrink-0 border border-[var(--border)]/60 box-border"
+                      >
                         <button
                           type="button"
                           onClick={() => handleDiscountModeChange('rupees')}
                           title="Rupees Discount (₹)"
                           className={cn(
-                            "px-1.5 py-0.5 rounded text-[8px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
+                            "px-1.5 h-full rounded text-[8px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
                             discountMode === 'rupees' 
                               ? "bg-[var(--primary)] text-white shadow-xs" 
                               : "text-[var(--foreground)]/50 hover:text-[var(--foreground)]"
@@ -4794,7 +4797,7 @@ export default function BillingScreen({
                           onClick={() => handleDiscountModeChange('percent')}
                           title="Percentage Discount (%)"
                           className={cn(
-                            "px-1.5 py-0.5 rounded text-[8px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
+                            "px-1.5 h-full rounded text-[8px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
                             discountMode === 'percent' 
                               ? "bg-[var(--primary)] text-white shadow-xs" 
                               : "text-[var(--foreground)]/50 hover:text-[var(--foreground)]"

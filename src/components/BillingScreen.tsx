@@ -261,16 +261,16 @@ const labels: Record<string, Record<string, string>> = {
     mr: "पोटएकूण"
   },
   discountLabel: {
-    en: "Discount (%)",
-    hi: "छूट (%)",
-    'hi-en': "Discount (%)",
-    mr: "सूट (%)"
+    en: "Discount",
+    hi: "छूट",
+    'hi-en': "Discount",
+    mr: "सूट"
   },
   taxLabel: {
-    en: "Tax GST (%)",
-    hi: "जीएसटी टैक्स (%)",
-    'hi-en': "GST Tax (%)",
-    mr: "कर (%)"
+    en: "Tax GST",
+    hi: "जीएसटी टैक्स",
+    'hi-en': "GST Tax",
+    mr: "कर जीएसटी"
   }
 };
 
@@ -4766,51 +4766,47 @@ export default function BillingScreen({
               <div className="grid grid-cols-2 gap-2">
                 {/* Discount Section with Dual-Mode (Rupees Default & Percentage) */}
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[7.5px] font-black uppercase opacity-70">
+                  <div className="flex items-center gap-1.5 mb-1 h-6">
+                    <label className="text-[8px] font-black uppercase opacity-70">
                       {getTranslation('discountLabel')}
                     </label>
-                    <span className="text-[7px] font-bold opacity-40 uppercase">
-                      {discountMode === 'rupees' ? 'Rupees (₹)' : 'Percent (%)'}
-                    </span>
+                    {/* Dual-Mode Rupees & Percentage Buttons placed directly next to the word Discount */}
+                    <div className="flex items-center bg-[var(--foreground)]/7 p-0.5 rounded-md border border-[var(--border)] shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleDiscountModeChange('rupees')}
+                        title="Rupees Discount (₹)"
+                        className={cn(
+                          "px-2 py-0.5 rounded text-[9.5px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
+                          discountMode === 'rupees' 
+                            ? "bg-[var(--primary)] text-white shadow-xs" 
+                            : "text-[var(--foreground)]/50 hover:text-[var(--foreground)]"
+                        )}
+                      >
+                        ₹
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDiscountModeChange('percent')}
+                        title="Percentage Discount (%)"
+                        className={cn(
+                          "px-2 py-0.5 rounded text-[9.5px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
+                          discountMode === 'percent' 
+                            ? "bg-[var(--primary)] text-white shadow-xs" 
+                            : "text-[var(--foreground)]/50 hover:text-[var(--foreground)]"
+                        )}
+                      >
+                        %
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-0.5">
-                    {/* Discount Input with ₹ and % toggle button inside at the left side */}
-                    <div className="relative flex items-center rounded-lg bg-[var(--card)] border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:ring-1 focus-within:ring-[var(--primary)]/20 transition-all shadow-2xs overflow-hidden">
-                      {/* Integrated Rupees & Percentage Button at the Left */}
-                      <div 
-                        style={{ height: '18.804px' }}
-                        className="flex items-center bg-[var(--foreground)]/5 p-0.5 m-0.5 rounded-md shrink-0 border border-[var(--border)]/60 box-border"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleDiscountModeChange('rupees')}
-                          title="Rupees Discount (₹)"
-                          className={cn(
-                            "px-1.5 h-full rounded text-[8px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
-                            discountMode === 'rupees' 
-                              ? "bg-[var(--primary)] text-white shadow-xs" 
-                              : "text-[var(--foreground)]/50 hover:text-[var(--foreground)]"
-                          )}
-                        >
-                          ₹
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDiscountModeChange('percent')}
-                          title="Percentage Discount (%)"
-                          className={cn(
-                            "px-1.5 h-full rounded text-[8px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
-                            discountMode === 'percent' 
-                              ? "bg-[var(--primary)] text-white shadow-xs" 
-                              : "text-[var(--foreground)]/50 hover:text-[var(--foreground)]"
-                          )}
-                        >
-                          %
-                        </button>
-                      </div>
-
+                    {/* Discount Input field with clean prefix indicator */}
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black opacity-35 select-none pointer-events-none font-mono">
+                        {discountMode === 'rupees' ? '₹' : '%'}
+                      </span>
                       <input
                         type="number"
                         min="0"
@@ -4825,27 +4821,27 @@ export default function BillingScreen({
                             handlePercentDiscountChange(e.target.value);
                           }
                         }}
-                        className="w-full bg-transparent px-2 py-1 text-[10px] text-[var(--foreground)] font-bold outline-none font-mono text-right"
+                        className="w-full h-[30px] rounded-lg bg-[var(--card)] border border-[var(--border)] px-2 py-1 pl-6 text-[10px] text-[var(--foreground)] font-bold outline-none font-mono focus:border-[var(--primary)] text-right"
                       />
                     </div>
 
-                    {discountPercent > 0 && (
-                      <div className="text-[7.5px] font-mono text-emerald-600 dark:text-emerald-400 font-bold text-right truncate">
-                        {discountMode === 'rupees' 
+                    <div className="h-3.5 text-[7.5px] font-mono text-emerald-600 dark:text-emerald-400 font-bold text-right truncate">
+                      {discountPercent > 0 ? (
+                        discountMode === 'rupees' 
                           ? `≈ ${Number(discountPercent.toFixed(2))}% off` 
-                          : `≈ ₹${discountAmount.toFixed(2)} off`}
-                      </div>
-                    )}
+                          : `≈ ₹${discountAmount.toFixed(2)} off`
+                      ) : null}
+                    </div>
                   </div>
                 </div>
                 
                 {/* Tax Section */}
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[7.5px] font-black uppercase opacity-70">
+                  <div className="flex items-center justify-between mb-1 h-6">
+                    <label className="text-[8px] font-black uppercase opacity-70">
                       {getTranslation('taxLabel')}
                     </label>
-                    <span className="text-[7px] font-bold opacity-40 uppercase">GST %</span>
+                    <span className="text-[7.5px] font-bold opacity-40 uppercase font-mono">(%)</span>
                   </div>
                   <div className="space-y-0.5">
                     <div className="relative">
@@ -4857,14 +4853,12 @@ export default function BillingScreen({
                         placeholder="0"
                         value={taxPercent || ''}
                         onChange={(e) => setTaxPercent(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
-                        className="w-full rounded-lg bg-[var(--card)] border border-[var(--border)] px-2 py-1 pl-6 text-[10px] text-[var(--foreground)] font-bold outline-none font-mono focus:border-[var(--primary)] text-right"
+                        className="w-full h-[30px] rounded-lg bg-[var(--card)] border border-[var(--border)] px-2 py-1 pl-6 text-[10px] text-[var(--foreground)] font-bold outline-none font-mono focus:border-[var(--primary)] text-right"
                       />
                     </div>
-                    {taxPercent > 0 && (
-                      <div className="text-[7.5px] font-mono text-rose-500 font-bold text-right truncate">
-                        +₹{taxAmount.toFixed(2)}
-                      </div>
-                    )}
+                    <div className="h-3.5 text-[7.5px] font-mono text-rose-500 font-bold text-right truncate">
+                      {taxPercent > 0 ? `+₹${taxAmount.toFixed(2)}` : null}
+                    </div>
                   </div>
                 </div>
               </div>

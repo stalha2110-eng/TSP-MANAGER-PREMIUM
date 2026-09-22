@@ -7,11 +7,13 @@ export interface NavButtonProps {
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
+  id?: string;
 }
 
-export function NavButton({ active, icon, label, onClick }: NavButtonProps) {
+export function NavButton({ active, icon, label, onClick, id }: NavButtonProps) {
   return (
     <motion.button 
+      id={id}
       whileHover={{ y: -1 }}
       whileTap={{ scale: 0.92 }}
       onClick={onClick}

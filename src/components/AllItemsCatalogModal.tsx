@@ -993,6 +993,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
 
                     return (
                       <motion.div
+                        id={`catalog-item-card-${idx}`}
                         key={`catalog-item-${item.id || 'item'}-${idx}`}
                         onPointerDown={() => handlePointerDown(item)}
                         onPointerUp={handlePointerUpOrCancel}

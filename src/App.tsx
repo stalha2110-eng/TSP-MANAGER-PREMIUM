@@ -217,6 +217,9 @@ import { NotificationBar } from './components/NotificationBar';
 import { SplashScreen } from './components/SplashScreen';
 import { ExportCostChoiceModal } from './components/ExportCostChoiceModal';
 import { OnboardingTour } from './components/OnboardingTour';
+import { OnboardingGuide, TutorialType } from './components/OnboardingGuide';
+import { OnboardingPromptModal } from './components/OnboardingPromptModal';
+import { HelpSection } from './components/HelpSection';
 import { ComparisonModal } from './components/ComparisonModal';
 import { ItemFormModal } from './components/ItemFormModal';
 import { NotificationsView } from './components/NotificationsView';
@@ -502,7 +505,7 @@ export default function App() {
   } | null>(null);
 
   const [showMenu, setShowMenu] = useState(false);
-  const [menuTab, setMenuTab] = useState<'profile' | 'settings' | 'business_settings' | 'printer' | 'day_closing'>('profile');
+  const [menuTab, setMenuTab] = useState<'profile' | 'settings' | 'business_settings' | 'printer' | 'day_closing' | 'help'>('profile');
   const [settingsSubTab, setSettingsSubTab] = useState<'interface' | 'security' | 'sound' | 'data'>('interface');
   const [businessSubTab, setBusinessSubTab] = useState<'overview' | 'journey' | 'profile' | 'features' | 'categories' | 'dashboard' | 'actions' | 'knowledge' | 'recovery'>('overview');
   const [drawerSearchQuery, setDrawerSearchQuery] = useState('');
@@ -3539,6 +3542,16 @@ export default function App() {
   const [showComparison, setShowComparison] = useState(false);
   const [showTour, setShowTour] = useState(false);
 
+  // --- Interactive Onboarding Tutorial System ---
+  const [tutorialPrompt, setTutorialPrompt] = useState<{
+    show: boolean;
+    stage: 'add_product' | 'make_bill';
+  } | null>(null);
+  const [activeTutorial, setActiveTutorial] = useState<{
+    type: TutorialType;
+    next?: { type: TutorialType; title: string };
+  } | null>(null);
+
   // Centralized check for whether any modal, drawer, or full-screen overlay is active
   const isAnyModalOpen = Boolean(
     showVoiceAssistant ||
@@ -3588,9 +3601,11 @@ export default function App() {
   useBackModal(selectedCategory !== null && activeTab === 'home', () => setSelectedCategory(null), 'category_filter');
 
   useEffect(() => {
-    // Show tour for new users who haven't seen it
+    // Show interactive onboarding prompt for new users
     if (state.settings.hasSeenOnboarding === false && !isInitializing) {
-      const timer = setTimeout(() => setShowTour(true), 2000);
+      const timer = setTimeout(() => {
+        setTutorialPrompt({ show: true, stage: 'add_product' });
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, [state.settings.hasSeenOnboarding, isInitializing]);
@@ -4777,7 +4792,7 @@ export default function App() {
       <nav id="tour-nav" className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border)] bg-[var(--card)] px-4 py-2 backdrop-blur-md">
         <div className="mx-auto flex max-w-lg items-center justify-between">
           <NavButton active={activeTab === 'home'} icon={<AnimatedHomeIcon active={activeTab === 'home'} />} label={t.all || "Home"} onClick={() => handleTabChange('home')} />
-          <NavButton active={activeTab === 'billing'} icon={<AnimatedBillingIcon active={activeTab === 'billing'} />} label="Billing" onClick={() => handleTabChange('billing')} />
+          <NavButton id="tour-nav-billing-tab" active={activeTab === 'billing'} icon={<AnimatedBillingIcon active={activeTab === 'billing'} />} label="Billing" onClick={() => handleTabChange('billing')} />
           {state.settings.enabledFeatures?.analytics !== false && (
             <NavButton active={activeTab === 'analytics'} icon={<AnimatedAnalyticsIcon active={activeTab === 'analytics'} isLocked={state.settings.isLocked} />} label="Analytics" onClick={() => handleTabChange('analytics')} />
           )}
@@ -5380,6 +5395,114 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+
+      {/* Interactive Onboarding Prompt Modal ("No" vs "Continue tutorials") */}
+      <AnimatePresence>
+        {tutorialPrompt?.show && (
+          <OnboardingPromptModal
+            key="onboarding-prompt-modal"
+            isOpen={tutorialPrompt.show}
+            stage={tutorialPrompt.stage}
+            onDecline={() => {
+              const currentStage = tutorialPrompt.stage;
+              setTutorialPrompt(null);
+              if (currentStage === 'add_product') {
+                // If user declined stage 1, ask for stage 2 after a gentle delay
+                setTimeout(() => {
+                  setTutorialPrompt({ show: true, stage: 'make_bill' });
+                }, 1000);
+              } else {
+                // Done with both prompts, mark onboarding seen
+                handleUpdateSettings({ hasSeenOnboarding: true });
+              }
+            }}
+            onAccept={() => {
+              const currentStage = tutorialPrompt.stage;
+              setTutorialPrompt(null);
+              if (currentStage === 'add_product') {
+                setActiveTutorial({
+                  type: 'add_product',
+                  next: undefined
+                });
+              } else {
+                setActiveTab('billing');
+                setActiveTutorial({
+                  type: 'make_bill_dashboard',
+                  next: {
+                    type: 'make_bill_search',
+                    title: 'विधि 2 (Search Bar)'
+                  }
+                });
+              }
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Live Interactive Onboarding Guide with Hand Gesture and Hindi Voice Guidance */}
+      <AnimatePresence>
+        {activeTutorial && (
+          <OnboardingGuide
+            key={`onboarding-guide-${activeTutorial.type}`}
+            tutorialType={activeTutorial.type}
+            nextTutorial={activeTutorial.next}
+            activeTab={activeTab}
+            isVoiceAssistantOpen={showVoiceAssistant}
+            onNavigateTab={(tab) => {
+              setActiveTab(tab);
+            }}
+            onOpenVoiceAssistant={() => {
+              setShowVoiceAssistant(true);
+            }}
+            onCloseVoiceAssistant={() => {
+              setShowVoiceAssistant(false);
+            }}
+            onNextTutorial={() => {
+              if (activeTutorial.next) {
+                const nextTut = activeTutorial.next;
+                setActiveTutorial({
+                  type: nextTut.type,
+                  next: nextTut.type === 'make_bill_search' ? {
+                    type: 'make_bill_all_items',
+                    title: 'विधि 3 (View All Items)'
+                  } : undefined
+                });
+              }
+            }}
+            onComplete={() => {
+              const finishedType = activeTutorial.type;
+              setActiveTutorial(null);
+              setShowVoiceAssistant(false);
+
+              // After finishing "add_product", ask user for stage 2 ("how to make the bill")
+              if (finishedType === 'add_product') {
+                setTimeout(() => {
+                  setTutorialPrompt({ show: true, stage: 'make_bill' });
+                }, 800);
+              } else if (
+                finishedType === 'make_bill_all_items' || 
+                finishedType === 'make_bill_dashboard' || 
+                finishedType === 'make_bill_search'
+              ) {
+                // Completed billing tutorials
+                handleUpdateSettings({ hasSeenOnboarding: true });
+              }
+            }}
+            onSkip={() => {
+              const skippedType = activeTutorial.type;
+              setActiveTutorial(null);
+              setShowVoiceAssistant(false);
+              if (skippedType === 'add_product') {
+                setTimeout(() => {
+                  setTutorialPrompt({ show: true, stage: 'make_bill' });
+                }, 600);
+              } else {
+                handleUpdateSettings({ hasSeenOnboarding: true });
+              }
+            }}
+          />
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {showGoalPanel && (
           <GoalShiftPanelModal
@@ -5612,6 +5735,15 @@ export default function App() {
                     )}
                   >
                     🌙 Day Close
+                  </button>
+                  <button 
+                    onClick={() => setMenuTab('help')}
+                    className={cn(
+                      "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
+                      menuTab === 'help' ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--foreground)]/40 hover:text-[var(--foreground)]"
+                    )}
+                  >
+                    ❓ Help
                   </button>
                 </div>
 
@@ -6211,6 +6343,17 @@ export default function App() {
                         handleToggleDesktopSize();
                         setMenuTab('profile');
                       }
+                    },
+                    {
+                      id: 'help-tutorials-item',
+                      title: '❓ Help & Tutorials (सहायता एवं ट्यूटोरियल)',
+                      category: 'Help & Tutorials',
+                      description: 'Interactive animated hand gestures and voice guidance to learn how to add products and make bills',
+                      keywords: ['help', 'tutorial', 'tutorials', 'product ki entry', 'bill kaise banaye', 'seekhe', 'guide', 'demo', 'assistance', 'support'],
+                      onClick: () => {
+                        setMenuTab('help');
+                        addToast("Opened Help & Tutorials", "success");
+                      }
                     }
                   ];
 
@@ -6407,6 +6550,22 @@ export default function App() {
                       onUpdateSettings={handleUpdateSettings} 
                       onNavigateTab={(tab) => { setActiveTab(tab); setShowMenu(false); }}
                       t={t}
+                    />
+                  </div>
+                ) : menuTab === 'help' ? (
+                  <div className="pt-2">
+                    <HelpSection
+                      onStartTutorial={(type, next) => {
+                        setShowMenu(false);
+                        if (type === 'add_product') {
+                          setActiveTab('home');
+                        }
+                        setActiveTutorial({ type, next });
+                      }}
+                      onNavigateDashboard={() => {
+                        setActiveTab('billing');
+                        setShowMenu(false);
+                      }}
                     />
                   </div>
                 ) : null}

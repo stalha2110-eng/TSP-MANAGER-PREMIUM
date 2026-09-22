@@ -3802,6 +3802,7 @@ export default function BillingScreen({
                 whileHover={{ scale: isSearchFocused ? 1.012 : 1.004 }}
                 transition={{ type: "spring", stiffness: 450, damping: 25 }}
                 style={{ marginTop: '-8px', minHeight: '31.867px' }}
+                id="billing-search-bar"
                 className="relative rounded-xl bg-[var(--card)] border pr-2 py-0.5 flex items-center shadow-inner overflow-hidden"
               >
                 <Search className="text-[var(--primary)] ml-3 opacity-60 shrink-0" size={16} />
@@ -3826,6 +3827,7 @@ export default function BillingScreen({
                 )}
 
                 <input 
+                  id="billing-search-input"
                   type="text"
                   value={searchQuery}
                   onChange={(e) => {
@@ -4204,6 +4206,7 @@ export default function BillingScreen({
                   
                   return (
                     <motion.div
+                      id={`billing-quick-product-card-${idx}`}
                       key={`dash-recent-${item.id || 'item'}-${idx}`}
                       onPointerDown={() => handleItemPointerDown(item)}
                       onPointerUp={handleItemPointerUp}
@@ -4323,6 +4326,7 @@ export default function BillingScreen({
           <div className="shrink-0 space-y-2 pt-1 select-none">
             {/* VIEW ALL ITEMS - LARGE & MAIN ATTRACTIVE ANIMATED BUTTON */}
             <motion.button
+              id="billing-view-all-items-btn"
               type="button"
               onClick={() => setShowAllItemsModal(true)}
               whileHover={{ scale: 1.02, y: -2 }}
@@ -5129,6 +5133,7 @@ export default function BillingScreen({
                 </button>
               )}
               <button
+                id="billing-save-bill-btn"
                 onClick={handleCheckout}
                 disabled={cart.length === 0}
                 style={{

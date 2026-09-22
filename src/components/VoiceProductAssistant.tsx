@@ -1181,6 +1181,7 @@ export function VoiceProductAssistant({
                   </AnimatePresence>
 
                   <motion.button
+                    id="voice-assistant-mic-record-btn"
                     onClick={toggleListening}
                     whileHover={{ scale: 1.06 }}
                     whileTap={{ scale: 0.94 }}

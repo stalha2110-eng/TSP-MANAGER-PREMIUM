@@ -4,6 +4,7 @@ import {
   Sparkles, X, Volume2, VolumeX, RotateCcw, ArrowRight
 } from 'lucide-react';
 import { tutorialSoundService, TutorialType } from '../services/tutorialSoundService';
+import { tutorialTargetCache } from '../services/tutorialTargetCache';
 
 export type { TutorialType };
 
@@ -96,7 +97,7 @@ function resolveDynamicTargetBounds(
 
   if (el) {
     const rect = el.getBoundingClientRect();
-    return {
+    const bounds: DynamicTargetBounds = {
       top: rect.top,
       left: rect.left,
       right: rect.right,
@@ -107,6 +108,13 @@ function resolveDynamicTargetBounds(
       cy: rect.top + rect.height / 2,
       element: el,
     };
+
+    // Cache discovered coordinates into localStorage for future reference
+    try {
+      tutorialTargetCache.saveTargetCoords(primaryId, bounds);
+    } catch {}
+
+    return bounds;
   }
 
   return null;

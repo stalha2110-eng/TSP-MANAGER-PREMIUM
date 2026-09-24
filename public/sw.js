@@ -30,6 +30,20 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Allow client app to command service worker to skipWaiting or clear cache on pull-to-refresh
+self.addEventListener('message', (event) => {
+  if (event.data) {
+    if (event.data.type === 'SKIP_WAITING') {
+      self.skipWaiting();
+    }
+    if (event.data.type === 'CLEAR_CACHE') {
+      caches.keys().then((keys) => {
+        return Promise.all(keys.map((k) => caches.delete(k)));
+      });
+    }
+  }
+});
+
 // Stale-while-revalidate strategy (excludes /api/ routes)
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;

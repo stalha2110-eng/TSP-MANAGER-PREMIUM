@@ -230,6 +230,7 @@ import { GoalShiftPanelModal } from './components/GoalShiftPanelModal';
 import { DeleteConfirmationModal } from './components/DeleteConfirmationModal';
 import { ItemCard } from './components/ItemCard';
 import { NavButton } from './components/NavButton';
+import { IOSPullToRefresh } from './components/IOSPullToRefresh';
 
 // @ts-ignore
 import appLogo from './components/ui/premium(TsPrice).png';
@@ -3702,6 +3703,19 @@ export default function App() {
         isDesktopSize && "desktop-size-mode"
       )}
     >
+
+      {/* 📱 iOS / iPhone Pull-to-Refresh & Real-Time Firestore Sync */}
+      <IOSPullToRefresh 
+        state={state} 
+        onStateUpdate={setState}
+        onSyncComplete={(res) => {
+          if (res.isOnline) {
+            setSyncStatus('Synced');
+          } else {
+            setSyncStatus('Offline');
+          }
+        }}
+      />
 
       {/* 🔄 SMART FLOATING UNDO/REDO TOAST PORTAL */}
       <AnimatePresence>

@@ -179,6 +179,22 @@ export const deviceFeatures = {
   },
 
   /**
+   * Helper to check if current device is iOS (iPhone/iPad/iPod or Add to Home Screen PWA)
+   */
+  isIOS(): boolean {
+    return currentDevice().isIOS;
+  },
+
+  /**
+   * Whether to activate iOS pull-to-refresh mechanism.
+   * Only active for iOS / iPhone users (including "Add to Home Screen" standalone mode)
+   * or when iOS preview mode is explicitly selected.
+   */
+  shouldEnableIOSPullToRefresh(): boolean {
+    return currentDevice().isIOS;
+  },
+
+  /**
    * Returns appropriate PWA installation guidance method.
    * On iOS, beforeinstallprompt never fires; manual "Add to Home Screen" instructions are required.
    */

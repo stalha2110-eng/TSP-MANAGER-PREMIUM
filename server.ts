@@ -432,6 +432,24 @@ Ensure correct spelling corrections of typical Indian speech recognition typos:
     });
   });
 
+  // App Version Check (Used by iOS/Safari pull-to-refresh to detect new features & updates)
+  const APP_BUILD_TAG = "v2.5.0-ios-sync";
+  app.get("/api/version", (req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.json({
+      version: "2.5.0",
+      buildTag: APP_BUILD_TAG,
+      timestamp: Date.now(),
+      features: [
+        "Real-time Firestore Multi-Device Sync",
+        "iOS / iPhone Standalone Pull-to-Refresh",
+        "Instant Offline-to-Online Recovery",
+        "Automated PWA Update Detection",
+        "Thermal Bluetooth & ESC/POS Printing"
+      ]
+    });
+  });
+
   // 2. Vite Integration Middlewares
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");

@@ -12,6 +12,7 @@ import { auth, loginWithGoogle } from '../firebase';
 import { EmailAuthProvider, linkWithCredential, updatePassword } from 'firebase/auth';
 import { playFeedbackEvent } from '../services/soundFeedbackService';
 import { cleanAndValidateText } from '../services/languageEngine';
+import { CloudSyncService } from '../services/cloudSyncService';
 import { cn } from '../lib/utils';
 import { AppState, AppSettings } from '../types';
 
@@ -853,12 +854,26 @@ export function ProfileScreen({
                <button
                   type="button"
                   id="btn-platform-ios"
-                  onClick={() => {
+                  onClick={async () => {
                      try {
                         playFeedbackEvent('notification', state.settings);
                      } catch {}
                      const active = currentDevice().isIOS;
-                     alert(`Apple iOS / Safari Platform\n\n• Detected: ${active ? 'Active on your iPhone / iPad' : 'Ready'}\n• Features: Optimized speech burst reconnection, Apple Rishi voice support, and safe-area touch ergonomics.`);
+                     const promptText = `Apple iOS / Safari & Home-Screen PWA Platform\n\n• Detected: ${active ? 'Active on your iPhone / iPad' : 'Ready'}\n\n• Exclusive iOS Features:\n1. Pull-to-Refresh: Swipe down from top of any page to trigger manual Firestore sync & receive latest app updates (active even in Add-to-Home-Screen standalone mode).\n2. Speech Assistant Burst Engine: Optimized speech reconnection for WebKit.\n3. Native iOS Safe-Area Notch Ergonomics.\n\nPress OK to run a manual Cloud Database Sync & check for app updates now.`;
+                     if (window.confirm(promptText)) {
+                        try {
+                           const res = await CloudSyncService.forceSyncWithFirestore(state);
+                           if (res.hasAppUpdate) {
+                              if (window.confirm("✨ New App Update Detected!\n\nWould you like to reload now to apply the new features?")) {
+                                 CloudSyncService.reloadApp();
+                              }
+                           } else {
+                              alert(`✓ Firestore Cloud Sync Complete!\n\n• Items verified: ${res.itemsSynced}\n• Bills verified: ${res.billsSynced}\n• Notes verified: ${res.notesSynced}\n• Status: Up-to-date with cloud.`);
+                           }
+                        } catch (e: any) {
+                           alert(`Sync error: ${e?.message || 'Using local database cache'}`);
+                        }
+                     }
                   }}
                   className={cn(
                      "p-4 rounded-2xl border transition-all flex items-center justify-between group cursor-pointer text-left active:scale-[0.98]",

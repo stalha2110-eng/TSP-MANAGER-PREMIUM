@@ -354,66 +354,44 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
       </motion.header>
 
       {/* 🏛️ Main Interactive SaaS Showcase */}
-      <main className="relative z-10 flex-1 w-full max-w-6xl mx-auto px-6 py-10 md:py-16 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+      <main className="relative z-10 flex-1 w-full max-w-5xl mx-auto px-6 py-8 md:py-14 flex flex-col items-center space-y-10 md:space-y-12">
         
-        {/* Left Grid: High Status Commercial Description */}
+        {/* Top Hero Description: Commercial Headline and Value Proposition */}
         <motion.div 
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-          className="lg:col-span-7 space-y-8 text-left max-w-2xl"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="space-y-4 text-center max-w-2xl mx-auto"
         >
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 bg-white border border-slate-200 shadow-sm rounded-full px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-indigo-700">
-              <Sparkles size={11} className="text-indigo-600 animate-pulse" />
-              Elite Shop Management Solution
-            </div>
-            
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.08] text-slate-900 uppercase">
-              Operate your retail<br />
-              business with{" "}
-              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-600 bg-clip-text text-transparent">
-                absolute precision.
-              </span>
-            </h2>
-            
-            <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed max-w-xl">
-              An enterprise-grade, offline-first checkout counter, smart inventory vault, and digital bahi khata ledger custom tailored for modern Indian retail. 
-            </p>
+          <div className="inline-flex items-center gap-2 bg-white border border-slate-200 shadow-xs rounded-full px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-indigo-700">
+            <Sparkles size={11} className="text-indigo-600 animate-pulse" />
+            Elite Shop Management Solution
           </div>
-
-          {/* Clean Interactive Grid of Key Benefits */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4.5 pt-2">
-            {benefits.map((benefit, idx) => (
-              <motion.div 
-                key={idx} 
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="p-5 bg-white border border-slate-200/80 rounded-2xl hover:border-indigo-300 hover:shadow-[0_12px_30px_rgba(15,23,42,0.035)] hover:translate-y-[-2px] transition-all duration-300 group"
-              >
-                <div className="h-9 w-9 rounded-xl bg-slate-50 flex items-center justify-center mb-3.5 border border-slate-100/80 transition-transform duration-300 group-hover:scale-110">
-                  {benefit.icon}
-                </div>
-                <h4 className="text-[11px] font-black uppercase text-slate-900 tracking-wide">{benefit.title}</h4>
-                <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed font-medium">{benefit.desc}</p>
-              </motion.div>
-            ))}
-          </div>
+          
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.08] text-slate-900 uppercase">
+            Operate your retail<br className="hidden sm:inline" /> business with{" "}
+            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-600 bg-clip-text text-transparent">
+              absolute precision.
+            </span>
+          </h2>
+          
+          <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed max-w-xl mx-auto">
+            An enterprise-grade, offline-first checkout counter, smart inventory vault, and digital bahi khata ledger custom tailored for modern Indian retail. 
+          </p>
         </motion.div>
 
-        {/* Right Grid: Elite Minimalist Portal Login Card with subtle dynamic float animation */}
-        <div className="lg:col-span-5 flex justify-center lg:justify-end w-full">
+        {/* Selected Sign-in / Sign-up Card Widget (Positioned directly below the text) */}
+        <div className="w-full flex justify-center">
           <motion.div 
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
             className="w-full max-w-md shrink-0"
           >
             <motion.div 
-              animate={{ y: [0, -6, 0] }}
+              animate={{ y: [0, -5, 0] }}
               transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-              className="bg-white border border-slate-200 shadow-[0_20px_50px_rgba(15,23,42,0.04)] rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden"
+              className="bg-white border border-slate-200 shadow-[0_20px_50px_rgba(15,23,42,0.06)] rounded-[2.5rem] p-7 sm:p-9 md:p-10 relative overflow-hidden"
             >
               {/* Modern Top Horizontal Subtle Accent line */}
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-teal-400" />
@@ -961,6 +939,40 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
             </motion.div>
           </motion.div>
         </div>
+
+        {/* 🌟 Remaining Things: Key Benefits & Capabilities Grid (Placed next after the sign-in / sign-up card) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+          className="w-full space-y-6 pt-4 max-w-5xl"
+        >
+          <div className="flex items-center justify-center gap-3">
+            <div className="h-px bg-slate-200 flex-1 max-w-[120px]" />
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+              Built for Everyday Store Reliability
+            </span>
+            <div className="h-px bg-slate-200 flex-1 max-w-[120px]" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4.5 w-full">
+            {benefits.map((benefit, idx) => (
+              <motion.div 
+                key={idx} 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: idx * 0.08 }}
+                className="p-5 bg-white border border-slate-200/80 rounded-2xl hover:border-indigo-300 hover:shadow-[0_12px_30px_rgba(15,23,42,0.035)] hover:-translate-y-0.5 transition-all duration-300 group text-left"
+              >
+                <div className="h-9 w-9 rounded-xl bg-slate-50 flex items-center justify-center mb-3.5 border border-slate-100/80 transition-transform duration-300 group-hover:scale-110">
+                  {benefit.icon}
+                </div>
+                <h4 className="text-[11px] font-black uppercase text-slate-900 tracking-wide">{benefit.title}</h4>
+                <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed font-medium">{benefit.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
 
       </main>
 

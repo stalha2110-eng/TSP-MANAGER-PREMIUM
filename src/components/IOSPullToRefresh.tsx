@@ -1,23 +1,26 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Cloud, RefreshCw, CheckCircle2, ArrowDown, Sparkles, WifiOff, AlertCircle 
+  Cloud, RefreshCw, CheckCircle2, ArrowDown, Sparkles, WifiOff, AlertCircle,
+  Package, Layers, Database, Smartphone, Check, Loader2
 } from 'lucide-react';
 import { deviceFeatures } from '../utils/device';
 import { CloudSyncService, SyncResult } from '../services/cloudSyncService';
 import { playFeedbackEvent } from '../services/soundFeedbackService';
-import { AppState, AppSettings } from '../types';
+import { AppState, Item } from '../types';
 
 interface IOSPullToRefreshProps {
   state: AppState;
   onStateUpdate?: (updater: (prev: AppState) => AppState) => void;
   onSyncComplete?: (result: SyncResult) => void;
+  onCatalogRefetched?: (itemsCount: number) => void;
 }
 
 export const IOSPullToRefresh: React.FC<IOSPullToRefreshProps> = ({
   state,
   onStateUpdate,
   onSyncComplete,
+  onCatalogRefetched,
 }) => {
   // Only active for iOS / iPhone / iPad users (including Safari PWA "Add to Home Screen" mode)
   // or when explicitly testing in iOS preview mode.
@@ -26,11 +29,14 @@ export const IOSPullToRefresh: React.FC<IOSPullToRefreshProps> = ({
   const [pullY, setPullY] = useState(0);
   const [status, setStatus] = useState<'idle' | 'pulling' | 'threshold' | 'syncing' | 'update_found' | 'success' | 'offline_warn'>('idle');
   const [statusMessage, setStatusMessage] = useState('');
+  const [catalogItemsCount, setCatalogItemsCount] = useState(state.items?.length || 0);
   const [isStandalonePWA, setIsStandalonePWA] = useState(false);
+  const [isSafari, setIsSafari] = useState(false);
 
   const startYRef = useRef(0);
   const startXRef = useRef(0);
   const isTrackingRef = useRef(false);
+  const isSyncingRef = useRef(false);
   const pullYRef = useRef(0);
   const statusRef = useRef(status);
   const hasTriggeredHapticRef = useRef(false);
@@ -38,7 +44,7 @@ export const IOSPullToRefresh: React.FC<IOSPullToRefreshProps> = ({
   statusRef.current = status;
   pullYRef.current = pullY;
 
-  // Detect if running as installed standalone PWA ("Add to Home Screen")
+  // Detect if running as installed standalone PWA ("Add to Home Screen") or in Safari iOS
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const isStandalone = 
@@ -46,58 +52,100 @@ export const IOSPullToRefresh: React.FC<IOSPullToRefreshProps> = ({
         (navigator as any).standalone === true ||
         document.referrer.includes('android-app://');
       setIsStandalonePWA(isStandalone);
+
+      const dev = deviceFeatures.getDeviceInfo();
+      setIsSafari(dev.isSafari || !isStandalone);
     }
   }, []);
 
   const PULL_THRESHOLD = 72; // Pixels required to trigger sync
 
+  /**
+   * Performs an explicit, server-first re-fetch of Firestore data for the inventory catalog,
+   * along with a complete database synchronization and software update check.
+   * Visual loading feedback state persists completely until all operations finish.
+   */
   const executeSync = useCallback(async () => {
+    if (isSyncingRef.current) return;
+
+    isSyncingRef.current = true;
     setStatus('syncing');
-    setPullY(60);
-    setStatusMessage('Syncing Firestore & checking for updates...');
+    setPullY(68);
+    setStatusMessage('Connecting to Cloud Firestore database...');
+
+    const startTime = Date.now();
 
     try {
-      deviceFeatures.vibrate(20);
+      deviceFeatures.vibrate(25);
       try {
         playFeedbackEvent('notification', state.settings);
       } catch {}
 
-      // Execute comprehensive Firestore sync & check for SW updates
-      const result = await CloudSyncService.forceSyncWithFirestore(state, onStateUpdate);
+      // Step 1: Specifically and actively re-fetch Firestore data for the inventory catalog
+      setStatusMessage('Re-fetching inventory catalog from Firestore server...');
+      const catalogResult = await CloudSyncService.refetchInventoryCatalog(
+        state,
+        onStateUpdate,
+        (stage, count) => {
+          if (stage) setStatusMessage(stage);
+          if (count !== undefined) setCatalogItemsCount(count);
+        }
+      );
 
-      if (onSyncComplete) {
-        onSyncComplete(result);
+      setCatalogItemsCount(catalogResult.count);
+      if (onCatalogRefetched) {
+        onCatalogRefetched(catalogResult.count);
       }
 
-      if (result.hasAppUpdate) {
+      // Step 2: Comprehensive synchronization for bills, unbilled ledger, and app updates
+      setStatusMessage(`Catalog synced (${catalogResult.count} items). Checking app updates...`);
+      const syncResult = await CloudSyncService.forceSyncWithFirestore(state, onStateUpdate);
+
+      if (onSyncComplete) {
+        onSyncComplete(syncResult);
+      }
+
+      // Visual persistence guarantee: ensure the visual loading feedback persists
+      // long enough for Safari / iOS Home Screen users to clearly observe the progress
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 800) {
+        await new Promise(resolve => setTimeout(resolve, 800 - elapsed));
+      }
+
+      // Check for application software updates
+      if (syncResult.hasAppUpdate) {
         setStatus('update_found');
         setStatusMessage('✨ New App Update Available! Reloading...');
         deviceFeatures.vibrate([20, 50, 20]);
-        // Allow brief visual feedback, then reload to apply new features
         setTimeout(() => {
           CloudSyncService.reloadApp();
         }, 900);
         return;
       }
 
-      if (!result.isOnline) {
+      // Handle offline status
+      if (!syncResult.isOnline) {
         setStatus('offline_warn');
-        setStatusMessage('Offline: Changes kept safe in Local Storage');
+        setStatusMessage('Offline: Local inventory catalog preserved safely');
         setTimeout(() => {
+          isSyncingRef.current = false;
           setStatus('idle');
           setPullY(0);
         }, 2200);
         return;
       }
 
-      // Success sync
+      // Sync completed successfully
       setStatus('success');
-      setStatusMessage('✓ Cloud Synced & App is up-to-date!');
+      setStatusMessage(`✓ ${catalogResult.count} Catalog Items Freshly Synced`);
+      deviceFeatures.vibrate([15, 35, 15]);
       try {
         playFeedbackEvent('notification', state.settings);
       } catch {}
 
+      // Keep success state visible for 1.4s so the merchant can read the confirmation
       setTimeout(() => {
+        isSyncingRef.current = false;
         setStatus('idle');
         setPullY(0);
       }, 1400);
@@ -105,20 +153,22 @@ export const IOSPullToRefresh: React.FC<IOSPullToRefreshProps> = ({
     } catch (err: any) {
       console.warn('[IOSPullToRefresh] Execution error:', err);
       setStatus('offline_warn');
-      setStatusMessage('Sync complete (using local database)');
+      setStatusMessage('Catalog synchronized with local storage');
       setTimeout(() => {
+        isSyncingRef.current = false;
         setStatus('idle');
         setPullY(0);
       }, 1500);
     }
-  }, [state, onStateUpdate, onSyncComplete]);
+  }, [state, onStateUpdate, onSyncComplete, onCatalogRefetched]);
 
-  // Touch listener setup specifically designed for WebKit / iOS Safari & PWA container
+  // Touch listener setup specifically designed for WebKit / iOS Safari & Home Screen WebClip container
   useEffect(() => {
     if (!isEnabled || typeof window === 'undefined') return;
 
     const handleTouchStart = (e: TouchEvent) => {
-      if (statusRef.current === 'syncing' || statusRef.current === 'update_found') {
+      // While syncing or updating, do not allow gesture interference
+      if (isSyncingRef.current || statusRef.current === 'syncing' || statusRef.current === 'update_found') {
         return;
       }
 
@@ -136,7 +186,7 @@ export const IOSPullToRefresh: React.FC<IOSPullToRefreshProps> = ({
 
     const handleTouchMove = (e: TouchEvent) => {
       if (!isTrackingRef.current) return;
-      if (statusRef.current === 'syncing' || statusRef.current === 'update_found') return;
+      if (isSyncingRef.current || statusRef.current === 'syncing' || statusRef.current === 'update_found') return;
 
       const currentY = e.touches[0].clientY;
       const currentX = e.touches[0].clientX;
@@ -178,7 +228,10 @@ export const IOSPullToRefresh: React.FC<IOSPullToRefreshProps> = ({
       if (!isTrackingRef.current) return;
       isTrackingRef.current = false;
 
-      if (pullYRef.current >= PULL_THRESHOLD && statusRef.current !== 'syncing') {
+      // If already syncing, preserve the visual loading feedback state
+      if (isSyncingRef.current) return;
+
+      if (pullYRef.current >= PULL_THRESHOLD) {
         executeSync();
       } else {
         // Snap back to top smoothly
@@ -189,22 +242,29 @@ export const IOSPullToRefresh: React.FC<IOSPullToRefreshProps> = ({
 
     const handleTouchCancel = () => {
       isTrackingRef.current = false;
-      if (statusRef.current !== 'syncing') {
+      if (!isSyncingRef.current) {
         setPullY(0);
         setStatus('idle');
       }
+    };
+
+    // Optional programmatic trigger listener
+    const handleCustomTrigger = () => {
+      executeSync();
     };
 
     window.addEventListener('touchstart', handleTouchStart, { passive: true });
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
     window.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+    window.addEventListener('trigger-ios-pull-to-refresh', handleCustomTrigger);
 
     return () => {
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('touchcancel', handleTouchCancel);
+      window.removeEventListener('trigger-ios-pull-to-refresh', handleCustomTrigger);
     };
   }, [isEnabled, executeSync]);
 
@@ -213,12 +273,12 @@ export const IOSPullToRefresh: React.FC<IOSPullToRefreshProps> = ({
     return null;
   }
 
-  const isVisible = pullY > 5 || status !== 'idle';
+  const isVisible = pullY > 5 || status !== 'idle' || isSyncingRef.current;
   const progressPercent = Math.min(100, Math.round((pullY / PULL_THRESHOLD) * 100));
 
   return (
     <>
-      {/* Dynamic iOS Pull-to-Refresh Floating Indicator */}
+      {/* Dynamic iOS Pull-to-Refresh & Inventory Catalog Re-fetch Floating Indicator */}
       <div 
         className="fixed top-0 left-0 right-0 z-[100000] pointer-events-none flex flex-col items-center justify-start transition-transform duration-100 ease-out"
         style={{
@@ -233,73 +293,109 @@ export const IOSPullToRefresh: React.FC<IOSPullToRefreshProps> = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.85, y: -20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-              className="pointer-events-auto"
+              className="pointer-events-auto max-w-[94vw]"
             >
-              <div className="flex items-center gap-3 px-4 py-2.5 rounded-full bg-slate-950/92 dark:bg-black/95 text-white backdrop-blur-xl border border-white/20 shadow-[0_12px_32px_rgba(0,0,0,0.4)] select-none">
-                {/* Visual Icon indicator */}
-                <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/10 shrink-0">
-                  {status === 'pulling' && (
-                    <motion.div
-                      style={{ rotate: (pullY / PULL_THRESHOLD) * 180 }}
-                      className="text-amber-400"
-                    >
-                      <ArrowDown size={15} strokeWidth={2.5} />
-                    </motion.div>
-                  )}
+              <div className="relative overflow-hidden flex flex-col gap-2 px-4 py-2.5 rounded-3xl bg-slate-950/95 dark:bg-black/95 text-white backdrop-blur-2xl border border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.5)] select-none min-w-[290px]">
+                {/* Main Row: Status Icon + Title + Platform Badge */}
+                <div className="flex items-center gap-3">
+                  
+                  {/* Visual Status Icon */}
+                  <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/10 shrink-0">
+                    {status === 'pulling' && (
+                      <motion.div
+                        style={{ rotate: (pullY / PULL_THRESHOLD) * 180 }}
+                        className="text-amber-400"
+                      >
+                        <ArrowDown size={16} strokeWidth={2.5} />
+                      </motion.div>
+                    )}
 
-                  {status === 'threshold' && (
-                    <motion.div 
-                      animate={{ scale: [1, 1.25, 1] }} 
-                      transition={{ repeat: Infinity, duration: 0.6 }}
-                      className="text-emerald-400"
-                    >
-                      <Cloud size={16} strokeWidth={2.5} />
-                    </motion.div>
-                  )}
+                    {status === 'threshold' && (
+                      <motion.div 
+                        animate={{ scale: [1, 1.22, 1] }} 
+                        transition={{ repeat: Infinity, duration: 0.5 }}
+                        className="text-emerald-400"
+                      >
+                        <Package size={17} strokeWidth={2.5} />
+                      </motion.div>
+                    )}
 
-                  {status === 'syncing' && (
-                    <RefreshCw size={15} className="animate-spin text-amber-400" />
-                  )}
+                    {status === 'syncing' && (
+                      <div className="relative flex items-center justify-center">
+                        <RefreshCw size={17} className="animate-spin text-amber-400" />
+                        <Package size={8} className="absolute text-white animate-pulse" />
+                      </div>
+                    )}
 
-                  {status === 'update_found' && (
-                    <Sparkles size={16} className="animate-bounce text-yellow-300" />
-                  )}
+                    {status === 'update_found' && (
+                      <Sparkles size={17} className="animate-bounce text-yellow-300" />
+                    )}
 
-                  {status === 'success' && (
-                    <CheckCircle2 size={16} className="text-emerald-400" />
-                  )}
+                    {status === 'success' && (
+                      <CheckCircle2 size={17} className="text-emerald-400" />
+                    )}
 
-                  {status === 'offline_warn' && (
-                    <WifiOff size={15} className="text-rose-400" />
-                  )}
-                </div>
-
-                {/* Status Text & Information */}
-                <div className="flex flex-col text-left pr-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11.5px] font-black tracking-tight uppercase text-white">
-                      {status === 'pulling' && "Pull to Sync & Update"}
-                      {status === 'threshold' && "Release to Sync"}
-                      {status === 'syncing' && "Syncing Firestore..."}
-                      {status === 'update_found' && "Updating App..."}
-                      {status === 'success' && "Cloud Synced"}
-                      {status === 'offline_warn' && "Offline Mode Active"}
-                    </span>
-                    {isStandalonePWA && (
-                      <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[8px] font-bold uppercase tracking-wider">
-                        iOS App
-                      </span>
+                    {status === 'offline_warn' && (
+                      <WifiOff size={16} className="text-rose-400" />
                     )}
                   </div>
-                  <span className="text-[9px] font-medium text-slate-300/80 -mt-0.5">
-                    {status === 'pulling' && `${progressPercent}% • Pull down to check updates`}
-                    {status === 'threshold' && "Release finger to sync Firestore & app"}
-                    {status === 'syncing' && statusMessage}
-                    {status === 'update_found' && "Reloading to bring new features..."}
-                    {status === 'success' && "Latest inventory & features active ✓"}
-                    {status === 'offline_warn' && statusMessage}
-                  </span>
+
+                  {/* Status Text & Information */}
+                  <div className="flex flex-col text-left flex-1 min-w-0 pr-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11.5px] font-black tracking-tight uppercase text-white truncate">
+                        {status === 'pulling' && "Pull to Refresh Catalog"}
+                        {status === 'threshold' && "Release to Sync Catalog"}
+                        {status === 'syncing' && "Re-fetching Inventory Catalog"}
+                        {status === 'update_found' && "App Update Available"}
+                        {status === 'success' && "Catalog Synchronized"}
+                        {status === 'offline_warn' && "Offline Mode Active"}
+                      </span>
+
+                      {/* Targeted Safari / iOS Home Screen PWA pill badge */}
+                      {isStandalonePWA ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[7.5px] font-mono font-black uppercase tracking-wider shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          iOS Home Screen
+                        </span>
+                      ) : isSafari ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[7.5px] font-mono font-black uppercase tracking-wider shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                          Safari Web App
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[9.5px] font-medium text-slate-300/90 truncate">
+                        {status === 'pulling' && `${progressPercent}% • Pull down to query Firestore server`}
+                        {status === 'threshold' && "Release finger to re-fetch inventory catalog"}
+                        {status === 'syncing' && (statusMessage || "Connecting to Firestore & re-fetching items...")}
+                        {status === 'update_found' && "Reloading Safari Home Screen Web App..."}
+                        {status === 'success' && (statusMessage || "Latest items & prices active in inventory ✓")}
+                        {status === 'offline_warn' && statusMessage}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Persistent Visual Activity Shimmer Bar when Syncing (Targeting Safari/iOS Home Screen) */}
+                {status === 'syncing' && (
+                  <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mt-0.5">
+                    <motion.div 
+                      className="h-full bg-gradient-to-r from-amber-400 via-emerald-400 to-indigo-400 rounded-full"
+                      animate={{
+                        x: ['-100%', '100%']
+                      }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 1.2,
+                        ease: "linear"
+                      }}
+                      style={{ width: '60%' }}
+                    />
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

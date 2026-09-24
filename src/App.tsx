@@ -3708,6 +3708,9 @@ export default function App() {
       <IOSPullToRefresh 
         state={state} 
         onStateUpdate={setState}
+        onCatalogRefetched={(itemsCount) => {
+          setSyncStatus('Synced');
+        }}
         onSyncComplete={(res) => {
           if (res.isOnline) {
             setSyncStatus('Synced');

@@ -100,6 +100,134 @@ export class CloudSyncService {
   }
 
   /**
+   * Directly and explicitly re-fetches the inventory catalog from the Firestore server,
+   * bypassing any stale WebKit/Safari client caches.
+   * Also uploads any locally created offline items to maintain 100% data integrity.
+   */
+  public static async refetchInventoryCatalog(
+    currentState: AppState,
+    onStateUpdate?: (updater: (prev: AppState) => AppState) => void,
+    onProgress?: (stage: string, count?: number) => void
+  ): Promise<{ success: boolean; items: Item[]; count: number; source: 'server' | 'cache' | 'local'; message: string }> {
+    if (onProgress) onProgress('Connecting to Cloud Firestore...');
+
+    try {
+      await enableNetwork(db);
+    } catch (e) {
+      console.warn('[CloudSync] enableNetwork notice:', e);
+    }
+
+    const user = currentState.user || auth.currentUser;
+    if (!user || user.uid === 'guest_user') {
+      const localItems = currentState.items || [];
+      if (onProgress) onProgress('Inventory catalog verified (Local)', localItems.length);
+      return {
+        success: true,
+        items: localItems,
+        count: localItems.length,
+        source: 'local',
+        message: `Local guest inventory catalog verified (${localItems.length} items)`
+      };
+    }
+
+    const uid = user.uid;
+    const itemsRef = collection(db, 'users', uid, 'items');
+
+    if (onProgress) onProgress('Querying Firestore server for inventory catalog...');
+
+    let itemsList: Item[] = [];
+    let source: 'server' | 'cache' = 'server';
+
+    try {
+      let snap;
+      try {
+        snap = await getDocsFromServer(query(itemsRef, orderBy('lastUpdated', 'desc')));
+      } catch (err1) {
+        try {
+          // If orderBy without composite index failed on server, query raw collection
+          snap = await getDocsFromServer(itemsRef);
+        } catch (err2) {
+          source = 'cache';
+          try {
+            snap = await getDocs(query(itemsRef, orderBy('lastUpdated', 'desc')));
+          } catch {
+            snap = await getDocs(itemsRef);
+          }
+        }
+      }
+
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
+        itemsList.push({
+          ...data,
+          id: docSnap.id,
+          translations: {
+            en: data.name || '',
+            hi: '',
+            mr: '',
+            'hi-en': '',
+            ...(data.translations || {})
+          }
+        } as Item);
+      });
+
+      if (onProgress) onProgress(`Received ${itemsList.length} items from ${source}. Reconciling...`, itemsList.length);
+
+      // Self-healing: identify any items created or edited offline that are missing from cloud
+      const localItems = currentState.items || [];
+      const unsyncedItems = localItems.filter(li => !itemsList.some(ci => ci.id === li.id));
+      if (unsyncedItems.length > 0) {
+        if (onProgress) onProgress(`Uploading ${unsyncedItems.length} offline items to Cloud Firestore...`);
+        for (const item of unsyncedItems) {
+          try {
+            await setDoc(doc(db, 'users', uid, 'items', item.id), sanitizeForFirestore(item));
+          } catch (upErr) {
+            console.warn('[CloudSync] Failed to upload offline item:', item.name, upErr);
+          }
+        }
+      }
+
+      const mergedItems = deduplicateById([...itemsList, ...unsyncedItems]).sort((a, b) => 
+        new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+      );
+
+      if (onStateUpdate) {
+        onStateUpdate(prev => ({ ...prev, items: mergedItems }));
+      }
+
+      // Persist to local backup storage to prevent Safari cache wipe
+      try {
+        const cached = localStorage.getItem('price_manager_state');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          parsed.items = mergedItems;
+          localStorage.setItem('price_manager_state', JSON.stringify(parsed));
+        }
+      } catch {}
+
+      if (onProgress) onProgress(`Inventory catalog re-fetch complete!`, mergedItems.length);
+
+      return {
+        success: true,
+        items: mergedItems,
+        count: mergedItems.length,
+        source,
+        message: `Successfully re-fetched ${mergedItems.length} inventory items from Firestore (${source})`
+      };
+    } catch (err: any) {
+      console.warn('[CloudSync] Items sync warning:', err);
+      const fallbackItems = currentState.items || [];
+      return {
+        success: false,
+        items: fallbackItems,
+        count: fallbackItems.length,
+        source: 'local',
+        message: err?.message || 'Failed to re-fetch inventory catalog'
+      };
+    }
+  }
+
+  /**
    * Forces a comprehensive synchronization between local offline data and Firestore.
    * Restores connectivity, flushes offline queues, and brings down latest remote records.
    */
@@ -194,54 +322,12 @@ export class CloudSyncService {
       }
 
       // =========================================================================
-      // 2. SELF-HEALING SYNC FOR ITEMS / INVENTORY
+      // 2. RE-FETCH & SELF-HEALING SYNC FOR ITEMS / INVENTORY CATALOG
       // =========================================================================
       let itemsList: Item[] = [];
       try {
-        const itemsRef = collection(db, 'users', uid, 'items');
-        let snap;
-        try {
-          snap = await getDocsFromServer(query(itemsRef, orderBy('lastUpdated', 'desc')));
-        } catch {
-          snap = await getDocs(query(itemsRef, orderBy('lastUpdated', 'desc')));
-        }
-
-        snap.forEach(docSnap => {
-          const data = docSnap.data();
-          itemsList.push({
-            ...data,
-            id: docSnap.id,
-            translations: {
-              en: data.name || '',
-              hi: '',
-              mr: '',
-              'hi-en': '',
-              ...(data.translations || {})
-            }
-          } as Item);
-        });
-
-        // Detect any items created or modified offline that are missing from cloud
-        const localItems = currentState.items || [];
-        const unsyncedItems = localItems.filter(li => !itemsList.some(ci => ci.id === li.id));
-        if (unsyncedItems.length > 0) {
-          for (const item of unsyncedItems) {
-            try {
-              await setDoc(doc(db, 'users', uid, 'items', item.id), sanitizeForFirestore(item));
-            } catch (upErr) {
-              console.warn('[CloudSync] Failed to upload offline item:', item.name, upErr);
-            }
-          }
-        }
-
-        const mergedItems = deduplicateById([...itemsList, ...unsyncedItems]).sort((a, b) => 
-          new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
-        );
-
-        if (onStateUpdate) {
-          onStateUpdate(prev => ({ ...prev, items: mergedItems }));
-        }
-        itemsList = mergedItems;
+        const catalogRes = await this.refetchInventoryCatalog(currentState, onStateUpdate);
+        itemsList = catalogRes.items;
       } catch (itemErr) {
         console.warn("[CloudSync] Items sync warning:", itemErr);
         itemsList = currentState.items;

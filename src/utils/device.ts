@@ -186,6 +186,13 @@ export const deviceFeatures = {
   },
 
   /**
+   * Returns current device information object
+   */
+  getDeviceInfo(): DeviceInfo {
+    return currentDevice();
+  },
+
+  /**
    * Whether to activate iOS pull-to-refresh mechanism.
    * Only active for iOS / iPhone users (including "Add to Home Screen" standalone mode)
    * or when iOS preview mode is explicitly selected.

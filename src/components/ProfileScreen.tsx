@@ -4,7 +4,7 @@ import {
   User, Mail, LogOut, LogIn, ShieldCheck, Lock, CheckCircle, XCircle, 
   EyeOff, Eye, Download, ChevronRight, MessageSquare, Share2, RefreshCw, 
   Store, Cloud, Database, Phone, MapPin, Clock, Sun, Moon, Bell, Save,
-  Monitor, Smartphone, Check
+  Monitor, Smartphone, Check, Minimize2, Type, Maximize2
 } from 'lucide-react';
 import { AndroidIcon, AppleIcon } from './DeviceIcons';
 import { currentDevice, DeviceInfo } from '../utils/device';
@@ -163,12 +163,12 @@ export function PasswordLinkManager({ user, settings }: { user: any; settings: a
             setError(null);
             setSuccess(null);
           }}
-          className="w-full py-3.5 px-6 rounded-2xl border border-dashed border-[var(--primary)]/30 hover:border-[var(--primary)] bg-[var(--primary)]/5 hover:bg-[var(--primary)]/10 text-[var(--primary)] font-black text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99]"
+          className="w-full py-2 px-4 rounded-xl border border-dashed border-[var(--primary)]/30 hover:border-[var(--primary)] bg-[var(--primary)]/5 hover:bg-[var(--primary)]/10 text-[var(--primary)] font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99]"
         >
           {isLinked ? 'Change Password / पासवर्ड बदलें' : 'Add Password Login / पासवर्ड लॉगिन जोड़ें'}
         </button>
       ) : (
-        <form onSubmit={isLinked ? handleUpdatePassword : handleLinkCredential} className="space-y-4 p-5 rounded-[2rem] border border-[var(--border)] bg-[var(--background)]">
+        <form onSubmit={isLinked ? handleUpdatePassword : handleLinkCredential} className="space-y-3 p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)]/80">
           <div className="flex justify-between items-center">
             <h4 className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)]">
               {isLinked ? 'Update Account Password' : 'Link Password Account'}
@@ -669,53 +669,53 @@ export function ProfileScreen({
       <StoreCredentialsSection state={state} onUpdate={onUpdate} />
 
       {state.user && (
-         <div className="bg-[var(--card)] border border-[var(--border)] rounded-[2.5rem] p-8 space-y-6 shadow-sm text-left">
-            <div>
-               <h3 className="text-lg font-black uppercase tracking-tight text-[var(--foreground)] flex items-center gap-2">
-                  <ShieldCheck size={20} className="text-indigo-500 animate-pulse" />
-                  {cleanAndValidateText("Account Synchronization / मल्टी-डिवाइस सिंक सुरक्षा", state.settings.language, state.settings)}
+         <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xs text-left">
+            <div className="flex items-center justify-between">
+               <h3 className="text-xs font-black uppercase tracking-tight text-[var(--foreground)] flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-indigo-500" />
+                  {cleanAndValidateText("Account Synchronization", state.settings.language, state.settings)}
                </h3>
-               <p className="text-[9px] opacity-45 uppercase font-bold tracking-wider mt-1">
-                  Manage your credentials. Link a password to use the same email on devices where Google sign-in is not convenient.
-               </p>
+               <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 uppercase tracking-wider">
+                  Secured
+               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <div className="p-4 rounded-2xl bg-[var(--background)] border border-[var(--border)] flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                     <div className="h-9 w-9 rounded-xl bg-indigo-500/10 text-indigo-500 font-bold text-sm flex items-center justify-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+               <div className="p-3 rounded-xl bg-[var(--background)]/70 border border-[var(--border)] flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                     <div className="h-7 w-7 rounded-lg bg-indigo-500/10 text-indigo-500 font-bold text-xs flex items-center justify-center shrink-0">
                         G
                      </div>
-                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-wide text-[var(--foreground)]">Google Authentication</p>
-                        <p className="text-[9px] text-[var(--foreground)]/60 font-mono tracking-tight truncate max-w-[120px] sm:max-w-none">{state.user.email}</p>
+                     <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--foreground)] truncate">Google Account</p>
+                        <p className="text-[8.5px] text-[var(--foreground)]/60 font-mono tracking-tight truncate">{state.user.email}</p>
                      </div>
                   </div>
-                  <span className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase px-2 py-1 rounded-md border border-emerald-500/10 flex items-center gap-1 shrink-0">
-                     <CheckCircle size={10} /> Connected
+                  <span className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border border-emerald-500/10 flex items-center gap-1 shrink-0">
+                     <CheckCircle size={9} /> Connected
                   </span>
                </div>
 
-               <div className="p-4 rounded-2xl bg-[var(--background)] border border-[var(--border)] flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                     <div className="h-9 w-9 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center">
-                        <Lock size={14} />
+               <div className="p-3 rounded-xl bg-[var(--background)]/70 border border-[var(--border)] flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                     <div className="h-7 w-7 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0">
+                        <Lock size={12} />
                      </div>
-                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-wide text-[var(--foreground)]">Email & Password Sign-in</p>
-                        <p className="text-[9px] text-[var(--foreground)]/60 font-mono tracking-tight">
+                     <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--foreground)] truncate">Password Login</p>
+                        <p className="text-[8.5px] text-[var(--foreground)]/60 font-mono tracking-tight truncate">
                            {auth.currentUser?.providerData?.some(p => p.providerId === 'password') 
-                              ? 'Active / पासवर्ड लिंक है' 
-                              : 'Not Linked / लिंक नहीं है'}
+                              ? 'Active' 
+                              : 'Not Linked'}
                         </p>
                      </div>
                   </div>
                   {auth.currentUser?.providerData?.some(p => p.providerId === 'password') ? (
-                     <span className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase px-2 py-1 rounded-md border border-emerald-500/10 flex items-center gap-1 shrink-0">
-                        <CheckCircle size={10} /> Active
+                     <span className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border border-emerald-500/10 flex items-center gap-1 shrink-0">
+                        <CheckCircle size={9} /> Active
                      </span>
                   ) : (
-                     <span className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase px-2 py-1 rounded-md border border-amber-500/10 flex items-center gap-1 shrink-0">
+                     <span className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border border-amber-500/10 flex items-center gap-1 shrink-0">
                         Pending
                      </span>
                   )}
@@ -908,62 +908,157 @@ export function ProfileScreen({
          </div>
 
          {/* ========================================================================= */}
-         {/* DESKTOP SIZE BUTTON (Large Interface & Large Buttons for Desktop Screens) */}
-         {/* Positioned directly below "Share with Customer" button as requested       */}
+         {/* DESKTOP SIZE BUTTON (Shorter & Minimalist Interface)                       */}
          {/* Stored strictly in local device storage, NEVER in Firebase/Firestore       */}
          {/* ========================================================================= */}
          <div 
            id="desktop-size-section"
-           className="p-6 bg-[var(--card)] border-2 border-[var(--border)] rounded-[2rem] transition-all hover:border-[var(--primary)]/40 shadow-sm relative overflow-hidden"
+           className="p-3.5 sm:p-4 bg-[var(--card)] border border-[var(--border)] rounded-2xl transition-all shadow-xs flex items-center justify-between gap-3"
          >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-               <div className="flex items-start sm:items-center gap-4">
-                  <div className={cn(
-                    "h-14 w-14 rounded-2xl flex items-center justify-center transition-all shrink-0 shadow-md",
-                    currentDesktopSize
-                      ? "bg-gradient-to-tr from-amber-500 to-yellow-400 text-black font-black"
-                      : "bg-[var(--primary)]/10 text-[var(--primary)]"
-                  )}>
-                     <Monitor size={28} className={currentDesktopSize ? "animate-pulse" : ""} />
+            <div className="flex items-center gap-3 min-w-0">
+               <div className={cn(
+                 "h-9 w-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                 currentDesktopSize
+                   ? "bg-amber-500 text-black font-black shadow-xs"
+                   : "bg-[var(--primary)]/10 text-[var(--primary)]"
+               )}>
+                  <Monitor size={17} />
+               </div>
+               <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                     <h3 className="text-xs font-black uppercase tracking-tight text-[var(--foreground)] truncate">
+                        Desktop Size
+                     </h3>
+                     <span className={cn(
+                       "px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider",
+                       currentDesktopSize
+                         ? "bg-amber-500/20 text-amber-500 font-black"
+                         : "bg-[var(--foreground)]/5 text-[var(--foreground)]/50"
+                     )}>
+                        {currentDesktopSize ? "ON" : "OFF"}
+                     </span>
                   </div>
-                  <div>
-                     <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-base font-black uppercase tracking-tight text-[var(--foreground)]">
-                           Desktop Size
-                        </h3>
-                        <span className={cn(
-                          "px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors",
-                          currentDesktopSize
-                            ? "bg-amber-500/20 text-amber-500 border border-amber-500/30"
-                            : "bg-[var(--border)] text-[var(--foreground)]/60"
-                        )}>
-                           {currentDesktopSize ? "Large Format Active (ON)" : "Standard Format (OFF)"}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[9px] font-bold">
-                           Local Storage Only 🔒
-                        </span>
-                     </div>
-                     <p className="text-xs text-[var(--foreground)]/70 mt-1 max-w-xl font-medium leading-relaxed">
-                        Large buttons and screen formats
-                     </p>
+                  <p className="text-[10px] text-[var(--foreground)]/60 font-medium truncate">
+                     Large buttons & widescreen mode
+                  </p>
+               </div>
+            </div>
+
+            {/* Minimalist Action Toggle Button */}
+            <button
+               id="btn-desktop-size-toggle"
+               type="button"
+               onClick={handleToggleDesktop}
+               className={cn(
+                 "px-3 py-1.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer shrink-0",
+                 currentDesktopSize
+                   ? "bg-amber-500 text-black hover:bg-amber-400"
+                   : "bg-[var(--primary)] text-white hover:opacity-90 shadow-sm"
+               )}
+            >
+               <Monitor size={13} />
+               <span>{currentDesktopSize ? "Active" : "Enable"}</span>
+            </button>
+         </div>
+
+         {/* ========================================================================= */}
+         {/* SYSTEM INFRASTRUCTURE: METRIC PRECISION & TYPOGRAPHY DECK                 */}
+         {/* Positioned directly below the Desktop Size button as requested            */}
+         {/* ========================================================================= */}
+         <div 
+           id="system-infra-section"
+           className="p-4 sm:p-5 bg-[var(--card)] border border-[var(--border)] rounded-2xl transition-all shadow-xs space-y-3.5"
+         >
+            <div className="flex items-center justify-between">
+               <div className="flex items-center gap-2">
+                  <div className="h-1 w-5 bg-blue-500 opacity-60 rounded-full" />
+                  <label className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-500">
+                     {t?.systemInfra || "System Infrastructure"}
+                  </label>
+               </div>
+               <span className="text-[8.5px] font-bold text-[var(--foreground)]/40 uppercase tracking-wider">
+                  Precision & Layout
+               </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+               {/* Typography Deck */}
+               <div className="p-3 rounded-xl bg-[var(--background)]/70 border border-[var(--border)] flex flex-col justify-between gap-2">
+                  <div className="flex items-center justify-between">
+                     <h4 className="font-black uppercase tracking-tight text-[11px] text-[var(--foreground)]/70">
+                        {t?.typographyDeck || "Typography Deck"}
+                     </h4>
+                     <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--foreground)]/50">
+                        {state.settings.fontSize || 'standard'}
+                     </span>
+                  </div>
+                  <div className="flex gap-1.5">
+                     {[
+                        { id: 'compact', label: 'Compact', icon: <Minimize2 size={11} /> },
+                        { id: 'standard', label: 'Standard', icon: <Type size={11} /> },
+                        { id: 'comfortable', label: 'Spaced', icon: <Maximize2 size={11} /> },
+                     ].map(opt => {
+                        const isActive = (state.settings.fontSize || 'standard') === opt.id;
+                        return (
+                           <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => {
+                                 onUpdate({ fontSize: opt.id as any });
+                                 try { playFeedbackEvent('notification', state.settings); } catch {}
+                              }}
+                              className={cn(
+                                 "flex-1 h-8 rounded-lg text-[10px] font-bold transition-all border flex items-center justify-center gap-1 cursor-pointer active:scale-95",
+                                 isActive 
+                                    ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-sm font-black" 
+                                    : "bg-[var(--card)] border-[var(--border)] text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:border-[var(--foreground)]/20"
+                              )}
+                           >
+                              {opt.icon}
+                              <span>{opt.label}</span>
+                           </button>
+                        );
+                     })}
                   </div>
                </div>
 
-               {/* The "Desktop Size" Interactive Action Button */}
-               <button
-                  id="btn-desktop-size-toggle"
-                  type="button"
-                  onClick={handleToggleDesktop}
-                  className={cn(
-                    "w-full sm:w-auto px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 transition-all shadow-md active:scale-95 cursor-pointer shrink-0",
-                    currentDesktopSize
-                      ? "bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 text-black shadow-amber-500/20 hover:scale-[1.02] ring-2 ring-amber-400/40"
-                      : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 shadow-[var(--primary)]/20 hover:scale-[1.02]"
-                  )}
-               >
-                  <Monitor size={20} />
-                  <span>{currentDesktopSize ? "Desktop Size: Active (ON)" : "Desktop Size: Enable (OFF)"}</span>
-               </button>
+               {/* Metric Precision */}
+               <div className="p-3 rounded-xl bg-[var(--background)]/70 border border-[var(--border)] flex flex-col justify-between gap-2">
+                  <div className="flex items-center justify-between">
+                     <h4 className="font-black uppercase tracking-tight text-[11px] text-[var(--foreground)]/70">
+                        {t?.metricPrecision || "Metric Precision"}
+                     </h4>
+                     <span className="text-[9px] font-mono font-bold text-[var(--foreground)]/50">
+                        {(state.settings.pricePrecision ?? 2)} decimals
+                     </span>
+                  </div>
+                  <div className="flex gap-1.5">
+                     {[0, 1, 2].map(p => {
+                        const isActive = (state.settings.pricePrecision ?? 2) === p;
+                        return (
+                           <button
+                              key={p}
+                              type="button"
+                              onClick={() => {
+                                 onUpdate({ pricePrecision: p });
+                                 try { playFeedbackEvent('notification', state.settings); } catch {}
+                              }}
+                              className={cn(
+                                 "flex-1 h-8 rounded-lg text-xs font-black transition-all border flex items-center justify-center gap-1 cursor-pointer active:scale-95",
+                                 isActive 
+                                    ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-sm font-black" 
+                                    : "bg-[var(--card)] border-[var(--border)] text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:border-[var(--foreground)]/20"
+                              )}
+                           >
+                              <span>{p}</span>
+                              <span className="text-[8.5px] opacity-60 font-mono">
+                                 {p === 0 ? "(.0)" : p === 1 ? "(.1)" : "(.00)"}
+                              </span>
+                           </button>
+                        );
+                     })}
+                  </div>
+               </div>
             </div>
          </div>
       </div>

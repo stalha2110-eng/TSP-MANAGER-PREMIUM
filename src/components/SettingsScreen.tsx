@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Minimize2,
-  Type,
-  Maximize2,
   CheckCircle2,
   RefreshCw,
   FileSpreadsheet,
@@ -232,12 +229,6 @@ export default function SettingsScreen({
     { id: 'amber', color: '#f59e0b' },
     { id: 'cyan', color: '#06b6d4' },
     { id: 'slate', color: '#64748b' },
-  ];
-
-  const fontSizeOptions = [
-    { id: 'compact', label: 'Compact', icon: <Minimize2 size={14} /> },
-    { id: 'standard', label: 'Standard', icon: <Type size={14} /> },
-    { id: 'comfortable', label: 'Spaced', icon: <Maximize2 size={14} /> },
   ];
 
   return (
@@ -539,58 +530,6 @@ export default function SettingsScreen({
                           {state.settings.theme === theme.id && <CheckCircle2 size={24} className="absolute top-1/2 -right-4 -translate-y-1/2 scale-[3] opacity-10 text-[var(--primary)]" />}
                         </button>
                       ))}
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Performance & Ledger (Integrated into Interface Tab!) */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                   <div className="h-1 w-8 bg-blue-500 opacity-30 rounded-full" />
-                   <label className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500">{t.systemInfra}</label>
-                </div>
-                
-                <div className="grid gap-4">
-                  <div className="flex items-center justify-between p-8 card rounded-[2.5rem] border-[var(--border)] bg-[var(--card)]">
-                    <div>
-                      <h4 className="font-black uppercase tracking-tight text-xs opacity-60">{t.metricPrecision}</h4>
-                      <div className="flex gap-2 mt-4">
-                        {[0, 1, 2].map(p => (
-                          <button
-                            key={p}
-                            onClick={() => onUpdate({ pricePrecision: p })}
-                            className={cn(
-                              "h-10 w-10 rounded-xl text-xs font-black transition-all border",
-                              state.settings.pricePrecision === p 
-                                ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-lg scale-110" 
-                                : "bg-[var(--background)] border-[var(--border)] opacity-30 text-[var(--foreground)]"
-                            )}
-                          >
-                            {p}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="h-12 w-[1px] bg-[var(--border)] rotate-12" />
-                    <div className="text-right">
-                      <h4 className="font-black uppercase tracking-tight text-xs opacity-60">{t.typographyDeck}</h4>
-                      <div className="flex gap-2 mt-4 justify-end">
-                        {fontSizeOptions.map(opt => (
-                          <button
-                            key={opt.id}
-                            onClick={() => onUpdate({ fontSize: opt.id })}
-                            className={cn(
-                              "h-10 w-10 rounded-xl flex items-center justify-center transition-all border text-[var(--foreground)]",
-                              state.settings.fontSize === opt.id 
-                                ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-lg scale-110" 
-                                : "bg-[var(--background)] border-[var(--border)] opacity-30"
-                            )}
-                          >
-                            {opt.icon}
-                          </button>
-                        ))}
-                      </div>
                     </div>
                   </div>
                 </div>

@@ -4,8 +4,10 @@ import {
   User, Mail, LogOut, LogIn, ShieldCheck, Lock, CheckCircle, XCircle, 
   EyeOff, Eye, Download, ChevronRight, MessageSquare, Share2, RefreshCw, 
   Store, Cloud, Database, Phone, MapPin, Clock, Sun, Moon, Bell, Save,
-  Monitor
+  Monitor, Smartphone, Check
 } from 'lucide-react';
+import { AndroidIcon, AppleIcon } from './DeviceIcons';
+import { currentDevice, DeviceInfo } from '../utils/device';
 import { auth, loginWithGoogle } from '../firebase';
 import { EmailAuthProvider, linkWithCredential, updatePassword } from 'firebase/auth';
 import { playFeedbackEvent } from '../services/soundFeedbackService';
@@ -787,6 +789,107 @@ export function ProfileScreen({
                </div>
                <ChevronRight size={16} className="opacity-20 group-hover:translate-x-1 transition-transform" />
             </button>
+         </div>
+
+         {/* ========================================================================= */}
+         {/* DEVICE PLATFORM: ANDROID & IOS BUTTONS                                    */}
+         {/* Positioned directly below "Share with Customer" as requested              */}
+         {/* Detects actual device & supports device-specific capability handling      */}
+         {/* ========================================================================= */}
+         <div className="space-y-2">
+            <div className="flex items-center justify-between px-2">
+               <span className="text-[9.5px] font-black uppercase tracking-wider text-[var(--foreground)]/60 flex items-center gap-1.5">
+                  <Smartphone size={13} className="text-[var(--primary)]" />
+                  <span>Device Platform</span>
+                  <span className="px-1.5 py-0.5 rounded bg-[var(--foreground)]/5 text-[8px] font-bold opacity-70">
+                     Active: {currentDevice().deviceName}
+                  </span>
+               </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+               {/* Android Button */}
+               <button
+                  type="button"
+                  id="btn-platform-android"
+                  onClick={() => {
+                     try {
+                        playFeedbackEvent('notification', state.settings);
+                     } catch {}
+                     const active = currentDevice().isAndroid;
+                     alert(`Android Platform\n\n• Detected: ${active ? 'Active on your Android Device' : 'Standard Web Environment'}\n• Features: Web Bluetooth thermal printing, hardware haptic vibrations, and standard continuous speech.`);
+                  }}
+                  className={cn(
+                     "p-4 rounded-2xl border transition-all flex items-center justify-between group cursor-pointer text-left active:scale-[0.98]",
+                     currentDevice().isAndroid
+                        ? "bg-emerald-500/10 border-emerald-500/40 shadow-xs ring-1 ring-emerald-500/20"
+                        : "bg-[var(--card)] border-[var(--border)] hover:border-emerald-500/30 hover:bg-emerald-500/[0.04]"
+                  )}
+               >
+                  <div className="flex items-center gap-3 min-w-0">
+                     <div className={cn(
+                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
+                        currentDevice().isAndroid
+                           ? "bg-emerald-500 text-white shadow-xs"
+                           : "bg-emerald-500/15 text-emerald-500"
+                     )}>
+                        <AndroidIcon size={20} />
+                     </div>
+                     <div className="min-w-0">
+                        <p className="text-xs sm:text-sm font-black text-[var(--foreground)] tracking-tight truncate group-hover:text-emerald-500 transition-colors">
+                           Android
+                        </p>
+                        <p className="text-[9px] font-bold opacity-50 uppercase tracking-widest truncate">
+                           {currentDevice().isAndroid ? "Current Device" : "Ready"}
+                        </p>
+                     </div>
+                  </div>
+                  {currentDevice().isAndroid && (
+                     <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 ml-1 shadow-xs" />
+                  )}
+               </button>
+
+               {/* iOS Button */}
+               <button
+                  type="button"
+                  id="btn-platform-ios"
+                  onClick={() => {
+                     try {
+                        playFeedbackEvent('notification', state.settings);
+                     } catch {}
+                     const active = currentDevice().isIOS;
+                     alert(`Apple iOS / Safari Platform\n\n• Detected: ${active ? 'Active on your iPhone / iPad' : 'Ready'}\n• Features: Optimized speech burst reconnection, Apple Rishi voice support, and safe-area touch ergonomics.`);
+                  }}
+                  className={cn(
+                     "p-4 rounded-2xl border transition-all flex items-center justify-between group cursor-pointer text-left active:scale-[0.98]",
+                     currentDevice().isIOS
+                        ? "bg-sky-500/10 border-sky-500/40 shadow-xs ring-1 ring-sky-500/20"
+                        : "bg-[var(--card)] border-[var(--border)] hover:border-sky-500/30 hover:bg-sky-500/[0.04]"
+                  )}
+               >
+                  <div className="flex items-center gap-3 min-w-0">
+                     <div className={cn(
+                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
+                        currentDevice().isIOS
+                           ? "bg-sky-500 text-white shadow-xs"
+                           : "bg-sky-500/15 text-sky-500 dark:text-sky-400"
+                     )}>
+                        <AppleIcon size={20} />
+                     </div>
+                     <div className="min-w-0">
+                        <p className="text-xs sm:text-sm font-black text-[var(--foreground)] tracking-tight truncate group-hover:text-sky-500 transition-colors">
+                           iOS
+                        </p>
+                        <p className="text-[9px] font-bold opacity-50 uppercase tracking-widest truncate">
+                           {currentDevice().isIOS ? "Current Device" : "Ready"}
+                        </p>
+                     </div>
+                  </div>
+                  {currentDevice().isIOS && (
+                     <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0 ml-1 shadow-xs" />
+                  )}
+               </button>
+            </div>
          </div>
 
          {/* ========================================================================= */}

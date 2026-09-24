@@ -15,6 +15,7 @@ import { keyPoolManager } from "../services/apiKeyPoolService";
 import { playFeedbackEvent } from "../services/soundFeedbackService";
 import { Button } from "./ui/Button";
 import { useBackModal } from "../utils/backNavigationManager";
+import { deviceFeatures } from "../utils/device";
 
 function cleanTranscriptText(text: string): string {
   if (!text) return "";
@@ -565,7 +566,9 @@ export function VoiceProductAssistant({
     }
 
     const rec = new SpeechClass();
-    rec.continuous = true;
+    // Centralized device-specific rule: continuous=false on iOS prevents WebKit audio-capture timeouts.
+    // The attemptRestart loop seamlessly re-engages the session when phrases end until the user manually stops.
+    rec.continuous = deviceFeatures.shouldUseContinuousSpeech();
     rec.interimResults = true;
     rec.maxAlternatives = 3;
     rec.lang = micLocale;

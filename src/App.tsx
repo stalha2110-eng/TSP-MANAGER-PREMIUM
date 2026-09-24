@@ -4501,11 +4501,11 @@ export default function App() {
                   title="Add Category"
                   id="add-category-btn"
                 >
-                  <Plus size={10} className="stroke-[3.5]" />
+                  <Plus className="w-[13px] h-[11px] stroke-[3.5]" />
                 </button>
                 <button 
                   onClick={() => setShowManageCategories(true)}
-                  className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white transition-all active:scale-90 select-none cursor-pointer"
+                  className="inline-flex items-center justify-center w-[18.5px] h-[19.5px] rounded-full bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white transition-all active:scale-90 select-none cursor-pointer"
                   title="Manage Categories"
                   id="manage-categories-btn"
                 >

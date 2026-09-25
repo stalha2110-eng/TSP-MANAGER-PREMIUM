@@ -7173,7 +7173,7 @@ export default function BillingScreen({
                 {/* Filtered Unit Preset Chips */}
                 {(() => {
                   const standardUnitsList = [
-                    'Pcs', 'KG', 'Gram', '250gm', '500gm', 'Packet', 'Box', 'Litre', 'ML', 'Dozen', 
+                    'Pcs', 'KG', 'Gram', '250gm', 'Chatak', '500gm', 'Packet', 'Box', 'Litre', 'ML', 'Dozen', 
                     'Carton', 'Sack', 'Bag', 'Bottle', 'Strip', 'Quintal', 'Ton', 'Bundle', 'Set', 
                     'Roll', 'Metre', 'Pair', 'Plate', 'Tablet', 'Capsule', 'Can', 'Tin', 'Jar', 'Pouch'
                   ];

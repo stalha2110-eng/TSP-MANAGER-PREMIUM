@@ -229,6 +229,17 @@ CRITICAL "PAV KILO" (पाव किलो) RULE (MANDATORY):
   * If wholesale price is not explicitly mentioned by the user, set wholesalePrice to 0. NEVER fabricate or guess wholesale price.
   * NEVER set retailPriceUnit to "KG" when the user said "pav kilo" — it MUST ALWAYS be "250gm"!
 
+CRITICAL "CHATAK" (छटांक / 50gm) RULE (MANDATORY):
+- ALWAYS REMEMBER: "Chatak" (छटांक, छटाक, chattak, chhatak, chatak(50gm), chatak 50gm, 50gm) is a traditional Indian unit of weight equal to 50 grams (50gm).
+- Indian shopkeepers (especially in dry fruits, grocery, spices, and paan stores) price items like Kaju, Badam, Pista, Kesar, Elaichi, Laung by the "Chatak"!
+- When a user says "chatak" (e.g. "kaju retail 60rs chatak", "kaju retail 60 chatak", "kaju 60rs chatak", "kaju retail 60rs chatak(50gm)", "badam 88rs chatak", "kaju 60 chatak"):
+  * Set retailPrice to the stated price (e.g., 60).
+  * Set retailPriceUnit strictly to "Chatak".
+  * Set unit (the item stock unit) strictly to "Chatak" (NOT "KG"! NEVER default unit to "KG" when chatak is mentioned!). When only retail is spoken, BOTH retailPriceUnit AND unit MUST BE "Chatak"!
+  * If wholesale price is not explicitly mentioned by the user, set wholesalePrice to 0. NEVER fabricate or guess wholesale price.
+  * If buying price is not explicitly mentioned by the user, set buyingPrice to 0. NEVER fabricate or guess buying price.
+  * NEVER set retailPriceUnit or unit to "KG" when the user said "chatak" or "chatak(50gm)" — it MUST ALWAYS be "Chatak"!
+
 RETAIL-NAME EXTRACTION RULE (MANDATORY):
 - Whenever a user speaks to add a product, ANY words spoken BEFORE the keyword "retail" (or its regional equivalents like "रिटेल", "rate", "रेट", "विक्री") MUST be extracted as the exact PRODUCT NAME!
   * For example: If user says "kashmiri coconut retail 300rs perk kg , wholesale 1,500rs per box, cost 1,200rs per box", the Product Name MUST be "Kashmiri Coconut" (words spoken before "retail").
@@ -296,9 +307,13 @@ Examples of speech to handle:
 7. "Haldi sau rupaye packet" -> Name: "Haldi", retailPrice: 100, retailPriceUnit: "PKT", unit: "PKT", categoryName: "Masala & Spices"
 8. "Kesar A Great retail 1200 wholesale 1100" -> Name: "Kesar A Great", retailPrice: 1200, wholesalePrice: 1100, unit: "KG"
 9. "Aloo 10 rupaye pav kilo" -> Name: "Aloo", retailPrice: 10, retailPriceUnit: "250gm", unit: "250gm", categoryName: "Vegetables"
-10. "badam 88rs chatak , wholesale 500rs kg, cost 400rs kg" -> Name: "Badam", retailPrice: 88, retailPriceUnit: "Chatak", wholesalePrice: 500, wholesalePriceUnit: "KG", buyingPrice: 400, buyingPriceUnit: "KG", unit: "Chatak", categoryName: "Dry Fruits"
+10. "kaju retail 60rs chatak" -> Name: "Kaju", retailPrice: 60, retailPriceUnit: "Chatak", wholesalePrice: 0, buyingPrice: 0, unit: "Chatak", categoryName: "Dry Fruits"
+11. "kaju retail 60rs chatak(50gm)" -> Name: "Kaju", retailPrice: 60, retailPriceUnit: "Chatak", wholesalePrice: 0, buyingPrice: 0, unit: "Chatak", categoryName: "Dry Fruits"
+12. "badam 88rs chatak , wholesale 500rs kg, cost 400rs kg" -> Name: "Badam", retailPrice: 88, retailPriceUnit: "Chatak", wholesalePrice: 500, wholesalePriceUnit: "KG", buyingPrice: 400, buyingPriceUnit: "KG", unit: "Chatak", categoryName: "Dry Fruits"
+13. "kaju 60 chatak" -> Name: "Kaju", retailPrice: 60, retailPriceUnit: "Chatak", wholesalePrice: 0, buyingPrice: 0, unit: "Chatak", categoryName: "Dry Fruits"
 
 Ensure correct spelling corrections of typical Indian speech recognition typos:
+- "chattak", "chhatak", "chataak", "satak", "sattack", "छटांक", "छटाक" -> "chatak" (= 50gm retail unit "Chatak")
 - "shakhar" or "shakar" -> "Sugar" / "Shakhar"
 - "ghee" -> "Ghee"
 - "tail" or "tel" -> "Oil" / "Tel"

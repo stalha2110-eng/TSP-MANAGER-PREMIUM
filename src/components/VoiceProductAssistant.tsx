@@ -32,6 +32,11 @@ function cleanTranscriptText(text: string): string {
   cleaned = cleaned.replace(/\b(?:retel|ratel|reteil|रिटेल)\b/gi, "retail");
   // Normalize "holsel", "holsale", "whoalsale", "व्होलसेल", "होलसेल" -> "wholesale"
   cleaned = cleaned.replace(/\b(?:holsel|holsale|whoalsale|व्होलसेल|होलसेल)\b/gi, "wholesale");
+  // Normalize "chatak", "chattak", "chhatak", "chataak", "satak", "shatak", "sattack", "छटांक", "छटाक", "चटक", "चटाक" -> "chatak"
+  cleaned = cleaned.replace(/\b(?:chattak|chhatak|chataak|satak|shatak|sattack|छटांक|छटाक|चटक|चटाक)\b/gi, "chatak");
+  // Normalize "chatak 50gm", "chatak(50gm)", "chatak 50g", "chatak (50gm)" -> "chatak"
+  cleaned = cleaned.replace(/\bchatak\s*\(?\s*50\s*(?:gm|g|gram|grams)?\s*\)?/gi, "chatak");
+  cleaned = cleaned.replace(/\b50\s*(?:gm|g|gram|grams)\s*chatak\b/gi, "chatak");
   // Common mishearings
   cleaned = cleaned.replace(/\b(?:tamator)\b/gi, "tamatar");
   cleaned = cleaned.replace(/\b(?:aadhe\s*kilo|adha\s*kilo|aadha\s*kilo)\b/gi, "aadha kilo");
@@ -536,16 +541,36 @@ export function VoiceProductAssistant({
             (p.categoryName && p.categoryName.toLowerCase().includes(c.name.toLowerCase()))
           );
           
+          // Resolve unit with strict protection for Chatak and Pav Kilo
+          let resolvedRetailUnit = p.retailPriceUnit || p.unit || "KG";
+          let resolvedUnit = p.unit || resolvedRetailUnit || "KG";
+
+          const isChatak = /chatak|chattak|chhatak|छटांक|छटाक/i.test(cleanedText) || /^chatak$/i.test(resolvedRetailUnit);
+          if (isChatak) {
+            resolvedRetailUnit = "Chatak";
+            if (!p.wholesalePrice || p.wholesalePrice === 0 || !p.wholesalePriceUnit || /chatak/i.test(p.wholesalePriceUnit)) {
+              resolvedUnit = "Chatak";
+            }
+          }
+
+          const isPavKilo = /pav\s*kilo|paav\s*kilo|pao\s*kilo|250gm/i.test(cleanedText) || /^250gm$/i.test(resolvedRetailUnit);
+          if (isPavKilo) {
+            resolvedRetailUnit = "250gm";
+            if (!p.wholesalePrice || p.wholesalePrice === 0 || !p.wholesalePriceUnit || /250gm/i.test(p.wholesalePriceUnit)) {
+              resolvedUnit = "250gm";
+            }
+          }
+
           return {
             id: 'voice_' + Math.random().toString(36).substr(2, 9),
             name: p.name,
             retailPrice: p.retailPrice || 0,
-            retailPriceUnit: p.retailPriceUnit || p.unit || "KG",
-            wholesalePrice: p.wholesalePrice || (p.retailPrice ? Math.floor(p.retailPrice * 0.9) : 0),
-            wholesalePriceUnit: p.wholesalePriceUnit || p.unit || "KG",
-            buyingPrice: p.buyingPrice || (p.retailPrice ? Math.floor(p.retailPrice * 0.8) : 0),
-            buyingPriceUnit: p.buyingPriceUnit || p.unit || "KG",
-            unit: p.unit || "KG",
+            retailPriceUnit: resolvedRetailUnit,
+            wholesalePrice: p.wholesalePrice || 0,
+            wholesalePriceUnit: p.wholesalePriceUnit || (p.wholesalePrice > 0 ? "KG" : resolvedUnit),
+            buyingPrice: p.buyingPrice || 0,
+            buyingPriceUnit: p.buyingPriceUnit || (p.buyingPrice > 0 ? "KG" : resolvedUnit),
+            unit: resolvedUnit,
             categoryId: matchedCategory ? matchedCategory.id : (categories[0]?.id || ''),
             confidence: {
               name: 100,
@@ -672,7 +697,7 @@ export function VoiceProductAssistant({
         if (resultItem.length > 1) {
           for (let a = 1; a < resultItem.length; a++) {
             const alt = resultItem[a]?.transcript || "";
-            if (/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm|chatak|छटांक|छटाक|rate|रेट|खरीद)\b/i.test(alt) && !/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm|chatak|छटांक|छटाक|rate|रेट|खरीद)\b/i.test(transcriptSegment)) {
+            if (/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm|chatak|chattak|chhatak|chataak|satak|sattack|shatak|छटांक|छटाक|चटक|चटाक|rate|रेट|खरीद)\b/i.test(alt) && !/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm|chatak|chattak|chhatak|chataak|satak|sattack|shatak|छटांक|छटाक|चटक|चटाक|rate|रेट|खरीद)\b/i.test(transcriptSegment)) {
               transcriptSegment = alt;
               break;
             }
@@ -1515,8 +1540,10 @@ export function VoiceProductAssistant({
                                     onChange={e => setEditingDraftUnit(e.target.value)}
                                     className="w-full bg-[var(--background)] text-[var(--foreground)] px-3 py-2 rounded-xl text-xs font-bold border border-[var(--border)] focus:outline-none focus:border-amber-500/50"
                                   >
-                                    {["KG", "GM", "LTR", "ML", "PCS", "PKT", "BOX", "CRT", "DZN", "BDL", "TRY", "UNT"].map(un => (
-                                      <option key={un} className="bg-[var(--card)] text-[var(--foreground)]" value={un}>{un}</option>
+                                    {["KG", "GM", "250gm", "Chatak", "LTR", "ML", "PCS", "PKT", "BOX", "CRT", "DZN", "BDL", "TRY", "UNT"].map(un => (
+                                      <option key={un} className="bg-[var(--card)] text-[var(--foreground)]" value={un}>
+                                        {un === 'Chatak' ? 'Chatak (50gm)' : un === '250gm' ? '250gm (Pav Kilo)' : un}
+                                      </option>
                                     ))}
                                   </select>
                                 </div>
@@ -1553,7 +1580,9 @@ export function VoiceProductAssistant({
                                       </span>
                                     )}
                                   </p>
-                                  <p className="text-[9px] font-black opacity-40 uppercase tracking-widest block text-[var(--foreground)]/60">Unit of measure: {draft.unit || "KG"}</p>
+                                  <p className="text-[9px] font-black opacity-40 uppercase tracking-widest block text-[var(--foreground)]/60">
+                                    Unit of measure: <span className="text-amber-500 font-bold">{draft.unit === 'Chatak' ? 'Chatak (50gm)' : draft.unit === '250gm' ? '250gm (Pav Kilo)' : (draft.unit || "KG")}</span>
+                                  </p>
                                 </div>
 
                                 <div className="flex gap-1.5">
@@ -1567,17 +1596,17 @@ export function VoiceProductAssistant({
                                 <div className="bg-[var(--background)] p-2.5 rounded-xl text-center border border-[var(--border)]">
                                   <p className="text-[8px] font-black uppercase tracking-widest text-[var(--foreground)]/50">Retail Price</p>
                                   <p className="text-sm font-black text-[var(--foreground)]">₹{draft.retailPrice}</p>
-                                  <p className="text-[8px] font-mono opacity-50 text-[var(--foreground)]/60">/ {draft.retailPriceUnit}</p>
+                                  <p className="text-[8px] font-mono opacity-50 text-[var(--foreground)]/60">/ {draft.retailPriceUnit === 'Chatak' ? 'Chatak (50gm)' : draft.retailPriceUnit}</p>
                                 </div>
                                 <div className="bg-[var(--background)] p-2.5 rounded-xl text-center border border-[var(--border)]">
                                   <p className="text-[8px] font-black uppercase tracking-widest text-[var(--foreground)]/50">Wholesale</p>
                                   <p className="text-sm font-black text-[var(--foreground)]">₹{draft.wholesalePrice}</p>
-                                  <p className="text-[8px] font-mono opacity-50 text-[var(--foreground)]/60">/ {draft.wholesalePriceUnit}</p>
+                                  <p className="text-[8px] font-mono opacity-50 text-[var(--foreground)]/60">/ {draft.wholesalePriceUnit === 'Chatak' ? 'Chatak (50gm)' : draft.wholesalePriceUnit}</p>
                                 </div>
                                 <div className="bg-[var(--background)] p-2.5 rounded-xl text-center border border-[var(--border)]">
                                   <p className="text-[8px] font-black uppercase tracking-widest text-[var(--foreground)]/50">Cost Price</p>
                                   <p className="text-sm font-black text-[var(--foreground)]">₹{draft.buyingPrice}</p>
-                                  <p className="text-[8px] font-mono opacity-50 text-[var(--foreground)]/60">/ {draft.buyingPriceUnit}</p>
+                                  <p className="text-[8px] font-mono opacity-50 text-[var(--foreground)]/60">/ {draft.buyingPriceUnit === 'Chatak' ? 'Chatak (50gm)' : draft.buyingPriceUnit}</p>
                                 </div>
                               </div>
 

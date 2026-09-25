@@ -91,10 +91,13 @@ export function normalizeUnit(word: string): string {
   if (/^(?:aadha\s*kilo|adha\s*kilo|aadhe\s*kilo|adhe\s*kilo|आधा\s*किलो|half\s*kilo|half|500\s*(?:gm|g|gram|grams)|500gm|500g)$/i.test(w)) {
     return "500gm";
   }
+  // Chatak (1 Chatak = 50gm traditional Indian weight unit for retail dry fruits, spices, groceries)
+  if (/^(?:chatak|chattak|chhatak|chataak|ctk|satak|sattack|shatak|छटांक|छटाक|चटाक|चटक)(?:[\s(\-/_]*(?:50\s*(?:gm|g|gram|grams)?)\)?)?$/i.test(w) ||
+      /^(?:(?:50\s*(?:gm|g|gram|grams))\s*(?:chatak|chattak|chhatak|छटांक|छटाक)?)$/i.test(w) ||
+      w === "chatak(50gm)" || w === "chatak (50gm)" || w === "chatak 50gm" || w === "chatak 50g") {
+    return "Chatak";
+  }
   // KG
-  if (/^(?:kg|kilo|kilogram|kg\.?|किलो|किग्रा|कलो|kilos)$/i.test(w)) return "KG";
-  // Chatak
-  if (/^(?:chatak|chattak|ctk|छटांक|छटाक)$/i.test(w)) return "Chatak";
   // GM
   if (/^(?:g|gm|gms|gram|grams|ग्राम|ग्राम्स|ग्राम्)$/i.test(w)) return "GM";
   // LTR
@@ -300,10 +303,13 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
   const retailRegex = /\b(?:retail|selling|sell|रिटेल|विक्री|बेचना|भाव|रेट)\b/i;
   const wholesaleRegex = /\b(?:wholesale|होलसेल|थोक|व्होलसेल)\b/i;
   const costRegex = /\b(?:cost|buying|bought|purchase|buying\s+price|खरीद|खरीदी|कॉस्ट|लागत)\b/i;
-  const unitRegex = /(?:(?:perk|per|pr|\/)\s+)?(?:pav\s*kilo|paav\s*kilo|pao\s*kilo|pau\s*kilo|paw\s*kilo|pa\s*kilo|paa\s*kilo|pav|paav|pao|पाव\s*किलो|पावकिलो|पाव|quarter\s*kilo|quarter|250\s*(?:gm|g|gram|grams)|250gm|250g|aadha\s*kilo|adha\s*kilo|aadhe\s*kilo|adhe\s*kilo|आधा\s*किलो|half\s*kilo|500\s*(?:gm|g|gram|grams)|500gm|500g|kg|kilo|kilogram|किग्रा|किलो|chatak|chattak|ctk|छटांक|छटाक|gram|gm|grams|ग्राम|piece|pc|pcs|pieces|पीस|नग|packet|packets|pack|pkt|पैकेट|box|boxes|बॉक्स|पेटी|dabba|dibba|carton|cartons|crt|कार्टन|dozen|दर्जन|darjan|liter|litre|ltr|लीटर|ml|एमएल|bundle|बंडल|tray|ट्रे|unit|यूनिट)\b/gi;
+  const unitRegex = /(?:(?:perk|per|pr|\/)\s+)?(?:pav\s*kilo|paav\s*kilo|pao\s*kilo|pau\s*kilo|paw\s*kilo|pa\s*kilo|paa\s*kilo|pav|paav|pao|पाव\s*किलो|पावकिलो|पाव|quarter\s*kilo|quarter|250\s*(?:gm|g|gram|grams)|250gm|250g|aadha\s*kilo|adha\s*kilo|aadhe\s*kilo|adhe\s*kilo|आधा\s*किलो|half\s*kilo|500\s*(?:gm|g|gram|grams)|500gm|500g|kg|kilo|kilogram|किग्रा|किलो|chatak\(50gm\)|chatak\s*\(?\s*50\s*(?:gm|g|gram|grams)?\s*\)?|50\s*(?:gm|g|gram)\s*chatak|chatak|chattak|chhatak|chataak|ctk|satak|sattack|shatak|छटांक|छटाक|चटाक|चटक|gram|gm|grams|ग्राम|piece|pc|pcs|pieces|पीस|नग|packet|packets|pack|pkt|पैकेट|box|boxes|बॉक्स|पेटी|dabba|dibba|carton|cartons|crt|कार्टन|dozen|दर्जन|darjan|liter|litre|ltr|लीटर|ml|एमएल|bundle|बंडल|tray|ट्रे|unit|यूनिट)\b/gi;
 
   const pavKiloRegex = /\b(?:pav\s*kilo|paav\s*kilo|pao\s*kilo|pau\s*kilo|paw\s*kilo|pa\s*kilo|paa\s*kilo|pav|paav|pao|पाव\s*किलो|पावकिलो|पाव|quarter\s*kilo|250\s*(?:gm|g|gram|grams)|250gm|250g)\b/i;
   const isPavKiloMentioned = pavKiloRegex.test(cleanPhrase);
+
+  const chatakRegex = /\b(?:chatak\(50gm\)|chatak\s*\(?\s*50\s*(?:gm|g|gram|grams)?\s*\)?|50\s*(?:gm|g|gram)\s*chatak|chatak|chattak|chhatak|chataak|ctk|satak|sattack|shatak|छटांक|छटाक|चटाक|चटक)\b/i;
+  const isChatakMentioned = chatakRegex.test(cleanPhrase);
 
   // Check if phrase contains the "retail" keyword rule
   const retailMatch = cleanPhrase.match(retailRegex);
@@ -319,6 +325,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
     rawNameBeforeRetail = rawNameBeforeRetail
       .replace(/^(?:please\s+)?(?:add|insert|create|new|item|product|naya\s+item|likho|daalo|bhai|sun\s+bhai|kripya|ek|item\s+name|naam)\s+/i, "")
       .replace(pavKiloRegex, "")
+      .replace(chatakRegex, "")
       .replace(/^[,.\-:]+/, "")
       .replace(/[,.\-:]+$/, "")
       .trim();
@@ -352,11 +359,11 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
       markers.sort((a, b) => a.index - b.index);
 
       let rPrice = 0;
-      let rUnit = isPavKiloMentioned ? "250gm" : "KG";
+      let rUnit = isPavKiloMentioned ? "250gm" : (isChatakMentioned ? "Chatak" : "KG");
       let wPrice = 0;
-      let wUnit = "KG";
+      let wUnit = "";
       let cPrice = 0;
-      let cUnit = "KG";
+      let cUnit = "";
       let unitExplicitlyFound = false;
 
       // Extract each section's numbers and units
@@ -381,6 +388,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
           if (parsedPrice > 0) rPrice = parsedPrice;
           if (parsedUnit) rUnit = parsedUnit;
           else if (isPavKiloMentioned) rUnit = "250gm";
+          else if (isChatakMentioned) rUnit = "Chatak";
         } else if (current.type === 'wholesale') {
           if (parsedPrice > 0) wPrice = parsedPrice;
           if (parsedUnit) wUnit = parsedUnit;
@@ -393,7 +401,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
       // If price was found in the text overall
       if (rPrice > 0 || wPrice > 0 || cPrice > 0) {
         // Fallback unit propagation if only retail or overall unit was mentioned
-        const basePrimaryUnit = rUnit || (unitExplicitlyFound ? (wUnit || cUnit) : (isPavKiloMentioned ? "250gm" : "KG"));
+        const basePrimaryUnit = rUnit || (unitExplicitlyFound ? (wUnit || cUnit) : (isPavKiloMentioned ? "250gm" : (isChatakMentioned ? "Chatak" : "KG")));
         if (!wUnit) wUnit = basePrimaryUnit;
         if (!cUnit) cUnit = basePrimaryUnit;
         if (!rUnit) rUnit = basePrimaryUnit;
@@ -452,9 +460,9 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
   let wholesalePrice = 0;
   let buyingPrice = 0;
   
-  let retailUnit = isPavKiloMentioned ? "250gm" : "KG";
-  let wholesaleUnit = isPavKiloMentioned ? "250gm" : "KG";
-  let buyingUnit = isPavKiloMentioned ? "250gm" : "KG";
+  let retailUnit = isPavKiloMentioned ? "250gm" : (isChatakMentioned ? "Chatak" : "KG");
+  let wholesaleUnit = isPavKiloMentioned ? "250gm" : (isChatakMentioned ? "Chatak" : "KG");
+  let buyingUnit = isPavKiloMentioned ? "250gm" : (isChatakMentioned ? "Chatak" : "KG");
   
   let confName = 90;
   let confRetail = 50;
@@ -462,7 +470,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
   let confBuying = 50;
   
   // Find unit mentioned anywhere to apply as base default
-  let baseUnit = isPavKiloMentioned ? "250gm" : "KG";
+  let baseUnit = isPavKiloMentioned ? "250gm" : (isChatakMentioned ? "Chatak" : "KG");
   const unitMatches = txt.match(unitRegex);
   if (unitMatches && unitMatches.length > 0) {
     baseUnit = normalizeUnit(unitMatches[0]);
@@ -489,6 +497,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
         else if (wholesaleKeywords.test(word)) category = 'wholesale';
         else if (costKeywords.test(word)) category = 'cost';
         else if (pavKiloRegex.test(word)) category = 'retail'; // "pav kilo" implies retail price
+        else if (chatakRegex.test(word)) category = 'retail'; // "chatak" implies retail price
       }
       
       if (category === 'unknown') {
@@ -498,6 +507,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
           else if (wholesaleKeywords.test(word)) category = 'wholesale';
           else if (costKeywords.test(word)) category = 'cost';
           else if (pavKiloRegex.test(word)) category = 'retail'; // "pav kilo" implies retail price
+          else if (chatakRegex.test(word)) category = 'retail'; // "chatak" implies retail price
         }
       }
       
@@ -539,6 +549,16 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
     }
   }
 
+  // "CHATAK" RULE: If user says "chatak", it means 50gm and users use this to set the RETAIL PRICE!
+  if (isChatakMentioned) {
+    retailUnit = "Chatak";
+    baseUnit = "Chatak";
+    if (!retailPrice && prices.length > 0) {
+      retailPrice = prices[0];
+      confRetail = 100;
+    }
+  }
+
   const unassigned = priceAssignments.filter(pa => pa.category === 'unknown');
   if (unassigned.length > 0) {
     if (!retailPrice && !wholesalePrice && !buyingPrice) {
@@ -563,7 +583,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
   });
   
   const allStripPatterns = [
-    retailKeywords, wholesaleKeywords, costKeywords, unitRegex, pavKiloRegex,
+    retailKeywords, wholesaleKeywords, costKeywords, unitRegex, pavKiloRegex, chatakRegex,
     /\b(?:per|for|rs\.?|rupees|rupaye|rupay|in|का|की|के|में|per kilo|kilo|piece|g|kg|gm|piece)\b/gi,
     /^(?:please\s+)?(?:add|insert|create|new|item|product|naya\s+item|likho|daalo|bhai|sun\s+bhai|kripya|ek|item\s+name|naam)\s+/i
   ];
@@ -612,7 +632,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
     wholesalePriceUnit: wholesaleUnit,
     buyingPrice,
     buyingPriceUnit: buyingUnit,
-    unit: isPavKiloMentioned ? "250gm" : baseUnit,
+    unit: isPavKiloMentioned ? "250gm" : (isChatakMentioned ? "Chatak" : baseUnit),
     categoryId: '',
     confidence: {
       name: confName,

@@ -224,7 +224,7 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
                       ? "text-amber-500 bg-amber-500/10 border-amber-500/20 animate-pulse"
                       : "text-emerald-500 bg-emerald-500/10 border-emerald-500/15"
                 )}>
-                  Stock: {item.quantity} {item.unit} {item.quantity <= (item.minStockLevel ?? 10) && "⚠️"}
+                  Stock: {item.quantity} {item.unit === 'Chatak' ? 'Chatak (50gm)' : item.unit} {item.quantity <= (item.minStockLevel ?? 10) && "⚠️"}
                 </span>
                 <span className="text-[8.5px] opacity-35 font-mono select-none" title={`${t.lastCheck}: ${new Date(item.lastUpdated).toLocaleDateString()}`}>
                   U: {new Date(item.lastUpdated).toLocaleDateString([], { month: '2-digit', day: '2-digit' })}
@@ -279,14 +279,14 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
           <div className="rounded-xl bg-[var(--primary)]/5 p-2 border border-[var(--primary)]/15">
             <p className="text-[8.5px] font-black uppercase tracking-wider text-[var(--primary)] opacity-75 mb-0.5">{t.retail}</p>
             <p className="text-xs font-black text-[var(--foreground)] truncate">₹{formatNumber(item.retailPrice, precision)}</p>
-            <p className="text-[7.5px] opacity-40">/ {item.retailPriceUnit}</p>
+            <p className="text-[7.5px] opacity-40">/ {item.retailPriceUnit === 'Chatak' ? 'Chatak (50gm)' : item.retailPriceUnit}</p>
           </div>
 
           {/* Wholesale */}
           <div className="rounded-xl bg-[var(--foreground)]/[0.02] p-2 border border-[var(--border)]/60">
             <p className="text-[8.5px] font-black uppercase tracking-wider opacity-45 mb-0.5">{t.wholesale}</p>
             <p className="text-xs font-black text-[var(--foreground)] truncate">₹{formatNumber(item.wholesalePrice, precision)}</p>
-            <p className="text-[7.5px] opacity-40">/ {item.wholesalePriceUnit}</p>
+            <p className="text-[7.5px] opacity-40">/ {item.wholesalePriceUnit === 'Chatak' ? 'Chatak (50gm)' : item.wholesalePriceUnit}</p>
           </div>
 
           {/* Buy */}
@@ -298,7 +298,7 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
               ) : (
                 <>
                   <p className="text-xs font-black text-[var(--foreground)] truncate">₹{formatNumber(item.buyingPrice, precision)}</p>
-                  <p className="text-[7.5px] opacity-40">/ {item.buyingPriceUnit}</p>
+                  <p className="text-[7.5px] opacity-40">/ {item.buyingPriceUnit === 'Chatak' ? 'Chatak (50gm)' : item.buyingPriceUnit}</p>
                 </>
               )}
             </div>

@@ -184,8 +184,9 @@ function mergeTranscripts(oldText: string, newText: string): string {
     return (cleanOld + " " + nonOverlappingNew).trim();
   }
   
-  // Case 4: No overlap, append them cleanly
-  return (cleanOld + " " + cleanNew).trim();
+  // Case 4: No overlap, append them cleanly with natural comma separation
+  const sep = /[,;]\s*$/.test(cleanOld) ? " " : " , ";
+  return (cleanOld + sep + cleanNew).trim();
 }
 
 function checkStopCommands(text: string): { action: 'stop' | 'cancel' | 'none'; cleanedText: string } {
@@ -271,13 +272,47 @@ export function VoiceProductAssistant({
   const [aiDetectedLanguage, setAiDetectedLanguage] = useState("");
   const finalTranscriptRef = useRef("");
   const interimTranscriptRef = useRef("");
-  const accumulatedFinalTextRef = useRef("");
+  const accumulatedPhrasesRef = useRef<string[]>([]);
+  const currentSessionFinalRef = useRef("");
+  const currentSessionInterimRef = useRef("");
   const isManuallyStopped = useRef(true);
   const draftProductsRef = useRef<VoiceDraftProduct[]>([]);
   const existingItemsRef = useRef<Item[]>([]);
   const silenceTimeoutRef = useRef<any>(null);
   const speechPauseTimeoutRef = useRef<any>(null);
   const isCurrentlyParsingRef = useRef(false);
+
+  const pushPhraseToHistory = (chunk: string) => {
+    const cleanChunk = chunk.trim();
+    if (!cleanChunk) return;
+
+    if (accumulatedPhrasesRef.current.length === 0) {
+      accumulatedPhrasesRef.current.push(cleanChunk);
+      return;
+    }
+
+    const lastIndex = accumulatedPhrasesRef.current.length - 1;
+    const lastPhrase = accumulatedPhrasesRef.current[lastIndex];
+
+    const normLast = lastPhrase.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normChunk = cleanChunk.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    if (normLast === normChunk || normLast.endsWith(normChunk)) {
+      return;
+    }
+
+    if (normChunk.startsWith(normLast)) {
+      accumulatedPhrasesRef.current[lastIndex] = cleanChunk;
+      return;
+    }
+
+    const merged = mergeTranscripts(lastPhrase, cleanChunk);
+    if (merged === lastPhrase) {
+      return;
+    }
+
+    accumulatedPhrasesRef.current.push(cleanChunk);
+  };
 
   // Clear silence and speech pause timeout on unmount
   useEffect(() => {
@@ -637,7 +672,7 @@ export function VoiceProductAssistant({
         if (resultItem.length > 1) {
           for (let a = 1; a < resultItem.length; a++) {
             const alt = resultItem[a]?.transcript || "";
-            if (/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm)\b/i.test(alt) && !/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm)\b/i.test(transcriptSegment)) {
+            if (/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm|chatak|छटांक|छटाक|rate|रेट|खरीद)\b/i.test(alt) && !/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm|chatak|छटांक|छटाक|rate|रेट|खरीद)\b/i.test(transcriptSegment)) {
               transcriptSegment = alt;
               break;
             }
@@ -651,14 +686,18 @@ export function VoiceProductAssistant({
         }
       }
 
-      // Voice Commands (Stop / Cancel) Detection
-      const cumulativeSpoken = (sessionFinal + " " + sessionInterim).trim();
-      const commandResult = checkStopCommands(cumulativeSpoken);
+      currentSessionFinalRef.current = sessionFinal;
+      currentSessionInterimRef.current = sessionInterim;
+
+      // Voice Commands (Stop / Cancel) Detection across entire spoken history
+      const historyText = accumulatedPhrasesRef.current.filter(Boolean).join(" , ");
+      const combinedCommitted = sessionFinal ? (historyText ? historyText + " , " + sessionFinal : sessionFinal) : historyText;
+      const fullSpokenSoFar = cleanTranscriptText([combinedCommitted, sessionInterim].filter(Boolean).join(" "));
+      const commandResult = checkStopCommands(fullSpokenSoFar);
       
       if (commandResult.action !== 'none') {
         console.log(`[STT Integration] Voice Command matched: ${commandResult.action}. Cleaning:`, commandResult.cleanedText);
         
-        // Stop recognition immediately so no further extraneous noise is processed
         isManuallyStopped.current = true;
         try {
           rec.__working = false;
@@ -672,18 +711,21 @@ export function VoiceProductAssistant({
           // Reset session
           setFinalTranscript("");
           setInterimTranscript("");
-          accumulatedFinalTextRef.current = "";
+          accumulatedPhrasesRef.current = [];
+          currentSessionFinalRef.current = "";
+          currentSessionInterimRef.current = "";
           setDraftProducts([]);
           setProcessStep('idle');
           triggerSound('notification');
           return;
         } else if (commandResult.action === 'stop') {
-          // Process what was spoken preceding the stop command
           const cleanedText = cleanTranscriptText(commandResult.cleanedText);
           if (cleanedText && cleanedText.trim()) {
             setFinalTranscript(cleanedText);
             setInterimTranscript("");
-            accumulatedFinalTextRef.current = "";
+            accumulatedPhrasesRef.current = [];
+            currentSessionFinalRef.current = "";
+            currentSessionInterimRef.current = "";
             parseWithGemini(cleanedText);
           } else {
             setProcessStep('idle');
@@ -692,42 +734,24 @@ export function VoiceProductAssistant({
         }
       }
 
-      const totalFinalText = accumulatedFinalTextRef.current
-        ? mergeTranscripts(accumulatedFinalTextRef.current, sessionFinal)
-        : sessionFinal;
+      // Update UI real-time subtitles
+      finalTranscriptRef.current = combinedCommitted;
+      setFinalTranscript(combinedCommitted);
 
-      const cleanedCombined = cleanTranscriptText(totalFinalText);
-
-      if (sessionInterim) {
-        setInterimTranscript(sessionInterim);
-      } else {
-        setInterimTranscript("");
-      }
-
-      if (cleanedCombined) {
-        setFinalTranscript(cleanedCombined);
-        if (sessionFinal) {
-          // Check for quick correction commands:
-          const correctionResult = processVoiceCorrection(cleanedCombined, draftProductsRef.current);
-          if (correctionResult.success) {
-            setDraftProducts(correctionResult.drafts);
-            triggerSound('notification');
-            setFinalTranscript("");
-            setInterimTranscript("");
-            accumulatedFinalTextRef.current = "";
-          }
-        }
-      }
+      interimTranscriptRef.current = sessionInterim;
+      setInterimTranscript(sessionInterim);
 
       // Hands-free voice assistant auto-completion:
-      // Only trigger silence auto-submit if user is NOT currently outputting interim speech
       if (autoSubmitOnSilenceRef.current && !sessionInterim) {
         const silenceDelayMs = Math.max(5000, (silenceSecondsRef.current || 6.0) * 1000);
         silenceTimeoutRef.current = setTimeout(() => {
-          const textToParse = (finalTranscriptRef.current || "") + " " + (interimTranscriptRef.current || "");
-          const cleanedText = cleanTranscriptText(textToParse);
-          if (cleanedText && cleanedText.trim() && !isManuallyStopped.current) {
-            console.log(`Gemini Silence Auto-Parser Triggered after ${silenceDelayMs}ms for:`, cleanedText);
+          const uncommitted = (currentSessionFinalRef.current || currentSessionInterimRef.current || "").trim();
+          if (uncommitted) {
+            pushPhraseToHistory(uncommitted);
+          }
+          const allSpoken = cleanTranscriptText(accumulatedPhrasesRef.current.filter(Boolean).join(" , "));
+          if (allSpoken && allSpoken.trim() && !isManuallyStopped.current) {
+            console.log(`Gemini Silence Auto-Parser Triggered after ${silenceDelayMs}ms for:`, allSpoken);
             isManuallyStopped.current = true;
             try {
               rec.__working = false;
@@ -736,6 +760,10 @@ export function VoiceProductAssistant({
               console.warn("Bypassed speech rec stop error:", e);
             }
             setIsListening(false);
+            parseWithGemini(allSpoken);
+            accumulatedPhrasesRef.current = [];
+            currentSessionFinalRef.current = "";
+            currentSessionInterimRef.current = "";
           }
         }, silenceDelayMs);
       }
@@ -766,31 +794,35 @@ export function VoiceProductAssistant({
     rec.onend = () => {
       rec.__working = false;
       if (restartTimer) clearTimeout(restartTimer);
-      // Clear silence timer on session termination
-      if (silenceTimeoutRef.current) {
-        clearTimeout(silenceTimeoutRef.current);
-      }
-      if (speechPauseTimeoutRef.current) {
-        clearTimeout(speechPauseTimeoutRef.current);
+      if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+      if (speechPauseTimeoutRef.current) clearTimeout(speechPauseTimeoutRef.current);
+
+      // Commit uncommitted speech from the session that just concluded
+      const uncommitted = (currentSessionFinalRef.current || currentSessionInterimRef.current || "").trim();
+      if (uncommitted) {
+        pushPhraseToHistory(uncommitted);
+        currentSessionFinalRef.current = "";
+        currentSessionInterimRef.current = "";
+        interimTranscriptRef.current = "";
+        setInterimTranscript("");
+        const fullCommitted = accumulatedPhrasesRef.current.filter(Boolean).join(" , ");
+        finalTranscriptRef.current = fullCommitted;
+        setFinalTranscript(fullCommitted);
       }
 
       if (!isManuallyStopped.current) {
-        // Cache the last transcript in accumulatedFinalTextRef so that restarting doesn't lose old recognized text
-        if (finalTranscriptRef.current) {
-          accumulatedFinalTextRef.current = mergeTranscripts(accumulatedFinalTextRef.current, finalTranscriptRef.current);
-        }
-        console.log("[STT Integration] Native end event reached while actively listening. Re-engaging speech listener automatically...");
-        attemptRestart(60, 6);
+        console.log("[STT Integration] Phrase paused or session ended while mic is active. Re-engaging speech listener...");
+        attemptRestart(50, 8);
       } else {
         setIsListening(false);
-        const textToParse = (finalTranscriptRef.current || "") + " " + (interimTranscriptRef.current || "");
-        const cleanedText = cleanTranscriptText(textToParse);
-        if (cleanedText && cleanedText.trim()) {
-          parseWithGemini(cleanedText);
-          // Now that we've triggered parsing with Gemini, reset the local transcription buffers:
-          setFinalTranscript("");
+        const completeSpoken = cleanTranscriptText(accumulatedPhrasesRef.current.filter(Boolean).join(" , "));
+        if (completeSpoken && completeSpoken.trim()) {
+          parseWithGemini(completeSpoken);
+          setFinalTranscript(completeSpoken);
           setInterimTranscript("");
-          accumulatedFinalTextRef.current = "";
+          accumulatedPhrasesRef.current = [];
+          currentSessionFinalRef.current = "";
+          currentSessionInterimRef.current = "";
         } else {
           if (processStep === 'listening' || processStep === 'analyzing') {
             setProcessStep('idle');
@@ -831,6 +863,12 @@ export function VoiceProductAssistant({
 
     if (isListening) {
       isManuallyStopped.current = true;
+      const uncommitted = (currentSessionFinalRef.current || currentSessionInterimRef.current || "").trim();
+      if (uncommitted) {
+        pushPhraseToHistory(uncommitted);
+        currentSessionFinalRef.current = "";
+        currentSessionInterimRef.current = "";
+      }
       try {
         recognitionObj.__working = false;
         recognitionObj.stop();
@@ -839,9 +877,24 @@ export function VoiceProductAssistant({
       }
       setIsListening(false);
       setProcessStep('analyzing');
+
+      setTimeout(() => {
+        if (accumulatedPhrasesRef.current.length > 0 && isCurrentlyParsingRef.current === false) {
+          const completeSpoken = cleanTranscriptText(accumulatedPhrasesRef.current.filter(Boolean).join(" , "));
+          if (completeSpoken && completeSpoken.trim()) {
+            parseWithGemini(completeSpoken);
+            setFinalTranscript(completeSpoken);
+            accumulatedPhrasesRef.current = [];
+          }
+        }
+      }, 350);
     } else {
       isManuallyStopped.current = false;
-      accumulatedFinalTextRef.current = "";
+      accumulatedPhrasesRef.current = [];
+      currentSessionFinalRef.current = "";
+      currentSessionInterimRef.current = "";
+      finalTranscriptRef.current = "";
+      interimTranscriptRef.current = "";
       setFinalTranscript("");
       setInterimTranscript("");
       setRecognitionError("");
@@ -1320,7 +1373,9 @@ export function VoiceProductAssistant({
                             onClick={() => {
                               setFinalTranscript("");
                               setInterimTranscript("");
-                              accumulatedFinalTextRef.current = "";
+                              accumulatedPhrasesRef.current = [];
+                              currentSessionFinalRef.current = "";
+                              currentSessionInterimRef.current = "";
                               setAiDetectedLanguage("");
                               setProcessStep('idle');
                             }}

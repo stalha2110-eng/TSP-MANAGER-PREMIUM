@@ -235,6 +235,12 @@ RETAIL-NAME EXTRACTION RULE (MANDATORY):
   * Strip any leading speech commands or filler words like "add", "please add", "new item", "item", "product", "likho", "daalo", "bhai", "ek", "sun bhai" so the true product name remains.
   * Strip quantity prefixes like "pav kilo", "ek kilo", "adha kilo" from the product name (e.g. "Pav kilo tamatar 20" -> Product Name is "Tamatar", NOT "Pav Kilo Tamatar").
   * Extract each price with its respective unit if specified (e.g. retail 20/250gm, retail 300/KG, wholesale 1500/BOX, buying/cost 1200/BOX).
+- When the keyword "retail" is omitted before the first price (e.g. "badam 88rs chatak , wholesale 500rs kg, cost 400rs kg" or "badam 88 chatak wholesale 500 kg cost 400 kg"):
+  * The product name is the item name spoken before the first price number (e.g. "Badam").
+  * The first stated price without a qualifier is the retailPrice (e.g., retailPrice: 88, retailPriceUnit: "Chatak").
+  * The price following "wholesale" is the wholesalePrice (e.g., wholesalePrice: 500, wholesalePriceUnit: "KG").
+  * The price following "cost" or "buying" or "kharid" is the buyingPrice (e.g., buyingPrice: 400, buyingPriceUnit: "KG").
+  * NEVER leave wholesale or buying prices empty or 0 if they were spoken in the transcript! Carefully extract every field provided.
 
 Recognize any Indian regional terms and convert them appropriately:
 - Spoken numbers in Hindi/Marathi/Hinglish:
@@ -290,6 +296,7 @@ Examples of speech to handle:
 7. "Haldi sau rupaye packet" -> Name: "Haldi", retailPrice: 100, retailPriceUnit: "PKT", unit: "PKT", categoryName: "Masala & Spices"
 8. "Kesar A Great retail 1200 wholesale 1100" -> Name: "Kesar A Great", retailPrice: 1200, wholesalePrice: 1100, unit: "KG"
 9. "Aloo 10 rupaye pav kilo" -> Name: "Aloo", retailPrice: 10, retailPriceUnit: "250gm", unit: "250gm", categoryName: "Vegetables"
+10. "badam 88rs chatak , wholesale 500rs kg, cost 400rs kg" -> Name: "Badam", retailPrice: 88, retailPriceUnit: "Chatak", wholesalePrice: 500, wholesalePriceUnit: "KG", buyingPrice: 400, buyingPriceUnit: "KG", unit: "Chatak", categoryName: "Dry Fruits"
 
 Ensure correct spelling corrections of typical Indian speech recognition typos:
 - "shakhar" or "shakar" -> "Sugar" / "Shakhar"

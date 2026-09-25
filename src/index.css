@@ -34,6 +34,10 @@
   --radius: 0.75rem;
 }
 
+html, body {
+  overscroll-behavior-y: contain;
+}
+
 html {
   font-size: var(--base-font-size, 16px);
 }

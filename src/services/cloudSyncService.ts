@@ -7,8 +7,7 @@ import {
   doc as firestoreDoc, 
   setDoc, 
   orderBy, 
-  query, 
-  enableNetwork 
+  query 
 } from 'firebase/firestore';
 import { db, sanitizeForFirestore, auth } from '../firebase';
 import { AppState, Item, Bill, Note, UnbilledEntry } from '../types';
@@ -110,12 +109,6 @@ export class CloudSyncService {
     onProgress?: (stage: string, count?: number) => void
   ): Promise<{ success: boolean; items: Item[]; count: number; source: 'server' | 'cache' | 'local'; message: string }> {
     if (onProgress) onProgress('Connecting to Cloud Firestore...');
-
-    try {
-      await enableNetwork(db);
-    } catch (e) {
-      console.warn('[CloudSync] enableNetwork notice:', e);
-    }
 
     const user = currentState.user || auth.currentUser;
     if (!user || user.uid === 'guest_user') {
@@ -233,7 +226,8 @@ export class CloudSyncService {
    */
   public static async forceSyncWithFirestore(
     currentState: AppState,
-    onStateUpdate?: (updater: (prev: AppState) => AppState) => void
+    onStateUpdate?: (updater: (prev: AppState) => AppState) => void,
+    options?: { skipCatalog?: boolean; itemsList?: Item[] }
   ): Promise<SyncResult> {
     if (this.isSyncing) {
       return {
@@ -268,13 +262,6 @@ export class CloudSyncService {
     }
 
     try {
-      // Re-enable network on Firestore instance to recover from iOS backgrounding / socket sleeps
-      try {
-        await enableNetwork(db);
-      } catch (netErr) {
-        console.warn("[CloudSync] Firestore enableNetwork notice:", netErr);
-      }
-
       const user = currentState.user || auth.currentUser;
       const isGuest = !user || user.uid === 'guest_user';
 
@@ -325,12 +312,16 @@ export class CloudSyncService {
       // 2. RE-FETCH & SELF-HEALING SYNC FOR ITEMS / INVENTORY CATALOG
       // =========================================================================
       let itemsList: Item[] = [];
-      try {
-        const catalogRes = await this.refetchInventoryCatalog(currentState, onStateUpdate);
-        itemsList = catalogRes.items;
-      } catch (itemErr) {
-        console.warn("[CloudSync] Items sync warning:", itemErr);
-        itemsList = currentState.items;
+      if (options?.skipCatalog && options?.itemsList) {
+        itemsList = options.itemsList;
+      } else {
+        try {
+          const catalogRes = await this.refetchInventoryCatalog(currentState, onStateUpdate);
+          itemsList = catalogRes.items;
+        } catch (itemErr) {
+          console.warn("[CloudSync] Items sync warning:", itemErr);
+          itemsList = currentState.items;
+        }
       }
 
       // =========================================================================

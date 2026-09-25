@@ -99,7 +99,10 @@ export const IOSPullToRefresh: React.FC<IOSPullToRefreshProps> = ({
 
       // Step 2: Comprehensive synchronization for bills, unbilled ledger, and app updates
       setStatusMessage(`Catalog synced (${catalogResult.count} items). Checking app updates...`);
-      const syncResult = await CloudSyncService.forceSyncWithFirestore(state, onStateUpdate);
+      const syncResult = await CloudSyncService.forceSyncWithFirestore(state, onStateUpdate, {
+        skipCatalog: true,
+        itemsList: catalogResult.items
+      });
 
       if (onSyncComplete) {
         onSyncComplete(syncResult);

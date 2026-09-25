@@ -226,7 +226,7 @@ CRITICAL "PAV KILO" (पाव किलो) RULE (MANDATORY):
   * Set retailPrice to the stated price (e.g., 20).
   * Set retailPriceUnit strictly to "250gm".
   * Set unit (the item stock unit) to "250gm" (or "KG" if wholesale is explicitly specified in KG).
-  * If wholesale price is not specified, calculate a realistic wholesale estimate (e.g. 5-10% below retailPrice) with wholesalePriceUnit set to "250gm" (or if per KG, 4 * retailPrice * 0.9 with unit "KG").
+  * If wholesale price is not explicitly mentioned by the user, set wholesalePrice to 0. NEVER fabricate or guess wholesale price.
   * NEVER set retailPriceUnit to "KG" when the user said "pav kilo" — it MUST ALWAYS be "250gm"!
 
 RETAIL-NAME EXTRACTION RULE (MANDATORY):
@@ -259,8 +259,8 @@ Recognize any Indian regional terms and convert them appropriately:
   * "ml", "मिलीलीटर", "एमएल" -> "ML"
   * "chatak", "chattak", "छटांक" -> "Chatak"
 - If a user specifies a price, map it correctly to retailPrice. If "wholesale" is mentioned, map to wholesalePrice. If "cost" or "buying" or "kharid" is mentioned, map to buyingPrice.
-- If wholesalePrice is NOT mentioned, calculate a reasonable estimate (around 5% to 15% lower than the retailPrice).
-- If buyingPrice is NOT mentioned, calculate a reasonable estimate (around 15% to 30% lower than the retailPrice).
+- If wholesalePrice is NOT mentioned by the user, set wholesalePrice to 0. DO NOT fabricate, guess, or estimate wholesale price.
+- If buyingPrice is NOT mentioned by the user, set buyingPrice to 0. DO NOT fabricate, guess, or estimate cost or buying price.
 - Try to guess the best standardized Category from the list of provided categories, or suggest a standard core category (e.g. Groceries, Vegetables, Fruits, Dairy, Beverages, Snacks, Bakery, Personal Care, Household, Masala & Spices, Dry Fruits, Others).
 - For each product, define translations:
   * "en": Natural English/Hinglish phonetic name (e.g., "Almond" / "Badam")
@@ -279,8 +279,8 @@ Recognize any Indian regional terms and convert them appropriately:
 - Detect the overall spoken language or blend of languages used by the user, and assign it to the 'languageDetected' property (examples: Hinglish, Hindi, Marathi, Marathinglish, English).
 
 Examples of speech to handle:
-1. "Tamatar pav kilo 20 rupaye" -> Name: "Tamatar", retailPrice: 20, retailPriceUnit: "250gm", wholesalePrice: 18, wholesalePriceUnit: "250gm", unit: "250gm", categoryName: "Vegetables"
-2. "Hari mirchi pav kilo 15" -> Name: "Hari Mirchi", retailPrice: 15, retailPriceUnit: "250gm", wholesalePrice: 13, wholesalePriceUnit: "250gm", unit: "250gm", categoryName: "Vegetables"
+1. "Tamatar pav kilo 20 rupaye" -> Name: "Tamatar", retailPrice: 20, retailPriceUnit: "250gm", wholesalePrice: 0, buyingPrice: 0, unit: "250gm", categoryName: "Vegetables"
+2. "Hari mirchi pav kilo 15" -> Name: "Hari Mirchi", retailPrice: 15, retailPriceUnit: "250gm", wholesalePrice: 0, buyingPrice: 0, unit: "250gm", categoryName: "Vegetables"
 3. "Kaju pav kilo 250 wholesale 900 kilo" -> Name: "Kaju", retailPrice: 250, retailPriceUnit: "250gm", wholesalePrice: 900, wholesalePriceUnit: "KG", buyingPrice: 800, buyingPriceUnit: "KG", unit: "KG", categoryName: "Dry Fruits"
 4. "kashmiri coconut retail 300rs perk kg , wholesale 1,500rs per box, cost 1,200rs per box" -> Name: "Kashmiri Coconut", retailPrice: 300, retailPriceUnit: "KG", wholesalePrice: 1500, wholesalePriceUnit: "BOX", buyingPrice: 1200, buyingPriceUnit: "BOX"
 5. "Badam 900 rupees wholesale 850 cost 800" -> Name: "Badam", retailPrice: 900, retailPriceUnit: "KG", wholesalePrice: 850, wholesalePriceUnit: "KG", buyingPrice: 800, buyingPriceUnit: "KG", unit: "KG"

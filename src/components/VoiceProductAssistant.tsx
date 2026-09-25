@@ -700,17 +700,6 @@ export function VoiceProductAssistant({
 
       if (sessionInterim) {
         setInterimTranscript(sessionInterim);
-        
-        // Robust debouncing for local live preview as they speak to limit lag
-        if (liveGuessTimeoutRef.current) {
-          clearTimeout(liveGuessTimeoutRef.current);
-        }
-        liveGuessTimeoutRef.current = setTimeout(() => {
-          const liveGuess = parseVoiceTranscript(sessionInterim, existingItemsRef.current);
-          if (liveGuess.length > 0 && draftProductsRef.current.length === 0) {
-            setDraftProducts(liveGuess.slice(0, 1));
-          }
-        }, 300);
       } else {
         setInterimTranscript("");
       }
@@ -733,7 +722,7 @@ export function VoiceProductAssistant({
       // Hands-free voice assistant auto-completion:
       // Only trigger silence auto-submit if user is NOT currently outputting interim speech
       if (autoSubmitOnSilenceRef.current && !sessionInterim) {
-        const silenceDelayMs = Math.max(4000, (silenceSecondsRef.current || 4.5) * 1000);
+        const silenceDelayMs = Math.max(5000, (silenceSecondsRef.current || 6.0) * 1000);
         silenceTimeoutRef.current = setTimeout(() => {
           const textToParse = (finalTranscriptRef.current || "") + " " + (interimTranscriptRef.current || "");
           const cleanedText = cleanTranscriptText(textToParse);

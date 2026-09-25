@@ -176,10 +176,14 @@ export const IOSPullToRefresh: React.FC<IOSPullToRefreshProps> = ({
       }
 
       // Only initiate pull-to-refresh if the user is scrolled to the very top of the window
+      // AND the touch gesture begins specifically within the top navigation bar area (top 80px)
       const scrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
-      if (scrollY <= 1) {
+      const touchY = e.touches[0]?.clientY || 0;
+      const TOP_NAV_ZONE_HEIGHT = 80; // Only allow trigger from top navigation header bar
+
+      if (scrollY <= 1 && touchY <= TOP_NAV_ZONE_HEIGHT) {
         isTrackingRef.current = true;
-        startYRef.current = e.touches[0].clientY;
+        startYRef.current = touchY;
         startXRef.current = e.touches[0].clientX;
         hasTriggeredHapticRef.current = false;
       } else {

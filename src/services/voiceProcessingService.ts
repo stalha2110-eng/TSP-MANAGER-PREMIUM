@@ -66,8 +66,8 @@ export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
   requireConfirmation: true,
   saveHistory: true,
   soundFeedback: true,
-  autoSubmitOnSilence: true,
-  silenceSeconds: 3.5,
+  autoSubmitOnSilence: false,
+  silenceSeconds: 6.0,
   defaultMicLocale: "en-IN"
 };
 
@@ -398,13 +398,8 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
         if (!cUnit) cUnit = basePrimaryUnit;
         if (!rUnit) rUnit = basePrimaryUnit;
 
-        // Estimates if wholesale or cost are missing
-        if (wPrice === 0 && rPrice > 0) {
-          wPrice = Math.floor(rPrice * 0.9);
-        }
-        if (cPrice === 0 && rPrice > 0) {
-          cPrice = Math.floor(rPrice * 0.8);
-        }
+        // Wholesale and cost prices are only set if explicitly spoken in the phrase.
+        // Never fabricate or guess unmentioned prices so the user gets accurate data.
 
         // Format name to proper Title Case
         const formattedName = rawNameBeforeRetail
@@ -560,12 +555,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
     }
   }
 
-  if (retailPrice > 0 && wholesalePrice === 0) {
-    wholesalePrice = Math.floor(retailPrice * 0.9);
-  }
-  if (retailPrice > 0 && buyingPrice === 0) {
-    buyingPrice = Math.floor(retailPrice * 0.8);
-  }
+  // Wholesale and buying prices remain 0 if not explicitly mentioned in the voice transcript.
   
   let nameBlock = txt;
   prices.forEach(p => {

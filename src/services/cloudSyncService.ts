@@ -14,6 +14,7 @@ import { AppState, Item, Bill, Note, UnbilledEntry } from '../types';
 import { RecoveryService } from './recoveryService';
 import { deduplicateById } from '../constants/initialState';
 import { getUnbilledEntries, saveUnbilledEntries } from '../lib/unbilledStorage';
+import { isItemDeleted } from '../utils/deletionTracker';
 
 export interface SyncResult {
   success: boolean;
@@ -166,9 +167,9 @@ export class CloudSyncService {
 
       if (onProgress) onProgress(`Received ${itemsList.length} items from ${source}. Reconciling...`, itemsList.length);
 
-      // Self-healing: identify any items created or edited offline that are missing from cloud
+      // Self-healing: identify genuine offline items missing from cloud, excluding any deleted items
       const localItems = currentState.items || [];
-      const unsyncedItems = localItems.filter(li => !itemsList.some(ci => ci.id === li.id));
+      const unsyncedItems = localItems.filter(li => !itemsList.some(ci => ci.id === li.id) && !isItemDeleted(li.id));
       if (unsyncedItems.length > 0) {
         if (onProgress) onProgress(`Uploading ${unsyncedItems.length} offline items to Cloud Firestore...`);
         for (const item of unsyncedItems) {
@@ -180,7 +181,8 @@ export class CloudSyncService {
         }
       }
 
-      const mergedItems = deduplicateById([...itemsList, ...unsyncedItems]).sort((a, b) => 
+      const cleanItemsList = itemsList.filter(ci => !isItemDeleted(ci.id));
+      const mergedItems = deduplicateById([...cleanItemsList, ...unsyncedItems]).sort((a, b) => 
         new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
       );
 

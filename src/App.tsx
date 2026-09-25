@@ -231,6 +231,7 @@ import { DeleteConfirmationModal } from './components/DeleteConfirmationModal';
 import { ItemCard } from './components/ItemCard';
 import { NavButton } from './components/NavButton';
 import { IOSPullToRefresh } from './components/IOSPullToRefresh';
+import { markItemsAsDeleted, unmarkItemsAsDeleted, isItemDeleted } from './utils/deletionTracker';
 
 // @ts-ignore
 import appLogo from './components/ui/premium(TsPrice).png';
@@ -2205,43 +2206,31 @@ export default function App() {
       }
     });
 
-    // Sync Items (with automatic offline self-healing and data-recovery merge)
+    // Sync Items (clean remote reflection with deletion tracking)
     const itemsRef = collection(db, 'users', state.user.uid, 'items');
     const unsubItems = onSnapshot(query(itemsRef, orderBy('lastUpdated', 'desc')), (snap) => {
       const itemsList: Item[] = [];
       snap.forEach(docSnap => {
         const data = docSnap.data();
-        itemsList.push({
-          ...data,
-          id: docSnap.id,
-          translations: {
-            en: data.name || '',
-            hi: '',
-            mr: '',
-            'hi-en': '',
-            ...(data.translations || {})
-          }
-        } as Item);
+        if (!isItemDeleted(docSnap.id)) {
+          itemsList.push({
+            ...data,
+            id: docSnap.id,
+            translations: {
+              en: data.name || '',
+              hi: '',
+              mr: '',
+              'hi-en': '',
+              ...(data.translations || {})
+            }
+          } as Item);
+        }
       });
       
-      setState(prev => {
-        const localItems = prev.items || [];
-        const unsyncedItems = localItems.filter(li => !itemsList.some(ci => ci.id === li.id));
-        if (unsyncedItems.length > 0) {
-          unsyncedItems.forEach(async (item) => {
-            try {
-              await setDoc(doc(db, 'users', state.user!.uid, 'items', item.id), sanitizeForFirestore(item));
-            } catch (e) {
-              console.error("Self-healing background stock item upload failed:", e);
-            }
-          });
-          const merged = [...itemsList, ...unsyncedItems].sort((a, b) => 
-            new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
-          );
-          return { ...prev, items: deduplicateById(merged) };
-        }
-        return { ...prev, items: deduplicateById(itemsList) };
-      });
+      setState(prev => ({
+        ...prev,
+        items: deduplicateById(itemsList)
+      }));
     }, (error) => {
       if (auth.currentUser) {
         console.error("Items sync error:", error);
@@ -2251,37 +2240,23 @@ export default function App() {
       }
     });
 
-    // Sync Notes (with automatic offline self-healing and data-recovery merge)
+    // Sync Notes (clean remote reflection)
     const notesRef = collection(db, 'users', state.user.uid, 'notes');
     const unsubNotes = onSnapshot(query(notesRef, orderBy('createdAt', 'desc')), (snap) => {
       const notesList: Note[] = [];
       snap.forEach(doc => notesList.push({ ...doc.data() as Note, id: doc.id }));
       
-      setState(prev => {
-        const localNotes = prev.notes || [];
-        const unsyncedNotes = localNotes.filter(ln => !notesList.some(cn => cn.id === ln.id));
-        if (unsyncedNotes.length > 0) {
-          unsyncedNotes.forEach(async (note) => {
-            try {
-              await setDoc(doc(db, 'users', state.user!.uid, 'notes', note.id), sanitizeForFirestore(note));
-            } catch (e) {
-              console.error("Self-healing background note upload failed:", e);
-            }
-          });
-          const merged = [...notesList, ...unsyncedNotes].sort((a, b) => 
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-          return { ...prev, notes: deduplicateById(merged) };
-        }
-        return { ...prev, notes: deduplicateById(notesList) };
-      });
+      setState(prev => ({
+        ...prev,
+        notes: deduplicateById(notesList)
+      }));
     }, (error) => {
       if (auth.currentUser) {
         console.error("Notes sync error:", error);
       }
     });
 
-    // Sync Bills (with automatic offline self-healing, data-recovery merge, mapping and analytics trigger)
+    // Sync Bills (clean remote reflection, mapping and analytics trigger)
     const billsRef = collection(db, 'users', state.user.uid, 'bills');
     const unsubBills = onSnapshot(query(billsRef, orderBy('timestamp', 'desc')), (snap) => {
       const billsList: Bill[] = [];
@@ -2314,24 +2289,10 @@ export default function App() {
       });
       
       setAnalyticsRenderKey(k => k + 1);
-      setState(prev => {
-        const localBills = prev.bills || [];
-        const unsyncedBills = localBills.filter(lb => !billsList.some(cb => cb.id === lb.id));
-        if (unsyncedBills.length > 0) {
-          unsyncedBills.forEach(async (b) => {
-            try {
-              await setDoc(doc(db, 'users', state.user!.uid, 'bills', b.id), sanitizeForFirestore(b));
-            } catch (e) {
-              console.error("Self-healing background billing upload failed:", e);
-            }
-          });
-          const merged = [...billsList, ...unsyncedBills].sort((a, b) => 
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-          );
-          return { ...prev, bills: deduplicateById(merged) };
-        }
-        return { ...prev, bills: deduplicateById(billsList) };
-      });
+      setState(prev => ({
+        ...prev,
+        bills: deduplicateById(billsList)
+      }));
     }, (error) => {
       if (auth.currentUser) {
         console.error("Bills sync error:", error);
@@ -2770,6 +2731,9 @@ export default function App() {
         priceChangedAt: new Date().toISOString()
       };
       
+      // Unmark deleted tombstone if previously deleted
+      unmarkItemsAsDeleted(id);
+
       // Optimistic update
       setState(prev => ({
         ...prev,
@@ -2804,6 +2768,9 @@ export default function App() {
           priceChangedAt: new Date().toISOString()
         };
       });
+
+      // Unmark deleted tombstones
+      unmarkItemsAsDeleted(newItems.map(i => i.id));
 
       // Optimistic update of local state
       setState(prev => ({
@@ -2983,6 +2950,7 @@ export default function App() {
         } else {
           // Create new item
           const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+          unmarkItemsAsDeleted(id);
           const newItem: Item = {
             ...draft.item,
             id,
@@ -3035,9 +3003,42 @@ export default function App() {
 
   const confirmDeletion = async () => {
     const { type, targetId } = deleteConfirmation;
-    const idsToDelete = type === 'single' ? [targetId!] : selectedItemIds;
+    const idsToDelete = type === 'single' ? (targetId ? [targetId] : []) : [...selectedItemIds];
 
-    // Push Undo Snapshot
+    if (idsToDelete.length === 0) {
+      setDeleteConfirmation({ show: false, type: 'single' });
+      return;
+    }
+
+    // 1. Immediately dismiss confirmation modal and clear bulk selection
+    setDeleteConfirmation({ show: false, type: 'single' });
+    if (type === 'multiple') {
+      setSelectedItemIds([]);
+    }
+
+    // 2. Mark in persistent tombstone tracker so no snapshot or background sync can resurrect them
+    markItemsAsDeleted(idsToDelete);
+
+    // 3. Optimistically update local React state
+    const remainingItems = state.items.filter(item => !idsToDelete.includes(item.id));
+    setState(prev => ({
+      ...prev,
+      items: prev.items.filter(item => !idsToDelete.includes(item.id))
+    }));
+
+    // 4. Immediately persist clean items to localStorage
+    try {
+      const cached = localStorage.getItem('price_manager_state');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        parsed.items = remainingItems;
+        localStorage.setItem('price_manager_state', JSON.stringify(parsed));
+      }
+    } catch (e) {
+      console.warn("Failed to update cached local state during deletion", e);
+    }
+
+    // 5. Push Undo Snapshot
     const snapshot: Partial<AppState> = { items: state.items };
     const entry: HistoryEntry = {
       type: 'state',
@@ -3052,53 +3053,41 @@ export default function App() {
     const timer = setTimeout(() => setShowUndoToast(false), 5000);
     setUndoToastTimer(timer);
 
-    // Register deletions in Business Recovery Center
+    // 6. Delete from Cloud Firestore if authenticated user
+    const isAuthenticated = state.user && state.user.uid && state.user.uid !== 'guest_user';
+    if (isAuthenticated && db) {
+      try {
+        const uId = state.user!.uid;
+        for (const id of idsToDelete) {
+          try {
+            await deleteDoc(doc(db, 'users', uId, 'items', id));
+          } catch (e) {
+            console.error("Cloud delete error for item", id, e);
+            handleFirestoreError(e, OperationType.DELETE, `users/${uId}/items/${id}`);
+          }
+        }
+      } catch (e) {
+        console.error("Cloud delete failed", e);
+      }
+    }
+
+    // 7. Register deletions in Business Recovery Center (background non-blocking)
     try {
       const itemsToDelete = state.items.filter(item => idsToDelete.includes(item.id));
       for (const item of itemsToDelete) {
-        await RecoveryService.recordDeletion(
-          state.user?.uid || null,
+        RecoveryService.recordDeletion(
+          isAuthenticated ? state.user!.uid : null,
           'product',
           item,
           item.name,
           `Category ID: ${item.categoryId || 'General'}, Price: ₹${item.retailPrice}, Stock: ${item.quantity} ${item.unit}`,
           state.user?.email || 'Store Owner',
           30
-        );
+        ).catch(err => console.warn("Recovery registration warning:", err));
       }
     } catch (err) {
-      console.error("Failed to register deleted products in recovery archives", err);
+      console.warn("Failed to register deleted products in recovery archives", err);
     }
-
-    // Optimistically update local state
-    setState(prev => ({
-      ...prev,
-      items: prev.items.filter(item => !idsToDelete.includes(item.id))
-    }));
-    
-    if (type === 'multiple') {
-      setSelectedItemIds([]);
-    }
-
-    if (state.user && state.settings.autoCloudSync) {
-      try {
-        for (const id of idsToDelete) {
-          try {
-            await deleteDoc(doc(db, 'users', state.user.uid, 'items', id));
-          } catch (e) {
-            handleFirestoreError(e, OperationType.DELETE, `users/${state.user.uid}/items/${id}`);
-          }
-        }
-      } catch (e) {
-        console.error("Cloud delete failed", e);
-        if (e instanceof Error && e.message.startsWith('{') && e.message.endsWith('}')) {
-          throw e;
-        }
-        alert(t.error + ": Permission Denied on Cloud. Some items may reappear.");
-      }
-    }
-    
-    setDeleteConfirmation({ show: false, type: 'single' });
   };
   
   const handleAddCategory = useCallback(async (name: string) => {
@@ -3303,6 +3292,10 @@ export default function App() {
         stateSnapshot: redoSnapshot,
         actionName: entry.actionName
       };
+
+      if (entry.stateSnapshot.items) {
+        unmarkItemsAsDeleted(entry.stateSnapshot.items.map(i => i.id));
+      }
 
       setState(prev => ({ ...prev, ...entry.stateSnapshot }));
       // Sync backwards quietly

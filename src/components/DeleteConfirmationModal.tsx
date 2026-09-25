@@ -12,6 +12,19 @@ export interface DeleteConfirmationModalProps {
 
 export function DeleteConfirmationModal({ onClose, onConfirm, count, t }: DeleteConfirmationModalProps) {
   const [inputValue, setInputValue] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isConfirmed = inputValue.trim().toLowerCase() === 'yes';
+
+  const handleConfirm = async () => {
+    if (!isConfirmed || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await onConfirm();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <motion.div
@@ -45,7 +58,13 @@ export function DeleteConfirmationModal({ onClose, onConfirm, count, t }: Delete
               autoFocus
               className="w-full bg-[var(--background)] border border-red-500/20 rounded-xl px-4 py-3 text-center font-black uppercase tracking-[0.2em] focus:border-red-500 outline-none transition-all"
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value.toLowerCase())}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && isConfirmed && !isSubmitting) {
+                  e.preventDefault();
+                  handleConfirm();
+                }
+              }}
               placeholder="..."
             />
           </div>
@@ -55,17 +74,18 @@ export function DeleteConfirmationModal({ onClose, onConfirm, count, t }: Delete
           <Button 
             variant="ghost" 
             onClick={onClose}
+            disabled={isSubmitting}
             className="flex-1 rounded-2xl h-12 text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100"
           >
             Abort
           </Button>
           <Button 
             variant="primary"
-            disabled={inputValue !== 'yes'}
-            onClick={onConfirm}
+            disabled={!isConfirmed || isSubmitting}
+            onClick={handleConfirm}
             className="flex-1 rounded-2xl h-12 bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20 disabled:opacity-30 disabled:scale-100"
           >
-            Confirm
+            {isSubmitting ? 'Purging...' : 'Confirm'}
           </Button>
         </div>
       </motion.div>

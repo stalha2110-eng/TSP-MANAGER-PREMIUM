@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { RecoveryService, RecoveryRecord, AuditLog, PriceStockRecord } from '../services/recoveryService';
 import { AppState, Item, Category, UdharCustomer, UdharTransaction, Bill } from '../types';
+import { unmarkItemsAsDeleted } from '../utils/deletionTracker';
 
 interface BusinessRecoveryCenterProps {
   state: AppState;
@@ -134,6 +135,7 @@ export default function BusinessRecoveryCenter({
         return;
       }
 
+      unmarkItemsAsDeleted(restoredItem.id);
       const updatedItems = [restoredItem, ...state.items];
       
       // Update global application state

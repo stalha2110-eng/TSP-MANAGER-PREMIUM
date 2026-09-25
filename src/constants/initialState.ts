@@ -3,6 +3,8 @@ import { DEFAULT_CATEGORIES } from '../constants';
 import { getDeviceId, getDeviceName } from '../utils/device';
 import { getUnbilledEntries } from '../lib/unbilledStorage';
 
+import { isItemDeleted } from '../utils/deletionTracker';
+
 export const INITIAL_SETTINGS: AppSettings = {
   theme: 'midnight_blue',
   language: 'en',
@@ -247,7 +249,7 @@ export const getInitialState = (): AppState => {
   }
 
   return {
-    items: deduplicateById(items),
+    items: deduplicateById(items.filter((item: any) => item && !isItemDeleted(item.id))),
     notes: deduplicateById(notes),
     categories: DEFAULT_CATEGORIES,
     settings,

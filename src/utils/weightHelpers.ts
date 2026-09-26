@@ -5,6 +5,7 @@ export interface ParsedSearchInput {
   targetPrice?: number;
   unitLabel?: string;
   badgeLabel?: string;
+  explicitUnit?: string;
   mode?: 'multiplier' | 'weight_fraction' | 'target_budget' | 'plain';
 }
 
@@ -19,16 +20,25 @@ export const COMMON_WEIGHT_PRESETS: WeightPreset[] = [
   { label: '250g', qty: 0.25, shortLabel: '250g' },
   { label: '500g', qty: 0.5, shortLabel: '500g' },
   { label: '750g', qty: 0.75, shortLabel: '750g' },
-  { label: '1 kg', qty: 1.0, shortLabel: '1kg' },
-  { label: '1.25 kg', qty: 1.25, shortLabel: '1.25k' },
-  { label: '1.5 kg', qty: 1.5, shortLabel: '1.5k' },
-  { label: '1.75 kg', qty: 1.75, shortLabel: '1.75k' },
-  { label: '2 kg', qty: 2.0, shortLabel: '2kg' },
-  { label: '2.5 kg', qty: 2.5, shortLabel: '2.5k' },
-  { label: '5 kg', qty: 5.0, shortLabel: '5kg' },
+  { label: '1kg', qty: 1.0, shortLabel: '1kg' },
+  { label: '1.25kg', qty: 1.25, shortLabel: '1.25k' },
+  { label: '1.5kg', qty: 1.5, shortLabel: '1.5k' },
+  { label: '1.75kg', qty: 1.75, shortLabel: '1.75k' },
+  { label: '2kg', qty: 2.0, shortLabel: '2kg' },
+  { label: '2.5kg', qty: 2.5, shortLabel: '2.5k' },
+  { label: '5kg', qty: 5.0, shortLabel: '5kg' },
 ];
 
 export const COMMON_BUDGET_PRESETS: number[] = [20, 50, 100, 200, 500];
+
+/**
+ * Format quantity and unit without space (e.g. "1kg", "250g", "1Chatak", "2pcs")
+ */
+export function formatQtyWithUnit(quantity: number | string, unit?: string): string {
+  if (!unit) return `${quantity}`;
+  const u = unit.trim();
+  return `${quantity}${u}`;
+}
 
 /**
  * Check if the unit is weight/volume or loose based where fractional quantities are typical.
@@ -36,14 +46,34 @@ export const COMMON_BUDGET_PRESETS: number[] = [20, 50, 100, 200, 500];
 export function isWeightBasedUnit(unit?: string): boolean {
   if (!unit) return false;
   const u = unit.toLowerCase().trim();
-  return ['kg', 'kgs', 'kilo', 'kilogram', 'gm', 'g', 'gms', 'gram', 'grams', 'ltr', 'l', 'litre', 'litres', 'ml', 'loose', 'pond', 'm'].includes(u);
+  return ['kg', 'kgs', 'kilo', 'kilogram', 'gm', 'g', 'gms', 'gram', 'grams', 'ltr', 'l', 'litre', 'litres', 'ml', 'loose', 'pond', 'm', 'chatak', 'chattak', 'chhatak'].includes(u);
+}
+
+/**
+ * Normalizes user-entered unit strings into canonical forms
+ */
+export function normalizeSearchUnit(rawUnit?: string): string | undefined {
+  if (!rawUnit) return undefined;
+  const u = rawUnit.toLowerCase().trim();
+  if (['kg', 'kgs', 'kilo', 'kilogram', 'किग्रा', 'किलो'].includes(u)) return 'kg';
+  if (['g', 'gm', 'gms', 'gram', 'grams', 'ग्राम'].includes(u)) return 'g';
+  if (['chatak', 'chattak', 'chhatak', 'ctk', 'satak', 'छटांक', 'छटाक', 'चटाक', 'चटक'].includes(u)) return 'Chatak';
+  if (['pcs', 'pc', 'piece', 'pieces', 'पीस', 'नग'].includes(u)) return 'pcs';
+  if (['pkt', 'pkts', 'pack', 'packet', 'packets', 'पैकेट'].includes(u)) return 'pkt';
+  if (['box', 'boxes', 'बॉक्स'].includes(u)) return 'box';
+  if (['l', 'ltr', 'litre', 'litres', 'लीटर'].includes(u)) return 'ltr';
+  if (['ml', 'एमएल'].includes(u)) return 'ml';
+  if (['dozen', 'darjan', 'दर्जन'].includes(u)) return 'dozen';
+  return rawUnit.trim();
 }
 
 /**
  * Parses shorthand search queries such as:
+ * - "1kg badam" or "1 kg badam" -> qty 1, unit: "kg", clean: "badam"
  * - "1.5 kaju" -> qty 1.5, clean: "kaju"
  * - "1.5*kaju" or "1.5x kaju" -> qty 1.5, clean: "kaju"
- * - "250g kaju" or "250gm kaju" -> qty 0.25, clean: "kaju"
+ * - "250g kaju" or "250gm kaju" -> qty 0.25, unit: "kg", clean: "kaju"
+ * - "1chatak badam" -> qty 1, unit: "Chatak", clean: "badam"
  * - "₹100 kaju" or "100rs kaju" or "100 rs kaju" -> targetPrice: 100, clean: "kaju"
  * - "3 kaju" -> qty 3, clean: "kaju"
  */
@@ -70,8 +100,26 @@ export function parseSearchInput(rawQuery: string): ParsedSearchInput {
     }
   }
 
-  // 2. Grams Weight Shorthand (e.g., "250g kaju", "250gm kaju", "500 g kaju", "100gms kaju", "750 gram kaju")
-  const gramsMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)\s*[\*xX\s]?\s*(.+)$/i);
+  // 2. Chatak Weight Shorthand (e.g. "1chatak badam", "1 chatak badam", "2 chatak badam")
+  const chatakMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(chatak|chattak|chhatak|ctk|satak|छटांक|छटाक|चटाक|चटक)\s*[\*xX\s]?\s*(.+)$/i);
+  if (chatakMatch) {
+    const cVal = parseFloat(chatakMatch[1]);
+    const term = (chatakMatch[3] || '').trim();
+    if (!isNaN(cVal) && cVal > 0 && term) {
+      return {
+        raw: trimmed,
+        cleanQuery: term,
+        quantity: cVal,
+        explicitUnit: 'Chatak',
+        unitLabel: `${cVal}Chatak`,
+        badgeLabel: `Qty: ${cVal}Chatak`,
+        mode: 'multiplier'
+      };
+    }
+  }
+
+  // 3. Grams Weight Shorthand (e.g., "250g kaju", "250gm kaju", "500 g kaju", "100gms kaju", "750 gram kaju")
+  const gramsMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams|ग्राम)\s*[\*xX\s]?\s*(.+)$/i);
   if (gramsMatch) {
     const gVal = parseFloat(gramsMatch[1]);
     const term = (gramsMatch[2] || '').trim();
@@ -81,25 +129,30 @@ export function parseSearchInput(rawQuery: string): ParsedSearchInput {
         raw: trimmed,
         cleanQuery: term,
         quantity: kgVal,
+        explicitUnit: 'kg',
         unitLabel: `${gVal}g (${kgVal}kg)`,
-        badgeLabel: `${gVal}g (${kgVal} kg)`,
+        badgeLabel: `${gVal}g (${kgVal}kg)`,
         mode: 'weight_fraction'
       };
     }
   }
 
-  // 3. Kilogram or Standard Multiplier Shorthand (e.g., "1.5 kaju", "1.5*kaju", "1.5x kaju", "1.5kg kaju", "1.5 kg kaju", "0.75 kaju", "2.25 kaju")
-  const multiplierMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilo|pcs|pc|pkt|pkts|box|boxes|l|ltr|litre|litres)?\s*(?:[\*xX\s])\s*(.+)$/i);
+  // 4. Kilogram, Litre, Pcs or Standard Multiplier Shorthand (e.g., "1kg badam", "1 kg badam", "1.5 kaju", "1.5*kaju", "1.5x kaju", "1.5kg kaju", "2pcs kaju")
+  const multiplierMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(kg|kgs|kilo|kilogram|किग्रा|किलो|pcs|pc|piece|pieces|पीस|नग|pkt|pkts|pack|packet|packets|box|boxes|l|ltr|litre|litres|dozen)?\s*(?:[\*xX\s])\s*(.+)$/i) ||
+                         trimmed.match(/^(\d+(?:\.\d+)?)\s*(kg|kgs|kilo|kilogram|किग्रा|किलो|pcs|pc|piece|pieces|pkt|pkts|pack|packet|packets|box|boxes|l|ltr|litre|litres|dozen)(.+)$/i);
   if (multiplierMatch) {
     const qtyVal = parseFloat(multiplierMatch[1]);
-    const term = (multiplierMatch[2] || '').trim();
+    const matchedUnit = normalizeSearchUnit(multiplierMatch[2]);
+    const term = (multiplierMatch[3] || '').trim();
     if (!isNaN(qtyVal) && qtyVal > 0 && term) {
+      const unitText = matchedUnit || '';
       return {
         raw: trimmed,
         cleanQuery: term,
         quantity: qtyVal,
-        unitLabel: `${qtyVal}`,
-        badgeLabel: `Qty: ${qtyVal}`,
+        explicitUnit: matchedUnit,
+        unitLabel: unitText ? `${qtyVal}${unitText}` : `${qtyVal}`,
+        badgeLabel: unitText ? `Qty: ${qtyVal}${unitText}` : `Qty: ${qtyVal}`,
         mode: 'multiplier'
       };
     }

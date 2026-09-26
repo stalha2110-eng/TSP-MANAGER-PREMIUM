@@ -24,7 +24,7 @@ import { AnimatedPosBillingIcon } from './AnimatedPosBillingIcon';
 import { AnimatedBillHistoryIcon } from './AnimatedBillHistoryIcon';
 import { AnimatedCalculatorIcon } from './AnimatedCalculatorIcon';
 import { QuickWeightPresets, ItemHoldWeightModal } from './QuickWeightPresets';
-import { parseSearchInput, calculateWeightFromAmount, isWeightBasedUnit, COMMON_WEIGHT_PRESETS, WeightPreset } from '../utils/weightHelpers';
+import { parseSearchInput, calculateWeightFromAmount, isWeightBasedUnit, COMMON_WEIGHT_PRESETS, WeightPreset, formatQtyWithUnit } from '../utils/weightHelpers';
 import { Scale, IndianRupee } from 'lucide-react';
 import { useBackModal } from '../utils/backNavigationManager';
 
@@ -1245,22 +1245,68 @@ export default function BillingScreen({
   };
 
   // Helper pricing selector
-  const getItemPriceAndUnit = (item: Partial<Item> & { isManual?: boolean }, quantity: number) => {
+  const getItemPriceAndUnit = (item: Partial<Item> & { isManual?: boolean }, quantity: number, customUnit?: string) => {
     if (item.isManual) {
-      return { price: item.retailPrice || 0, unit: item.unit || 'Pcs' };
+      return { price: item.retailPrice || 0, unit: customUnit || item.unit || 'Pcs' };
     }
     const mode = billingMode === 'auto' 
       ? (quantity >= 5 ? 'wholesale' : 'retail') 
       : billingMode;
       
-    if (mode === 'wholesale') {
-      return { price: item.wholesalePrice ?? 0, unit: item.wholesalePriceUnit || item.unit || 'Pcs' };
-    } else {
-      return { price: item.retailPrice ?? 0, unit: item.retailPriceUnit || item.unit || 'Pcs' };
+    const rawPrice = mode === 'wholesale' 
+      ? (item.wholesalePrice ?? item.retailPrice ?? 0) 
+      : (item.retailPrice ?? 0);
+    const rawUnit = mode === 'wholesale' 
+      ? (item.wholesalePriceUnit || item.unit || 'Pcs') 
+      : (item.retailPriceUnit || item.unit || 'Pcs');
+
+    if (!customUnit || customUnit.toLowerCase().trim() === rawUnit.toLowerCase().trim()) {
+      return { price: rawPrice, unit: customUnit || rawUnit };
     }
+
+    const targetU = customUnit.toLowerCase().trim();
+    const sourceU = rawUnit.toLowerCase().trim();
+
+    // 1. If target is 'kg' and source is 'chatak' (1 Chatak = 50g = 0.05kg -> 1kg = 20 Chataks)
+    if (['kg', 'kgs', 'kilo', 'kilogram'].includes(targetU) && ['chatak', 'chattak', 'chhatak', 'ctk', 'satak', 'छटांक', 'छटाक'].includes(sourceU)) {
+      if (item.wholesalePrice && item.wholesalePrice > 0 && ['kg', 'kgs', 'kilo'].includes((item.wholesalePriceUnit || '').toLowerCase())) {
+        return { price: item.wholesalePrice, unit: 'kg' };
+      }
+      return { price: rawPrice * 20, unit: 'kg' };
+    }
+
+    // 2. If target is 'chatak' and source is 'kg'
+    if (['chatak', 'chattak', 'chhatak', 'ctk', 'satak', 'छटांक', 'छटाक'].includes(targetU) && ['kg', 'kgs', 'kilo', 'kilogram'].includes(sourceU)) {
+      return { price: +(rawPrice / 20).toFixed(2), unit: 'Chatak' };
+    }
+
+    // 3. If target is 'kg' and source is '250gm' / 'pav kilo' (1kg = 4 * 250gm)
+    if (['kg', 'kgs', 'kilo', 'kilogram'].includes(targetU) && ['250gm', '250g', 'pav', 'paav'].includes(sourceU)) {
+      if (item.wholesalePrice && item.wholesalePrice > 0 && ['kg', 'kgs', 'kilo'].includes((item.wholesalePriceUnit || '').toLowerCase())) {
+        return { price: item.wholesalePrice, unit: 'kg' };
+      }
+      return { price: rawPrice * 4, unit: 'kg' };
+    }
+
+    // 4. If target is '250gm' and source is 'kg'
+    if (['250gm', '250g', 'pav', 'paav'].includes(targetU) && ['kg', 'kgs', 'kilo', 'kilogram'].includes(sourceU)) {
+      return { price: +(rawPrice / 4).toFixed(2), unit: '250gm' };
+    }
+
+    // 5. If target is 'kg' and source is 'gram' / 'gm' / 'g'
+    if (['kg', 'kgs', 'kilo', 'kilogram'].includes(targetU) && ['gram', 'gm', 'g', 'grams'].includes(sourceU)) {
+      return { price: rawPrice * 1000, unit: 'kg' };
+    }
+
+    // 6. If target is 'gram' / 'gm' and source is 'kg'
+    if (['gram', 'gm', 'g', 'grams'].includes(targetU) && ['kg', 'kgs', 'kilo', 'kilogram'].includes(sourceU)) {
+      return { price: +(rawPrice / 1000).toFixed(4), unit: 'gm' };
+    }
+
+    return { price: rawPrice, unit: customUnit };
   };
 
-  const addToCart = (product: Item, e?: React.MouseEvent | any, customQty?: number, replaceQty?: boolean) => {
+  const addToCart = (product: Item, e?: React.MouseEvent | any, customQty?: number, replaceQty?: boolean, customUnit?: string) => {
     const targetQty = (typeof customQty === 'number' && !isNaN(customQty) && customQty > 0) ? customQty : 1;
     const existingIndex = cart.findIndex(c => c.id === product.id);
     let newQty = targetQty;
@@ -1270,18 +1316,18 @@ export default function BillingScreen({
       } else {
         newQty = parseFloat((cart[existingIndex].quantity + targetQty).toFixed(3));
       }
-      const { price, unit } = getItemPriceAndUnit(product, newQty);
+      const { price, unit } = getItemPriceAndUnit(product, newQty, customUnit || cart[existingIndex].unit);
       
       const updated = [...cart];
       updated[existingIndex] = {
         ...updated[existingIndex],
         quantity: newQty,
         price,
-        unit
+        unit: customUnit || unit || updated[existingIndex].unit
       };
       setCart(updated);
     } else {
-      const { price, unit } = getItemPriceAndUnit(product, newQty);
+      const { price, unit } = getItemPriceAndUnit(product, newQty, customUnit);
       
       const trs = product.translations || { en: product.name || '', hi: '', mr: '', 'hi-en': '' };
       const newCartItem: CartItem = {
@@ -1291,7 +1337,7 @@ export default function BillingScreen({
         quantity: newQty,
         price,
         cost: product.buyingPrice || 0,
-        unit
+        unit: customUnit || unit
       };
       setCart([...cart, newCartItem]);
     }
@@ -3784,47 +3830,40 @@ export default function BillingScreen({
       {/* Main Billing Grid */}
       <div className="grid grid-cols-12 gap-4 items-start">
         
-        {/* LEFT COLUMN: ACTIVE PRODUCTS LIST & QUICK HELPER BUTTONS (7/12) - INDEPENDENT SCROLL CONTAINER */}
-        <div className={cn(
-          "col-span-12 lg:min-h-[calc(100vh-140px)] lg:flex lg:flex-col space-y-3 transition-all duration-300",
-          (showLivePreview && cart.length > 0) ? "lg:col-span-4 xl:col-span-5" : "lg:col-span-7"
-        )}>
-          
-          {/* STICKY TOP CONTROLS: SEARCH BAR, RECENT SEARCHES & CATEGORY FILTER */}
-          <div className={cn("shrink-0 space-y-2.5 relative transition-all", isSearchFocused && searchQuery.trim().length > 0 ? "z-50" : "z-20")}>
-            {/* Smart Typo-Tolerant Search Component with predictive real-time autocomplete */}
-            <div className={cn("relative animate-fadeIn", isSearchFocused && searchQuery.trim().length > 0 ? "z-50" : "z-20")}>
-              <motion.div 
-                animate={{ 
-                  scale: isSearchFocused ? 1.012 : 1,
-                  borderColor: isSearchFocused ? "var(--primary)" : "var(--border)"
-                }}
-                whileHover={{ scale: isSearchFocused ? 1.012 : 1.004 }}
-                transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                style={{ marginTop: '-8px', minHeight: '31.867px' }}
-                id="billing-search-bar"
-                className="relative rounded-xl bg-[var(--card)] border pr-2 py-0.5 flex items-center shadow-inner overflow-hidden"
-              >
-                <Search className="text-[var(--primary)] ml-3 opacity-60 shrink-0" size={16} />
-                
-                {/* Active Shorthand Mode Badge Indicator inside search bar */}
-                {parsedSearch.mode === 'multiplier' && parsedSearch.quantity && (
-                  <span className="px-2 py-0.5 rounded-lg bg-[var(--primary)] text-white text-[8.5px] font-black font-mono shrink-0 ml-1.5 shadow-xs flex items-center gap-1 select-none animate-fadeIn">
-                    <span>⚡ Qty: {parsedSearch.quantity}</span>
-                  </span>
-                )}
-                {parsedSearch.mode === 'weight_fraction' && parsedSearch.quantity && (
-                  <span className="px-2 py-0.5 rounded-lg bg-emerald-600 text-white text-[8.5px] font-black font-mono shrink-0 ml-1.5 shadow-xs flex items-center gap-1 select-none animate-fadeIn">
-                    <Scale size={10} />
-                    <span>{parsedSearch.quantity >= 1 ? `${parsedSearch.quantity} kg` : `${parsedSearch.quantity * 1000}g`}</span>
-                  </span>
-                )}
-                {parsedSearch.mode === 'target_budget' && parsedSearch.targetPrice && (
-                  <span className="px-2 py-0.5 rounded-lg bg-amber-600 text-white text-[8.5px] font-black font-mono shrink-0 ml-1.5 shadow-xs flex items-center gap-1 select-none animate-fadeIn">
-                    <IndianRupee size={10} />
-                    <span>Target: ₹{parsedSearch.targetPrice}</span>
-                  </span>
-                )}
+        {/* TOP SEARCH BAR & SHORTCUTS (WIDE FULL-WIDTH 12 COLS ACROSS BILLING DASHBOARD) */}
+        <div className={cn("col-span-12 shrink-0 space-y-2 relative transition-all", isSearchFocused && searchQuery.trim().length > 0 ? "z-50" : "z-20")}>
+          {/* Smart Typo-Tolerant Search Component with predictive real-time autocomplete */}
+          <div className={cn("relative animate-fadeIn w-full", isSearchFocused && searchQuery.trim().length > 0 ? "z-50" : "z-20")}>
+            <motion.div 
+              animate={{ 
+                scale: isSearchFocused ? 1.006 : 1,
+                borderColor: isSearchFocused ? "var(--primary)" : "var(--border)"
+              }}
+              whileHover={{ scale: isSearchFocused ? 1.006 : 1.002 }}
+              transition={{ type: "spring", stiffness: 450, damping: 25 }}
+              id="billing-search-bar"
+              className="relative w-full rounded-2xl bg-[var(--card)] border border-[var(--border)] pr-2 py-1.5 sm:py-2 flex items-center shadow-sm overflow-hidden"
+            >
+              <Search className="text-[var(--primary)] ml-3.5 opacity-60 shrink-0" size={18} />
+              
+              {/* Active Shorthand Mode Badge Indicator inside search bar */}
+              {parsedSearch.mode === 'multiplier' && parsedSearch.quantity && (
+                <span className="px-2 py-0.5 rounded-lg bg-[var(--primary)] text-white text-[8.5px] font-black font-mono shrink-0 ml-1.5 shadow-xs flex items-center gap-1 select-none animate-fadeIn">
+                  <span>⚡ Qty: {parsedSearch.quantity}{parsedSearch.explicitUnit || ''}</span>
+                </span>
+              )}
+              {parsedSearch.mode === 'weight_fraction' && parsedSearch.quantity && (
+                <span className="px-2 py-0.5 rounded-lg bg-emerald-600 text-white text-[8.5px] font-black font-mono shrink-0 ml-1.5 shadow-xs flex items-center gap-1 select-none animate-fadeIn">
+                  <Scale size={10} />
+                  <span>{parsedSearch.quantity >= 1 ? `${parsedSearch.quantity}kg` : `${parsedSearch.quantity * 1000}g`}</span>
+                </span>
+              )}
+              {parsedSearch.mode === 'target_budget' && parsedSearch.targetPrice && (
+                <span className="px-2 py-0.5 rounded-lg bg-amber-600 text-white text-[8.5px] font-black font-mono shrink-0 ml-1.5 shadow-xs flex items-center gap-1 select-none animate-fadeIn">
+                  <IndianRupee size={10} />
+                  <span>Target: ₹{parsedSearch.targetPrice}</span>
+                </span>
+              )}
 
                 <input 
                   id="billing-search-input"
@@ -3868,7 +3907,7 @@ export default function BillingScreen({
                         addToCart(selectedItem, {
                           clientX: rect.left + rect.width / 2,
                           clientY: rect.top + rect.height / 2
-                        }, targetQty);
+                        }, targetQty, false, parsedSearch.explicitUnit);
 
                         setSearchQuery('');
                         setIsSearchFocused(false);
@@ -3878,7 +3917,7 @@ export default function BillingScreen({
                       e.currentTarget.blur();
                     }
                   }}
-                  className="w-full pl-2 pr-2 py-1.5 bg-transparent border-none text-xs text-[var(--foreground)] outline-none placeholder:opacity-40 font-semibold"
+                  className="w-full pl-2.5 pr-2 py-1 bg-transparent border-none text-sm text-[var(--foreground)] outline-none placeholder:opacity-40 font-semibold"
                   placeholder={
                     parsedSearch.mode !== 'plain' 
                       ? "Item name (e.g. kaju, almond)..." 
@@ -3951,7 +3990,7 @@ export default function BillingScreen({
                           Search Results ({predictiveBillingItems.length}):
                           {parsedSearch.mode !== 'plain' && (
                             <span className="text-[8px] px-1.5 py-0.2 rounded bg-[var(--primary)]/15 text-[var(--primary)] font-bold">
-                              {parsedSearch.mode === 'target_budget' ? `Budget ₹${parsedSearch.targetPrice}` : `Qty ${parsedSearch.quantity}`}
+                              {parsedSearch.mode === 'target_budget' ? `Budget ₹${parsedSearch.targetPrice}` : `Qty ${parsedSearch.quantity}${parsedSearch.explicitUnit || ''}`}
                             </span>
                           )}
                         </span>
@@ -3998,11 +4037,13 @@ export default function BillingScreen({
                             if (parsedSearch.mode === 'target_budget' && parsedSearch.targetPrice) {
                               effectiveAddQty = calculateWeightFromAmount(parsedSearch.targetPrice, itemPrice || 1, 3);
                               computedTotalPrice = parsedSearch.targetPrice;
-                              helperPill = `₹${parsedSearch.targetPrice} = ${effectiveAddQty} ${item.unit || 'kg'}`;
+                              helperPill = `₹${parsedSearch.targetPrice} = ${effectiveAddQty}${item.unit || 'kg'}`;
                             } else if (parsedSearch.quantity) {
                               effectiveAddQty = parsedSearch.quantity;
-                              computedTotalPrice = +(effectiveAddQty * itemPrice).toFixed(precision);
-                              helperPill = `${effectiveAddQty} ${item.unit || 'kg'} = ₹${formatNumber(computedTotalPrice, precision)}`;
+                              const pricing = getItemPriceAndUnit(item, effectiveAddQty, parsedSearch.explicitUnit);
+                              computedTotalPrice = +(effectiveAddQty * pricing.price).toFixed(precision);
+                              const displayUnit = parsedSearch.explicitUnit || pricing.unit || item.unit || 'kg';
+                              helperPill = `${effectiveAddQty}${displayUnit} = ₹${formatNumber(computedTotalPrice, precision)}`;
                             }
 
                             return (
@@ -4018,7 +4059,7 @@ export default function BillingScreen({
                                 {/* Product Info Description */}
                                 <div 
                                   onClick={(e) => {
-                                    addToCart(item, { clientX: e.clientX, clientY: e.clientY }, effectiveAddQty);
+                                    addToCart(item, { clientX: e.clientX, clientY: e.clientY }, effectiveAddQty, false, parsedSearch.explicitUnit);
                                     if (parsedSearch.mode !== 'plain') {
                                       setSearchQuery('');
                                       setIsSearchFocused(false);
@@ -4082,14 +4123,14 @@ export default function BillingScreen({
                                       onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        addToCart(item, { clientX: e.clientX, clientY: e.clientY }, effectiveAddQty);
+                                        addToCart(item, { clientX: e.clientX, clientY: e.clientY }, effectiveAddQty, false, parsedSearch.explicitUnit);
                                         setSearchQuery('');
                                         setIsSearchFocused(false);
                                       }}
                                       className="px-2.5 py-1 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white shadow-xs hover:scale-105 active:scale-95 transition-all flex items-center gap-1 text-[9.5px] font-black uppercase cursor-pointer"
                                     >
                                       <Plus size={11} strokeWidth={3} />
-                                      <span>Add {effectiveAddQty}</span>
+                                      <span>Add {effectiveAddQty}{parsedSearch.explicitUnit || ''}</span>
                                     </button>
                                   ) : cartQty > 0 ? (
                                     <div className="flex items-center gap-0.5 bg-[var(--primary)]/10 p-0.5 rounded-lg border border-[var(--primary)]/30 shadow-xs">
@@ -4174,7 +4215,13 @@ export default function BillingScreen({
                 </button>
               </div>
             )}
-          </div>
+        </div>
+
+        {/* LEFT COLUMN: ACTIVE PRODUCTS LIST & QUICK HELPER BUTTONS (7/12) - INDEPENDENT SCROLL CONTAINER */}
+        <div className={cn(
+          "col-span-12 lg:min-h-[calc(100vh-140px)] lg:flex lg:flex-col space-y-3 transition-all duration-300",
+          (showLivePreview && cart.length > 0) ? "lg:col-span-4 xl:col-span-5" : "lg:col-span-7"
+        )}>
 
           {/* COMPACT RECENT ITEMS SELECTION (Strictly 4 items to prevent user scrolling) */}
           <div className="space-y-1.5 shrink-0 select-none">
@@ -5294,7 +5341,7 @@ export default function BillingScreen({
                               className="grid grid-cols-12 text-[9px] font-sans text-zinc-800 border-b border-dashed border-zinc-100 last:border-0 pb-1 items-center"
                             >
                               <span className="col-span-6 font-bold text-zinc-900 break-words leading-tight line-clamp-2 pr-1">{ci.name}</span>
-                              <span className="col-span-2 text-center font-mono opacity-80 text-zinc-805 text-[8.5px]">{ci.quantity} {ci.unit}</span>
+                              <span className="col-span-2 text-center font-mono opacity-80 text-zinc-805 text-[8.5px]">{formatQtyWithUnit(ci.quantity, ci.unit)}</span>
                               <span className="col-span-2 text-right font-mono text-[8.5px] text-zinc-805">₹{ci.price}</span>
                               <span className="col-span-2 text-right font-black font-mono text-zinc-950 text-[9.5px]">₹{ci.price * ci.quantity}</span>
                             </div>
@@ -5651,7 +5698,7 @@ export default function BillingScreen({
                                 </span>
                               </div>
                               <span className="col-span-2 text-center font-mono font-black text-xs sm:text-[13px] text-zinc-900">
-                                {ci.quantity} {ci.unit || ''}
+                                {formatQtyWithUnit(ci.quantity, ci.unit)}
                               </span>
                               <span className="col-span-4 text-right font-black font-mono text-xs sm:text-[13px] text-zinc-950">
                                 ₹{formatNumber(ci.price * ci.quantity, precision)}

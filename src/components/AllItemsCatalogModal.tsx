@@ -12,7 +12,7 @@ import { Item, Category, LanguageType } from '../types';
 import { cn, formatNumber } from '../lib/utils';
 import { cleanAndValidateText } from '../services/languageEngine';
 import { QuickWeightPresets, ItemHoldWeightModal } from './QuickWeightPresets';
-import { parseSearchInput, calculateWeightFromAmount, WeightPreset } from '../utils/weightHelpers';
+import { parseSearchInput, calculateWeightFromAmount, WeightPreset, formatQtyWithUnit } from '../utils/weightHelpers';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -120,7 +120,7 @@ export interface AllItemsCatalogModalProps {
   items: Item[];
   categories: Category[];
   cart: CatalogCartItem[];
-  onAddToCart: (item: Item, e?: React.MouseEvent, customQty?: number, replaceQty?: boolean) => void;
+  onAddToCart: (item: Item, e?: React.MouseEvent, customQty?: number, replaceQty?: boolean, customUnit?: string) => void;
   onUpdateCartQuantity?: (itemId: string, newQty: number) => void;
   billingMode: 'auto' | 'retail' | 'wholesale';
   onBillingModeChange?: (mode: 'retail' | 'wholesale' | 'auto') => void;
@@ -292,7 +292,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
         targetQty = savedParsedSearch.quantity;
       }
 
-      onAddToCart(item, clickEventTarget as any, targetQty, savedParsedSearch.mode !== 'plain');
+      onAddToCart(item, clickEventTarget as any, targetQty, savedParsedSearch.mode !== 'plain', savedParsedSearch.explicitUnit);
       if (savedParsedSearch.mode !== 'plain') {
         setSearchQuery('');
         setIsSearchFocused(false);
@@ -605,27 +605,27 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
           </div>
 
           {/* SEARCH & CATEGORIES STRIP */}
-          <div className="shrink-0 pl-3 pr-16 sm:pr-18 py-2 bg-[var(--card)]/60 border-b border-[var(--border)] space-y-1.5 relative z-30">
+          <div className="shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--card)]/60 border-b border-[var(--border)] space-y-2 relative z-30 w-full">
             {/* Full-width Search Bar with Power Shorthand & Predictive Bill-Ready Autocomplete */}
             <div className="relative w-full">
-              <div className="relative flex items-center w-full pl-3 pr-2 py-1 rounded-xl bg-[var(--background)] border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/20 transition-all">
-                <Search className="text-[var(--primary)] opacity-70 shrink-0 mr-1.5" size={15} />
+              <div className="relative flex items-center w-full pl-3.5 pr-2.5 py-1.5 sm:py-2 rounded-2xl bg-[var(--background)] border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/20 transition-all shadow-inner">
+                <Search className="text-[var(--primary)] opacity-70 shrink-0 mr-2" size={17} />
 
                 {/* Shorthand Mode Badge Indicator inside search bar */}
                 {parsedSearch.mode === 'multiplier' && parsedSearch.quantity && (
-                  <span className="px-1.5 py-0.5 rounded bg-[var(--primary)] text-white text-[8px] font-black font-mono shrink-0 mr-1.5 shadow-xs flex items-center gap-0.5 select-none animate-fadeIn">
-                    <span>⚡ Qty: {parsedSearch.quantity}</span>
+                  <span className="px-2 py-0.5 rounded-lg bg-[var(--primary)] text-white text-[8.5px] font-black font-mono shrink-0 mr-1.5 shadow-xs flex items-center gap-0.5 select-none animate-fadeIn">
+                    <span>⚡ Qty: {parsedSearch.quantity}{parsedSearch.explicitUnit || ''}</span>
                   </span>
                 )}
                 {parsedSearch.mode === 'weight_fraction' && parsedSearch.quantity && (
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[8px] font-black font-mono shrink-0 mr-1.5 shadow-xs flex items-center gap-0.5 select-none animate-fadeIn">
-                    <Scale size={9} />
-                    <span>{parsedSearch.quantity >= 1 ? `${parsedSearch.quantity} kg` : `${parsedSearch.quantity * 1000}g`}</span>
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-600 text-white text-[8.5px] font-black font-mono shrink-0 mr-1.5 shadow-xs flex items-center gap-0.5 select-none animate-fadeIn">
+                    <Scale size={10} />
+                    <span>{parsedSearch.quantity >= 1 ? `${parsedSearch.quantity}kg` : `${parsedSearch.quantity * 1000}g`}</span>
                   </span>
                 )}
                 {parsedSearch.mode === 'target_budget' && parsedSearch.targetPrice && (
-                  <span className="px-1.5 py-0.5 rounded bg-amber-600 text-white text-[8px] font-black font-mono shrink-0 mr-1.5 shadow-xs flex items-center gap-0.5 select-none animate-fadeIn">
-                    <IndianRupee size={9} />
+                  <span className="px-2 py-0.5 rounded-lg bg-amber-600 text-white text-[8.5px] font-black font-mono shrink-0 mr-1.5 shadow-xs flex items-center gap-0.5 select-none animate-fadeIn">
+                    <IndianRupee size={10} />
                     <span>Target: ₹{parsedSearch.targetPrice}</span>
                   </span>
                 )}
@@ -667,7 +667,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                           targetQty = parsedSearch.quantity;
                         }
 
-                        onAddToCart(selectedItem, undefined, targetQty, parsedSearch.mode !== 'plain');
+                        onAddToCart(selectedItem, undefined, targetQty, parsedSearch.mode !== 'plain', parsedSearch.explicitUnit);
                         setSearchQuery('');
                         setIsSearchFocused(false);
                       }
@@ -681,7 +681,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                       ? "Item name (e.g. kaju, almond)..."
                       : cleanAndValidateText("Search products by name, barcode, or category (e.g. '1.5 kaju' or '₹100 almond')...", currentLang, settings)
                   }
-                  className="w-full bg-transparent border-none text-xs text-[var(--foreground)] font-bold placeholder:text-[var(--foreground)]/40 outline-none"
+                  className="w-full bg-transparent border-none text-sm text-[var(--foreground)] font-semibold placeholder:text-[var(--foreground)]/40 outline-none"
                   autoFocus
                 />
 
@@ -778,10 +778,11 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
 
                           if (parsedSearch.mode === 'target_budget' && parsedSearch.targetPrice) {
                             effectiveAddQty = calculateWeightFromAmount(parsedSearch.targetPrice, itemPrice || 1, 3);
-                            helperPill = `₹${parsedSearch.targetPrice} = ${effectiveAddQty} ${item.unit || 'kg'}`;
+                            helperPill = `₹${parsedSearch.targetPrice} = ${effectiveAddQty}${item.unit || 'kg'}`;
                           } else if (parsedSearch.quantity) {
                             effectiveAddQty = parsedSearch.quantity;
-                            helperPill = `${effectiveAddQty} ${item.unit || 'kg'} = ₹${formatNumber(effectiveAddQty * itemPrice, precision)}`;
+                            const displayUnit = parsedSearch.explicitUnit || item.unit || 'kg';
+                            helperPill = `${effectiveAddQty}${displayUnit} = ₹${formatNumber(effectiveAddQty * itemPrice, precision)}`;
                           }
 
                           return (
@@ -795,7 +796,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                                   : "hover:bg-[var(--foreground)]/[0.04]"
                               )}
                               onClick={(e) => {
-                                onAddToCart(item, e, effectiveAddQty, parsedSearch.mode !== 'plain');
+                                onAddToCart(item, e, effectiveAddQty, parsedSearch.mode !== 'plain', parsedSearch.explicitUnit);
                                 if (parsedSearch.mode !== 'plain') {
                                   setSearchQuery('');
                                   setIsSearchFocused(false);
@@ -871,7 +872,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onAddToCart(item, e, effectiveAddQty, parsedSearch.mode !== 'plain');
+                                    onAddToCart(item, e, effectiveAddQty, parsedSearch.mode !== 'plain', parsedSearch.explicitUnit);
                                     if (parsedSearch.mode !== 'plain') {
                                       setSearchQuery('');
                                       setIsSearchFocused(false);
@@ -880,7 +881,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                                   className="px-2 py-1 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white text-[9px] font-black uppercase shadow-xs flex items-center gap-0.5 cursor-pointer active:scale-95 transition-transform"
                                 >
                                   <Plus size={10} strokeWidth={3} />
-                                  <span>{parsedSearch.mode !== 'plain' ? `Add ${effectiveAddQty}` : 'Add'}</span>
+                                  <span>{parsedSearch.mode !== 'plain' ? `Add ${effectiveAddQty}${parsedSearch.explicitUnit || ''}` : 'Add'}</span>
                                 </button>
                               </div>
                             </div>
@@ -1262,7 +1263,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                               >
                                 {ci.name}
                               </span>
-                              <span className="col-span-2 text-center font-mono opacity-80 text-zinc-700">{ci.quantity} {ci.unit || 'Pcs'}</span>
+                              <span className="col-span-2 text-center font-mono opacity-80 text-zinc-700">{formatQtyWithUnit(ci.quantity, ci.unit)}</span>
                               <span className="col-span-4 text-right font-black font-mono text-zinc-950">₹{formatNumber(ci.price * ci.quantity, precision)}</span>
                             </div>
                           ))
@@ -1544,7 +1545,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                                 >
                                   {ci.name}
                                 </span>
-                                <span className="col-span-2 text-center font-mono">{ci.quantity} {ci.unit || 'Pcs'}</span>
+                                <span className="col-span-2 text-center font-mono">{formatQtyWithUnit(ci.quantity, ci.unit)}</span>
                                 <span className="col-span-4 text-right font-black font-mono">₹{formatNumber(ci.price * ci.quantity, precision)}</span>
                               </div>
                             ))

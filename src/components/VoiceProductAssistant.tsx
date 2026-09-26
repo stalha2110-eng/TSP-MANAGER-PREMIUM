@@ -1503,32 +1503,41 @@ export function VoiceProductAssistant({
                               </div>
 
                               <div className="grid grid-cols-3 gap-2">
-                                <div>
+                                <div className="text-center">
                                   <label className="text-[9px] font-black uppercase tracking-widest text-[var(--foreground)]/55 mb-1 block">Retail</label>
                                   <input 
                                     type="number"
                                     value={editingDraftRetail}
                                     onChange={e => setEditingDraftRetail(e.target.value)}
-                                    className="w-full bg-[var(--background)] text-[var(--foreground)] px-3 py-2 rounded-xl text-sm font-bold border border-[var(--border)] focus:outline-none focus:border-amber-500/50"
+                                    className="w-full bg-[var(--background)] text-[var(--foreground)] px-3 py-2 rounded-xl text-sm font-bold border border-[var(--border)] focus:outline-none focus:border-amber-500/50 text-center"
                                   />
+                                  <p className="text-[9px] font-mono font-bold text-[var(--foreground)]/60 text-center mt-1">
+                                    /{draft.retailPriceUnit || editingDraftUnit || 'unit'}
+                                  </p>
                                 </div>
-                                <div>
+                                <div className="text-center">
                                   <label className="text-[9px] font-black uppercase tracking-widest text-[var(--foreground)]/55 mb-1 block">Wholesale</label>
                                   <input 
                                     type="number"
                                     value={editingDraftWholesale}
                                     onChange={e => setEditingDraftWholesale(e.target.value)}
-                                    className="w-full bg-[var(--background)] text-[var(--foreground)] px-3 py-2 rounded-xl text-sm font-bold border border-[var(--border)] focus:outline-none focus:border-amber-500/50"
+                                    className="w-full bg-[var(--background)] text-[var(--foreground)] px-3 py-2 rounded-xl text-sm font-bold border border-[var(--border)] focus:outline-none focus:border-amber-500/50 text-center"
                                   />
+                                  <p className="text-[9px] font-mono font-bold text-[var(--foreground)]/60 text-center mt-1">
+                                    /{draft.wholesalePriceUnit || editingDraftUnit || 'unit'}
+                                  </p>
                                 </div>
-                                <div>
+                                <div className="text-center">
                                   <label className="text-[9px] font-black uppercase tracking-widest text-[var(--foreground)]/55 mb-1 block">Cost</label>
                                   <input 
                                     type="number"
                                     value={editingDraftBuying}
                                     onChange={e => setEditingDraftBuying(e.target.value)}
-                                    className="w-full bg-[var(--background)] text-[var(--foreground)] px-3 py-2 rounded-xl text-sm font-bold border border-[var(--border)] focus:outline-none focus:border-amber-500/50"
+                                    className="w-full bg-[var(--background)] text-[var(--foreground)] px-3 py-2 rounded-xl text-sm font-bold border border-[var(--border)] focus:outline-none focus:border-amber-500/50 text-center"
                                   />
+                                  <p className="text-[9px] font-mono font-bold text-[var(--foreground)]/60 text-center mt-1">
+                                    /{draft.buyingPriceUnit || editingDraftUnit || 'unit'}
+                                  </p>
                                 </div>
                               </div>
 
@@ -2071,7 +2080,7 @@ export function VoiceProductAssistant({
                         }}
                         className="w-full bg-[var(--card)] text-[var(--foreground)] px-4 py-3 rounded-2xl text-sm font-bold border border-[var(--border)] focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all shadow-sm"
                       >
-                        {["KG", "GM", "LTR", "ML", "PCS", "PKT", "BOX", "CRT", "DZN", "BDL", "TRY", "UNT"].map(un => (
+                        {["KG", "GM", "250gm", "Chatak", "LTR", "ML", "PCS", "PKT", "BOX", "CRT", "DZN", "BDL", "TRY", "UNT"].map(un => (
                           <option key={un} className="bg-[var(--card)] text-[var(--foreground)]" value={un}>{un}</option>
                         ))}
                       </select>
@@ -2080,7 +2089,7 @@ export function VoiceProductAssistant({
 
                   {/* Part 3: Pricing Fields Grid */}
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-1">
+                    <div className="space-y-1 text-center">
                       <label className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)]/50 block">Retail Price (₹)</label>
                       <input
                         type="number"
@@ -2088,8 +2097,11 @@ export function VoiceProductAssistant({
                         onChange={(e) => updateDraftField('retailPrice', parseFloat(e.target.value) || 0)}
                         className="w-full bg-[var(--card)] text-[var(--foreground)] px-4 py-3 rounded-2xl text-sm font-black border border-[var(--border)] focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all shadow-sm text-center"
                       />
+                      <p className="text-[10px] font-mono font-bold text-[var(--foreground)]/60 text-center">
+                        /{draftProducts[0].retailPriceUnit === 'Chatak' ? 'Chatak' : (draftProducts[0].retailPriceUnit || draftProducts[0].unit || 'unit')}
+                      </p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1 text-center">
                       <label className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)]/50 block">Wholesale Price (₹)</label>
                       <input
                         type="number"
@@ -2097,8 +2109,11 @@ export function VoiceProductAssistant({
                         onChange={(e) => updateDraftField('wholesalePrice', parseFloat(e.target.value) || 0)}
                         className="w-full bg-[var(--card)] text-[var(--foreground)] px-4 py-3 rounded-2xl text-sm font-black border border-[var(--border)] focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all shadow-sm text-center"
                       />
+                      <p className="text-[10px] font-mono font-bold text-[var(--foreground)]/60 text-center">
+                        /{draftProducts[0].wholesalePriceUnit === 'Chatak' ? 'Chatak' : (draftProducts[0].wholesalePriceUnit || draftProducts[0].unit || 'unit')}
+                      </p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1 text-center">
                       <label className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)]/50 block">Cost Price (₹)</label>
                       <input
                         type="number"
@@ -2106,6 +2121,9 @@ export function VoiceProductAssistant({
                         onChange={(e) => updateDraftField('buyingPrice', parseFloat(e.target.value) || 0)}
                         className="w-full bg-[var(--card)] text-[var(--foreground)] px-4 py-3 rounded-2xl text-sm font-black border border-[var(--border)] focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all shadow-sm text-center"
                       />
+                      <p className="text-[10px] font-mono font-bold text-[var(--foreground)]/60 text-center">
+                        /{draftProducts[0].buyingPriceUnit === 'Chatak' ? 'Chatak' : (draftProducts[0].buyingPriceUnit || draftProducts[0].unit || 'unit')}
+                      </p>
                     </div>
                   </div>
 

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Edit2, X, ChevronDown } from 'lucide-react';
+import { Plus, Edit2, X, ChevronDown, Camera, Image as ImageIcon, Trash2, Upload } from 'lucide-react';
 import { Button } from './ui/Button';
 import { UnitSelectorModal } from './ui/UnitSelectorModal';
 import { trackRecentUnit, useRecentUnits } from '../lib/unitUtils';
@@ -8,6 +8,7 @@ import { translateItemName } from '../services/translationService';
 import { Item, Category, LanguageType } from '../types';
 import { LANGUAGES } from '../constants';
 import { cn } from '../lib/utils';
+import { compressImageFile } from '../utils/imageUtils';
 
 export interface ItemFormModalProps {
   onClose: () => void;
@@ -53,7 +54,29 @@ export function ItemFormModal({
 
   const [activeUnitSelection, setActiveUnitSelection] = useState<'base'|'retail'|'wholesale'|'buy'|null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { recentUnits } = useRecentUnits();
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploadingImage(true);
+      const dataUrl = await compressImageFile(file, 360, 360, 0.82);
+      setFormData(prev => ({ ...prev, imageUrl: dataUrl }));
+    } catch (err) {
+      console.error("Failed to compress and save image", err);
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFormData(prev => ({ ...prev, imageUrl: undefined }));
+  };
 
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const section1Ref = React.useRef<HTMLDivElement>(null);
@@ -179,6 +202,69 @@ export function ItemFormModal({
                     <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce [animation-delay:0.4s]" />
                   </div>
                 )}
+               </div>
+
+               {/* Product Photo Attachment */}
+               <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-[var(--card)] border-2 border-[var(--border)] shadow-xs">
+                 <input
+                   type="file"
+                   ref={fileInputRef}
+                   accept="image/*"
+                   onChange={handleImageFileChange}
+                   className="hidden"
+                 />
+                 {formData.imageUrl ? (
+                   <div className="relative group shrink-0">
+                     <img
+                       src={formData.imageUrl}
+                       alt="Item preview"
+                       className="w-16 h-16 rounded-xl object-cover border-2 border-[var(--primary)] shadow-md"
+                     />
+                     <button
+                       type="button"
+                       onClick={handleRemoveImage}
+                       className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center shadow-lg transition-transform active:scale-90 cursor-pointer"
+                       title="Remove image"
+                     >
+                       <X size={12} strokeWidth={3} />
+                     </button>
+                   </div>
+                 ) : (
+                   <div 
+                     onClick={() => fileInputRef.current?.click()}
+                     className="w-16 h-16 rounded-xl border-2 border-dashed border-[var(--border)] hover:border-[var(--primary)] flex flex-col items-center justify-center text-zinc-400 hover:text-[var(--primary)] bg-[var(--background)] shrink-0 cursor-pointer transition-colors"
+                     title="Attach Item Photo"
+                   >
+                     <Camera size={22} className="opacity-70" />
+                     <span className="text-[7.5px] font-black uppercase mt-1 tracking-wider">Photo</span>
+                   </div>
+                 )}
+
+                 <div className="flex-1 min-w-0 flex flex-col justify-center">
+                   <div className="flex items-center gap-2 flex-wrap">
+                     <button
+                       type="button"
+                       onClick={() => fileInputRef.current?.click()}
+                       disabled={isUploadingImage}
+                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--primary)]/10 hover:bg-[var(--primary)] text-[var(--primary)] hover:text-white font-black text-[10px] uppercase tracking-wider transition-all active:scale-95 cursor-pointer shadow-xs border border-[var(--primary)]/20"
+                     >
+                       <Camera size={13} />
+                       <span>{formData.imageUrl ? 'Change Photo / फोटो बदलें' : 'Attach Photo / तस्वीर जोड़ें'}</span>
+                     </button>
+                     {formData.imageUrl && (
+                       <button
+                         type="button"
+                         onClick={handleRemoveImage}
+                         className="px-2 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1"
+                       >
+                         <Trash2 size={11} /> Remove
+                       </button>
+                     )}
+                   </div>
+                   <p className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400 mt-1 leading-tight">
+                     Replaces emoji icon on inventory cards. Saved directly in local device storage.
+                   </p>
+                 </div>
                </div>
 
                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">

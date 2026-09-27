@@ -111,7 +111,7 @@ export function SmartBulkEntryModal({
   const [activeUnitDropdown, setActiveUnitDropdown] = useState<{ rowIndex: number; field: 'retail' | 'wholesale' | 'cost' } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
-  const [autoSuggestMargin, setAutoSuggestMargin] = useState(true);
+  const [autoSuggestMargin, setAutoSuggestMargin] = useState(false);
 
   // Custom & Recent Units management
   const { customUnits, addCustomUnit, removeCustomUnit, allUnitsFlat } = useCustomUnits();
@@ -306,20 +306,17 @@ export function SmartBulkEntryModal({
         }
       }
 
-      // 2. Auto-suggest wholesale and cost prices based on retail price
+      // 2. Auto-suggest wholesale and cost prices based on retail price (ONLY when explicitly enabled by user)
       if (autoSuggestMargin && fields.retailPrice !== undefined) {
         const retailVal = parseFloat(fields.retailPrice);
         if (!isNaN(retailVal) && retailVal > 0) {
-          // Suggest 10% lower for wholesale, 25% lower for buying cost
-          if (!row.wholesalePrice || row.touched.wholesalePrice !== true) {
+          // Suggest 10% lower for wholesale, 25% lower for buying cost only if empty and untouched
+          if (row.wholesalePrice === '' && row.touched.wholesalePrice !== true) {
             updatedRow.wholesalePrice = Math.round(retailVal * 0.9).toString();
           }
-          if (!row.buyingPrice || row.touched.buyingPrice !== true) {
+          if (row.buyingPrice === '' && row.touched.buyingPrice !== true) {
             updatedRow.buyingPrice = Math.round(retailVal * 0.75).toString();
           }
-        } else if (fields.retailPrice === '') {
-          if (row.touched.wholesalePrice !== true) updatedRow.wholesalePrice = '';
-          if (row.touched.buyingPrice !== true) updatedRow.buyingPrice = '';
         }
       }
 
@@ -971,6 +968,16 @@ export function SmartBulkEntryModal({
                             onKeyDown={(e) => handleKeyDown(e, index, 'qty')}
                           />
                         </div>
+
+                        {/* Mobile Delete Row Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRow(index)}
+                          className="p-1 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          title="Delete Row"
+                        >
+                          <Trash2 size={13} />
+                        </button>
                       </div>
                     </div>
 
@@ -1013,34 +1020,46 @@ export function SmartBulkEntryModal({
                         PRICING DETAILS
                       </div>
 
-                      {/* Pricing Specs Block */}
-                      <div className="flex flex-wrap items-center gap-1.5 bg-[var(--background)] border border-[var(--border)] rounded-xl p-1 px-1.5 md:flex-1 md:justify-between">
+                      {/* Pricing Specs Block - Centered and snug */}
+                      <div className="flex flex-wrap items-center justify-center gap-2.5 w-full md:w-auto bg-[var(--background)] border border-[var(--border)] rounded-2xl p-2 md:p-1.5 mx-auto">
                         
-                        {/* 2. Retail Price per unit */}
+                        {/* 2. Retail Price per unit Boundary Box */}
                         <div className={cn(
-                          "flex items-center gap-1 flex-1 min-w-[95px] px-1 py-0.5 rounded-lg border transition-all",
-                          showValidationErrors && errors.retailPrice ? "border-red-500/50 bg-red-500/[0.01]" : "border-transparent"
+                          "flex items-center justify-center gap-1.5 w-auto max-w-[170px] px-2.5 py-1.5 md:py-1 rounded-xl border-2 transition-all bg-[var(--card)] shadow-xs shrink-0",
+                          showValidationErrors && errors.retailPrice 
+                            ? "border-red-500 ring-2 ring-red-500/30 bg-red-500/[0.04]" 
+                            : "border-emerald-500/60 dark:border-emerald-500/40 hover:border-emerald-500 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/25"
                         )}>
+                          <span className="text-[7.5px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-1 py-0.5 rounded shrink-0 select-none">
+                            Retail
+                          </span>
+                          <span className="text-zinc-500 dark:text-zinc-400 font-mono text-xs select-none font-black shrink-0">₹</span>
                           <input
                             id={`retail-${index}`}
-                            type="number"
-                            min="0"
-                            step="any"
-                            placeholder="Retail ₹"
+                            type="text"
+                            inputMode="decimal"
+                            pattern="[0-9]*\.?[0-9]*"
+                            placeholder="0.00"
                             className={cn(
-                              "w-full bg-transparent font-bold font-mono text-xs text-[var(--foreground)] focus:outline-none",
+                              "w-14 sm:w-16 min-w-0 bg-transparent font-black font-mono text-center text-sm md:text-xs text-[var(--foreground)] focus:outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
                               showValidationErrors && errors.retailPrice ? "text-red-500" : ""
                             )}
                             value={row.retailPrice}
-                            onChange={(e) => handleUpdateRow(index, { retailPrice: e.target.value })}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                handleUpdateRow(index, { retailPrice: val });
+                              }
+                            }}
                             onBlur={() => handleMarkTouched(index, 'retailPrice')}
                             onKeyDown={(e) => handleKeyDown(e, index, 'retail')}
                           />
-                          <div className="text-zinc-650 font-mono select-none text-[9px]">/</div>
+                          <span className="text-zinc-400 font-mono select-none text-[9px] font-bold shrink-0">/</span>
                           
                           {/* Unit Selector Button */}
-                          <div className="relative">
+                          <div className="relative shrink-0">
                             <button
+                              type="button"
                               onClick={() => {
                                 setActiveUnitDropdown(
                                   activeUnitDropdown?.rowIndex === index && activeUnitDropdown?.field === 'retail'
@@ -1049,7 +1068,7 @@ export function SmartBulkEntryModal({
                                 );
                                 setActiveCategoryDropdown(null);
                               }}
-                              className="px-1.5 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] hover:border-zinc-500 text-[8px] font-black text-zinc-400 hover:text-white transition-colors uppercase tracking-widest min-w-[36px]"
+                              className="px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] hover:border-emerald-500 text-[8px] font-black text-zinc-400 hover:text-[var(--foreground)] transition-colors uppercase tracking-widest min-w-[32px]"
                             >
                               {row.retailPriceUnit}
                             </button>
@@ -1060,34 +1079,43 @@ export function SmartBulkEntryModal({
                           </div>
                         </div>
 
-                        {/* Comma Separator */}
-                        <div className="text-zinc-650 font-mono select-none mx-0.5 text-xs">,</div>
-
-                        {/* 3. Wholesale Price per unit */}
+                        {/* 3. Wholesale Price per unit Boundary Box */}
                         <div className={cn(
-                          "flex items-center gap-1 flex-1 min-w-[95px] px-1 py-0.5 rounded-lg border transition-all",
-                          showValidationErrors && errors.wholesalePrice ? "border-red-500/50 bg-red-500/[0.01]" : "border-transparent"
+                          "flex items-center justify-center gap-1.5 w-auto max-w-[170px] px-2.5 py-1.5 md:py-1 rounded-xl border-2 transition-all bg-[var(--card)] shadow-xs shrink-0",
+                          showValidationErrors && errors.wholesalePrice 
+                            ? "border-red-500 ring-2 ring-red-500/30 bg-red-500/[0.04]" 
+                            : "border-blue-500/60 dark:border-blue-500/40 hover:border-blue-500 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/25"
                         )}>
+                          <span className="text-[7.5px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-500/15 px-1 py-0.5 rounded shrink-0 select-none">
+                            Wholesale
+                          </span>
+                          <span className="text-zinc-500 dark:text-zinc-400 font-mono text-xs select-none font-black shrink-0">₹</span>
                           <input
                             id={`wholesale-${index}`}
-                            type="number"
-                            min="0"
-                            step="any"
-                            placeholder="Wholesale ₹"
+                            type="text"
+                            inputMode="decimal"
+                            pattern="[0-9]*\.?[0-9]*"
+                            placeholder="0.00"
                             className={cn(
-                              "w-full bg-transparent font-bold font-mono text-xs text-[var(--foreground)] focus:outline-none",
+                              "w-14 sm:w-16 min-w-0 bg-transparent font-black font-mono text-center text-sm md:text-xs text-[var(--foreground)] focus:outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
                               showValidationErrors && errors.wholesalePrice ? "text-red-500" : ""
                             )}
                             value={row.wholesalePrice}
-                            onChange={(e) => handleUpdateRow(index, { wholesalePrice: e.target.value })}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                handleUpdateRow(index, { wholesalePrice: val });
+                              }
+                            }}
                             onBlur={() => handleMarkTouched(index, 'wholesalePrice')}
                             onKeyDown={(e) => handleKeyDown(e, index, 'wholesale')}
                           />
-                          <div className="text-zinc-650 font-mono select-none text-[9px]">/</div>
+                          <span className="text-zinc-400 font-mono select-none text-[9px] font-bold shrink-0">/</span>
 
                           {/* Unit Selector Button */}
-                          <div className="relative">
+                          <div className="relative shrink-0">
                             <button
+                              type="button"
                               onClick={() => {
                                 setActiveUnitDropdown(
                                   activeUnitDropdown?.rowIndex === index && activeUnitDropdown?.field === 'wholesale'
@@ -1096,7 +1124,7 @@ export function SmartBulkEntryModal({
                                 );
                                 setActiveCategoryDropdown(null);
                               }}
-                              className="px-1.5 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] hover:border-zinc-500 text-[8px] font-black text-zinc-400 hover:text-white transition-colors uppercase tracking-widest min-w-[36px]"
+                              className="px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] hover:border-blue-500 text-[8px] font-black text-zinc-400 hover:text-[var(--foreground)] transition-colors uppercase tracking-widest min-w-[32px]"
                             >
                               {row.wholesalePriceUnit}
                             </button>
@@ -1108,34 +1136,43 @@ export function SmartBulkEntryModal({
                           </div>
                         </div>
 
-                        {/* Comma Separator */}
-                        <div className="text-zinc-650 font-mono select-none mx-0.5 text-xs">,</div>
-
-                        {/* 4. Cost Price per unit */}
+                        {/* 4. Cost Price per unit Boundary Box */}
                         <div className={cn(
-                          "flex items-center gap-1 flex-1 min-w-[95px] px-1 py-0.5 rounded-lg border transition-all",
-                          showValidationErrors && errors.buyingPrice ? "border-red-500/50 bg-red-500/[0.01]" : "border-transparent"
+                          "flex items-center justify-center gap-1.5 w-auto max-w-[170px] px-2.5 py-1.5 md:py-1 rounded-xl border-2 transition-all bg-[var(--card)] shadow-xs shrink-0",
+                          showValidationErrors && errors.buyingPrice 
+                            ? "border-red-500 ring-2 ring-red-500/30 bg-red-500/[0.04]" 
+                            : "border-amber-500/60 dark:border-amber-500/40 hover:border-amber-500 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/25"
                         )}>
+                          <span className="text-[7.5px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/15 px-1 py-0.5 rounded shrink-0 select-none">
+                            Cost
+                          </span>
+                          <span className="text-zinc-500 dark:text-zinc-400 font-mono text-xs select-none font-black shrink-0">₹</span>
                           <input
                             id={`cost-${index}`}
-                            type="number"
-                            min="0"
-                            step="any"
-                            placeholder="Cost ₹"
+                            type="text"
+                            inputMode="decimal"
+                            pattern="[0-9]*\.?[0-9]*"
+                            placeholder="0.00"
                             className={cn(
-                              "w-full bg-transparent font-bold font-mono text-xs text-[var(--foreground)] focus:outline-none",
+                              "w-14 sm:w-16 min-w-0 bg-transparent font-black font-mono text-center text-sm md:text-xs text-[var(--foreground)] focus:outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
                               showValidationErrors && errors.buyingPrice ? "text-red-500" : ""
                             )}
                             value={row.buyingPrice}
-                            onChange={(e) => handleUpdateRow(index, { buyingPrice: e.target.value })}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                handleUpdateRow(index, { buyingPrice: val });
+                              }
+                            }}
                             onBlur={() => handleMarkTouched(index, 'buyingPrice')}
                             onKeyDown={(e) => handleKeyDown(e, index, 'cost')}
                           />
-                          <div className="text-zinc-650 font-mono select-none text-[9px]">/</div>
+                          <span className="text-zinc-400 font-mono select-none text-[9px] font-bold shrink-0">/</span>
 
                           {/* Unit Selector Button */}
-                          <div className="relative">
+                          <div className="relative shrink-0">
                             <button
+                              type="button"
                               onClick={() => {
                                 setActiveUnitDropdown(
                                   activeUnitDropdown?.rowIndex === index && activeUnitDropdown?.field === 'cost'
@@ -1144,7 +1181,7 @@ export function SmartBulkEntryModal({
                                 );
                                 setActiveCategoryDropdown(null);
                               }}
-                              className="px-1.5 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] hover:border-zinc-500 text-[8px] font-black text-zinc-400 hover:text-white transition-colors uppercase tracking-widest min-w-[36px]"
+                              className="px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] hover:border-amber-500 text-[8px] font-black text-zinc-400 hover:text-[var(--foreground)] transition-colors uppercase tracking-widest min-w-[32px]"
                             >
                               {row.buyingPriceUnit}
                             </button>
@@ -1156,10 +1193,11 @@ export function SmartBulkEntryModal({
                           </div>
                         </div>
 
-                        {/* Delete Row Button next to the Cost pricing wrapper */}
+                        {/* Desktop Delete Row Button */}
                         <button
+                          type="button"
                           onClick={() => handleDeleteRow(index)}
-                          className="p-1.5 rounded-md bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 border border-rose-500/20 hover:border-rose-500 transition-all cursor-pointer flex items-center justify-center shrink-0 self-center"
+                          className="hidden md:flex p-1.5 rounded-md bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 border border-rose-500/20 hover:border-rose-500 transition-all cursor-pointer items-center justify-center shrink-0 self-center"
                           title="Delete Row"
                         >
                           <Trash2 size={11} />

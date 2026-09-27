@@ -56,6 +56,7 @@ export interface Item {
   notes?: string;
   aiAdvice?: string;
   minStockLevel?: number;
+  imageUrl?: string;
 }
 
 export interface WeightPreset {

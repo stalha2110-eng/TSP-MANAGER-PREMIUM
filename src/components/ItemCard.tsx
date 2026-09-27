@@ -205,10 +205,30 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
         
         <div className="flex items-center justify-between relative z-10 gap-2">
           <div className="flex gap-3 items-center min-w-0">
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-xl shadow-inner group-hover:scale-105 transition-transform duration-500 ${
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-xl shadow-inner group-hover:scale-105 transition-transform duration-500 overflow-hidden ${
               isSelected ? 'bg-[var(--primary)] text-white border-white/20' : 'bg-[var(--background)] border-[var(--border)]'
             }`}>
-              {isSelected ? <TrendingUp size={18} /> : (category?.icon || '📦')}
+              {isSelected ? (
+                <TrendingUp size={18} />
+              ) : item.imageUrl ? (
+                <img 
+                  src={item.imageUrl} 
+                  alt={name} 
+                  className="h-full w-full object-cover rounded-xl"
+                  onError={(e) => {
+                    // Fallback to emoji if image fails to render
+                    e.currentTarget.style.display = 'none';
+                    if (e.currentTarget.nextElementSibling) {
+                      (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'inline';
+                    }
+                  }} 
+                />
+              ) : (
+                category?.icon || '📦'
+              )}
+              {item.imageUrl && !isSelected && (
+                <span style={{ display: 'none' }}>{category?.icon || '📦'}</span>
+              )}
             </div>
             <div className="min-w-0">
               <h3 className="text-sm font-bold tracking-tight text-[var(--foreground)] truncate leading-tight">{name}</h3>

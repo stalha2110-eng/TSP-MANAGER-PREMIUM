@@ -18,7 +18,7 @@ export const INITIAL_SETTINGS: AppSettings = {
   pricePrecision: 0,
   showStockAlerts: true,
   autoCloudSync: true,
-  hasSeenOnboarding: false,
+  hasSeenOnboarding: true,
   dismissedNotifications: [],
   enableStrictLanguageMode: true,
   allowMixedLanguage: false,

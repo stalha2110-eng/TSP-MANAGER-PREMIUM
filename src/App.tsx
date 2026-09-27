@@ -3594,16 +3594,6 @@ export default function App() {
   useBackModal(selectedUdharCustomerId !== null, () => setSelectedUdharCustomerId(null), 'udhar_customer_detail');
   useBackModal(selectedCategory !== null && activeTab === 'home', () => setSelectedCategory(null), 'category_filter');
 
-  useEffect(() => {
-    // Show interactive onboarding prompt for new users
-    if (state.settings.hasSeenOnboarding === false && !isInitializing) {
-      const timer = setTimeout(() => {
-        setTutorialPrompt({ show: true, stage: 'add_product' });
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [state.settings.hasSeenOnboarding, isInitializing]);
-
   const toggleItemSelection = useCallback((id: string) => {
     setSelectedItemIds(prev => 
       prev.includes(id) 

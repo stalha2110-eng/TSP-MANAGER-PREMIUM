@@ -90,7 +90,7 @@ export function SmartBulkEntryModal({
   onSaveBatch,
   categories,
   t,
-  theme = 'midnight_blue'
+  theme = 'minimalist-ivory'
 }: SmartBulkEntryModalProps) {
   // Initial state with 1 default row
   const createEmptyRow = (catId?: string): BulkRowState => ({

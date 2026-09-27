@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, CheckCircle } from 'lucide-react';
-import { LanguageType, ThemeType } from '../types';
+import { LanguageType } from '../types';
 import { cn } from '../lib/utils';
 
 export interface OnboardingTourProps {
@@ -25,16 +25,15 @@ export function OnboardingTour({
   const [storeType, setStoreType] = useState('retail');
   const [selectedLang, setSelectedLang] = useState<LanguageType>('en');
   const [selectedCurrency, setSelectedCurrency] = useState('INR');
-  const [selectedTheme, setSelectedTheme] = useState<ThemeType>('retro-blue');
 
-  // Total 5 steps (0 to 4)
-  const totalSteps = 5;
+  // Total 4 steps (0 to 3)
+  const totalSteps = 4;
 
   const handleFinishWizard = () => {
     // Update settings cleanly
     handleUpdateSettings({
       language: selectedLang,
-      theme: selectedTheme,
+      theme: state.settings.theme || 'minimalist-ivory',
       hasSeenOnboarding: true,
       pin: state.settings.pin || '000000',
       isLocked: false
@@ -162,34 +161,7 @@ export function OnboardingTour({
 
             )}
             {step === 3 && (
-              <motion.div key="step-3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4 select-none">
-                <h3 className="text-lg font-black uppercase tracking-tight">Select Aura Visual Theme</h3>
-                <p className="text-xs text-[var(--foreground)]/60">Match the terminal colors with your computer screen or hardware vibe.</p>
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  {[
-                    { id: 'retro-blue', label: '🌌 Cosmic Retro Blue', desc: 'Classic indigo space theme' },
-                    { id: 'emerald-gold', label: '🌿 Emerald Rich Gold', desc: 'Elite botanical store style' },
-                    { id: 'minimalist-ivory', label: '🍦 Clean Ivory Slate', desc: 'Calm light high-contrast' },
-                    { id: 'cyberpunk', label: '⚡ Cyber Neon Punch', desc: 'Pure high contrast layout' }
-                  ].map(th => (
-                    <button
-                      key={th.id}
-                      onClick={() => setSelectedTheme(th.id as any)}
-                      className={cn(
-                        "p-4 rounded-xl border text-left cursor-pointer transition-all uppercase text-[8px] font-black tracking-wider leading-relaxed",
-                        selectedTheme === th.id ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)] scale-102 shadow" : "border-[var(--border)] text-[var(--foreground)] bg-[var(--foreground)]/5"
-                      )}
-                    >
-                      <p className="font-extrabold mb-1">{th.label}</p>
-                      <p className="opacity-65 text-[7.5px] transform-none font-medium text-[var(--foreground)]/70">{th.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-
-            )}
-            {step === 4 && (
-              <motion.div key="step-4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4 text-center">
+              <motion.div key="step-3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4 text-center">
                 <div className="h-14 w-14 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-2 animate-bounce">
                   <CheckCircle size={32} />
                 </div>

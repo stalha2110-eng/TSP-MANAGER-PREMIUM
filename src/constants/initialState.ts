@@ -6,7 +6,7 @@ import { getUnbilledEntries } from '../lib/unbilledStorage';
 import { isItemDeleted } from '../utils/deletionTracker';
 
 export const INITIAL_SETTINGS: AppSettings = {
-  theme: 'midnight_blue',
+  theme: 'minimalist-ivory',
   language: 'en',
   isLocked: true,
   pin: null,

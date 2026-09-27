@@ -220,7 +220,7 @@ const getThemeCelebrationStyles = (theme: string) => {
 export function MilestoneCelebrationModal({
   milestone,
   storeName,
-  theme = 'midnight_blue',
+  theme = 'minimalist-ivory',
   onClose,
   onViewAllMilestones
 }: MilestoneCelebrationModalProps) {

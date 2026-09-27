@@ -4054,23 +4054,28 @@ export default function App() {
       {/* Header */}
       <header 
         id="tour-header"
-        className="sticky top-0 z-40 px-6 py-4 text-[var(--primary-foreground)] shadow-2xl transition-all border-b border-white/10"
-        style={{ backgroundColor: 'var(--primary)' }}
+        className="sticky top-0 z-40 px-2.5 sm:px-6 py-2 sm:py-3.5 text-[var(--primary-foreground)] shadow-2xl transition-all border-b border-white/10"
+        style={{ 
+          backgroundColor: 'var(--primary)',
+          paddingLeft: 'max(10px, env(safe-area-inset-left))',
+          paddingRight: 'max(10px, env(safe-area-inset-right))',
+          paddingTop: 'max(8px, env(safe-area-inset-top))'
+        }}
       >
-        <div className="flex items-center justify-between w-full max-w-7xl mx-auto gap-4">
-          <div className="flex items-center gap-4 select-none shrink-0 overflow-visible min-w-0">
+        <div className="flex items-center justify-between w-full max-w-7xl mx-auto gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 select-none min-w-0 flex-1 overflow-hidden">
             <div className="relative group shrink-0 overflow-visible flex items-center justify-center">
               {/* Dynamic theme-specific sharp luminous premium core glow */}
               <div className={`absolute inset-x-0 inset-y-0 rounded-full blur-xl opacity-60 group-hover:opacity-90 transition-opacity duration-300 pointer-events-none ${getLogoBackplateClass(state.settings.theme).glow}`} />
               <div className={`absolute -inset-1.5 bg-gradient-to-r rounded-2xl blur-md opacity-30 group-hover:opacity-70 transition-opacity duration-500 pointer-events-none ${getLogoBackplateClass(state.settings.theme).gradient}`} />
               
               {/* Premium seamless borderless container with custom aspect-ratio and zoom handling */}
-              <div className="relative h-14 overflow-visible flex items-center justify-center transform group-hover:scale-105 active:scale-95 transition-all duration-300 select-none pointer-events-none shrink-0">
+              <div className="relative h-9 sm:h-12 md:h-14 overflow-visible flex items-center justify-center transform group-hover:scale-105 active:scale-95 transition-all duration-300 select-none pointer-events-none shrink-0">
                 {/* Custom multi-stage SVG drop-shadow filter for sharp outlines on any background */}
                 <img 
                   src={appLogo} 
                   alt="TS App Logo" 
-                  className="h-14 w-auto max-w-[140px] object-contain transition-all duration-350"
+                  className="h-9 sm:h-12 md:h-14 w-auto max-w-[80px] sm:max-w-[120px] md:max-w-[140px] object-contain transition-all duration-350"
                   style={{
                     filter: getLogoGlowFilter(state.settings.theme)
                   }}
@@ -4081,19 +4086,19 @@ export default function App() {
                 />
                 
                 {/* Non-intrusive fallback illustration block in case image fails to fetch */}
-                <div className="hidden flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 shadow-inner shrink-0">
-                  <Package size={28} className="text-white" />
+                <div className="hidden flex h-9 w-9 sm:h-12 sm:w-12 md:h-14 md:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 shadow-inner shrink-0">
+                  <Package size={20} className="text-white sm:w-7 sm:h-7" />
                 </div>
               </div>
             </div>
-            <div className="flex flex-col justify-center shrink-0">
-              <h1 className="text-2xl font-black tracking-tighter text-white mb-0 leading-none flex items-baseline">
-                TS <span className="text-xs font-bold opacity-60 ml-1.5 tracking-[0.3em] uppercase">Price Manager</span>
+            <div className="flex flex-col justify-center min-w-0 truncate">
+              <h1 className="text-base sm:text-2xl font-black tracking-tight text-white mb-0 leading-none flex items-baseline truncate">
+                TS <span className="text-[10px] sm:text-xs font-bold opacity-60 ml-1 sm:ml-1.5 tracking-[0.12em] sm:tracking-[0.3em] uppercase truncate hidden min-[360px]:inline">Price Manager</span>
               </h1>
-              <div className="flex items-center gap-2 mt-1.5">
+              <div className="flex items-center gap-1.5 mt-1 sm:mt-1.5">
                 <button
                   onClick={() => setShowRecoveryCenter(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-[8px] font-black uppercase tracking-widest text-white transition-all cursor-pointer select-none active:scale-95"
+                  className="flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-[7px] sm:text-[8px] font-black uppercase tracking-wider sm:tracking-widest text-white transition-all cursor-pointer select-none active:scale-95 shrink-0"
                   title="Open Intelligent Sync & Recovery Center"
                 >
                   <span className={cn(
@@ -4107,7 +4112,7 @@ export default function App() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 z-10">
 
 
             {/* Notification Badge Badge with sliding drawer */}
@@ -4115,7 +4120,7 @@ export default function App() {
               <button 
                 onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
                 className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-xl transition-all border border-white/10 text-white/80 hover:bg-white/20 select-none cursor-pointer active:scale-95 duration-100",
+                  "flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl transition-all border border-white/10 text-white/80 hover:bg-white/20 select-none cursor-pointer active:scale-95 duration-100 shrink-0",
                   showNotificationsDropdown ? "bg-white/20" : "bg-white/5"
                 )}
                 title="System Notification Feed"
@@ -4127,15 +4132,15 @@ export default function App() {
                     transition={{ repeat: Infinity, duration: 2, repeatDelay: 3 }}
                     className="text-amber-400"
                   >
-                    <BellRing size={18} />
+                    <BellRing size={16} className="sm:w-[18px] sm:h-[18px]" />
                   </motion.div>
                 ) : (
-                  <Bell size={18} />
+                  <Bell size={16} className="sm:w-[18px] sm:h-[18px]" />
                 )}
 
                 {/* Modern Unread Badge with automatic updating of counts */}
                 {(notifications.filter(n => !n.isRead).length + activeAlerts.length) > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[8px] font-black text-white ring-2 ring-[var(--primary)] animate-pulse">
+                  <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 sm:h-4 sm:w-4 items-center justify-center rounded-full bg-red-500 text-[7px] sm:text-[8px] font-black text-white ring-2 ring-[var(--primary)] animate-pulse">
                     {notifications.filter(n => !n.isRead).length + activeAlerts.length}
                   </span>
                 )}
@@ -4147,21 +4152,21 @@ export default function App() {
               id="tour-lock"
               onClick={handleToggleLock}
               className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-xl transition-all border border-white/10",
+                "flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl transition-all border border-white/10 shrink-0",
                 state.settings.isLocked ? "bg-amber-500/20 text-amber-500 hover:bg-amber-500/30" : "bg-green-500/10 text-green-400 hover:bg-green-500/20"
               )}
               title="Lock Screen Lock"
             >
-              {state.settings.isLocked ? <Lock size={18} /> : <Unlock size={18} />}
+              {state.settings.isLocked ? <Lock size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Unlock size={16} className="sm:w-[18px] sm:h-[18px]" />}
             </button>
 
             {/* Menu (3 vertical dot :) Button */}
             <button
                onClick={() => { setShowMenu(true); setMenuTab('profile'); }}
-               className="flex h-9 w-9 items-center justify-center rounded-xl transition-all border border-white/10 bg-white/5 text-white/80 hover:bg-white/20"
+               className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl transition-all border border-white/10 bg-white/5 text-white/80 hover:bg-white/20 active:scale-95 shrink-0"
                title="System Menu Control"
             >
-               <MoreVertical size={18} />
+               <MoreVertical size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
           </div>
         </div>

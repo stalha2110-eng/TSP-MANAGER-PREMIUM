@@ -28,7 +28,8 @@ function cleanTranscriptText(text: string): string {
   cleaned = cleaned.replace(/\b(?:paw\s*kilo|paov?\s*kilo|pau\s*kilo|pa\s*kilo|paa\s*kilo|paw|paov?|paa?v|pau)\b/gi, "pav kilo");
   cleaned = cleaned.replace(/\b(?:पाव\s*किलो|पावकिलो)\b/gi, "pav kilo");
   cleaned = cleaned.replace(/\b(?:पाव)\b/gi, "pav");
-  // Normalize "retel", "ratel", "reteil", "रिटेल" -> "retail"
+  // Normalize "retel", "ratel", "reteil", "रिटेल", "chiller price", "chillar price", "chiller", "chillar" -> "retail"
+  cleaned = cleaned.replace(/\b(?:chiller\s*price|chillar\s*price|chiller\s*rate|chillar\s*rate|chiller\s*bhav|chillar\s*bhav|chilar\s*price|चिल्लर\s*भाव|चिल्लर\s*रेट|चिल्लर\s*प्राइस|चिल्लर\s*प्राइज़|chiller|chillar|chilar|chhilhar|चिल्लर|खुद्रा|फुटकर)\b/gi, "retail");
   cleaned = cleaned.replace(/\b(?:retel|ratel|reteil|रिटेल)\b/gi, "retail");
   // Normalize "holsel", "holsale", "whoalsale", "व्होलसेल", "होलसेल" -> "wholesale"
   cleaned = cleaned.replace(/\b(?:holsel|holsale|whoalsale|व्होलसेल|होलसेल)\b/gi, "wholesale");
@@ -697,7 +698,7 @@ export function VoiceProductAssistant({
         if (resultItem.length > 1) {
           for (let a = 1; a < resultItem.length; a++) {
             const alt = resultItem[a]?.transcript || "";
-            if (/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm|chatak|chattak|chhatak|chataak|satak|sattack|shatak|छटांक|छटाक|चटक|चटाक|rate|रेट|खरीद)\b/i.test(alt) && !/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm|chatak|chattak|chhatak|chataak|satak|sattack|shatak|छटांक|छटाक|चटक|चटाक|rate|रेट|खरीद)\b/i.test(transcriptSegment)) {
+            if (/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm|chatak|chattak|chhatak|chataak|satak|sattack|shatak|छटांक|छटाक|चटक|चटाक|rate|रेट|खरीद|chiller|chillar|chilar|चिल्लर)\b/i.test(alt) && !/\b(?:pav|पाव|retail|wholesale|cost|kilo|किलो|gram|gm|chatak|chattak|chhatak|chataak|satak|sattack|shatak|छटांक|छटाक|चटक|चटाक|rate|रेट|खरीद|chiller|chillar|chilar|चिल्लर)\b/i.test(transcriptSegment)) {
               transcriptSegment = alt;
               break;
             }
@@ -1430,8 +1431,8 @@ export function VoiceProductAssistant({
                   </div>
                 ) : (
                   <div className="opacity-60 space-y-1.5 text-[var(--foreground)] text-center max-w-xl px-4">
-                    <p className="text-xs font-semibold">Tap the mic to start listing. Anything you say before the word <strong>"retail"</strong> is set as the product name!</p>
-                    <p className="text-[10px] font-mono opacity-90 text-amber-600 dark:text-amber-400">Example: "Kashmiri coconut retail 300rs per kg, wholesale 1,500rs per box, cost 1,200rs per box"</p>
+                    <p className="text-xs font-semibold">Tap the mic to start listing. Anything you say before <strong>"retail"</strong> or <strong>"chiller price"</strong> is set as the product name!</p>
+                    <p className="text-[10px] font-mono opacity-90 text-amber-600 dark:text-amber-400">Example: "Badam chiller price 900rs per kg, wholesale 850rs per kg, cost 800rs per kg"</p>
                   </div>
                 )}
 

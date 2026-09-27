@@ -300,7 +300,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
   cleanPhrase = cleanPhrase.replace(/(\d+)(rs|inr|pkr|\/-)/gi, "$1 $2");
 
   // Keywords configuration
-  const retailRegex = /\b(?:retail|selling|sell|रिटेल|विक्री|बेचना|भाव|रेट)\b/i;
+  const retailRegex = /\b(?:retail|selling|sell|chiller\s*(?:price|rate|bhav)?|chillar\s*(?:price|rate|bhav)?|chilar\s*(?:price|rate|bhav)?|chhilhar|चिल्लर\s*(?:भाव|रेट)?|चिल्लर|खुद्रा|फुटकर|रिटेल|विक्री|बेचना|भाव|रेट)\b/i;
   const wholesaleRegex = /\b(?:wholesale|होलसेल|थोक|व्होलसेल)\b/i;
   const costRegex = /\b(?:cost|buying|bought|purchase|buying\s+price|खरीद|खरीदी|कॉस्ट|लागत)\b/i;
   const unitRegex = /(?:(?:perk|per|pr|\/)\s+)?(?:pav\s*kilo|paav\s*kilo|pao\s*kilo|pau\s*kilo|paw\s*kilo|pa\s*kilo|paa\s*kilo|pav|paav|pao|पाव\s*किलो|पावकिलो|पाव|quarter\s*kilo|quarter|250\s*(?:gm|g|gram|grams)|250gm|250g|aadha\s*kilo|adha\s*kilo|aadhe\s*kilo|adhe\s*kilo|आधा\s*किलो|half\s*kilo|500\s*(?:gm|g|gram|grams)|500gm|500g|kg|kilo|kilogram|किग्रा|किलो|chatak\(50gm\)|chatak\s*\(?\s*50\s*(?:gm|g|gram|grams)?\s*\)?|50\s*(?:gm|g|gram)\s*chatak|chatak|chattak|chhatak|chataak|ctk|satak|sattack|shatak|छटांक|छटाक|चटाक|चटक|gram|gm|grams|ग्राम|piece|pc|pcs|pieces|पीस|नग|packet|packets|pack|pkt|पैकेट|box|boxes|बॉक्स|पेटी|dabba|dibba|carton|cartons|crt|कार्टन|dozen|दर्जन|darjan|liter|litre|ltr|लीटर|ml|एमएल|bundle|बंडल|tray|ट्रे|unit|यूनिट)\b/gi;
@@ -481,7 +481,7 @@ function parseSingleProductPhrase(phrase: string, existingItems: Item[]): VoiceD
   
   // Search for prices associating matching keywords nearby
   const words = txt.split(/\s+/);
-  const retailKeywords = /(?:retail|selling|sell|रिटेल|विक्री|बेचना|भाव|रेट)/gi;
+  const retailKeywords = /(?:retail|selling|sell|chiller\s*(?:price|rate|bhav)?|chillar\s*(?:price|rate|bhav)?|chilar\s*(?:price|rate|bhav)?|chhilhar|चिल्लर\s*(?:भाव|रेट)?|चिल्लर|खुद्रा|फुटकर|रिटेल|विक्री|बेचना|भाव|रेट)/gi;
   const wholesaleKeywords = /(?:wholesale|होलसेल|थोक|व्होलसेल)/gi;
   const costKeywords = /(?:cost|buying|bought|purchase|buying price|खरीद|खरीदी|कॉस्ट|लागत)/gi;
   
@@ -673,7 +673,7 @@ export function processVoiceCorrection(text: string, currentDrafts: VoiceDraftPr
   
   // Determine field
   let field: 'retail' | 'wholesale' | 'cost' | null = null;
-  if (/(?:retail|selling|sell|रेट|रिटेल|विक्री|बेचना)/i.test(t)) field = 'retail';
+  if (/(?:retail|selling|sell|chiller\s*(?:price|rate|bhav)?|chillar\s*(?:price|rate|bhav)?|chilar\s*(?:price|rate|bhav)?|chhilhar|चिल्लर\s*(?:भाव|रेट)?|चिल्लर|खुद्रा|फुटकर|रेट|रिटेल|विक्री|बेचना)/i.test(t)) field = 'retail';
   else if (/(?:wholesale|होलसेल|थोक)/i.test(t)) field = 'wholesale';
   else if (/(?:cost|buying|purchase|खरीद|कॉस्ट|लागत)/i.test(t)) field = 'cost';
   

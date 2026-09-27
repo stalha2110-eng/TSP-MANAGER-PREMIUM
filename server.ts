@@ -240,13 +240,22 @@ CRITICAL "CHATAK" (छटांक / 50gm) RULE (MANDATORY):
   * If buying price is not explicitly mentioned by the user, set buyingPrice to 0. NEVER fabricate or guess buying price.
   * NEVER set retailPriceUnit or unit to "KG" when the user said "chatak" or "chatak(50gm)" — it MUST ALWAYS be "Chatak"!
 
+CRITICAL "CHILLER PRICE" / "CHILLER" (चिल्लर भाव / चिल्लर रेट = RETAIL PRICE) RULE (MANDATORY):
+- ALWAYS REMEMBER: In Hindi, Hinglish, Marathi, and Indian desi street/bazaar merchant language, users generally and frequently say "chiller price" (or "chillar price", "chiller rate", "chillar rate", "chiller bhav", "chillar bhav", "chiller", "chillar", "चिल्लर", "चिल्लर भाव", "चिल्लर रेट", "खुद्रा", "फुटकर") to mean "RETAIL PRICE" (counter / customer selling price per unit)!
+- "Chiller" (चिल्लर) is the direct everyday colloquial synonym for "Retail".
+- When a user says "chiller price" or "chiller" (e.g. "Badam chiller price 900 wholesale 850 cost 800", "Kaju chiller price 60 chatak", "Chawal chiller price 60 wholesale 50", "Aloo chiller 20 wholesale 15 cost 12", "Chiller price badam 900", "Mirchi chiller 15 pav kilo"):
+  * TREAT "chiller price" / "chillar price" / "chiller" / "chillar" as 100% EQUIVALENT TO "retail price" / "retail"!
+  * Map the price following "chiller price" / "chiller" strictly to retailPrice.
+  * Any words spoken before "chiller price" or "chiller" (e.g. "Badam" in "Badam chiller price 900") are the exact Product Name!
+
 RETAIL-NAME EXTRACTION RULE (MANDATORY):
-- Whenever a user speaks to add a product, ANY words spoken BEFORE the keyword "retail" (or its regional equivalents like "रिटेल", "rate", "रेट", "विक्री") MUST be extracted as the exact PRODUCT NAME!
+- Whenever a user speaks to add a product, ANY words spoken BEFORE the keyword "retail" or "chiller price" or "chiller" (or its regional equivalents like "चिल्लर भाव", "चिल्लर", "रिटेल", "rate", "रेट", "विक्री") MUST be extracted as the exact PRODUCT NAME!
   * For example: If user says "kashmiri coconut retail 300rs perk kg , wholesale 1,500rs per box, cost 1,200rs per box", the Product Name MUST be "Kashmiri Coconut" (words spoken before "retail").
+  * Similarly, if user says "kashmiri coconut chiller price 300rs perk kg , wholesale 1,500rs per box", the Product Name MUST be "Kashmiri Coconut" (words spoken before "chiller price").
   * Strip any leading speech commands or filler words like "add", "please add", "new item", "item", "product", "likho", "daalo", "bhai", "ek", "sun bhai" so the true product name remains.
   * Strip quantity prefixes like "pav kilo", "ek kilo", "adha kilo" from the product name (e.g. "Pav kilo tamatar 20" -> Product Name is "Tamatar", NOT "Pav Kilo Tamatar").
   * Extract each price with its respective unit if specified (e.g. retail 20/250gm, retail 300/KG, wholesale 1500/BOX, buying/cost 1200/BOX).
-- When the keyword "retail" is omitted before the first price (e.g. "badam 88rs chatak , wholesale 500rs kg, cost 400rs kg" or "badam 88 chatak wholesale 500 kg cost 400 kg"):
+- When the keyword "retail" or "chiller price" is omitted before the first price (e.g. "badam 88rs chatak , wholesale 500rs kg, cost 400rs kg" or "badam 88 chatak wholesale 500 kg cost 400 kg"):
   * The product name is the item name spoken before the first price number (e.g. "Badam").
   * The first stated price without a qualifier is the retailPrice (e.g., retailPrice: 88, retailPriceUnit: "Chatak").
   * The price following "wholesale" is the wholesalePrice (e.g., wholesalePrice: 500, wholesalePriceUnit: "KG").
@@ -311,8 +320,13 @@ Examples of speech to handle:
 11. "kaju retail 60rs chatak(50gm)" -> Name: "Kaju", retailPrice: 60, retailPriceUnit: "Chatak", wholesalePrice: 0, buyingPrice: 0, unit: "Chatak", categoryName: "Dry Fruits"
 12. "badam 88rs chatak , wholesale 500rs kg, cost 400rs kg" -> Name: "Badam", retailPrice: 88, retailPriceUnit: "Chatak", wholesalePrice: 500, wholesalePriceUnit: "KG", buyingPrice: 400, buyingPriceUnit: "KG", unit: "Chatak", categoryName: "Dry Fruits"
 13. "kaju 60 chatak" -> Name: "Kaju", retailPrice: 60, retailPriceUnit: "Chatak", wholesalePrice: 0, buyingPrice: 0, unit: "Chatak", categoryName: "Dry Fruits"
+14. "Badam chiller price 900 wholesale 850 cost 800" -> Name: "Badam", retailPrice: 900, retailPriceUnit: "KG", wholesalePrice: 850, wholesalePriceUnit: "KG", buyingPrice: 800, buyingPriceUnit: "KG", unit: "KG", categoryName: "Dry Fruits"
+15. "Chawal chiller price 60 wholesale 50" -> Name: "Chawal", retailPrice: 60, retailPriceUnit: "KG", wholesalePrice: 50, wholesalePriceUnit: "KG", buyingPrice: 0, unit: "KG", categoryName: "Groceries"
+16. "Kaju chiller price 60 chatak" -> Name: "Kaju", retailPrice: 60, retailPriceUnit: "Chatak", wholesalePrice: 0, buyingPrice: 0, unit: "Chatak", categoryName: "Dry Fruits"
+17. "Aloo chiller price 20 kilo wholesale 15 kilo" -> Name: "Aloo", retailPrice: 20, retailPriceUnit: "KG", wholesalePrice: 15, wholesalePriceUnit: "KG", buyingPrice: 0, unit: "KG", categoryName: "Vegetables"
 
 Ensure correct spelling corrections of typical Indian speech recognition typos:
+- "chiller price", "chillar price", "chiller rate", "chillar rate", "chiller bhav", "chillar bhav", "chillar", "chiller", "chilar", "chhilhar", "चिल्लर भाव", "चिल्लर" -> "retail price" / "retail"
 - "chattak", "chhatak", "chataak", "satak", "sattack", "छटांक", "छटाक" -> "chatak" (= 50gm retail unit "Chatak")
 - "shakhar" or "shakar" -> "Sugar" / "Shakhar"
 - "ghee" -> "Ghee"

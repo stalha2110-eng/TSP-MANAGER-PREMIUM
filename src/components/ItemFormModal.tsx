@@ -164,7 +164,7 @@ export function ItemFormModal({
              </div>
              <div>
                 <h2 className="text-lg font-black tracking-tighter uppercase">{initialData ? t.updateRecord : t.newEntry}</h2>
-                <p className="text-[9px] font-black uppercase tracking-widest opacity-30">Operational Matrix v2.5</p>
+                <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">Product Details / सामान का विवरण</p>
              </div>
           </div>
           <Button variant="ghost" onClick={onClose} size="icon" className="rounded-xl bg-[var(--background)] hover:bg-[var(--primary)]/10 transition-colors cursor-pointer"><X size={20} /></Button>
@@ -183,7 +183,7 @@ export function ItemFormModal({
             className="space-y-6 pt-4"
           >
              <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[var(--primary)] px-2">
-               <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">01</span> {t.identityParams}
+               <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">01</span> 1. Basic Details / सामान की जानकारी
              </label>
              <div className="space-y-4">
                <div className="group relative">
@@ -193,7 +193,7 @@ export function ItemFormModal({
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   onBlur={handleNameBlur}
-                  placeholder="Item nomenclature..."
+                  placeholder="Item Name / सामान का नाम (e.g. Milk, Rice)..."
                 />
                 {isTranslating && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-1">
@@ -307,11 +307,11 @@ export function ItemFormModal({
             className="space-y-8 border-t border-[var(--border)] pt-12"
           >
              <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[var(--primary)] px-2">
-                <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">02</span> Inventory logistics
+                <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">02</span> 2. Stock Quantity / स्टॉक मात्रा
              </label>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                <div className="space-y-3">
-                 <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Stock Quantity (प्रारंभिक स्टॉक मात्रा)</p>
+                 <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Stock Quantity (स्टॉक मात्रा)</p>
                  <div className="flex gap-2">
                    <input 
                      type="number"
@@ -337,7 +337,7 @@ export function ItemFormModal({
                </div>
 
                <div className="space-y-3">
-                 <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Stock Alert (न्यूनतम स्टॉक चेतावनी सीमा)</p>
+                 <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Low Stock Alert (कम स्टॉक चेतावनी)</p>
                  <input 
                    type="number"
                    id="item-min-stock-input" className="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] p-4 font-black text-xl focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
@@ -352,10 +352,10 @@ export function ItemFormModal({
                </div>
 
                <div className="space-y-3 col-span-1 md:col-span-2 lg:col-span-1">
-                 <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Field notes / Item description</p>
+                 <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Notes / अतिरिक्त विवरण</p>
                  <textarea 
                     id="item-notes-textarea" className="w-full h-[98px] rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] p-4 font-bold text-xs focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner resize-none"
-                    placeholder="Batch identity, source node..."
+                    placeholder="Supplier name or batch details (होलसेलर या बैच विवरण)..."
                     value={formData.notes}
                     onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                  />
@@ -373,7 +373,7 @@ export function ItemFormModal({
             className="space-y-10 border-t border-[var(--border)] pt-12 pb-20"
           >
              <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[var(--primary)] px-2">
-                <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">03</span> Price configuration
+                <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">03</span> 3. Selling & Cost Rates / दाम व मूल्य
              </label>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
@@ -419,8 +419,8 @@ export function ItemFormModal({
         {/* Action Bar */}
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[var(--card)] via-[var(--card)]/95 to-transparent z-10 pointer-events-none">
            <div className="flex gap-4 pointer-events-auto">
-             <Button id="item-save-btn" data-save="true" className="w-full py-5 rounded-2xl font-black uppercase text-xs shadow-xl shadow-[var(--primary)]/20 cursor-pointer" onClick={handleSave}>
-                {initialData ? t.commitEvolution : t.initializeParams}
+             <Button id="item-save-btn" data-save="true" className="w-full py-5 rounded-2xl font-black uppercase text-sm shadow-xl shadow-[var(--primary)]/20 cursor-pointer" onClick={handleSave}>
+                {initialData ? "Save Changes / बदलाव सेव करें" : "Save Item / सामान सेव करें"}
              </Button>
            </div>
         </div>

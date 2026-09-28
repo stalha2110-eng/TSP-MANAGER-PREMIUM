@@ -584,7 +584,7 @@ export default function UdharScreen({
     days?: number,
     note?: string
   ) => {
-    const lang = state.settings.language || 'en';
+    const lang = state.settings.language || 'hi-en';
     let message = '';
 
     if (timestamp && days) {

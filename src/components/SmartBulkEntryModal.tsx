@@ -639,8 +639,8 @@ export function SmartBulkEntryModal({
     if (firstInvalidIndex !== -1) {
       const invalidRow = rows[firstInvalidIndex];
       const errorMsg = `Row ${firstInvalidIndex + 1} has missing or invalid fields: ${
-        !invalidRow.name ? 'Product Nomenclature' : 'Pricing Specs'
-      }. Please check highlight lines.`;
+        !invalidRow.name ? 'Item Name (सामान का नाम)' : 'Prices (दाम)'
+      }. Please check highlighted fields.`;
       alert(errorMsg);
       
       // Scroll the first invalid row into view
@@ -984,13 +984,13 @@ export function SmartBulkEntryModal({
                     {/* Format layout */}
                     <div className="flex flex-col gap-2 md:flex-row md:items-center">
                       
-                      {/* 1. Item Nomenclature (Name) */}
+                      {/* 1. Item Name */}
                       <div className="flex-1 min-w-[180px]">
                         <div className="relative">
                           <input
                             id={`name-${index}`}
                             type="text"
-                            placeholder="Product nomenclature..."
+                            placeholder="Item name (सामान का नाम)..."
                             className={cn(
                               "w-full bg-[var(--background)] border rounded-xl px-3 py-1.5 font-bold text-xs focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all placeholder:text-zinc-650 shadow-inner",
                               showValidationErrors && errors.name 
@@ -1017,7 +1017,7 @@ export function SmartBulkEntryModal({
 
                       {/* Mobile Separator Label */}
                       <div className="md:hidden flex items-center justify-center border-t border-[var(--border)]/40 my-0.5 pt-0.5 text-[8px] text-zinc-500 font-black tracking-wider select-none">
-                        PRICING DETAILS
+                        PRICES & UNITS / दाम व इकाई
                       </div>
 
                       {/* Pricing Specs Block - Centered and snug */}

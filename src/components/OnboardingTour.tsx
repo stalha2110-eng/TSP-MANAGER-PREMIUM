@@ -23,7 +23,7 @@ export function OnboardingTour({
 
   // States inside Wizard to capture user selections
   const [storeType, setStoreType] = useState('retail');
-  const [selectedLang, setSelectedLang] = useState<LanguageType>('en');
+  const [selectedLang, setSelectedLang] = useState<LanguageType>(state?.settings?.language || 'hi-en');
   const [selectedCurrency, setSelectedCurrency] = useState('INR');
 
   // Total 4 steps (0 to 3)
@@ -119,17 +119,18 @@ export function OnboardingTour({
                 <div className="space-y-4 pt-2 select-none">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-wider text-[var(--foreground)]/50 mb-2">Display Language</p>
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
+                        { code: 'hi-en', label: '🇮🇳 Hinglish (Mix)' },
                         { code: 'en', label: '🇬🇧 English' },
                         { code: 'hi', label: '🇮🇳 हिन्दी' },
-                        { code: 'es', label: '🇪🇸 Español' }
+                        { code: 'mr', label: '🇮🇳 मराठी' }
                       ].map(l => (
                         <button
                           key={l.code}
                           onClick={() => setSelectedLang(l.code as any)}
                           className={cn(
-                            "px-4 py-2.5 rounded-xl border text-xs font-bold cursor-pointer transition select-none flex-1 leading-none",
+                            "px-3 py-2.5 rounded-xl border text-xs font-bold cursor-pointer transition select-none flex-1 leading-none text-center",
                             selectedLang === l.code ? "bg-[var(--primary)] text-white border-[var(--primary)]" : "bg-[var(--foreground)]/5 text-[var(--foreground)]/70 border-[var(--border)] hover:bg-[var(--foreground)]/10"
                           )}
                         >

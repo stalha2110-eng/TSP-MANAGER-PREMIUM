@@ -2431,7 +2431,7 @@ export default function App() {
     return () => clearTimeout(timeout);
   }, [state.items, state.notes, state.bills, state.udharCustomers, state.udharTransactions, state.settings, state.user]);
 
-  const t = UI_TEXT[state.settings.language];
+  const t = UI_TEXT[state.settings.language || 'hi-en'];
   const precision = state.settings.pricePrecision || 0;
 
   const activeAlerts = useMemo(() => {

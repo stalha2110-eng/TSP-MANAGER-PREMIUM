@@ -109,7 +109,7 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   upiId: 'stalha2110@okaxis',
   autoPrint: false,
   duplicateCopies: 1,
-  language: 'en',
+  language: 'hi-en',
   timeFormat: '12hr',
   dateFormat: 'DD-MM-YYYY',
   template: 'retail_class',
@@ -581,8 +581,8 @@ class PrinterService {
 
   // Render a clean thermal layout using systemic browser print engine
   public generateReceiptHtml(bill: any, settings: PrintSettings, qrCodeImg: string = ''): string {
-    const lang = settings.language || 'en';
-    const dict = TRANSLATIONS[lang] || TRANSLATIONS.en;
+    const lang = settings.language || 'hi-en';
+    const dict = TRANSLATIONS[lang] || TRANSLATIONS['hi-en'] || TRANSLATIONS.en;
 
     // Font styles and spacing based on template
     let bodyStyle = '';

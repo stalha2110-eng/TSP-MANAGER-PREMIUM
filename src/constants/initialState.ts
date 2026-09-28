@@ -7,7 +7,7 @@ import { isItemDeleted } from '../utils/deletionTracker';
 
 export const INITIAL_SETTINGS: AppSettings = {
   theme: 'minimalist-ivory',
-  language: 'en',
+  language: 'hi-en',
   isLocked: true,
   pin: null,
   currency: 'INR',

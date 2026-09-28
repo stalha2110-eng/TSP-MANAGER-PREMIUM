@@ -55,7 +55,7 @@ export default function DynamicStoreDashboard({
       sales: 'Sales Summary',
       profit: 'Profit Summary',
       bills: 'Bills Summary',
-      inventory_value: 'Inventory Value',
+      inventory_value: 'Total Stock Value / कुल माल की कीमत',
       low_stock: 'Low Stock Alerts',
       out_of_stock: 'Out of Stock',
       pending_udhar: 'Pending Udhar',
@@ -68,7 +68,7 @@ export default function DynamicStoreDashboard({
       recent_activity: 'Recent Activity',
       business_journey: 'Business Journey',
       goals_progress: 'Goals Progress',
-      quick_actions: 'Quick Operations Actions'
+      quick_actions: 'Quick Actions / जरूरी काम'
     };
   }, []);
 
@@ -771,13 +771,13 @@ export default function DynamicStoreDashboard({
                         {cardId === 'bills' && (
                           <div>
                             <p className="text-2xl font-black tracking-tight">{dailyProgress.count} Invoices</p>
-                            <p className="text-[10px] opacity-45 uppercase font-bold tracking-wider">Cash Register Counter Sales</p>
+                            <p className="text-[10px] opacity-45 uppercase font-bold tracking-wider">Today's Total Bills</p>
                           </div>
                         )}
                         {cardId === 'inventory_value' && (
                           <div>
                             <p className="text-2xl font-black tracking-tight">{formatCurrency(totalValue, settings.currency, precision)}</p>
-                            <p className="text-[10px] opacity-45 uppercase font-bold tracking-wider">{state.items.length} Registered Product Skus</p>
+                            <p className="text-[10px] opacity-45 uppercase font-bold tracking-wider">{state.items.length} Total Items in Shop</p>
                           </div>
                         )}
                         {cardId === 'low_stock' && (
@@ -785,7 +785,7 @@ export default function DynamicStoreDashboard({
                             <p className={cn("text-2xl font-black tracking-tight", lowStockItems.length > 0 ? "text-amber-500 font-bold" : "text-emerald-500")}>
                               {lowStockItems.length} Products
                             </p>
-                            <p className="text-[10px] opacity-45 uppercase font-bold tracking-wider">Nearing Replenish Threshold</p>
+                            <p className="text-[10px] opacity-45 uppercase font-bold tracking-wider">Need to Reorder Soon</p>
                           </div>
                         )}
                         {cardId === 'out_of_stock' && (

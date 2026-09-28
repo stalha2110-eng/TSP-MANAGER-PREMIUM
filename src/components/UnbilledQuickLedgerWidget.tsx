@@ -237,7 +237,7 @@ export function UnbilledQuickLedgerWidget({
               <Zap size={18} className="fill-amber-500/20" />
             </div>
             <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-[var(--foreground)] shrink-0">
-              Small Sales
+              ⚡ Quick Cash Sales / तुरंत नकद बिक्री
             </h3>
           </div>
 

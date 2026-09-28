@@ -1285,9 +1285,10 @@ Average Bill : ₹${target.billsCount > 0 ? (target.sales / target.billsCount).t
                 renderControl: () => (
                   <div className="flex gap-1.5 bg-[var(--foreground)]/[0.02] p-1 rounded-xl border border-[var(--border)]">
                     {[
+                      { id: 'hi-en', label: '🗣️ Hinglish' },
                       { id: 'en', label: '🇬🇧 English' },
                       { id: 'hi', label: '🇮🇳 हिंदी' },
-                      { id: 'hinglish', label: '🗣️ Hinglish' }
+                      { id: 'mr', label: '🚩 मराठी' }
                     ].map(l => (
                       <button
                         key={l.id}

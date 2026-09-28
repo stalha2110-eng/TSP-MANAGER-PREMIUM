@@ -29,8 +29,8 @@ export const THEMES: { id: ThemeType; name: string; description: string; emoji: 
 ];
 
 export const LANGUAGES: { id: LanguageType; name: string; label: string; emoji: string }[] = [
-  { id: 'en', name: 'English (US)', label: 'Professional English', emoji: '🇬🇧' },
   { id: 'hi-en', name: 'Hinglish (Mix)', label: 'Hindi + English', emoji: '🇮🇳' },
+  { id: 'en', name: 'English (US)', label: 'Professional English', emoji: '🇬🇧' },
   { id: 'hi', name: 'हिन्दी (शुद्ध)', label: 'Pure Hindi', emoji: '🇮🇳' },
   { id: 'mr', name: 'मराठी (अस्सल)', label: 'Authentic Marathi', emoji: '🇮🇳' },
 ];

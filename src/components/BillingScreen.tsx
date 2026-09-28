@@ -337,9 +337,9 @@ export default function BillingScreen({
   onSyncBills,
   onPeek
 }: BillingScreenProps) {
-  const currentLang = state.settings.language || 'en';
+  const currentLang = state.settings.language || 'hi-en';
   const getTranslation = (key: string) => {
-    return labels[key]?.[currentLang] || labels[key]?.[ 'en' ] || key;
+    return labels[key]?.[currentLang] || labels[key]?.['hi-en'] || labels[key]?.['en'] || key;
   };
 
   const precision = state.settings.pricePrecision || 0;

@@ -169,6 +169,7 @@ export interface AppSettings {
   soundProductAddedEnabled?: boolean;
   soundPrintEnabled?: boolean;
   soundNotificationEnabled?: boolean;
+  soundHindiVoiceEnabled?: boolean;
   
   vibrationStrength?: 'light' | 'medium' | 'strong';
   vibrationBillingEnabled?: boolean;

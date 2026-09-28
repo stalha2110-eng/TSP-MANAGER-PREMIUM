@@ -160,6 +160,7 @@ export const INITIAL_SETTINGS: AppSettings = {
   soundProductAddedEnabled: true,
   soundPrintEnabled: true,
   soundNotificationEnabled: true,
+  soundHindiVoiceEnabled: true,
   vibrationStrength: 'medium',
   vibrationBillingEnabled: true,
   vibrationProductAddedEnabled: true,

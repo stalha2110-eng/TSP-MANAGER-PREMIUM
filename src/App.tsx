@@ -2739,6 +2739,7 @@ export default function App() {
         ...prev,
         items: deduplicateById([newItem, ...prev.items])
       }));
+      playFeedbackEvent('product_added', state.settings, { itemName: newItem.name });
       setShowAddItem(false);
 
       if (state.user && state.settings.autoCloudSync) {
@@ -5146,7 +5147,7 @@ export default function App() {
             onClick={() => {
               setShowVoiceAssistant(true);
               try {
-                playFeedbackEvent('bill_saved', state.settings);
+                playFeedbackEvent('notification', state.settings);
               } catch (e) {
                 // Fallback
               }

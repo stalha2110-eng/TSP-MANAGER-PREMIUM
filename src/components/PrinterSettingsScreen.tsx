@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { AppState, AppSettings } from '../types';
 import { printerService, DEFAULT_PRINT_SETTINGS, PrintSettings, PrinterDevice } from '../services/printerService';
+import { playFeedbackEvent } from '../services/soundFeedbackService';
 import { cn } from '../lib/utils';
 
 interface PrinterSettingsScreenProps {
@@ -317,6 +318,7 @@ export default function PrinterSettingsScreen({ state, t, onUpdateState, onUpdat
       };
 
       await printerService.printViaSystem(testBill, printSettings);
+      playFeedbackEvent('print_success', state.settings);
       setSuccessMessage('Test Receipt spooled successfully! Check print window.');
     } catch (e: any) {
       setErrorMessage(`Print Diagnostic Failed: ${e.message}`);

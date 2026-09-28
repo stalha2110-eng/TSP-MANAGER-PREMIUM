@@ -413,9 +413,12 @@ export function VoiceProductAssistant({
   const [historyList, setHistoryList] = useState<VoiceSession[]>([]);
 
   // Sound play wrapper
-  const triggerSound = (event: 'bill_saved' | 'product_added' | 'print_success' | 'notification') => {
+  const triggerSound = (
+    event: 'bill_saved' | 'product_added' | 'print_success' | 'notification',
+    context?: { itemName?: string; amount?: number }
+  ) => {
     if (vSettings.soundFeedback) {
-      playFeedbackEvent(event, appSettings);
+      playFeedbackEvent(event, appSettings, context);
     }
   };
 

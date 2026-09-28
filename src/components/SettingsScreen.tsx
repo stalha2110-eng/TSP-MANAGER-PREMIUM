@@ -1191,6 +1191,62 @@ export default function SettingsScreen({
                     </div>
                   </div>
 
+                  {/* Hindi Voice Audio Confirmations Section */}
+                  <div className="space-y-4 pt-8 border-t border-[var(--border)]">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)] flex items-center gap-2">
+                          <span>🗣️</span> <span>Hindi Voice Audio Feedback / हिंदी आवाज़ पुष्टि (TTS)</span>
+                        </h4>
+                        <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">
+                          Speaks Hindi vocal confirmations when items are added, bills are generated, or receipts are printed
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => onUpdate({ soundHindiVoiceEnabled: state.settings.soundHindiVoiceEnabled !== false ? false : true })}
+                        className={cn(
+                          "h-6 w-12 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer",
+                          state.settings.soundHindiVoiceEnabled !== false ? "bg-emerald-500" : "bg-slate-800"
+                        )}
+                      >
+                        <div className={cn("absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-all", state.settings.soundHindiVoiceEnabled !== false ? "translate-x-6" : "")} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          playFeedbackEvent('product_added', { ...state.settings, soundHindiVoiceEnabled: true }, { itemName: 'काजू 500gm' });
+                        }}
+                        className="rounded-xl text-[9px] uppercase font-black px-3 py-2 border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-500 flex items-center justify-center gap-1.5"
+                      >
+                        <span>🔊</span> Test: 'सामान जोड़ा गया'
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          playFeedbackEvent('bill_saved', { ...state.settings, soundHindiVoiceEnabled: true }, { amount: 500 });
+                        }}
+                        className="rounded-xl text-[9px] uppercase font-black px-3 py-2 border-indigo-500/20 hover:bg-indigo-500/10 text-indigo-500 flex items-center justify-center gap-1.5"
+                      >
+                        <span>🧾</span> Test: '500 रुपये का बिल बन गया'
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          playFeedbackEvent('print_success', { ...state.settings, soundHindiVoiceEnabled: true });
+                        }}
+                        className="rounded-xl text-[9px] uppercase font-black px-3 py-2 border-amber-500/20 hover:bg-amber-500/10 text-amber-500 flex items-center justify-center gap-1.5"
+                      >
+                        <span>🖨️</span> Test: 'बिल प्रिंट हो गया'
+                      </Button>
+                    </div>
+                  </div>
+
                   {/* Custom Vibration Strengths */}
                   <div className="space-y-4 pt-8 border-t border-[var(--border)]">
                     <div>
@@ -1326,6 +1382,7 @@ export default function SettingsScreen({
                           soundProductAddedEnabled: true,
                           soundPrintEnabled: true,
                           soundNotificationEnabled: true,
+                          soundHindiVoiceEnabled: true,
                         });
                         playFeedbackEvent('product_added', { ...state.settings, soundFeedbackMode: 'vibrate_sound', soundProductAddedEnabled: true });
                       }}
@@ -1343,6 +1400,7 @@ export default function SettingsScreen({
                           soundProductAddedEnabled: false,
                           soundPrintEnabled: false,
                           soundNotificationEnabled: false,
+                          soundHindiVoiceEnabled: false,
                         });
                         if (navigator.vibrate) navigator.vibrate(50);
                       }}
@@ -1381,6 +1439,7 @@ export default function SettingsScreen({
                           soundProductAddedEnabled: true,
                           soundPrintEnabled: true,
                           soundNotificationEnabled: true,
+                          soundHindiVoiceEnabled: true,
                           vibrationStrength: 'medium',
                           vibrationBillingEnabled: true,
                           vibrationProductAddedEnabled: true,

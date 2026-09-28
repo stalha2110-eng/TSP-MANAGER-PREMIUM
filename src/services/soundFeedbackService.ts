@@ -1,4 +1,9 @@
 import { AppSettings } from '../types';
+import { 
+  speakItemAddedConfirmation, 
+  speakBillGeneratedConfirmation, 
+  speakBillPrintedConfirmation 
+} from './hindiVoiceService';
 
 export type FeedbackMode = 'silent' | 'vibrate_only' | 'vibrate_sound';
 export type SoundPack = 'classic_pos' | 'modern' | 'professional';
@@ -590,12 +595,20 @@ export function playWelcomeAnnouncement(settings: AppSettings) {
   }
 }
 
+export interface FeedbackContext {
+  itemName?: string;
+  amount?: number;
+  billNumber?: string | number;
+}
+
 /**
- * Executes a full sound & haptic event, combining play & vib based on settings.
+ * Executes a full sound & haptic event, combining play & vib based on settings,
+ * plus speaks Hindi voice confirmation for key retail checkout & inventory actions.
  */
 export function playFeedbackEvent(
   event: 'bill_saved' | 'product_added' | 'print_success' | 'notification',
-  settings: AppSettings
+  settings: AppSettings,
+  context?: FeedbackContext
 ) {
   // Trigger Sound
   if (event === 'bill_saved') {
@@ -607,4 +620,18 @@ export function playFeedbackEvent(
   }
   // Trigger Vibration
   triggerHapticFeedback(settings, event);
+
+  // Trigger Hindi TTS Voice Confirmation (defaults to active unless muted/disabled)
+  const isSilentMode = settings.soundFeedbackMode === 'silent' || settings.soundFeedbackMode === 'vibrate_only';
+  const isVoiceEnabled = settings.soundHindiVoiceEnabled !== false;
+
+  if (isVoiceEnabled && !isSilentMode && !isQuietHours(settings)) {
+    if (event === 'product_added' && settings.soundProductAddedEnabled !== false) {
+      speakItemAddedConfirmation(context?.itemName, settings);
+    } else if (event === 'bill_saved' && settings.soundBillingEnabled !== false) {
+      speakBillGeneratedConfirmation(context?.amount, settings);
+    } else if (event === 'print_success' && settings.soundPrintEnabled !== false) {
+      speakBillPrintedConfirmation(settings);
+    }
+  }
 }

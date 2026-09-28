@@ -1370,7 +1370,7 @@ export default function BillingScreen({
       }
     ]);
 
-    playFeedbackEvent('product_added', state.settings);
+    playFeedbackEvent('product_added', state.settings, { itemName: pName });
     const trsForRecent = product.translations || { en: product.name || '', hi: '', mr: '', 'hi-en': '' };
     addRecentSearch(trsForRecent[currentLang] || trsForRecent.en || product.name);
   };
@@ -1712,7 +1712,7 @@ export default function BillingScreen({
     };
     
     setCart([...cart, newCartItem]);
-    playFeedbackEvent('product_added', state.settings);
+    playFeedbackEvent('product_added', state.settings, { itemName: manualName.trim() });
     setManualName('');
     setManualPrice('');
     setManualCost('');
@@ -2050,7 +2050,7 @@ export default function BillingScreen({
     });
 
     // Trigger Billing Complete feedback
-    playFeedbackEvent('bill_saved', state.settings);
+    playFeedbackEvent('bill_saved', state.settings, { amount: previewBillData?.total, billNumber: previewBillData?.billNumber });
 
     // Reset checkout forms
     setCart([]);
@@ -6381,6 +6381,7 @@ export default function BillingScreen({
                       for (let c = 0; c < copies; c++) {
                         await printerService.printViaSystem(completedBill, config);
                       }
+                      playFeedbackEvent('print_success', state.settings);
                     } catch (e: any) {
                       alert(`Spool Error: ${e.message}`);
                     }

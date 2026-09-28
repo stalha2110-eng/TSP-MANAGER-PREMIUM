@@ -97,6 +97,7 @@ export interface AppSettings {
   storePhone?: string;
   storeOpeningTime?: string;
   storeClosingTime?: string;
+  storeAnniversaryDate?: string;
   reminderTimeBeforeMinutes?: number;
   notificationsOn?: boolean;
   pushOn?: boolean;

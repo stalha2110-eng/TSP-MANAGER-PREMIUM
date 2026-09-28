@@ -161,7 +161,10 @@ export default function BusinessSettingsScreen({
   const [configuringFactor, setConfiguringFactor] = useState<string | null>(null);
 
   // Anniversary date selector state
-  const [storeOpeningDate, setStoreOpeningDate] = useState(state.settings.storeOpeningTime || '2026-05-26');
+  const [storeOpeningDate, setStoreOpeningDate] = useState(
+    state.settings.storeAnniversaryDate || 
+    (state.settings.storeOpeningTime && state.settings.storeOpeningTime.includes('-') ? state.settings.storeOpeningTime : '2026-05-26')
+  );
 
   // --- Calculations for Analytics Section ---
   const stats = useMemo(() => {
@@ -2549,7 +2552,7 @@ export default function BusinessSettingsScreen({
                   value={storeOpeningDate} 
                   onChange={(e) => {
                     setStoreOpeningDate(e.target.value);
-                    onUpdateSettings({ storeOpeningTime: e.target.value });
+                    onUpdateSettings({ storeAnniversaryDate: e.target.value });
                   }}
                   className="bg-transparent border-none p-0 text-xs font-extrabold focus:outline-none focus:ring-0 text-[var(--foreground)] cursor-pointer"
                 />

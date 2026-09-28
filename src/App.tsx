@@ -940,36 +940,75 @@ export default function App() {
   useEffect(() => {
     if (isInitializing) return;
 
-    const openingStr = state.settings.storeOpeningTime || "08:00";
-    const closingStr = state.settings.storeClosingTime || "21:00";
-    const reminderBefore = state.settings.reminderTimeBeforeMinutes !== undefined ? state.settings.reminderTimeBeforeMinutes : 15;
+    // Helper to get total minutes in day from time string (supports 24h "HH:MM", 12h "hh:mm AM/PM", and handles bad data)
+    const parseTimeToMinutes = (timeStr: string | undefined, defaultMinutes: number): number => {
+      if (!timeStr || typeof timeStr !== 'string') return defaultMinutes;
+      const trimmed = timeStr.trim();
+      // Guard against corrupted date strings (e.g. "2026-05-26")
+      if (trimmed.includes('-') && trimmed.length > 5) return defaultMinutes;
 
-    // Helper to get total minutes in day from HH:MM
-    const getMinutes = (timeStr: string) => {
-      const [h, m] = timeStr.split(':').map(Number);
-      return h * 60 + m;
+      const isPM = /pm/i.test(trimmed);
+      const isAM = /am/i.test(trimmed);
+      const clean = trimmed.replace(/[^\d:]/g, '');
+      const parts = clean.split(':').map(Number);
+      if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return defaultMinutes;
+
+      let hours = parts[0];
+      const minutes = parts[1];
+
+      if (isPM && hours < 12) hours += 12;
+      if (isAM && hours === 12) hours = 0;
+
+      if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return defaultMinutes;
+      return hours * 60 + minutes;
     };
 
     const nowMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
-    const openingMinutes = getMinutes(openingStr);
-    const closingMinutes = getMinutes(closingStr);
+    const openingMinutes = parseTimeToMinutes(state.settings.storeOpeningTime, 8 * 60); // Default 08:00 AM (480 mins)
+    const closingMinutes = parseTimeToMinutes(state.settings.storeClosingTime, 21 * 60); // Default 09:00 PM (1260 mins)
+    const reminderBefore = state.settings.reminderTimeBeforeMinutes !== undefined ? state.settings.reminderTimeBeforeMinutes : 15;
 
-    const todayStr = currentTime.toISOString().split('T')[0]; // "YYYY-MM-DD"
+    // Use local date formatted as YYYY-MM-DD
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const todayStr = `${currentTime.getFullYear()}-${pad(currentTime.getMonth() + 1)}-${pad(currentTime.getDate())}`;
+
+    // STRICT OPENING WINDOW:
+    // Only when Current Time reaches Store Opening Time AND is before Store Closing Time
+    const isWithinOpeningHours = openingMinutes < closingMinutes
+      ? (nowMinutes >= openingMinutes && nowMinutes < closingMinutes)
+      : (nowMinutes >= openingMinutes || nowMinutes < closingMinutes);
 
     // 1. OPENING TIME CHECK:
-    const lastOpenPrompt = localStorage.getItem('price_manager_last_open_prompt_date') || '';
-    if (nowMinutes >= openingMinutes && nowMinutes < closingMinutes) {
-      if (lastOpenPrompt !== todayStr) {
-        setDailyCycleModal({ type: 'opening', isOpen: true });
+    if (isWithinOpeningHours) {
+      const lastOpenPrompt = localStorage.getItem('price_manager_last_open_prompt_date') || '';
+      const snoozeUntil = Number(sessionStorage.getItem('price_manager_snooze_opening_until') || '0');
+      const isSnoozed = Date.now() < snoozeUntil;
+
+      if (lastOpenPrompt !== todayStr && !isSnoozed) {
+        setDailyCycleModal(prev => {
+          if (prev?.isOpen && prev.type === 'opening') return prev;
+          return { type: 'opening', isOpen: true };
+        });
       }
+    } else {
+      // If outside the opening window, ensure opening checklist popup is NOT displayed
+      setDailyCycleModal(prev => {
+        if (prev?.type === 'opening') return null;
+        return prev;
+      });
     }
 
     // 2. CLOSING TIME CHECK:
-    const lastClosePrompt = localStorage.getItem('price_manager_last_close_prompt_date') || '';
     const alertThresholdMinutes = closingMinutes - reminderBefore;
-    if (nowMinutes >= alertThresholdMinutes && nowMinutes < closingMinutes + 120) {
-      if (lastClosePrompt !== todayStr) {
-        setDailyCycleModal({ type: 'closing', isOpen: true });
+    const isClosingWindow = nowMinutes >= alertThresholdMinutes && nowMinutes < closingMinutes + 120;
+    if (isClosingWindow && !isWithinOpeningHours) {
+      const lastClosePrompt = localStorage.getItem('price_manager_last_close_prompt_date') || '';
+      const snoozeUntil = Number(sessionStorage.getItem('price_manager_snooze_closing_until') || '0');
+      if (lastClosePrompt !== todayStr && Date.now() >= snoozeUntil) {
+        setDailyCycleModal(prev => {
+          if (prev?.isOpen && prev.type === 'closing') return prev;
+          return { type: 'closing', isOpen: true };
+        });
       }
     }
   }, [currentTime, state.settings.storeOpeningTime, state.settings.storeClosingTime, state.settings.reminderTimeBeforeMinutes, isInitializing]);
@@ -5618,7 +5657,9 @@ export default function App() {
                   onClick={async () => {
                     const success = await handleCycleBackupAndClear();
                     if (success) {
-                      const todayStr = new Date().toISOString().split('T')[0];
+                      const now = new Date();
+                      const pad = (n: number) => String(n).padStart(2, '0');
+                      const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
                       if (dailyCycleModal.type === 'opening') {
                         localStorage.setItem('price_manager_last_open_prompt_date', todayStr);
                       } else {
@@ -5636,7 +5677,9 @@ export default function App() {
                   <Button 
                     variant="outline"
                     onClick={() => {
-                      const todayStr = new Date().toISOString().split('T')[0];
+                      const now = new Date();
+                      const pad = (n: number) => String(n).padStart(2, '0');
+                      const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
                       if (dailyCycleModal.type === 'opening') {
                         localStorage.setItem('price_manager_last_open_prompt_date', todayStr);
                       } else {
@@ -5652,6 +5695,12 @@ export default function App() {
                   <Button 
                     variant="ghost"
                     onClick={() => {
+                      const snoozeUntil = Date.now() + 60 * 60 * 1000; // Snooze for 1 hour
+                      if (dailyCycleModal.type === 'opening') {
+                        sessionStorage.setItem('price_manager_snooze_opening_until', String(snoozeUntil));
+                      } else {
+                        sessionStorage.setItem('price_manager_snooze_closing_until', String(snoozeUntil));
+                      }
                       setDailyCycleModal(null);
                     }}
                     className="flex-1 text-[10px] uppercase font-black tracking-widest h-12 rounded-2xl text-red-400 font-bold hover:bg-red-500/10"

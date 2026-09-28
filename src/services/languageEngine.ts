@@ -305,7 +305,7 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
     en: "Share via WhatsApp",
     hi: "व्हाट्सएप पर भेजें",
     mr: "व्हॉट्सअ‍ॅपवर पाठवा",
-    "hi-en": "WhatsApp par Bhejo"
+    "hi-en": "WhatsApp pe Bhejo"
   },
   dataEngine: {
     en: "Data Backup",

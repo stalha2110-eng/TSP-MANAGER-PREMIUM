@@ -15,7 +15,7 @@ import autoTable from 'jspdf-autotable';
 import { cn, formatNumber, getParsedTimestampMs, calculateBillProfit } from '../lib/utils';
 import { printerService, DEFAULT_PRINT_SETTINGS } from '../services/printerService';
 import { playFeedbackEvent } from '../services/soundFeedbackService';
-import { cleanAndValidateText } from '../services/languageEngine';
+import { cleanAndValidateText, useTranslation } from '../services/languageEngine';
 import { trackRecentUnit, useRecentUnits } from '../lib/unitUtils';
 import FullBillHistoryView from './FullBillHistoryView';
 import UniversalStoreCalculator from './UniversalStoreCalculator';
@@ -337,7 +337,8 @@ export default function BillingScreen({
   onSyncBills,
   onPeek
 }: BillingScreenProps) {
-  const currentLang = state.settings.language || 'hi-en';
+  const { t: transT, currentLang: activeLang, version: langVersion } = useTranslation();
+  const currentLang = state.settings.language || activeLang || 'hi-en';
   const getTranslation = (key: string) => {
     return labels[key]?.[currentLang] || labels[key]?.['hi-en'] || labels[key]?.['en'] || key;
   };
@@ -4451,7 +4452,7 @@ export default function BillingScreen({
                 className="px-4 py-2.5 border border-slate-950 dark:border-slate-50 text-white hover:opacity-90 font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
               >
                 <PackagePlus size={13} />
-                <span>+ {cleanAndValidateText("Add Item Not in List (ADD NEW ITEM)", currentLang, state.settings)}</span>
+                <span>+ {transT.addItemNotInList || t?.addItemNotInList || (typeof t === 'function' ? t("addItemNotInList") : null) || cleanAndValidateText("Add Item Not in List (ADD NEW ITEM)", currentLang, state.settings)}</span>
               </button>
             </div>
           </div>

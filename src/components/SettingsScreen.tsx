@@ -278,12 +278,11 @@ export default function SettingsScreen({
               <section className="space-y-6">
                 <div className="flex items-center gap-4">
                    <div className="h-1 w-8 bg-[var(--primary)] opacity-30 rounded-full" />
-                   <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--primary)]">Global Interface</label>
+                   <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--primary)]">LANGUAGE</label>
                 </div>
                 
                 <div className="grid gap-8">
                   <div className="space-y-4">
-                    <p className="text-xs font-bold opacity-60 ml-1">Linguistic Interface</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {LANGUAGES.map(lang => (
                         <button

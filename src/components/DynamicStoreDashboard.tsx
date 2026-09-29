@@ -55,7 +55,7 @@ export default function DynamicStoreDashboard({
       sales: 'Sales Summary',
       profit: 'Profit Summary',
       bills: 'Bills Summary',
-      inventory_value: 'Total Stock Value / कुल माल की कीमत',
+      inventory_value: 'Total Stock Value (कुल माल की कीमत)',
       low_stock: 'Low Stock Alerts',
       out_of_stock: 'Out of Stock',
       pending_udhar: 'Pending Udhar',

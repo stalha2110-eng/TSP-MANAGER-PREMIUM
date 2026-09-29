@@ -5,6 +5,7 @@ import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 import { BusinessShift, BusinessGoal } from '../types';
 import { useBackModal } from '../utils/backNavigationManager';
+import { useTranslation } from '../services/languageEngine';
 
 export interface GoalShiftPanelModalProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ export function GoalShiftPanelModal({
   t
 }: GoalShiftPanelModalProps) {
   useBackModal(isOpen, onClose, 'goal_shift_panel');
+  const { t: hookT } = useTranslation();
   const [activeTab, setActiveTabLocal] = useState<'shift' | 'history'>('shift');
 
   // Input states for New Shift Setup
@@ -106,8 +108,8 @@ export function GoalShiftPanelModal({
         {/* Header */}
         <div className="flex justify-between items-start border-b border-[var(--border)] pb-4 mb-4">
           <div>
-            <span className="text-[8px] font-black uppercase tracking-widest text-[var(--primary)]">Shift Control Dashboard</span>
-            <h2 className="text-md font-black uppercase tracking-tight text-[var(--foreground)]">Shift Ledger & Targets</h2>
+            <span className="text-[8px] font-black uppercase tracking-widest text-[var(--primary)]">{hookT?.shiftDashboardTitle || t?.shiftDashboardTitle || "Cash Counter"}</span>
+            <h2 className="text-md font-black uppercase tracking-tight text-[var(--foreground)]">{hookT?.shiftSubtitle || t?.shiftSubtitle || "Cash Drawer"}</h2>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full h-8 w-8 text-[var(--foreground)]/60">
             <X size={16} />
@@ -117,8 +119,8 @@ export function GoalShiftPanelModal({
         {/* Tab Selection */}
         <div className="flex border-b border-[var(--border)] pb-3 gap-2">
           {[
-            { id: 'shift', label: 'Shift Control' },
-            { id: 'history', label: 'Shift Audit Logs' }
+            { id: 'shift', label: hookT?.shiftTabCurrent || t?.shiftTabCurrent || 'Current Cash' },
+            { id: 'history', label: hookT?.shiftTabHistory || t?.shiftTabHistory || 'Past Records' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -146,32 +148,32 @@ export function GoalShiftPanelModal({
                     <div className="flex items-center gap-3">
                       <span className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse" />
                       <div>
-                        <p className="text-xs font-black uppercase tracking-wide text-emerald-500 font-sans">Cash Register Active</p>
-                        <p className="text-[9px] font-mono text-[var(--foreground)]/50">Opened: {new Date(activeShift.openTime).toLocaleTimeString()}</p>
+                        <p className="text-xs font-black uppercase tracking-wide text-emerald-500 font-sans">{hookT?.shiftActiveBadge || t?.shiftActiveBadge || "Counter Active"}</p>
+                        <p className="text-[9px] font-mono text-[var(--foreground)]/50">{(hookT?.shiftStartedAt || t?.shiftStartedAt || "Started at")}: {new Date(activeShift.openTime).toLocaleTimeString()}</p>
                       </div>
                     </div>
                     <div className="text-right font-sans">
                       <p className="text-xs font-mono font-black text-white">₹{activeShift.openingCash.toLocaleString()}</p>
-                      <p className="text-[8px] uppercase tracking-wider text-[var(--foreground)]/40 font-bold">Opening Cash</p>
+                      <p className="text-[8px] uppercase tracking-wider text-[var(--foreground)]/40 font-bold">{hookT?.shiftStartCash || t?.shiftStartCash || "Start Cash"}</p>
                     </div>
                   </div>
 
                   {/* Operational Stats Grid */}
                   <div className="grid grid-cols-2 gap-3 font-sans">
                     <div className="bg-[var(--foreground)]/5 rounded-2xl p-4 border border-[var(--border)] leading-tight">
-                      <p className="text-[8px] font-black uppercase tracking-wider opacity-40">Sales Collected</p>
+                      <p className="text-[8px] font-black uppercase tracking-wider opacity-40">{hookT?.shiftTotalSales || t?.shiftTotalSales || "Total Sales"}</p>
                       <p className="text-lg font-mono font-black text-emerald-400 mt-1">₹{activeShift.totalSales.toLocaleString()}</p>
                     </div>
                     <div className="bg-[var(--foreground)]/5 rounded-2xl p-4 border border-[var(--border)] leading-tight">
-                      <p className="text-[8px] font-black uppercase tracking-wider opacity-40">Profit Realized</p>
+                      <p className="text-[8px] font-black uppercase tracking-wider opacity-40">{hookT?.shiftNetProfit || t?.shiftNetProfit || "Net Profit"}</p>
                       <p className="text-lg font-mono font-black text-blue-400 mt-1">₹{activeShift.totalProfit.toLocaleString()}</p>
                     </div>
                     <div className="bg-[var(--foreground)]/5 rounded-2xl p-4 border border-[var(--border)] leading-tight">
-                      <p className="text-[8px] font-black uppercase tracking-wider opacity-40 font-sans">Transactions Count</p>
-                      <p className="text-lg font-mono font-black mt-1 text-white">{activeShift.totalBills} Invoices</p>
+                      <p className="text-[8px] font-black uppercase tracking-wider opacity-40 font-sans">{hookT?.shiftTotalBills || t?.shiftTotalBills || "Total Bills"}</p>
+                      <p className="text-lg font-mono font-black mt-1 text-white">{activeShift.totalBills} Bills</p>
                     </div>
                     <div className="bg-[var(--foreground)]/5 rounded-2xl p-4 border border-[var(--border)] leading-tight">
-                      <p className="text-[8px] font-black uppercase tracking-wider opacity-40 font-sans">Outstanding Udhar</p>
+                      <p className="text-[8px] font-black uppercase tracking-wider opacity-40 font-sans">{hookT?.shiftPendingUdhar || t?.shiftPendingUdhar || "Pending Udhar"}</p>
                       <p className="text-lg font-mono font-black text-amber-500 mt-1">₹{activeShift.pendingUdhar.toLocaleString()}</p>
                     </div>
                   </div>
@@ -179,7 +181,7 @@ export function GoalShiftPanelModal({
                   {/* Detail Panel */}
                   <div className="bg-[var(--foreground)]/5 rounded-2xl border border-[var(--border)] px-4 py-3 divide-y divide-[var(--border)]">
                     <div className="flex justify-between py-2 text-xs font-bold font-sans">
-                      <span className="opacity-50">Total Sales:</span>
+                      <span className="opacity-50">{(hookT?.shiftTotalSales || t?.shiftTotalSales || "Total Sales")}:</span>
                       <span className="text-emerald-400">₹{activeShift.totalSales.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between py-2 text-xs font-bold font-sans">
@@ -187,7 +189,7 @@ export function GoalShiftPanelModal({
                       <span className="text-white">{activeShift.totalCustomersServed}</span>
                     </div>
                     <div className="flex justify-between py-2 text-xs font-bold font-sans">
-                      <span className="opacity-50">Estimated Cash in Drawer:</span>
+                      <span className="opacity-50">{(hookT?.shiftExpectedCash || t?.shiftExpectedCash || "Expected Cash in Drawer")}:</span>
                       <span className="font-mono text-emerald-400 font-extrabold">₹{(activeShift.openingCash + activeShift.totalSales - activeShift.pendingUdhar).toLocaleString()}</span>
                     </div>
                   </div>
@@ -195,9 +197,9 @@ export function GoalShiftPanelModal({
                   {/* Action Section */}
                   {isClosingFormOpen ? (
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-red-500/5 p-4 border border-red-500/20 rounded-2xl space-y-3">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-red-500 font-sans">Close Active Shift Checkout</h4>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-red-500 font-sans">{hookT?.shiftCloseModalTitle || t?.shiftCloseModalTitle || "Close Counter"}</h4>
                       <div>
-                        <label className="text-[9px] font-black uppercase tracking-wider opacity-60 font-sans">Physical Cash Counted in Drawer (₹)</label>
+                        <label className="text-[9px] font-black uppercase tracking-wider opacity-60 font-sans">{hookT?.shiftCountedCashLabel || t?.shiftCountedCashLabel || "Cash in Drawer (₹)"}</label>
                         <input
                           type="number"
                           value={closingCashVal}
@@ -207,12 +209,12 @@ export function GoalShiftPanelModal({
                       </div>
                       <div className="flex gap-2 font-sans">
                         <Button variant="ghost" className="flex-1 text-xs rounded-xl h-10" onClick={() => setIsClosingFormOpen(false)}>Cancel</Button>
-                        <Button className="flex-1 bg-red-650 hover:bg-red-700 text-white text-xs rounded-xl h-10 font-sans" onClick={handleCloseShift}>Confirm & Close Shift</Button>
+                        <Button className="flex-1 bg-red-650 hover:bg-red-700 text-white text-xs rounded-xl h-10 font-sans" onClick={handleCloseShift}>{hookT?.shiftConfirmCloseBtn || t?.shiftConfirmCloseBtn || "Save & Close Drawer"}</Button>
                       </div>
                     </motion.div>
                   ) : (
                     <Button className="w-full h-12 bg-red-500/10 hover:bg-red-500/25 border border-red-500/30 text-red-500 font-black uppercase tracking-widest rounded-2xl text-xs font-sans" onClick={() => setIsClosingFormOpen(true)}>
-                      Reconcile & Close Cashier Shift
+                      {hookT?.shiftCloseBtn || t?.shiftCloseBtn || "Count & Close Drawer"}
                     </Button>
                   )}
                 </>
@@ -222,13 +224,13 @@ export function GoalShiftPanelModal({
                     <Lock size={28} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black uppercase tracking-tight text-[var(--foreground)]">Ledger Register Closed</h3>
-                    <p className="text-[10px] text-[var(--foreground)]/60 leading-relaxed max-w-sm mx-auto mt-1">Initialize a new active ledger shift before billing to record shift-based transactions, cashier logs, and dynamic margins.</p>
+                    <h3 className="text-sm font-black uppercase tracking-tight text-[var(--foreground)]">{hookT?.shiftClosedHeading || t?.shiftClosedHeading || "Counter Closed"}</h3>
+                    <p className="text-[10px] text-[var(--foreground)]/60 leading-relaxed max-w-sm mx-auto mt-1">{hookT?.shiftClosedDesc || t?.shiftClosedDesc || "Open drawer with starting cash to begin sales."}</p>
                   </div>
 
                   <div className="bg-[var(--foreground)]/5 p-4 border border-[var(--border)] rounded-2xl max-w-xs mx-auto text-left space-y-3">
                     <div>
-                      <label className="text-[9px] font-black uppercase tracking-widest opacity-50 block mb-1">Opening Cash Reserve In Drawer (₹)</label>
+                      <label className="text-[9px] font-black uppercase tracking-widest opacity-50 block mb-1">{hookT?.shiftOpeningCashLabel || t?.shiftOpeningCashLabel || "Starting Cash (₹)"}</label>
                       <input
                         type="number"
                         value={openingCashVal}
@@ -237,7 +239,7 @@ export function GoalShiftPanelModal({
                       />
                     </div>
                     <Button className="w-full h-11 rounded-xl bg-emerald-500 text-white font-black uppercase tracking-wider text-xs shadow-lg shadow-emerald-500/20 font-sans" onClick={handleStartShift}>
-                      Open Cashier Shift
+                      {hookT?.shiftOpenBtn || t?.shiftOpenBtn || "Open Drawer"}
                     </Button>
                   </div>
                 </div>
@@ -250,31 +252,31 @@ export function GoalShiftPanelModal({
               {shiftHistory.length === 0 ? (
                 <div className="py-12 text-center space-y-2 opacity-50 font-sans">
                   <Database size={32} className="mx-auto" />
-                  <p className="text-xs font-black uppercase tracking-wider font-sans">No historic registry shift found</p>
-                  <p className="text-[10px] max-w-sm mx-auto leading-normal font-sans">Closed cashier shifts will be logged as deep shift ledger archives in here.</p>
+                  <p className="text-xs font-black uppercase tracking-wider font-sans">No past records found</p>
+                  <p className="text-[10px] max-w-sm mx-auto leading-normal font-sans">Closed drawer records will be saved here.</p>
                 </div>
               ) : (
                 shiftHistory.map((sh, idx) => (
                   <div key={sh.id || idx} className="bg-[var(--foreground)]/5 border border-[var(--border)] rounded-2xl p-4 space-y-2 font-sans animate-fade-in">
                     <div className="flex justify-between items-center text-xs font-bold pb-2 border-b border-[var(--border)]/30 font-sans">
                       <div>
-                        <span className="text-[8px] font-black uppercase tracking-wider text-[var(--primary)] block">Shift Log</span>
+                        <span className="text-[8px] font-black uppercase tracking-wider text-[var(--primary)] block">Drawer Record</span>
                         <span className="font-mono text-[var(--foreground)]/50">{sh.id} • {sh.date}</span>
                       </div>
-                      <span className="text-[9px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/15">Reconciled</span>
+                      <span className="text-[9px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/15">Matched</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-y-2 gap-x-4 pt-1 font-mono text-[10.5px]">
                       <div className="flex justify-between">
-                        <span className="opacity-40">Opening Float:</span>
+                        <span className="opacity-40">Start Cash:</span>
                         <span>₹{sh.openingCash.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="opacity-40">Closing Count:</span>
+                        <span className="opacity-40">Final Cash:</span>
                         <span>₹{sh.closingCash.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="opacity-40">Net Sales:</span>
+                        <span className="opacity-40">Total Sales:</span>
                         <span className="text-emerald-400 font-bold">₹{sh.totalSales.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
@@ -282,11 +284,11 @@ export function GoalShiftPanelModal({
                         <span className="text-blue-400 font-bold">₹{sh.totalProfit.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between font-bold">
-                        <span className="opacity-40 font-bold">Bills count:</span>
-                        <span>{sh.totalBills} pcs</span>
+                        <span className="opacity-40 font-bold">Total Bills:</span>
+                        <span>{sh.totalBills} Bills</span>
                       </div>
                       <div className="flex justify-between font-bold">
-                        <span className="opacity-40">Udhar Run:</span>
+                        <span className="opacity-40">Pending Udhar:</span>
                         <span className="text-amber-500 font-bold">₹{sh.pendingUdhar.toLocaleString()}</span>
                       </div>
                     </div>
@@ -299,7 +301,7 @@ export function GoalShiftPanelModal({
 
         {/* Footer */}
         <div className="border-t border-[var(--border)] pt-4 mt-2 font-sans">
-          <Button className="w-full rounded-2xl h-11 text-xs font-sans font-sans" onClick={onClose}>Close Workspace Panel</Button>
+          <Button className="w-full rounded-2xl h-11 text-xs font-sans font-sans" onClick={onClose}>{hookT?.shiftBackBtn || t?.shiftBackBtn || "Back to Store"}</Button>
         </div>
       </motion.div>
     </div>

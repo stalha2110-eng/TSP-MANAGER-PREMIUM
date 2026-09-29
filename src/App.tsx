@@ -209,7 +209,7 @@ import {
 } from './lib/utils';
 import { trackRecentUnit, useRecentUnits } from './lib/unitUtils';
 import { translateItemName, getSmartNoteCategorization } from './services/translationService';
-import { cleanAndValidateText } from './services/languageEngine';
+import { cleanAndValidateText, languageEventBus, useTranslation, LanguageProvider } from './services/languageEngine';
 import { VoiceProductAssistant } from './components/VoiceProductAssistant';
 import { getDeviceId, getDeviceName } from './utils/device';
 import { INITIAL_SETTINGS, INITIAL_STATE, getInitialState, deduplicateById, Alert } from './constants/initialState';
@@ -2470,7 +2470,17 @@ export default function App() {
     return () => clearTimeout(timeout);
   }, [state.items, state.notes, state.bills, state.udharCustomers, state.udharTransactions, state.settings, state.user]);
 
-  const t = UI_TEXT[state.settings.language || 'hi-en'];
+  // Broadcast language changes to LanguageEventBus whenever state.settings.language changes
+  useEffect(() => {
+    const lang = state.settings.language || 'hi-en';
+    languageEventBus.emitLanguage(lang);
+  }, [state.settings.language]);
+
+  const { t: hookT, version: langVersion } = useTranslation();
+  const currentLang = state.settings.language || 'hi-en';
+  const t = useMemo(() => {
+    return UI_TEXT[currentLang];
+  }, [currentLang, langVersion]);
   const precision = state.settings.pricePrecision || 0;
 
   const activeAlerts = useMemo(() => {
@@ -4226,7 +4236,10 @@ export default function App() {
             className="space-y-8"
           >
             {/* Store highlight & Owner Greeting Banner */}
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-r from-[var(--primary)] to-[var(--primary)]/90 p-8 text-white shadow-xl shadow-[var(--primary)]/15">
+            <div 
+               style={{ marginBottom: '23px' }}
+               className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-r from-[var(--primary)] to-[var(--primary)]/90 p-8 text-white shadow-xl shadow-[var(--primary)]/15"
+            >
                {/* Ambient decorative elements */}
                <div className="absolute top-0 right-0 p-6 opacity-10 translate-x-6 -translate-y-6">
                   <Store size={150} />
@@ -4235,42 +4248,122 @@ export default function App() {
                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-2">
                      <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tighter leading-none text-white drop-shadow">
-                        {state.settings.storeName || "SYSTEM ADMINISTRATIVE HUB"}
+                        {state.settings.storeName || "My Shop(मेरी दुकान)"}
                      </h1>
                      <p className="text-sm font-extrabold text-white/80 select-none">
-                        Hi, <span className="text-amber-300 font-black">{state.settings.storeOwnerName || "Store Owner"}</span> 👋 welcome back to your store manager.
+                        Hi, <span className="text-amber-300 font-black">{state.settings.storeOwnerName || "Store Owner"}</span> 👋 welcome back to your STORE MANAGER.
                      </p>
-                     <div className="pt-2 flex flex-wrap gap-2">
-                        <button
-                           onClick={() => { setMenuTab('day_closing'); setShowMenu(true); }}
-                           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider bg-white text-[var(--primary)] rounded-xl hover:bg-white/90 transition-all shadow-md cursor-pointer duration-300"
-                        >
-                           🌙 Store Day Closing
-                        </button>
-                        <button
-                           onClick={() => setShowGoalPanel(true)}
-                           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl transition-all shadow-md cursor-pointer duration-300 active:scale-95"
-                           title="Shop Shift & Register Audit Manager"
-                        >
-                           <span className={cn(
-                             "h-1.5 w-1.5 rounded-full",
-                             activeShift ? "bg-emerald-400 animate-pulse" : "bg-red-400"
+                     <div 
+                        style={{ paddingLeft: '1px', marginLeft: '-7px' }}
+                        className="pt-2 flex flex-wrap items-center gap-3"
+                     >
+                        {/* 📜 AAJ KI REPORT Button */}
+                        <div className="relative group p-[2px] rounded-2xl overflow-hidden shadow-lg shadow-black/20 transition-all duration-300 hover:scale-105 active:scale-95">
+                           {/* Animated multi-color glowing border */}
+                           <div className="absolute inset-0 bg-gradient-to-r from-amber-300 via-emerald-400 to-cyan-300 animate-pulse opacity-90 group-hover:opacity-100 transition-opacity" />
+                           <button
+                              onClick={() => { setMenuTab('day_closing'); setShowMenu(true); }}
+                              style={{ backgroundColor: '#ffffff', color: '#132f18', height: '28.5px' }}
+                              className="relative flex items-center gap-2 px-3 py-1 text-xs font-black uppercase tracking-wider rounded-[14px] cursor-pointer shadow-inner transition-all duration-200 select-none hover:brightness-105 active:brightness-95 overflow-hidden"
+                           >
+                              <span className="text-sm leading-none">📜</span>
+                              <span className="leading-none">AAJ KI REPORT</span>
+                           </button>
+                        </div>
+
+                        {/* 💼 CASH BOX (Shift) Button */}
+                        <div className="relative group p-[2px] rounded-2xl overflow-hidden shadow-lg shadow-black/20 transition-all duration-300 hover:scale-105 active:scale-95">
+                           {/* Dynamic animated border glow indicating active/closed cash box */}
+                           <div className={cn(
+                              "absolute inset-0 animate-pulse opacity-90 group-hover:opacity-100 transition-opacity",
+                              activeShift
+                                 ? "bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500"
+                                 : "bg-gradient-to-r from-amber-400 via-rose-400 to-amber-400"
                            )} />
-                           <span>{activeShift ? "Active Shift" : "Shift Closed"}</span>
-                        </button>
+                           <button
+                              onClick={() => setShowGoalPanel(true)}
+                              style={{ backgroundColor: '#f8f6f6', color: '#0c410c', height: '28.5px' }}
+                              className="relative flex items-center gap-2 px-3 py-1 text-xs font-black uppercase tracking-wider rounded-[14px] cursor-pointer shadow-inner transition-all duration-200 select-none hover:brightness-105 active:brightness-95 overflow-hidden"
+                              title="CASH & HISAB"
+                           >
+                              <span className="relative flex h-2 w-2 shrink-0">
+                                 {activeShift && (
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                 )}
+                                 <span className={cn(
+                                    "relative inline-flex rounded-full h-2 w-2",
+                                    activeShift ? "bg-emerald-500" : "bg-red-500"
+                                 )} />
+                              </span>
+                              <span className="leading-none">{activeShift ? "CLOSE CASH BOX" : "OPEN CASH BOX"}</span>
+                           </button>
+                        </div>
                      </div>
                   </div>
-                  <div className="md:text-right shrink-0 flex flex-col md:items-end justify-between">
+                  <div 
+                     style={{ width: '251px', height: '55.5px', marginRight: '11px', marginLeft: '2px' }}
+                     className="md:text-right shrink-0 flex flex-col md:items-end justify-between overflow-hidden"
+                  >
                      {state.settings.storeAddress && (
                         <div>
-                           <p className="text-[9px] font-black uppercase tracking-widest text-white/50 mb-1 flex items-center md:justify-end gap-1"><MapPin size={11} /> Store Location</p>
-                           <p className="text-xs font-black max-w-[200px] line-clamp-2 md:text-right text-white/90">{state.settings.storeAddress}</p>
+                           <p 
+                              style={{ color: '#c4ee22' }}
+                              className="text-[9px] font-black uppercase tracking-widest mb-0.5 flex items-center md:justify-end gap-1"
+                           >
+                              <svg
+                                 xmlns="http://www.w3.org/2000/svg"
+                                 width="11"
+                                 height="11"
+                                 viewBox="0 0 24 24"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 strokeWidth="2"
+                                 strokeLinecap="round"
+                                 strokeLinejoin="round"
+                              >
+                                 <path 
+                                    d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" 
+                                    style={{ borderColor: '#efebeb' }}
+                                 />
+                                 <circle cx="12" cy="10" r="3" />
+                              </svg>
+                              Store Location
+                           </p>
+                           <p className="text-xs font-black max-w-[200px] line-clamp-1 md:text-right text-white/90">{state.settings.storeAddress}</p>
                         </div>
                      )}
-                     <div className="flex items-center md:justify-end gap-2 text-[10px] mt-1">
-                        {state.settings.storePhone && <span className="font-mono opacity-60">{state.settings.storePhone}</span>}
+                     <div className="flex items-center md:justify-end gap-2 text-[10px] mt-0.5">
+                        {state.settings.storePhone && (
+                           <span 
+                              style={{
+                                 color: '#000000',
+                                 backgroundColor: '#ffffff',
+                                 marginRight: '1px',
+                                 paddingRight: '3px',
+                                 height: '16px',
+                                 paddingTop: '1px',
+                                 fontWeight: 'bold',
+                                 lineHeight: '15px',
+                                 fontSize: '11px',
+                                 paddingLeft: '0px',
+                                 marginLeft: '2px',
+                                 borderRadius: '5px',
+                                 borderColor: '#063606'
+                              }}
+                              className="font-mono inline-flex items-center border"
+                           >
+                              {state.settings.storePhone}
+                           </span>
+                        )}
                         {state.settings.storePhone && <span className="text-white/30">•</span>}
-                        <span className="font-mono text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/15 border border-white/20 text-white shrink-0">
+                        <span 
+                           style={{
+                              borderStyle: 'solid',
+                              borderWidth: '0px',
+                              fontWeight: 'normal'
+                           }}
+                           className="font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/15 text-white shrink-0"
+                        >
                            {BUSINESS_MODES[state.settings.businessMode]?.emoji || '🏪'} {BUSINESS_MODES[state.settings.businessMode]?.name || 'Kirana Store'}
                         </span>
                      </div>
@@ -4286,17 +4379,18 @@ export default function App() {
             />
 
                  {/* ⚡ Quick Operational Actions Panel */}
-               <div className="bg-[var(--card)] border border-[var(--border)] rounded-[2.5rem] p-6 md:p-8 space-y-6 shadow-xl relative overflow-hidden backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+               <div 
+                  style={{ paddingTop: '18px', height: '579px' }}
+                  className="bg-[var(--card)] border border-[var(--border)] rounded-[2.5rem] p-6 md:p-8 space-y-6 shadow-xl relative overflow-hidden backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-500"
+               >
                   {/* Decorative top illumination ambient light flare */}
                   <div className="absolute top-0 left-1/4 -translate-y-1/2 w-1/2 h-16 bg-[var(--primary)]/15 blur-[40px] pointer-events-none" />
 
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-                     <div>
-                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)] flex items-center gap-2">
-                           <span className="h-2 w-2 rounded-full bg-[var(--primary)] animate-pulse" />
-                           ALL BUTTONS
-                        </h3>
-                     </div>
+                  <div className="flex items-center gap-3 relative z-10">
+                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)] flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-[var(--primary)] animate-pulse" />
+                        ALL BUTTONS
+                     </h3>
                      <button 
                         onClick={() => {
                            if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
@@ -4306,14 +4400,26 @@ export default function App() {
                            setMenuTab('business_settings'); 
                            setShowMenu(true); 
                         }}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-[var(--foreground)]/[0.04] hover:bg-[var(--foreground)]/[0.08] border border-[var(--border)] rounded-xl transition-all duration-300 hover:border-[var(--primary)]/30 text-[var(--foreground)]/80 hover:text-[var(--foreground)]"
+                        style={{
+                           marginLeft: '59px',
+                           marginTop: '0px',
+                           marginRight: '0px',
+                           marginBottom: '1px',
+                           height: '29px',
+                           paddingLeft: '5px',
+                           borderRadius: '5.5px',
+                           fontFamily: 'Georgia',
+                           width: '111px',
+                           paddingRight: '13px'
+                        }}
+                        className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-[var(--foreground)]/[0.04] hover:bg-[var(--foreground)]/[0.08] border border-[var(--border)] transition-all duration-300 hover:border-[var(--primary)]/30 text-[var(--foreground)]/80 hover:text-[var(--foreground)] cursor-pointer"
                      >
                        <Settings2 size={12} className="text-[var(--primary)]" />
                        Customize
                      </button>
                   </div>
 
-                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 pt-2">
+                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1 pt-2">
                     {(state.settings.quickActions || ['create_bill', 'add_product', 'update_stock', 'print_invoice', 'open_analytics', 'open_udhar']).map((actionId, index) => {
                        let title = '';
                        let iconComponent: React.ReactNode = null;
@@ -5788,7 +5894,7 @@ export default function App() {
                       menuTab === 'day_closing' ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--foreground)]/40 hover:text-[var(--foreground)]"
                     )}
                   >
-                    🌙 Day Close
+                    📜AAJ KI REPORT
                   </button>
                   <button 
                     onClick={() => setMenuTab('help')}

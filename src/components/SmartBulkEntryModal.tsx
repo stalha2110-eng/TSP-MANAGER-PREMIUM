@@ -111,7 +111,6 @@ export function SmartBulkEntryModal({
   const [activeUnitDropdown, setActiveUnitDropdown] = useState<{ rowIndex: number; field: 'retail' | 'wholesale' | 'cost' } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
-  const [autoSuggestMargin, setAutoSuggestMargin] = useState(false);
 
   // Custom & Recent Units management
   const { customUnits, addCustomUnit, removeCustomUnit, allUnitsFlat } = useCustomUnits();
@@ -306,21 +305,7 @@ export function SmartBulkEntryModal({
         }
       }
 
-      // 2. Auto-suggest wholesale and cost prices based on retail price (ONLY when explicitly enabled by user)
-      if (autoSuggestMargin && fields.retailPrice !== undefined) {
-        const retailVal = parseFloat(fields.retailPrice);
-        if (!isNaN(retailVal) && retailVal > 0) {
-          // Suggest 10% lower for wholesale, 25% lower for buying cost only if empty and untouched
-          if (row.wholesalePrice === '' && row.touched.wholesalePrice !== true) {
-            updatedRow.wholesalePrice = Math.round(retailVal * 0.9).toString();
-          }
-          if (row.buyingPrice === '' && row.touched.buyingPrice !== true) {
-            updatedRow.buyingPrice = Math.round(retailVal * 0.75).toString();
-          }
-        }
-      }
-
-      // 3. Keep units in sync if user changes retail unit, unless they manually overrode
+      // 2. Keep units in sync if user changes retail unit, unless they manually overrode
       if (fields.retailPriceUnit !== undefined) {
         if (row.wholesalePriceUnit === row.retailPriceUnit) {
           updatedRow.wholesalePriceUnit = fields.retailPriceUnit;
@@ -723,14 +708,14 @@ export function SmartBulkEntryModal({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-black tracking-tighter uppercase text-[var(--foreground)] flex items-center gap-2">
-                  SMART BULK ENTRY
+                  SMART ENTRY
                 </h2>
                 <span className="text-[8px] bg-[var(--primary)]/10 text-[var(--primary)] font-black px-2 py-0.5 rounded-full border border-[var(--primary)]/20 tracking-wider">
                   FAST ENGINE
                 </span>
               </div>
               <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 opacity-80">
-                NOMENCLATURE = RETAIL PRICE / UNIT , WHOLESALE PRICE / UNIT , COST PRICE / UNIT
+               Add Multiple Items
               </p>
             </div>
           </div>
@@ -740,7 +725,7 @@ export function SmartBulkEntryModal({
             <button
               onClick={() => setShowQuickParser(!showQuickParser)}
               className={cn(
-                "hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black tracking-wide border transition-all cursor-pointer",
+                "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black tracking-wide border transition-all cursor-pointer",
                 showQuickParser 
                   ? "bg-amber-500/15 border-amber-500/30 text-amber-500" 
                   : "bg-[var(--card)] border-[var(--border)] text-zinc-400 hover:text-[var(--foreground)] hover:border-zinc-500"
@@ -821,41 +806,6 @@ export function SmartBulkEntryModal({
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5 no-scrollbar pb-32 bg-[var(--background)]">
-          
-          {/* Controls Bar */}
-          <div className="flex flex-col sm:flex-row gap-3.5 items-center justify-between bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3.5 shadow-sm">
-            <div className="flex items-center gap-2.5 text-xs">
-              <span className="text-amber-500 text-base">⚡</span>
-              <div>
-                <span className="font-bold text-[var(--foreground)]">Pro Navigation:</span> Press <kbd className="bg-neutral-800 text-zinc-300 border border-zinc-700 px-1 py-0.5 rounded text-[10px] font-mono font-bold">Enter</kbd> to move forward. Name keyword detector auto-fills your units.
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-4 self-end sm:self-center">
-              {/* Quick Parser Button (Mobile fallback) */}
-              <button
-                onClick={() => setShowQuickParser(!showQuickParser)}
-                className="sm:hidden flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-black border bg-[var(--card)] border-[var(--border)] text-zinc-400"
-              >
-                <FileText size={12} />
-                PASTE
-              </button>
-
-              {/* Price Suggestion Toggle */}
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={autoSuggestMargin}
-                  onChange={(e) => setAutoSuggestMargin(e.target.checked)}
-                  className="rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)] h-4 w-4 bg-[var(--background)]"
-                />
-                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400 hover:text-[var(--foreground)] transition-colors">
-                  Auto-suggest wholesale/cost
-                </span>
-              </label>
-            </div>
-          </div>
-
           {/* Rows List */}
           <div className="space-y-4">
             <AnimatePresence initial={false}>

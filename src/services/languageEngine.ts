@@ -1,3 +1,4 @@
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { LanguageType, AppSettings } from "../types";
 
 // Translation database containing highly natural shopkeeper-friendly translations.
@@ -495,11 +496,138 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
   },
 
   // Specific screens and dialogues
+  shiftDashboardTitle: {
+    en: "Cash Counter",
+    hi: "गल्ला / रोकड़ हिसाब",
+    mr: "गल्ला / रोख हिशोब",
+    "hi-en": "CASH COUNTER"
+  },
+  shiftSubtitle: {
+    en: "Cash Drawer",
+    hi: "गल्ला रजिस्टर",
+    mr: "गल्ला रजिस्टर",
+    "hi-en": "CASH DRAWER"
+  },
+  shiftTabCurrent: {
+    en: "Current Cash",
+    hi: "आज का गल्ला",
+    mr: "आजचा गल्ला",
+    "hi-en": "Aaj Ka Galla"
+  },
+  shiftTabHistory: {
+    en: "Past Records",
+    hi: "पिछला हिसाब",
+    mr: "मागील हिशोब",
+    "hi-en": "Purana Hisab"
+  },
+  shiftClosedHeading: {
+    en: "Counter Closed",
+    hi: "गल्ला बंद है",
+    mr: "गल्ला बंद आहे",
+    "hi-en": "Galla Band Hai"
+  },
+  shiftClosedDesc: {
+    en: "Open drawer with starting cash to begin sales.",
+    hi: "दुकान शुरू करने के लिए गल्ला खोलें और सुबह का कैश दर्ज करें।",
+    mr: "दुकान सुरू करण्यासाठी गल्ला उघडा आणि सकाळची रोख रक्कम नोंदवा.",
+    "hi-en": "Dukaan shuru karne ke liye galla kholein aur shuru ka CASH dalein."
+  },
+  shiftOpeningCashLabel: {
+    en: "Starting Cash (₹)",
+    hi: "गल्ले में सुबह का कैश (₹)",
+    mr: "गल्ल्यातील सुरुवातीची रोख (₹)",
+    "hi-en": "STARTING CASH (₹)"
+  },
+  shiftOpenBtn: {
+    en: "Open Drawer",
+    hi: "गल्ला शुरू करें",
+    mr: "गल्ला सुरू करा",
+    "hi-en": "Galla Shuru Karein"
+  },
+  shiftActiveBadge: {
+    en: "Counter Active",
+    hi: "गल्ला चालू है",
+    mr: "गल्ला चालू आहे",
+    "hi-en": "Counter Active"
+  },
+  shiftStartedAt: {
+    en: "Started at",
+    hi: "शुरू हुआ",
+    mr: "सुरू झाले",
+    "hi-en": "Started at"
+  },
+  shiftStartCash: {
+    en: "Start Cash",
+    hi: "सुबह का कैश",
+    mr: "सकाळची रोख",
+    "hi-en": "Start Cash"
+  },
+  shiftTotalSales: {
+    en: "Total Sales",
+    hi: "कुल बिक्री",
+    mr: "एकूण विक्री",
+    "hi-en": "Total Sales"
+  },
+  shiftNetProfit: {
+    en: "Net Profit",
+    hi: "आज का मुनाफा",
+    mr: "निव्वळ नफा",
+    "hi-en": "Aaj Ka Profit"
+  },
+  shiftTotalBills: {
+    en: "Total Bills",
+    hi: "कुल बिल",
+    mr: "एकूण बिले",
+    "hi-en": "Total Bills"
+  },
+  shiftPendingUdhar: {
+    en: "Pending Udhar",
+    hi: "बाकी उधार",
+    mr: "उधारी",
+    "hi-en": "Pending Udhar"
+  },
+  shiftExpectedCash: {
+    en: "Expected Cash in Drawer",
+    hi: "गल्ले में होना चाहिए",
+    mr: "गल्ल्यात असणे आवश्यक",
+    "hi-en": "Itna Cash Hona Chahiye"
+  },
+  shiftCloseBtn: {
+    en: "Count & Close Drawer",
+    hi: "गल्ला हिसाब मिलाएं और बंद करें",
+    mr: "गल्ला हिशोब तपासा आणि बंद करा",
+    "hi-en": "Count & Close Galla"
+  },
+  shiftCloseModalTitle: {
+    en: "Close Counter",
+    hi: "गल्ला बंद करें",
+    mr: "गल्ला बंद करा",
+    "hi-en": "Close Counter"
+  },
+  shiftCountedCashLabel: {
+    en: "Cash in Drawer (₹)",
+    hi: "गल्ले में गिनकर कितना कैश निकला? (₹)",
+    mr: "गल्ल्यात मोजून किती रोख निघाली? (₹)",
+    "hi-en": "Cash in Drawer (₹)"
+  },
+  shiftConfirmCloseBtn: {
+    en: "Save & Close",
+    hi: "हिसाब पक्का करें और बंद करें",
+    mr: "हिशोब नक्की करा आणि बंद करा",
+    "hi-en": "Save & Close"
+  },
+  shiftBackBtn: {
+    en: "Back to Store",
+    hi: "वापस जाएं",
+    mr: "मागे जा",
+    "hi-en": "Back to Store"
+  },
   addItemNotInList: {
     en: "Add Item Not In List!",
     hi: "सूची से बाहर का सामान जोड़ें",
     mr: "यादीबाहेरील सामान जोडा",
     "hi-en": "Add New Item"
+    // Hinglish
   },
   customerInfo: {
     en: "Customer Info",
@@ -1135,17 +1263,17 @@ export function cleanAndValidateText(text: string, lang: LanguageType, settings?
     const lowerText = text.toLowerCase();
     
     // Check if the text matches a known mixed-language element, and swap it with pure translated equivalent
-    if (lowerText.includes("add item not in list") || lowerText.includes("खुला / अतिरिक्त")) {
-      return lang === "hi-en" ? "List Mein Nahi Hai" : "Add Item Not In List";
+    if (lowerText.includes("add item not in list") || lowerText.includes("खुला / अतिरिक्त") || lowerText.includes("add new item")) {
+      return TRANSLATION_DB.addItemNotInList?.[lang] || (lang === "hi-en" ? "Add New Item" : "Add Item Not In List");
     }
     if (lowerText.includes("fresh mangoes") || lowerText.includes("खुला माल")) {
-      return lang === "hi-en" ? "e.g. Fresh Mangoes" : "e.g. Fresh Mangoes";
+      return TRANSLATION_DB.freshMangoes?.[lang] || "e.g. Fresh Mangoes";
     }
     if (lowerText.includes("customer details") || lowerText.includes("ग्राहक जानकारी")) {
-      return lang === "hi-en" ? "Customer Info" : "Customer Info";
+      return TRANSLATION_DB.customerInfo?.[lang] || "Customer Info";
     }
     if (lowerText.includes("stock management") || lowerText.includes("स्टॉक प्रबंधन")) {
-      return lang === "hi-en" ? "Stock" : "Stock";
+      return TRANSLATION_DB.inventory?.[lang] || "Stock";
     }
 
     // Remove text inside parenthesis that contains Devnagari (e.g. "(खुला सामान जोड़े)")
@@ -1170,17 +1298,17 @@ export function cleanAndValidateText(text: string, lang: LanguageType, settings?
   if (lang === "hi" || lang === "mr") {
     const lowerText = text.toLowerCase();
     
-    if (lowerText.includes("add item not in list") || lowerText.includes("खुला / अतिरिक्त")) {
-      return lang === "hi" ? "सूची से बाहर का सामान जोड़ें" : "यादीत नसलेले सामान जोडा";
+    if (lowerText.includes("add item not in list") || lowerText.includes("खुला / अतिरिक्त") || lowerText.includes("add new item")) {
+      return TRANSLATION_DB.addItemNotInList?.[lang] || (lang === "hi" ? "सूची से बाहर का सामान जोड़ें" : "यादीबाहेरील सामान जोडा");
     }
     if (lowerText.includes("fresh mangoes") || lowerText.includes("खुला माल")) {
-      return lang === "hi" ? "जैसे: ताज़ा आम (खुला सामान)" : "उदा: ताजे आंबे (खुला माल)";
+      return TRANSLATION_DB.freshMangoes?.[lang] || (lang === "hi" ? "जैसे: ताज़ा आम (खुला सामान)" : "उदा: ताजे आंबे (खुला माल)");
     }
     if (lowerText.includes("customer details") || lowerText.includes("ग्राहक जानकारी")) {
-      return lang === "hi" ? "ग्राहक की जानकारी" : "ग्राहक माहिती";
+      return TRANSLATION_DB.customerInfo?.[lang] || (lang === "hi" ? "ग्राहक की जानकारी" : "ग्राहक माहिती");
     }
     if (lowerText.includes("stock management") || lowerText.includes("स्टॉक प्रबंधन")) {
-      return lang === "hi" ? "स्टॉक" : "स्टॉक";
+      return TRANSLATION_DB.inventory?.[lang] || (lang === "hi" ? "स्टॉक" : "स्टॉक");
     }
 
     // If text contains English but no Devnagari, let's try to look up its translation in Hindi/Marathi
@@ -1225,41 +1353,34 @@ export function translate(key: string, lang: LanguageType, settings?: Partial<Ap
   return cleanAndValidateText(key, lang, settings);
 }
 
+export type ReactiveTranslationProxy = ((keyStr: string, defaultVal?: string) => string) & Record<string, string>;
+
 /**
  * Helper to build/return a reactive proxy of UI_TEXT which is used across the codebase.
  * This intercepts UI_TEXT access and routes it dynamically to our translation engine database!
+ * The returned proxy is BOTH a callable function: UI_TEXT[lang](key) AND an object: UI_TEXT[lang].key!
  */
-export function getUITextForLanguage() {
-  const baseObject: Record<LanguageType, Record<string, string>> = {
-    en: {},
-    hi: {},
-    mr: {},
-    "hi-en": {}
-  };
-
-  const languages: LanguageType[] = ["en", "hi", "mr", "hi-en"];
-
-  // Populate basic keys in UI_TEXT from our database for compile-time/static safety
-  for (const key in TRANSLATION_DB) {
-    languages.forEach((lang) => {
-      baseObject[lang][key] = TRANSLATION_DB[key][lang];
-    });
-  }
-
-  // Create a handler that resolves keys dynamically, automatically validating/cleaning each string!
-  const createLanguageProxy = (lang: LanguageType) => {
-    return new Proxy(baseObject[lang], {
-      get(target, keyStr: string) {
-        // If there's a specific key in DB, use it
-        if (TRANSLATION_DB[keyStr]) {
-          return cleanAndValidateText(TRANSLATION_DB[keyStr][lang], lang, { enableStrictLanguageMode: true });
-        }
-        
-        // Otherwise return whatever is stored under the static target
-        const val = target[keyStr] || keyStr;
-        return cleanAndValidateText(val, lang, { enableStrictLanguageMode: true });
+export function getUITextForLanguage(): Record<LanguageType, ReactiveTranslationProxy> {
+  const createLanguageProxy = (lang: LanguageType): ReactiveTranslationProxy => {
+    const fn = (keyStr: string, defaultVal?: string) => {
+      if (!keyStr) return defaultVal || "";
+      if (TRANSLATION_DB[keyStr] && TRANSLATION_DB[keyStr][lang]) {
+        return cleanAndValidateText(TRANSLATION_DB[keyStr][lang], lang, { enableStrictLanguageMode: true });
       }
-    });
+      return cleanAndValidateText(defaultVal || keyStr, lang, { enableStrictLanguageMode: true });
+    };
+
+    return new Proxy(fn, {
+      get(target, prop: string) {
+        if (prop in target) {
+          return (target as any)[prop];
+        }
+        if (TRANSLATION_DB[prop] && TRANSLATION_DB[prop][lang]) {
+          return cleanAndValidateText(TRANSLATION_DB[prop][lang], lang, { enableStrictLanguageMode: true });
+        }
+        return cleanAndValidateText(prop, lang, { enableStrictLanguageMode: true });
+      }
+    }) as ReactiveTranslationProxy;
   };
 
   return {
@@ -1269,3 +1390,236 @@ export function getUITextForLanguage() {
     "hi-en": createLanguageProxy("hi-en")
   };
 }
+
+// ==========================================
+// REACTIVE LANGUAGE EVENT BUS & STATE EMITTER
+// ==========================================
+
+export type LanguageListener = (lang: LanguageType) => void;
+export type TranslationUpdateListener = (updatedKey?: string) => void;
+
+class LanguageEventBus {
+  private langListeners: Set<LanguageListener> = new Set();
+  private transListeners: Set<TranslationUpdateListener> = new Set();
+
+  public subscribe(listener: LanguageListener): () => void {
+    this.langListeners.add(listener);
+    return () => {
+      this.langListeners.delete(listener);
+    };
+  }
+
+  public subscribeTranslations(listener: TranslationUpdateListener): () => void {
+    this.transListeners.add(listener);
+    return () => {
+      this.transListeners.delete(listener);
+    };
+  }
+
+  public emitLanguage(lang: LanguageType): void {
+    this.langListeners.forEach(listener => {
+      try {
+        listener(lang);
+      } catch (err) {
+        console.error("Language listener error:", err);
+      }
+    });
+  }
+
+  public emitTranslationsUpdated(key?: string): void {
+    this.transListeners.forEach(listener => {
+      try {
+        listener(key);
+      } catch (err) {
+        console.error("Translation update listener error:", err);
+      }
+    });
+  }
+}
+
+export const languageEventBus = new LanguageEventBus();
+
+/**
+ * Dynamically updates or overrides a translation key at runtime in TRANSLATION_DB,
+ * and immediately broadcasts to all subscribed components to force an instant re-render.
+ */
+export function updateTranslation(key: string, lang: LanguageType, value: string): void {
+  if (!TRANSLATION_DB[key]) {
+    TRANSLATION_DB[key] = { en: value, hi: value, mr: value, "hi-en": value };
+  } else {
+    TRANSLATION_DB[key][lang] = value;
+  }
+  languageEventBus.emitTranslationsUpdated(key);
+}
+
+/**
+ * Broadcasts to all active components that translations have been modified,
+ * triggering immediate re-render across the entire application without page reload.
+ */
+export function notifyTranslationsUpdated(key?: string): void {
+  languageEventBus.emitTranslationsUpdated(key);
+}
+
+// ==========================================
+// REACT CONTEXT & CUSTOM TRANSLATION HOOK
+// ==========================================
+
+export interface TranslationFunction extends Record<string, string> {
+  (key: string, defaultVal?: string): string;
+}
+
+export interface LanguageContextValue {
+  currentLang: LanguageType;
+  setLanguage: (lang: LanguageType) => void;
+  t: TranslationFunction;
+  translate: (key: string, defaultVal?: string) => string;
+  cleanText: (text: string) => string;
+  version: number;
+}
+
+export const LanguageContext = createContext<LanguageContextValue | null>(null);
+
+export interface LanguageProviderProps {
+  children: React.ReactNode;
+  initialLang?: LanguageType;
+  onLanguageChange?: (lang: LanguageType) => void;
+}
+
+export const LanguageProvider: React.FC<LanguageProviderProps> = ({
+  children,
+  initialLang = 'hi-en',
+  onLanguageChange
+}) => {
+  const [currentLang, setCurrentLangState] = useState<LanguageType>(initialLang);
+  const [version, setVersion] = useState<number>(0);
+
+  useEffect(() => {
+    if (initialLang && initialLang !== currentLang) {
+      setCurrentLangState(initialLang);
+    }
+  }, [initialLang]);
+
+  useEffect(() => {
+    const unsubLang = languageEventBus.subscribe((newLang) => {
+      setCurrentLangState(newLang);
+      setVersion(v => v + 1);
+    });
+
+    const unsubTrans = languageEventBus.subscribeTranslations(() => {
+      setVersion(v => v + 1);
+    });
+
+    return () => {
+      unsubLang();
+      unsubTrans();
+    };
+  }, []);
+
+  const setLanguage = useCallback((lang: LanguageType) => {
+    setCurrentLangState(lang);
+    languageEventBus.emitLanguage(lang);
+    if (onLanguageChange) {
+      onLanguageChange(lang);
+    }
+  }, [onLanguageChange]);
+
+  const translateHelper = useCallback((key: string, defaultVal?: string): string => {
+    return translate(key, currentLang) || defaultVal || key;
+  }, [currentLang, version]);
+
+  const cleanTextHelper = useCallback((text: string): string => {
+    return cleanAndValidateText(text, currentLang);
+  }, [currentLang, version]);
+
+  const t = useMemo<TranslationFunction>(() => {
+    const callable = (key: string, defaultVal?: string) => {
+      if (!key) return defaultVal || "";
+      if (TRANSLATION_DB[key] && TRANSLATION_DB[key][currentLang]) {
+        return cleanAndValidateText(TRANSLATION_DB[key][currentLang], currentLang);
+      }
+      return cleanAndValidateText(defaultVal || key, currentLang);
+    };
+
+    return new Proxy(callable, {
+      get(target, prop: string) {
+        if (prop in target) {
+          return (target as any)[prop];
+        }
+        if (TRANSLATION_DB[prop] && TRANSLATION_DB[prop][currentLang]) {
+          return cleanAndValidateText(TRANSLATION_DB[prop][currentLang], currentLang);
+        }
+        return cleanAndValidateText(prop, currentLang);
+      }
+    }) as TranslationFunction;
+  }, [currentLang, version]);
+
+  const contextValue = useMemo<LanguageContextValue>(() => ({
+    currentLang,
+    setLanguage,
+    t,
+    translate: translateHelper,
+    cleanText: cleanTextHelper,
+    version
+  }), [currentLang, setLanguage, t, translateHelper, cleanTextHelper, version]);
+
+  return React.createElement(LanguageContext.Provider, { value: contextValue }, children);
+};
+
+/**
+ * Custom Hook: useTranslation
+ * Monitors current language and re-renders components immediately when
+ * either the language changes OR translation values in languageEngine.ts are updated!
+ */
+export function useTranslation(): LanguageContextValue {
+  const context = useContext(LanguageContext);
+  const [localVersion, setLocalVersion] = useState<number>(0);
+  const [activeLang, setActiveLang] = useState<LanguageType>('hi-en');
+
+  useEffect(() => {
+    const unsubLang = languageEventBus.subscribe((newLang) => {
+      setActiveLang(newLang);
+      setLocalVersion(v => v + 1);
+    });
+    const unsubTrans = languageEventBus.subscribeTranslations(() => {
+      setLocalVersion(v => v + 1);
+    });
+    return () => {
+      unsubLang();
+      unsubTrans();
+    };
+  }, []);
+
+  if (context) {
+    return context;
+  }
+
+  // Standalone fallback if invoked outside LanguageProvider
+  const tCallable = (key: string, defaultVal?: string) => {
+    if (!key) return defaultVal || "";
+    if (TRANSLATION_DB[key] && TRANSLATION_DB[key][activeLang]) {
+      return cleanAndValidateText(TRANSLATION_DB[key][activeLang], activeLang);
+    }
+    return cleanAndValidateText(defaultVal || key, activeLang);
+  };
+
+  const tProxy = new Proxy(tCallable, {
+    get(target, prop: string) {
+      if (prop in target) return (target as any)[prop];
+      if (TRANSLATION_DB[prop] && TRANSLATION_DB[prop][activeLang]) {
+        return cleanAndValidateText(TRANSLATION_DB[prop][activeLang], activeLang);
+      }
+      return cleanAndValidateText(prop, activeLang);
+    }
+  }) as TranslationFunction;
+
+  return {
+    currentLang: activeLang,
+    setLanguage: (lang: LanguageType) => languageEventBus.emitLanguage(lang),
+    t: tProxy,
+    translate: (key: string, defaultVal?: string) => translate(key, activeLang) || defaultVal || key,
+    cleanText: (text: string) => cleanAndValidateText(text, activeLang),
+    version: localVersion
+  };
+}
+
+export const useLanguage = useTranslation;

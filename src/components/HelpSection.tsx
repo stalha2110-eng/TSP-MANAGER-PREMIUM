@@ -54,6 +54,7 @@ export const HelpSection: React.FC<HelpSectionProps> = ({
               setActiveView('tutorials_page');
               setTutorialSubView('main');
             }}
+            style={{ width: '190px', paddingTop: '10.5px' }}
             className="p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 shadow-xs bg-[var(--card)] hover:bg-amber-500/[0.08] hover:border-amber-500/40 border-[var(--border)] text-[var(--foreground)] group"
           >
             <div className="flex items-center justify-between w-full">
@@ -84,6 +85,7 @@ export const HelpSection: React.FC<HelpSectionProps> = ({
           <button
             type="button"
             onClick={() => setActiveView('help_content')}
+            style={{ marginBottom: '-20px', width: '190px', height: '47.5px' }}
             className="p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 shadow-xs bg-[var(--card)] hover:bg-blue-500/[0.08] hover:border-blue-500/40 border-[var(--border)] text-[var(--foreground)] group"
           >
             <div className="flex items-center justify-between w-full">

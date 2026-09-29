@@ -27,6 +27,7 @@ import { QuickWeightPresets, ItemHoldWeightModal } from './QuickWeightPresets';
 import { parseSearchInput, calculateWeightFromAmount, isWeightBasedUnit, COMMON_WEIGHT_PRESETS, WeightPreset, formatQtyWithUnit } from '../utils/weightHelpers';
 import { Scale, IndianRupee } from 'lucide-react';
 import { useBackModal } from '../utils/backNavigationManager';
+import { previewImage } from './ImagePreviewModal';
 
 interface BillingScreenProps {
   state: AppState;
@@ -4612,6 +4613,7 @@ export default function BillingScreen({
                     const isNegativeDeducted = stockLeftVal <= 0;
                     const itemObj = !ci.item.isManual ? (ci.item as Item) : null;
                     const isWholesale = itemObj && itemObj.wholesalePrice ? (ci.price === itemObj.wholesalePrice) : false;
+                    const attachedImage = ci.item?.imageUrl || itemsDBInSystem?.imageUrl;
                     
                     return (
                       <motion.div
@@ -4623,8 +4625,27 @@ export default function BillingScreen({
                         transition={{ type: "spring", stiffness: 450, damping: 25 }}
                         className="p-2.5 bg-[var(--card)] border border-[var(--border)] rounded-xl flex items-center justify-between gap-2 shadow-inner hover:border-[var(--primary)]/10 transition-colors select-none"
                       >
-                        {/* Name description */}
-                        <div className="flex-1 min-w-0 pr-0.5">
+                        {/* Name description with attached image if present */}
+                        <div className="flex-1 min-w-0 pr-0.5 flex flex-col justify-center">
+                          {attachedImage && (
+                            <div 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                previewImage(attachedImage, ci.name);
+                              }}
+                              className="mb-1 shrink-0 cursor-zoom-in group/thumb inline-block"
+                              title="Click to view full image (तस्वीर देखें)"
+                            >
+                              <img 
+                                src={attachedImage} 
+                                alt={ci.name}
+                                className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-lg border border-[var(--border)] shadow-xs bg-[var(--background)] group-hover/thumb:scale-105 group-hover/thumb:border-[var(--primary)] transition-all"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
                           <h4 
                             className={cn(
                               "font-extrabold uppercase text-[var(--foreground)] break-words [overflow-wrap:anywhere] line-clamp-3",
@@ -5971,16 +5992,31 @@ export default function BillingScreen({
                   <div className="space-y-2">
                     <span className="text-[9px] font-black uppercase tracking-wider opacity-45">Line items in bill</span>
                     <div className="border border-[var(--border)] rounded-xl overflow-hidden divide-y divide-[var(--border)] bg-[var(--card)]">
-                      {editCart.map((eci, ecIdx) => (
+                      {editCart.map((eci, ecIdx) => {
+                        const itemInDb = state.items.find(i => i.id === eci.id);
+                        const attachedImage = eci.item?.imageUrl || itemInDb?.imageUrl;
+                        return (
                         <div key={`edit-cart-item-${eci.id || 'eci'}-${ecIdx}`} className="p-2.5 grid grid-cols-12 gap-2 text-xs items-center">
                           <div 
                             className={cn(
-                              "col-span-5 font-bold uppercase break-words [overflow-wrap:anywhere] line-clamp-3",
+                              "col-span-5 font-bold uppercase break-words [overflow-wrap:anywhere] line-clamp-3 flex flex-col justify-center",
                               (eci.name?.length || 0) > 25 ? "text-[9px] leading-tight" : (eci.name?.length || 0) > 14 ? "text-[10px] leading-tight" : "text-xs"
                             )}
                             title={eci.name}
                           >
-                            {eci.name}
+                            {attachedImage && (
+                              <div className="mb-1 shrink-0">
+                                <img 
+                                  src={attachedImage} 
+                                  alt={eci.name}
+                                  className="w-8 h-8 object-cover rounded-lg border border-[var(--border)] shadow-xs bg-[var(--background)]"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            )}
+                            <span>{eci.name}</span>
                           </div>
                           <div className="col-span-4 flex justify-center">
                             <EditCartQuantityInput
@@ -6015,7 +6051,7 @@ export default function BillingScreen({
                             </button>
                           </div>
                         </div>
-                      ))}
+                      );})}
                     </div>
                   </div>
 

@@ -219,6 +219,7 @@ import { ExportCostChoiceModal } from './components/ExportCostChoiceModal';
 import { OnboardingTour } from './components/OnboardingTour';
 import { OnboardingGuide, TutorialType } from './components/OnboardingGuide';
 import { OnboardingPromptModal } from './components/OnboardingPromptModal';
+import { ImagePreviewModal } from './components/ImagePreviewModal';
 import { HelpSection } from './components/HelpSection';
 import { ComparisonModal } from './components/ComparisonModal';
 import { ItemFormModal } from './components/ItemFormModal';
@@ -4094,8 +4095,9 @@ export default function App() {
       {/* Header */}
       <header 
         id="tour-header"
-        className="sticky top-0 z-40 px-2.5 sm:px-6 py-2 sm:py-3.5 text-[var(--primary-foreground)] shadow-2xl transition-all border-b border-white/10"
+        className="sticky top-0 z-40 px-2.5 sm:px-6 py-2 text-[var(--primary-foreground)] shadow-2xl transition-all border-b border-white/10 flex items-center"
         style={{ 
+          height: '49.5px',
           backgroundColor: 'var(--primary)',
           paddingLeft: 'max(10px, env(safe-area-inset-left))',
           paddingRight: 'max(10px, env(safe-area-inset-right))',
@@ -5547,6 +5549,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* Interactive Onboarding Prompt Modal ("No" vs "Continue tutorials") */}
+      <ImagePreviewModal />
       <AnimatePresence>
         {tutorialPrompt?.show && (
           <OnboardingPromptModal

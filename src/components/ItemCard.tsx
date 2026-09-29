@@ -5,6 +5,7 @@ import { Button } from './ui/Button';
 import { cn, formatNumber } from '../lib/utils';
 import { Item, LanguageType } from '../types';
 import { DEFAULT_CATEGORIES } from '../constants';
+import { previewImage } from './ImagePreviewModal';
 
 export interface ItemCardProps {
   item: Item; 
@@ -205,9 +206,18 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
         
         <div className="flex items-center justify-between relative z-10 gap-2">
           <div className="flex gap-3 items-center min-w-0">
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-xl shadow-inner group-hover:scale-105 transition-transform duration-500 overflow-hidden ${
-              isSelected ? 'bg-[var(--primary)] text-white border-white/20' : 'bg-[var(--background)] border-[var(--border)]'
-            }`}>
+            <div 
+              onClick={(e) => {
+                if (item.imageUrl && !isSelected) {
+                  e.stopPropagation();
+                  previewImage(item.imageUrl, name);
+                }
+              }}
+              title={item.imageUrl ? "Click to view full image (तस्वीर देखें)" : undefined}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-xl shadow-inner group-hover:scale-105 transition-transform duration-500 overflow-hidden ${
+                isSelected ? 'bg-[var(--primary)] text-white border-white/20' : 'bg-[var(--background)] border-[var(--border)]'
+              } ${item.imageUrl ? 'cursor-zoom-in' : ''}`}
+            >
               {isSelected ? (
                 <TrendingUp size={18} />
               ) : item.imageUrl ? (

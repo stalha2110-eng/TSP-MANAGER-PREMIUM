@@ -4294,9 +4294,8 @@ export default function App() {
                      <div>
                         <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)] flex items-center gap-2">
                            <span className="h-2 w-2 rounded-full bg-[var(--primary)] animate-pulse" />
-                           Favorite Shortcuts / त्वरित कार्यप्रवाह
+                           ALL BUTTONS
                         </h3>
-                        <p className="text-[11px] opacity-60 uppercase font-black tracking-wider mt-1 text-[var(--foreground)]">Operational Command Center</p>
                      </div>
                      <button 
                         onClick={() => {

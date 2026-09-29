@@ -383,8 +383,8 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
     en: "Are you sure you want to delete this?",
     hi: "क्या आप इसे हटाना चाहते हैं?",
     mr: "तुम्ही हे नक्की हटवू इच्छिता का?",
-    "hi-en": "Kya delete karna chahte hain?"
-  },
+    "hi-en": "Kya ye delete karna chahte hain?"
+  },                   
   restoreConfirm: {
     en: "Restoring will replace current data. Continue?",
     hi: "पुराना डेटा वापस लाने से अभी वाला डेटा हट जाएगा। आगे बढ़ें?",
@@ -425,7 +425,7 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
     en: "Hide buying price on startup",
     hi: "खोलते समय खरीद की कीमत छुपाएं",
     mr: "उघडताना खरेदी किंमत लपवा",
-    "hi-en": "Cost prices hide karein"
+    "hi-en": "Cost prices chupaye"
   },
   compare: {
     en: "Compare",
@@ -464,16 +464,16 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
     "hi-en": "Help aur Guide"
   },
   onboardingTitle: {
-    en: "Welcome to TS Price Manager!",
+    en: "Welcome to TS PRICE MANAGER!",
     hi: "TS Price Manager में आपका स्वागत है!",
     mr: "TS Price Manager मध्ये स्वागत आहे!",
-    "hi-en": "TS Price Manager mein Swagat hai!"
+    "hi-en": "TS PRICE MANAGER mein Swagat hai!"
   },
   onboardingSub: {
-    en: "Let's set up your store in 30 seconds.",
+    en: "set up your store in 30 seconds.",
     hi: "अपनी दुकान का सेटअप करें केवल 30 सेकंड में।",
     mr: "तुमच्या दुकानाचे सेटअप करा फक्त ३० सेकंदात.",
-    "hi-en": "Store setup kijiye sirf 30 seconds mein."
+    "hi-en": "Store ka setup kijiye sirf 30 seconds mein."
   },
   tourNext: {
     en: "Next",
@@ -491,15 +491,15 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
     en: "Skip",
     hi: "छोड़ें",
     mr: "वगळा",
-    "hi-en": "Chhod dein"
+    "hi-en": "Skip karo"
   },
 
   // Specific screens and dialogues
   addItemNotInList: {
-    en: "Add Item Not In List",
+    en: "Add Item Not In List!",
     hi: "सूची से बाहर का सामान जोड़ें",
     mr: "यादीबाहेरील सामान जोडा",
-    "hi-en": "List Mein Nahi Hai"
+    "hi-en": "Add New Item"
   },
   customerInfo: {
     en: "Customer Info",
@@ -577,7 +577,7 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
     en: "Not In List",
     hi: "सूची में नहीं है",
     mr: "यादीत नाही",
-    "hi-en": "List Mein Nahi Hai"
+    "hi-en": "List Mein Nahi Hai!"
   },
   print: {
     en: "Print",

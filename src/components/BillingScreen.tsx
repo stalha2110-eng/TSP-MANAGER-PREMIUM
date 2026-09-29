@@ -4451,7 +4451,7 @@ export default function BillingScreen({
                 className="px-4 py-2.5 border border-slate-950 dark:border-slate-50 text-white hover:opacity-90 font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
               >
                 <PackagePlus size={13} />
-                <span>+ {cleanAndValidateText("Add Item Not in List (खुला / अतिरिक्त सामान जोड़ें)", currentLang, state.settings)}</span>
+                <span>+ {cleanAndValidateText("Add Item Not in List (ADD NEW ITEM)", currentLang, state.settings)}</span>
               </button>
             </div>
           </div>

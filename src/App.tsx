@@ -5353,33 +5353,41 @@ export default function App() {
                 transition={{ type: "spring", stiffness: 420, damping: 28 }}
                 className="absolute bottom-[68px] right-0 flex flex-col gap-2.5 z-[101] min-w-[210px] items-end pointer-events-auto text-zinc-950 font-sans"
               >
-                {/* Smart Entry Button */}
-                <motion.button
-                  initial={{ opacity: 0, x: 20, scale: 0.9 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: 15, scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 450, damping: 25, delay: 0.01 }}
-                  onClick={() => {
-                    setShowSmartBulkEntry(true);
-                    setShowPlusActionMenu(false);
-                  }}
-                  whileHover={{ scale: 1.03, x: -2 }}
-                  whileTap={{ scale: 0.96 }}
-                  className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-[11px] tracking-wider uppercase border border-amber-400 shadow-xl shadow-amber-500/30 hover:shadow-amber-500/50 transition-all w-full justify-start whitespace-nowrap cursor-pointer group relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  <div className="w-7 h-7 rounded-xl bg-white/20 text-white flex items-center justify-center text-sm font-bold shrink-0">
-                    ⚡
-                  </div>
-                  <div className="flex flex-col items-start leading-none z-10">
-                    <span className="font-black flex items-center gap-1">
-                      SMART ENTRY <span className="text-yellow-200">⚡</span>
-                    </span>
-                    <span className="text-[9px] font-medium text-amber-100 normal-case tracking-normal mt-0.5">paste text / quick list</span>
-                  </div>
-                </motion.button>
+                {/* Smart Entry Button with Animated Color Motion Border */}
+                <div className="relative p-[2px] rounded-[18px] overflow-hidden w-full shadow-xl shadow-amber-500/25 group">
+                  {/* Rotating Color Motion Gradient Border */}
+                  <motion.div
+                    className="absolute -inset-[150%] pointer-events-none"
+                    style={{
+                      background: 'conic-gradient(from 0deg, #f59e0b, #ef4444, #ec4899, #8b5cf6, #3b82f6, #10b981, #f59e0b)',
+                    }}
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
+                  />
 
-                {/* Full Entry Button (Formerly Standard Form) */}
+                  <motion.button
+                    initial={{ opacity: 0, x: 20, scale: 0.9 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 15, scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 450, damping: 25, delay: 0.01 }}
+                    onClick={() => {
+                      setShowSmartBulkEntry(true);
+                      setShowPlusActionMenu(false);
+                    }}
+                    whileHover={{ scale: 1.02, x: -1 }}
+                    whileTap={{ scale: 0.96 }}
+                    className="relative z-10 flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-[12px] tracking-wider uppercase transition-all w-full justify-start whitespace-nowrap cursor-pointer select-none"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-white/25 text-white flex items-center justify-center shrink-0 shadow-inner">
+                      <Zap size={16} className="fill-amber-200 text-amber-200" />
+                    </div>
+                    <div className="flex flex-col items-start leading-tight">
+                      <span className="font-black tracking-wide text-white text-[12px]">SMART ENTRY</span>
+                    </div>
+                  </motion.button>
+                </div>
+
+                {/* Full Entry Button (Matching color scheme) */}
                 <motion.button
                   initial={{ opacity: 0, x: 20, scale: 0.9 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
@@ -5389,16 +5397,16 @@ export default function App() {
                     setShowAddItem(true);
                     setShowPlusActionMenu(false);
                   }}
-                  whileHover={{ scale: 1.03, x: -2 }}
+                  whileHover={{ scale: 1.02, x: -1 }}
                   whileTap={{ scale: 0.96 }}
-                  className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 font-black text-[11px] tracking-wider uppercase border border-zinc-200 dark:border-zinc-800 shadow-2xl hover:border-amber-500/50 transition-all w-full justify-start whitespace-nowrap cursor-pointer group"
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-[12px] tracking-wider uppercase border border-amber-400/40 shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 transition-all w-full justify-start whitespace-nowrap cursor-pointer group select-none"
                 >
-                  <div className="w-7 h-7 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm font-bold group-hover:bg-amber-500 group-hover:text-white transition-colors shrink-0">
-                    📄
+                  <div className="w-8 h-8 rounded-xl bg-white/25 text-white flex items-center justify-center shrink-0 shadow-inner">
+                    <FileText size={16} className="fill-white/20 text-white" />
                   </div>
-                  <div className="flex flex-col items-start leading-none">
-                    <span className="font-black">FULL ENTRY</span>
-                    <span className="text-[9px] font-medium text-zinc-600 dark:text-zinc-400 normal-case tracking-normal mt-0.5">detailed form with all fields</span>
+                  <div className="flex flex-col items-start leading-tight">
+                    <span className="font-black tracking-wide text-white text-[12px]">FULL ENTRY</span>
+                    <span className="text-[9px] font-medium text-amber-100 normal-case tracking-normal mt-0.5">detailed form with all fields</span>
                   </div>
                 </motion.button>
               </motion.div>

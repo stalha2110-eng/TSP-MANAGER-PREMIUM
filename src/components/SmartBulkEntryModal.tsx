@@ -702,19 +702,37 @@ export function SmartBulkEntryModal({
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[var(--border)] shrink-0 bg-[var(--card)] backdrop-blur-md">
           <div className="flex items-center gap-3.5">
-            <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20 shadow-inner">
+            <div 
+              style={{
+                width: '31.9688px',
+                height: '33px',
+                marginTop: '-25px',
+                paddingBottom: '0px',
+                marginBottom: '-18px',
+                marginLeft: '-11px'
+              }}
+              className="rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20 shadow-inner"
+            >
               <Sparkles size={20} className="animate-pulse text-[var(--primary)]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-black tracking-tighter uppercase text-[var(--foreground)] flex items-center gap-2">
+                <h2 
+                  style={{
+                    fontSize: '12.75px',
+                    marginTop: '0px',
+                    paddingTop: '-5px',
+                    lineHeight: '23.5px'
+                  }}
+                  className="font-black tracking-tighter uppercase text-[var(--foreground)] flex items-center gap-2"
+                >
                   SMART ENTRY
                 </h2>
-                <span className="text-[8px] bg-[var(--primary)]/10 text-[var(--primary)] font-black px-2 py-0.5 rounded-full border border-[var(--primary)]/20 tracking-wider">
-                  FAST ENGINE
-                </span>
               </div>
-              <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 opacity-80">
+              <p 
+                style={{ fontSize: '7px' }}
+                className="font-black uppercase tracking-widest text-zinc-500 opacity-80"
+              >
                Add Multiple Items
               </p>
             </div>
@@ -724,22 +742,39 @@ export function SmartBulkEntryModal({
             {/* Quick Parse Toggle Button */}
             <button
               onClick={() => setShowQuickParser(!showQuickParser)}
-              className={cn(
-                "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black tracking-wide border transition-all cursor-pointer",
-                showQuickParser 
-                  ? "bg-amber-500/15 border-amber-500/30 text-amber-500" 
-                  : "bg-[var(--card)] border-[var(--border)] text-zinc-400 hover:text-[var(--foreground)] hover:border-zinc-500"
-              )}
+              style={{
+                width: '102.98400000000001px',
+                color: '#080808',
+                backgroundColor: '#71eebb'
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black tracking-wide border transition-all cursor-pointer"
             >
-              <FileText size={14} />
+              <FileText 
+                size={14} 
+                style={{
+                  fontSize: '11.5px',
+                  height: '16px',
+                  width: '22.5625px'
+                }}
+              />
               ⚡ QUICK PASTE
             </button>
 
             <button
               onClick={onClose}
-              className="rounded-xl p-2.5 bg-[var(--card)] border border-[var(--border)] text-zinc-400 hover:text-[var(--foreground)] hover:bg-zinc-800/10 transition-colors cursor-pointer"
+              style={{
+                backgroundColor: '#ff1515',
+                color: '#ffffff'
+              }}
+              className="rounded-xl p-2.5 border border-red-600 transition-colors cursor-pointer"
             >
-              <X size={18} />
+              <X 
+                size={18} 
+                style={{
+                  fontSize: '36px',
+                  color: '#ffffff'
+                }}
+              />
             </button>
           </div>
         </div>
@@ -941,6 +976,7 @@ export function SmartBulkEntryModal({
                             id={`name-${index}`}
                             type="text"
                             placeholder="Item name (सामान का नाम)..."
+                            style={{ height: '29.5px' }}
                             className={cn(
                               "w-full bg-[var(--background)] border rounded-xl px-3 py-1.5 font-bold text-xs focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all placeholder:text-zinc-650 shadow-inner",
                               showValidationErrors && errors.name 
@@ -1036,7 +1072,10 @@ export function SmartBulkEntryModal({
                             ? "border-red-500 ring-2 ring-red-500/30 bg-red-500/[0.04]" 
                             : "border-blue-500/60 dark:border-blue-500/40 hover:border-blue-500 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/25"
                         )}>
-                          <span className="text-[7.5px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-500/15 px-1 py-0.5 rounded shrink-0 select-none">
+                          <span 
+                            style={{ paddingLeft: '1.5px' }}
+                            className="text-[7.5px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-500/15 px-1 py-0.5 rounded shrink-0 select-none"
+                          >
                             Wholesale
                           </span>
                           <span className="text-zinc-500 dark:text-zinc-400 font-mono text-xs select-none font-black shrink-0">₹</span>

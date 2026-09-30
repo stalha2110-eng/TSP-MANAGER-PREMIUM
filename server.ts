@@ -240,6 +240,14 @@ CRITICAL "CHATAK" (छटांक / 50gm) RULE (MANDATORY):
   * If buying price is not explicitly mentioned by the user, set buyingPrice to 0. NEVER fabricate or guess buying price.
   * NEVER set retailPriceUnit or unit to "KG" when the user said "chatak" or "chatak(50gm)" — it MUST ALWAYS be "Chatak"!
 
+CRITICAL "KHARIDI" (खरीदी / खरीद / खरेदी = COST / BUYING PRICE) RULE (MANDATORY):
+- ALWAYS REMEMBER: In Hindi, Hinglish, Marathi, and Indian desi merchant parlance, whenever the user says "kharidi" (or "kharid", "khareedi", "khareed", "kharidi price", "kharidi rate", "kharidi bhav", "kharid rate", "kharid bhav", "खरीदी", "खरीद", "खरेदी", "खरीदी भाव", "खरीद भाव", "लागत"), IT STRICTLY AND UNEQUIVOCALLY MEANS "COST / BUYING PRICE" (the purchase/cost price per unit for the shopkeeper)!
+- "Kharidi" (खरीदी/खरेदी) is the direct everyday Indian business synonym for "Cost" / "Buying Price" (buyingPrice).
+- When a user says "kharidi" with a price (e.g., "Badam retail 900 wholesale 850 kharidi 800", "Aloo retail 30 kharidi 20", "Chawal retail 60 wholesale 50 kharidi 45", "Kaju 1000 kharidi 800", "Tamatar chiller 30 kharidi 20", "Kharidi 800 wholesale 850 retail 900 badam", "Aloo kharidi 15 wholesale 20 retail 25"):
+  * Set buyingPrice to the stated price (e.g., 800, 20, 45, 15).
+  * If a unit follows (e.g., "kharidi 800 kilo" or "kharidi 1200 box"), set buyingPriceUnit accordingly (e.g., "KG", "BOX").
+  * NEVER confuse "kharidi" with retail or wholesale price. It MUST ALWAYS map strictly to buyingPrice!
+
 CRITICAL "CHILLER PRICE" / "CHILLER" (चिल्लर भाव / चिल्लर रेट = RETAIL PRICE) RULE (MANDATORY):
 - ALWAYS REMEMBER: In Hindi, Hinglish, Marathi, and Indian desi street/bazaar merchant language, users generally and frequently say "chiller price" (or "chillar price", "chiller rate", "chillar rate", "chiller bhav", "chillar bhav", "chiller", "chillar", "चिल्लर", "चिल्लर भाव", "चिल्लर रेट", "खुद्रा", "फुटकर") to mean "RETAIL PRICE" (counter / customer selling price per unit)!
 - "Chiller" (चिल्लर) is the direct everyday colloquial synonym for "Retail".
@@ -324,8 +332,12 @@ Examples of speech to handle:
 15. "Chawal chiller price 60 wholesale 50" -> Name: "Chawal", retailPrice: 60, retailPriceUnit: "KG", wholesalePrice: 50, wholesalePriceUnit: "KG", buyingPrice: 0, unit: "KG", categoryName: "Groceries"
 16. "Kaju chiller price 60 chatak" -> Name: "Kaju", retailPrice: 60, retailPriceUnit: "Chatak", wholesalePrice: 0, buyingPrice: 0, unit: "Chatak", categoryName: "Dry Fruits"
 17. "Aloo chiller price 20 kilo wholesale 15 kilo" -> Name: "Aloo", retailPrice: 20, retailPriceUnit: "KG", wholesalePrice: 15, wholesalePriceUnit: "KG", buyingPrice: 0, unit: "KG", categoryName: "Vegetables"
+18. "Badam retail 900 wholesale 850 kharidi 800" -> Name: "Badam", retailPrice: 900, retailPriceUnit: "KG", wholesalePrice: 850, wholesalePriceUnit: "KG", buyingPrice: 800, buyingPriceUnit: "KG", unit: "KG", categoryName: "Dry Fruits"
+19. "Aloo retail 30 kharidi 20" -> Name: "Aloo", retailPrice: 30, retailPriceUnit: "KG", wholesalePrice: 0, buyingPrice: 20, buyingPriceUnit: "KG", unit: "KG", categoryName: "Vegetables"
+20. "Chawal chiller price 60 wholesale 52 kharidi 45" -> Name: "Chawal", retailPrice: 60, retailPriceUnit: "KG", wholesalePrice: 52, wholesalePriceUnit: "KG", buyingPrice: 45, buyingPriceUnit: "KG", unit: "KG", categoryName: "Groceries"
 
 Ensure correct spelling corrections of typical Indian speech recognition typos:
+- "kharidi", "kharidi price", "kharidi rate", "kharidi bhav", "kharid rate", "kharid bhav", "kharid", "khareedi", "khareed", "खरिदी", "खरीदी", "खरीद", "खरेदी", "खरीदी भाव", "खरीद भाव" -> "cost" / "buying price" (buyingPrice)
 - "chiller price", "chillar price", "chiller rate", "chillar rate", "chiller bhav", "chillar bhav", "chillar", "chiller", "chilar", "chhilhar", "चिल्लर भाव", "चिल्लर" -> "retail price" / "retail"
 - "chattak", "chhatak", "chataak", "satak", "sattack", "छटांक", "छटाक" -> "chatak" (= 50gm retail unit "Chatak")
 - "shakhar" or "shakar" -> "Sugar" / "Shakhar"

@@ -5353,13 +5353,13 @@ export default function App() {
                 transition={{ type: "spring", stiffness: 420, damping: 28 }}
                 className="absolute bottom-[68px] right-0 flex flex-col gap-2.5 z-[101] min-w-[210px] items-end pointer-events-auto text-zinc-950 font-sans"
               >
-                {/* Smart Entry Button with Animated Color Motion Border */}
-                <div className="relative p-[2px] rounded-[18px] overflow-hidden w-full shadow-xl shadow-amber-500/25 group">
+                {/* Smart Entry Button with Animated Color Motion Border (Electric Purple / Violet Theme) */}
+                <div className="relative p-[2px] rounded-[18px] overflow-hidden w-full shadow-xl shadow-purple-600/35 group">
                   {/* Rotating Color Motion Gradient Border */}
                   <motion.div
                     className="absolute -inset-[150%] pointer-events-none"
                     style={{
-                      background: 'conic-gradient(from 0deg, #f59e0b, #ef4444, #ec4899, #8b5cf6, #3b82f6, #10b981, #f59e0b)',
+                      background: 'conic-gradient(from 0deg, #8b5cf6, #d946ef, #06b6d4, #10b981, #f59e0b, #8b5cf6)',
                     }}
                     animate={{ rotate: 360 }}
                     transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
@@ -5376,10 +5376,10 @@ export default function App() {
                     }}
                     whileHover={{ scale: 1.02, x: -1 }}
                     whileTap={{ scale: 0.96 }}
-                    className="relative z-10 flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-[12px] tracking-wider uppercase transition-all w-full justify-start whitespace-nowrap cursor-pointer select-none"
+                    className="relative z-10 flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-black text-[12px] tracking-wider uppercase transition-all w-full justify-start whitespace-nowrap cursor-pointer select-none"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-white/25 text-white flex items-center justify-center shrink-0 shadow-inner">
-                      <Zap size={16} className="fill-amber-200 text-amber-200" />
+                    <div className="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0 shadow-inner">
+                      <Zap size={16} className="fill-amber-300 text-amber-300" />
                     </div>
                     <div className="flex flex-col items-start leading-tight">
                       <span className="font-black tracking-wide text-white text-[12px]">SMART ENTRY</span>
@@ -5387,7 +5387,7 @@ export default function App() {
                   </motion.button>
                 </div>
 
-                {/* Full Entry Button (Matching color scheme) */}
+                {/* Full Entry Button (Radiant Emerald / Teal Theme) */}
                 <motion.button
                   initial={{ opacity: 0, x: 20, scale: 0.9 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
@@ -5399,14 +5399,14 @@ export default function App() {
                   }}
                   whileHover={{ scale: 1.02, x: -1 }}
                   whileTap={{ scale: 0.96 }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-[12px] tracking-wider uppercase border border-amber-400/40 shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 transition-all w-full justify-start whitespace-nowrap cursor-pointer group select-none"
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 hover:from-emerald-500 hover:to-cyan-600 text-white font-black text-[12px] tracking-wider uppercase border border-emerald-400/50 shadow-xl shadow-emerald-600/30 hover:shadow-emerald-600/50 transition-all w-full justify-start whitespace-nowrap cursor-pointer group select-none"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-white/25 text-white flex items-center justify-center shrink-0 shadow-inner">
-                    <FileText size={16} className="fill-white/20 text-white" />
+                  <div className="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0 shadow-inner">
+                    <FileText size={16} className="fill-emerald-200/30 text-emerald-100" />
                   </div>
                   <div className="flex flex-col items-start leading-tight">
                     <span className="font-black tracking-wide text-white text-[12px]">FULL ENTRY</span>
-                    <span className="text-[9px] font-medium text-amber-100 normal-case tracking-normal mt-0.5">detailed form with all fields</span>
+                    <span className="text-[9px] font-medium text-emerald-100 normal-case tracking-normal mt-0.5">detailed form with all fields</span>
                   </div>
                 </motion.button>
               </motion.div>

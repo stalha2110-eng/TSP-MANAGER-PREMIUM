@@ -33,6 +33,9 @@ function cleanTranscriptText(text: string): string {
   cleaned = cleaned.replace(/\b(?:retel|ratel|reteil|रिटेल)\b/gi, "retail");
   // Normalize "holsel", "holsale", "whoalsale", "व्होलसेल", "होलसेल" -> "wholesale"
   cleaned = cleaned.replace(/\b(?:holsel|holsale|whoalsale|व्होलसेल|होलसेल)\b/gi, "wholesale");
+  // Normalize "kharidi price", "kharidi rate", "kharidi bhav", "kharid bhav", "khareedi", "khareed" -> "kharidi" (Cost / Buying price)
+  cleaned = cleaned.replace(/\b(?:kharidi\s*price|kharidi\s*rate|kharidi\s*bhav|kharid\s*bhav|kharid\s*rate|kharid\s*price|khareedi\s*bhav|khareedi\s*rate|khareedi\s*price|खरीदी\s*भाव|खरीद\s*भाव|खरेदी\s*भाव|खरीदी\s*रेट|खरीद\s*रेट)\b/gi, "kharidi");
+  cleaned = cleaned.replace(/\b(?:khareedi|khareed|खरिदी|खरेदी)\b/gi, "kharidi");
   // Normalize "chatak", "chattak", "chhatak", "chataak", "satak", "shatak", "sattack", "छटांक", "छटाक", "चटक", "चटाक" -> "chatak"
   cleaned = cleaned.replace(/\b(?:chattak|chhatak|chataak|satak|shatak|sattack|छटांक|छटाक|चटक|चटाक)\b/gi, "chatak");
   // Normalize "chatak 50gm", "chatak(50gm)", "chatak 50g", "chatak (50gm)" -> "chatak"
@@ -1435,7 +1438,7 @@ export function VoiceProductAssistant({
                 ) : (
                   <div className="opacity-60 space-y-1.5 text-[var(--foreground)] text-center max-w-xl px-4">
                     <p className="text-xs font-semibold">Tap the mic to start listing. Anything you say before <strong>"retail"</strong> or <strong>"chiller price"</strong> is set as the product name!</p>
-                    <p className="text-[10px] font-mono opacity-90 text-amber-600 dark:text-amber-400">Example: "Badam chiller price 900rs per kg, wholesale 850rs per kg, cost 800rs per kg"</p>
+                    <p className="text-[10px] font-mono opacity-90 text-amber-600 dark:text-amber-400">Example: "Badam retail 900rs, wholesale 850rs, kharidi 800rs"</p>
                   </div>
                 )}
 
@@ -1451,7 +1454,7 @@ export function VoiceProductAssistant({
                 <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex justify-between items-center text-xs">
                   <div className="flex items-center gap-2">
                     <Sparkles className="text-amber-500" size={14} />
-                    <span className="text-[var(--foreground)]/70">Correction mode is live! Say: <strong>"Change [item] retail/wholesale/cost to [price]"</strong></span>
+                    <span className="text-[var(--foreground)]/70">Correction mode is live! Say: <strong>"Change [item] retail/wholesale/kharidi to [price]"</strong></span>
                   </div>
                   <span className="px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] font-mono text-[9px] text-[var(--foreground)]/50">ACTIVE</span>
                 </div>

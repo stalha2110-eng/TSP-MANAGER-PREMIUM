@@ -402,38 +402,30 @@ export default function SettingsScreen({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3.5">
+                  <div className="flex flex-col gap-2.5">
                     {/* 1. Language Button */}
                     <button
                       type="button"
                       onClick={() => setInterfacePage('language')}
-                      className="w-full flex items-center justify-between p-5 rounded-3xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)]/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)]/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                          <Globe size={22} className="stroke-[2.2]" />
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Globe size={19} className="stroke-[2.2]" />
                         </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-black uppercase tracking-tight text-[var(--foreground)]">
-                              Language
-                            </span>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20">
-                              {currentLangObj.emoji} {currentLangObj.name}
-                            </span>
-                          </div>
-                          <p className="text-[11px] opacity-50 font-medium">
-                            Display language, Hindi / Marathi dialects, and translation engine
-                          </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-[var(--foreground)]">
+                            Language
+                          </span>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20">
+                            {currentLangObj.emoji} {currentLangObj.name}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 ml-3">
-                        <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider opacity-40 group-hover:opacity-80 transition-opacity">
-                          Configure
-                        </span>
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-[var(--primary)]/10 group-hover:border-[var(--primary)]/30 group-hover:text-[var(--primary)] transition-all">
-                          <ChevronRight size={16} />
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-[var(--primary)]/10 group-hover:border-[var(--primary)]/30 group-hover:text-[var(--primary)] transition-all">
+                          <ChevronRight size={15} />
                         </div>
                       </div>
                     </button>
@@ -442,33 +434,25 @@ export default function SettingsScreen({
                     <button
                       type="button"
                       onClick={() => setInterfacePage('themes')}
-                      className="w-full flex items-center justify-between p-5 rounded-3xl border border-[var(--border)] bg-[var(--card)] hover:border-violet-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-violet-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-violet-500/10 text-violet-500 border border-violet-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                          <Palette size={22} className="stroke-[2.2]" />
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-500 border border-violet-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Palette size={19} className="stroke-[2.2]" />
                         </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-black uppercase tracking-tight text-[var(--foreground)]">
-                              Themes
-                            </span>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-500 border border-violet-500/20">
-                              {currentThemeObj.emoji} {currentThemeObj.name}
-                            </span>
-                          </div>
-                          <p className="text-[11px] opacity-50 font-medium">
-                            Visual appearance, midnight palettes, and high-contrast decks
-                          </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-[var(--foreground)]">
+                            Themes
+                          </span>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-500 border border-violet-500/20">
+                            {currentThemeObj.emoji} {currentThemeObj.name}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 ml-3">
-                        <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider opacity-40 group-hover:opacity-80 transition-opacity">
-                          Browse
-                        </span>
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-violet-500/10 group-hover:border-violet-500/30 group-hover:text-violet-500 transition-all">
-                          <ChevronRight size={16} />
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-violet-500/10 group-hover:border-violet-500/30 group-hover:text-violet-500 transition-all">
+                          <ChevronRight size={15} />
                         </div>
                       </div>
                     </button>

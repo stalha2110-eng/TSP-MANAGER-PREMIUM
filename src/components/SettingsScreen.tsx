@@ -28,7 +28,10 @@ import {
   ChevronDown,
   ChevronUp,
   Globe,
-  Settings2
+  Settings2,
+  ArrowLeft,
+  ChevronRight,
+  Palette
 } from 'lucide-react';
 import { AppState, AppSettings, ThemeType, LanguageType, CustomApiKeyItem } from '../types';
 import { 
@@ -57,10 +60,10 @@ export default function SettingsScreen({
   onClearCache: () => void;
   isSyncing: boolean;
   isExporting: boolean;
-  activeSubTab?: 'interface' | 'security' | 'sound' | 'data';
-  onChangeSubTab?: (tab: 'interface' | 'security' | 'sound' | 'data') => void;
+  activeSubTab?: 'overview' | 'interface' | 'security' | 'sound' | 'data';
+  onChangeSubTab?: (tab: 'overview' | 'interface' | 'security' | 'sound' | 'data') => void;
 }) {
-  const [localActiveSubTab, setLocalActiveSubTab] = useState<'interface' | 'security' | 'sound' | 'data'>('interface');
+  const [localActiveSubTab, setLocalActiveSubTab] = useState<'overview' | 'interface' | 'security' | 'sound' | 'data'>('overview');
   const activeSubTab = externalActiveSubTab || localActiveSubTab;
   const setActiveSubTab = onChangeSubTab || setLocalActiveSubTab;
 
@@ -231,37 +234,152 @@ export default function SettingsScreen({
     { id: 'slate', color: '#64748b' },
   ];
 
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-32 max-w-2xl mx-auto">
-      <div className="flex flex-col gap-1 items-center md:items-start">
-        <div className="h-1 bg-[var(--primary)] w-12 rounded-full mb-4 md:hidden" />
-        <h2 className="text-4xl font-black tracking-tighter text-[var(--foreground)] uppercase">{t.settings}</h2>
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-30">Enterprise System v3.1</p>
-      </div>
+  const [interfacePage, setInterfacePage] = useState<'main' | 'language' | 'themes'>('main');
 
-      {/* 🧭 Professional Categories Navigation Console */}
-      <div className="flex bg-[var(--foreground)]/[0.03] border border-[var(--border)] p-1.5 rounded-2xl md:rounded-[2.2rem] gap-1 overflow-x-auto no-scrollbar scroll-smooth">
-        {[
-          { id: 'interface', label: '🎨 Interface', desc: 'Theme, Font & Style' },
-          { id: 'security', label: '🔒 Security & Sync', desc: 'Secure PIN & Cloud' },
-          { id: 'sound', label: '🔊 Audio & Beeps', desc: 'Synthesizer Sounds & Alarms' },
-          { id: 'data', label: '💾 Sync & Database', desc: 'Exports & Storage cache' }
-        ].map(cat => (
+  const currentLangObj = LANGUAGES.find(l => l.id === state.settings.language) || LANGUAGES[0];
+  const currentThemeObj = THEMES.find(th => th.id === state.settings.theme) || THEMES[0];
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 pb-32 max-w-2xl mx-auto">
+      {/* Overview / Main Menu: Vertical List of 4 Section Buttons */}
+      {activeSubTab === 'overview' && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="h-1 w-6 bg-[var(--primary)] opacity-40 rounded-full" />
+            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[var(--primary)]">
+              Settings & Preferences
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            {/* 1. Interface */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveSubTab('interface');
+                setInterfacePage('main');
+              }}
+              className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-violet-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-500 border border-violet-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Palette size={19} className="stroke-[2.2]" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-extrabold text-[var(--foreground)]">
+                    Interface
+                  </span>
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-500 border border-violet-500/20">
+                    {currentThemeObj.name}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-violet-500/10 group-hover:border-violet-500/30 group-hover:text-violet-500 transition-all">
+                  <ChevronRight size={15} />
+                </div>
+              </div>
+            </button>
+
+            {/* 2. Sync & Database */}
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('data')}
+              className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-cyan-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Database size={19} className="stroke-[2.2]" />
+                </div>
+                <div className="flex items-center">
+                  <span className="text-sm font-extrabold text-[var(--foreground)]">
+                    Sync & Database
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-cyan-500/10 group-hover:border-cyan-500/30 group-hover:text-cyan-500 transition-all">
+                  <ChevronRight size={15} />
+                </div>
+              </div>
+            </button>
+
+            {/* 3. Security & Sync */}
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('security')}
+              className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-orange-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Lock size={19} className="stroke-[2.2]" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-extrabold text-[var(--foreground)]">
+                    Security & Sync
+                  </span>
+                  <span className={cn(
+                    "text-[9px] font-bold px-2 py-0.5 rounded-full border",
+                    state.settings.pin ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-orange-500/10 text-orange-500 border-orange-500/20"
+                  )}>
+                    {state.settings.pin ? "PIN Active" : "No PIN"}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-orange-500/10 group-hover:border-orange-500/30 group-hover:text-orange-500 transition-all">
+                  <ChevronRight size={15} />
+                </div>
+              </div>
+            </button>
+
+            {/* 4. Audio & Beeps */}
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('sound')}
+              className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-emerald-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Volume2 size={19} className="stroke-[2.2]" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-extrabold text-[var(--foreground)]">
+                    Audio & Beeps
+                  </span>
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    {state.settings.soundOn !== false ? "Audio On" : "Audio Muted"}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-emerald-500/10 group-hover:border-emerald-500/30 group-hover:text-emerald-500 transition-all">
+                  <ChevronRight size={15} />
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Dedicated Section Page Header */}
+      {activeSubTab !== 'overview' && (activeSubTab !== 'interface' || interfacePage === 'main') && (
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
           <button
-            key={cat.id}
-            onClick={() => setActiveSubTab(cat.id as any)}
-            className={cn(
-              "flex-1 flex flex-col items-center justify-center text-center gap-1.5 px-4 py-3 rounded-xl md:rounded-[1.6rem] transition-all cursor-pointer min-w-[7.5rem] relative group select-none outline-none border",
-              activeSubTab === cat.id
-                ? "bg-[var(--card)] text-[var(--foreground)] border-[var(--border)] shadow-md translate-y-[-1px]"
-                : "border-transparent text-[var(--foreground)]/50 hover:text-[var(--foreground)]/80 hover:bg-[var(--foreground)]/[0.01]"
-            )}
+            type="button"
+            onClick={() => setActiveSubTab('overview')}
+            className="flex items-center gap-2 text-xs font-bold text-[var(--primary)] hover:underline cursor-pointer group"
           >
-            <span className="text-[10px] font-black uppercase tracking-wider">{cat.label}</span>
-            <span className="text-[7.5px] opacity-45 uppercase font-semibold block leading-none">{cat.desc}</span>
+            <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+            <span>Back to Settings</span>
           </button>
-        ))}
-      </div>
+          <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+            {activeSubTab === 'interface' ? 'Interface' :
+             activeSubTab === 'data' ? 'Sync & Database' :
+             activeSubTab === 'security' ? 'Security & Sync' : 'Audio & Beeps'}
+          </span>
+        </div>
+      )}
 
       <div className="space-y-8">
         <AnimatePresence mode="wait">
@@ -274,238 +392,364 @@ export default function SettingsScreen({
               transition={{ duration: 0.15 }}
               className="space-y-8"
             >
-              {/* Localization & Theme */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                   <div className="h-1 w-8 bg-[var(--primary)] opacity-30 rounded-full" />
-                   <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--primary)]">LANGUAGE</label>
-                </div>
-                
-                <div className="grid gap-8">
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {LANGUAGES.map(lang => (
-                        <button
-                          key={lang.id}
-                          onClick={() => onUpdate({ language: lang.id })}
-                          className={cn(
-                            "group relative flex flex-col items-center gap-3 rounded-[2rem] border p-6 transition-all",
-                            state.settings.language === lang.id 
-                              ? "border-[var(--primary)] bg-[var(--primary)]/10 shadow-lg" 
-                              : "border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/40"
-                          )}
-                        >
-                          <span className="text-4xl transition-transform group-hover:scale-110">{lang.emoji}</span>
-                          <span className="text-[9px] font-black uppercase tracking-widest">{lang.name}</span>
-                        </button>
-                      ))}
-                    </div>
+              {/* PAGE 1: Main Interface Hub with Language and Themes Buttons */}
+              {interfacePage === 'main' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-1 w-6 bg-[var(--primary)] opacity-40 rounded-full" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[var(--primary)]">
+                      Interface & Personalization
+                    </span>
                   </div>
 
-                  {/* Advanced Professional Language Engine Collapsible Panel */}
-                  <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)]/50 overflow-hidden transition-all shadow-xs">
-                    {/* Collapsible Trigger Card / Header Button */}
+                  <div className="grid grid-cols-1 gap-3.5">
+                    {/* 1. Language Button */}
                     <button
-                      id="toggle-advanced-language-config-btn"
                       type="button"
-                      onClick={() => setIsAdvancedLanguageOpen(!isAdvancedLanguageOpen)}
-                      className="w-full flex items-center justify-between p-5 sm:p-6 text-left cursor-pointer hover:bg-[var(--foreground)]/[0.02] active:bg-[var(--foreground)]/[0.04] transition-colors group"
-                      aria-expanded={isAdvancedLanguageOpen}
+                      onClick={() => setInterfacePage('language')}
+                      className="w-full flex items-center justify-between p-5 rounded-3xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)]/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
                     >
-                      <div className="flex items-center gap-3.5 sm:gap-4">
-                        <div className="p-2.5 sm:p-3 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 shadow-xs group-hover:scale-105 transition-transform shrink-0">
-                          <Globe size={18} className="stroke-[2.2]" />
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Globe size={22} className="stroke-[2.2]" />
                         </div>
-                        <div className="space-y-1 text-left">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-xs sm:text-sm font-black uppercase tracking-wider text-[var(--foreground)]">
-                              Advanced Language Engine Configuration
-                            </p>
-                            {state.settings.enableStrictLanguageMode !== false && (
-                              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                Strict Active
-                              </span>
-                            )}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-black uppercase tracking-tight text-[var(--foreground)]">
+                              Language
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20">
+                              {currentLangObj.emoji} {currentLangObj.name}
+                            </span>
                           </div>
-                          <p className="text-[10px] sm:text-[11px] opacity-60 font-medium leading-relaxed">
-                            {isAdvancedLanguageOpen 
-                              ? "Click to collapse fine-grained linguistic rules & validation sandbox"
-                              : "Click to configure strict translation modes, validation rules & preview tools"}
+                          <p className="text-[11px] opacity-50 font-medium">
+                            Display language, Hindi / Marathi dialects, and translation engine
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2.5 shrink-0 ml-3">
-                        <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider opacity-50 group-hover:opacity-80 transition-opacity">
-                          {isAdvancedLanguageOpen ? "Hide" : "Configure"}
+                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                        <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider opacity-40 group-hover:opacity-80 transition-opacity">
+                          Configure
                         </span>
-                        <div className={cn(
-                          "h-8 w-8 rounded-xl flex items-center justify-center border border-[var(--border)] bg-[var(--background)] transition-transform duration-300",
-                          isAdvancedLanguageOpen ? "rotate-180 bg-[var(--primary)]/10 border-[var(--primary)]/30 text-[var(--primary)]" : "text-[var(--foreground)]/60 group-hover:text-[var(--foreground)]"
-                        )}>
-                          <ChevronDown size={16} />
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-[var(--primary)]/10 group-hover:border-[var(--primary)]/30 group-hover:text-[var(--primary)] transition-all">
+                          <ChevronRight size={16} />
                         </div>
                       </div>
                     </button>
 
-                    {/* Expandable Content Section with smooth Animation */}
-                    <AnimatePresence initial={false}>
-                      {isAdvancedLanguageOpen && (
-                        <motion.div
-                          key="advanced-language-content"
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.25, ease: 'easeInOut' }}
-                          className="overflow-hidden border-t border-[var(--border)]/60 bg-[var(--background)]/30"
-                        >
-                          <div className="p-5 sm:p-6 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {/* Strict Language Mode Toggle */}
-                              <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]/60 shadow-xs">
-                                <div>
-                                  <p className="text-xs font-bold text-[var(--foreground)]">Strict Language Mode</p>
-                                  <p className="text-[10px] opacity-50 mt-0.5">Enforces only the selected language in all UI components</p>
-                                </div>
-                                <button 
-                                  onClick={() => onUpdate({ enableStrictLanguageMode: !state.settings.enableStrictLanguageMode })}
-                                  className={cn(
-                                    "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
-                                    state.settings.enableStrictLanguageMode !== false ? "bg-emerald-500" : "bg-slate-800"
-                                  )}
-                                >
-                                  <div className={cn("absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-all", state.settings.enableStrictLanguageMode !== false ? "translate-x-7" : "")} />
-                                </button>
-                              </div>
-
-                              {/* Allow Mixed Language Toggle */}
-                              <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]/60 shadow-xs">
-                                <div>
-                                  <p className="text-xs font-bold text-[var(--foreground)]">Allow Mixed Language</p>
-                                  <p className="text-[10px] opacity-50 mt-0.5">Displays translation helpers alongside terms (not recommended)</p>
-                                </div>
-                                <button 
-                                  onClick={() => onUpdate({ allowMixedLanguage: !state.settings.allowMixedLanguage })}
-                                  className={cn(
-                                    "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
-                                    state.settings.allowMixedLanguage ? "bg-emerald-500" : "bg-slate-800"
-                                  )}
-                                >
-                                  <div className={cn("absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-all", state.settings.allowMixedLanguage ? "translate-x-7" : "")} />
-                                </button>
-                              </div>
-
-                              {/* Enable Translation Validation */}
-                              <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]/60 shadow-xs">
-                                <div>
-                                  <p className="text-xs font-bold text-[var(--foreground)]">Translation Validation</p>
-                                  <p className="text-[10px] opacity-50 mt-0.5">Scans & auto-corrects mismatched strings on the fly</p>
-                                </div>
-                                <button 
-                                  onClick={() => onUpdate({ enableTranslationValidation: !state.settings.enableTranslationValidation })}
-                                  className={cn(
-                                    "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
-                                    state.settings.enableTranslationValidation !== false ? "bg-emerald-500" : "bg-slate-800"
-                                  )}
-                                >
-                                  <div className={cn("absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-all", state.settings.enableTranslationValidation !== false ? "translate-x-7" : "")} />
-                                </button>
-                              </div>
-
-                              {/* Enable Instant Language Refresh */}
-                              <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]/60 shadow-xs">
-                                <div>
-                                  <p className="text-xs font-bold text-[var(--foreground)]">Instant Language Refresh</p>
-                                  <p className="text-[10px] opacity-50 mt-0.5">Applies system-wide linguistic reload instantly on select</p>
-                                </div>
-                                <button 
-                                  onClick={() => onUpdate({ enableInstantLanguageRefresh: !state.settings.enableInstantLanguageRefresh })}
-                                  className={cn(
-                                    "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
-                                    state.settings.enableInstantLanguageRefresh !== false ? "bg-emerald-500" : "bg-slate-800"
-                                  )}
-                                >
-                                  <div className={cn("absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-all", state.settings.enableInstantLanguageRefresh !== false ? "translate-x-7" : "")} />
-                                </button>
-                              </div>
-
-                              {/* Show Language Preview Option */}
-                              <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]/60 shadow-xs md:col-span-2">
-                                <div>
-                                  <p className="text-xs font-bold text-[var(--foreground)]">Interactive Language Preview Panel</p>
-                                  <p className="text-[10px] opacity-50 mt-0.5">Displays a real-time translation card for the selected mode below</p>
-                                </div>
-                                <button 
-                                  onClick={() => onUpdate({ showLanguagePreview: !state.settings.showLanguagePreview })}
-                                  className={cn(
-                                    "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
-                                    state.settings.showLanguagePreview !== false ? "bg-emerald-500" : "bg-slate-800"
-                                  )}
-                                >
-                                  <div className={cn("absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-all", state.settings.showLanguagePreview !== false ? "translate-x-7" : "")} />
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Interactive Preview Panel */}
-                            {state.settings.showLanguagePreview !== false && (
-                              <div className="mt-4 p-5 rounded-2xl bg-gradient-to-br from-[var(--primary)]/5 to-[var(--primary)]/10 border border-[var(--primary)]/20 shadow-inner">
-                                <div className="flex items-center justify-between mb-4 border-b border-[var(--primary)]/15 pb-2">
-                                  <p className="text-xs font-black uppercase tracking-wider text-[var(--primary)]">
-                                    Live Linguistic Preview: {LANGUAGES.find(l => l.id === state.settings.language)?.name || state.settings.language} Mode
-                                  </p>
-                                  <span className="text-[10px] bg-[var(--primary)]/15 text-[var(--primary)] px-2 py-0.5 rounded-full font-bold">
-                                    Strict Mode Active
-                                  </span>
-                                </div>
-                                
-                                <div className="grid grid-cols-2 gap-3 text-xs">
-                                  <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]/40">
-                                    <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Add Product</p>
-                                    <p className="font-bold text-[var(--foreground)] mt-0.5">
-                                      {state.settings.language === 'en' ? 'Add Product' : state.settings.language === 'hi-en' ? 'Saman Add Karo' : state.settings.language === 'hi' ? 'सामान जोड़ें' : 'सामान जोडा'}
-                                    </p>
-                                  </div>
-                                  
-                                  <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]/40">
-                                    <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Create Bill</p>
-                                    <p className="font-bold text-[var(--foreground)] mt-0.5">
-                                      {state.settings.language === 'en' ? 'Create Bill' : state.settings.language === 'hi-en' ? 'Bill Banao' : state.settings.language === 'hi' ? 'बिल बनाएं' : 'बिल तयार करा'}
-                                    </p>
-                                  </div>
-                                  
-                                  <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]/40">
-                                    <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Customer Info</p>
-                                    <p className="font-bold text-[var(--foreground)] mt-0.5">
-                                      {state.settings.language === 'en' ? 'Customer Info' : state.settings.language === 'hi-en' ? 'Customer Info' : state.settings.language === 'hi' ? 'ग्राहक की जानकारी' : 'ग्राहक माहिती'}
-                                    </p>
-                                  </div>
-                                  
-                                  <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]/40">
-                                    <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Stock</p>
-                                    <p className="font-bold text-[var(--foreground)] mt-0.5">
-                                      {state.settings.language === 'en' ? 'Stock' : state.settings.language === 'hi-en' ? 'Stock' : state.settings.language === 'hi' ? 'स्टॉक' : 'स्टॉक'}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                    {/* 2. Themes Button */}
+                    <button
+                      type="button"
+                      onClick={() => setInterfacePage('themes')}
+                      className="w-full flex items-center justify-between p-5 rounded-3xl border border-[var(--border)] bg-[var(--card)] hover:border-violet-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-violet-500/10 text-violet-500 border border-violet-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Palette size={22} className="stroke-[2.2]" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-black uppercase tracking-tight text-[var(--foreground)]">
+                              Themes
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-500 border border-violet-500/20">
+                              {currentThemeObj.emoji} {currentThemeObj.name}
+                            </span>
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                          <p className="text-[11px] opacity-50 font-medium">
+                            Visual appearance, midnight palettes, and high-contrast decks
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                        <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider opacity-40 group-hover:opacity-80 transition-opacity">
+                          Browse
+                        </span>
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-violet-500/10 group-hover:border-violet-500/30 group-hover:text-violet-500 transition-all">
+                          <ChevronRight size={16} />
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* PAGE 2: Language Sub-Page */}
+              {interfacePage === 'language' && (
+                <div className="space-y-6">
+                  {/* Back Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setInterfacePage('main')}
+                      className="flex items-center gap-2 text-xs font-bold text-[var(--primary)] hover:underline cursor-pointer group"
+                    >
+                      <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                      <span>Back to Interface</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+                      Language Settings
+                    </span>
                   </div>
 
-                  {/* Visual Deck Section */}
-                  <div className="space-y-4">
-                    <p className="text-xs font-bold opacity-60 ml-1">{t.themeDeck}</p>
+                  <section className="space-y-6">
+                    <div className="flex items-center gap-4">
+                       <div className="h-1 w-8 bg-[var(--primary)] opacity-30 rounded-full" />
+                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--primary)]">SELECT LANGUAGE</label>
+                    </div>
+                    
+                    <div className="grid gap-8">
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {LANGUAGES.map(lang => (
+                            <button
+                              key={lang.id}
+                              onClick={() => onUpdate({ language: lang.id })}
+                              className={cn(
+                                "group relative flex flex-col items-center gap-3 rounded-[2rem] border p-6 transition-all cursor-pointer",
+                                state.settings.language === lang.id 
+                                  ? "border-[var(--primary)] bg-[var(--primary)]/10 shadow-lg" 
+                                  : "border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/40"
+                              )}
+                            >
+                              <span className="text-4xl transition-transform group-hover:scale-110">{lang.emoji}</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest">{lang.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Advanced Professional Language Engine Collapsible Panel */}
+                      <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)]/50 overflow-hidden transition-all shadow-xs">
+                        {/* Collapsible Trigger Card / Header Button */}
+                        <button
+                          id="toggle-advanced-language-config-btn"
+                          type="button"
+                          onClick={() => setIsAdvancedLanguageOpen(!isAdvancedLanguageOpen)}
+                          className="w-full flex items-center justify-between p-5 sm:p-6 text-left cursor-pointer hover:bg-[var(--foreground)]/[0.02] active:bg-[var(--foreground)]/[0.04] transition-colors group"
+                          aria-expanded={isAdvancedLanguageOpen}
+                        >
+                          <div className="flex items-center gap-3.5 sm:gap-4">
+                            <div className="p-2.5 sm:p-3 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                              <Globe size={18} className="stroke-[2.2]" />
+                            </div>
+                            <div className="space-y-1 text-left">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-xs sm:text-sm font-black uppercase tracking-wider text-[var(--foreground)]">
+                                  Advanced Language Engine Configuration
+                                </p>
+                                {state.settings.enableStrictLanguageMode !== false && (
+                                  <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    Strict Active
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] sm:text-[11px] opacity-60 font-medium leading-relaxed">
+                                {isAdvancedLanguageOpen 
+                                  ? "Click to collapse fine-grained linguistic rules & validation sandbox"
+                                  : "Click to configure strict translation modes, validation rules & preview tools"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2.5 shrink-0 ml-3">
+                            <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider opacity-50 group-hover:opacity-80 transition-opacity">
+                              {isAdvancedLanguageOpen ? "Hide" : "Configure"}
+                            </span>
+                            <div className={cn(
+                              "h-8 w-8 rounded-xl flex items-center justify-center border border-[var(--border)] bg-[var(--background)] transition-transform duration-300",
+                              isAdvancedLanguageOpen ? "rotate-180 bg-[var(--primary)]/10 border-[var(--primary)]/30 text-[var(--primary)]" : "text-[var(--foreground)]/60 group-hover:text-[var(--foreground)]"
+                            )}>
+                              <ChevronDown size={16} />
+                            </div>
+                          </div>
+                        </button>
+
+                        {/* Expandable Content Section with smooth Animation */}
+                        <AnimatePresence initial={false}>
+                          {isAdvancedLanguageOpen && (
+                            <motion.div
+                              key="advanced-language-content"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.25, ease: 'easeInOut' }}
+                              className="overflow-hidden border-t border-[var(--border)]/60 bg-[var(--background)]/30"
+                            >
+                              <div className="p-5 sm:p-6 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {/* Strict Language Mode Toggle */}
+                                  <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]/60 shadow-xs">
+                                    <div>
+                                      <p className="text-xs font-bold text-[var(--foreground)]">Strict Language Mode</p>
+                                      <p className="text-[10px] opacity-50 mt-0.5">Enforces only the selected language in all UI components</p>
+                                    </div>
+                                    <button 
+                                      onClick={() => onUpdate({ enableStrictLanguageMode: !state.settings.enableStrictLanguageMode })}
+                                      className={cn(
+                                        "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
+                                        state.settings.enableStrictLanguageMode !== false ? "bg-emerald-500" : "bg-slate-800"
+                                      )}
+                                    >
+                                      <div className={cn("absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-all", state.settings.enableStrictLanguageMode !== false ? "translate-x-7" : "")} />
+                                    </button>
+                                  </div>
+
+                                  {/* Allow Mixed Language Toggle */}
+                                  <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]/60 shadow-xs">
+                                    <div>
+                                      <p className="text-xs font-bold text-[var(--foreground)]">Allow Mixed Language</p>
+                                      <p className="text-[10px] opacity-50 mt-0.5">Displays translation helpers alongside terms (not recommended)</p>
+                                    </div>
+                                    <button 
+                                      onClick={() => onUpdate({ allowMixedLanguage: !state.settings.allowMixedLanguage })}
+                                      className={cn(
+                                        "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
+                                        state.settings.allowMixedLanguage ? "bg-emerald-500" : "bg-slate-800"
+                                      )}
+                                    >
+                                      <div className={cn("absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-all", state.settings.allowMixedLanguage ? "translate-x-7" : "")} />
+                                    </button>
+                                  </div>
+
+                                  {/* Enable Translation Validation */}
+                                  <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]/60 shadow-xs">
+                                    <div>
+                                      <p className="text-xs font-bold text-[var(--foreground)]">Translation Validation</p>
+                                      <p className="text-[10px] opacity-50 mt-0.5">Scans & auto-corrects mismatched strings on the fly</p>
+                                    </div>
+                                    <button 
+                                      onClick={() => onUpdate({ enableTranslationValidation: !state.settings.enableTranslationValidation })}
+                                      className={cn(
+                                        "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
+                                        state.settings.enableTranslationValidation !== false ? "bg-emerald-500" : "bg-slate-800"
+                                      )}
+                                    >
+                                      <div className={cn("absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-all", state.settings.enableTranslationValidation !== false ? "translate-x-7" : "")} />
+                                    </button>
+                                  </div>
+
+                                  {/* Enable Instant Language Refresh */}
+                                  <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]/60 shadow-xs">
+                                    <div>
+                                      <p className="text-xs font-bold text-[var(--foreground)]">Instant Language Refresh</p>
+                                      <p className="text-[10px] opacity-50 mt-0.5">Applies system-wide linguistic reload instantly on select</p>
+                                    </div>
+                                    <button 
+                                      onClick={() => onUpdate({ enableInstantLanguageRefresh: !state.settings.enableInstantLanguageRefresh })}
+                                      className={cn(
+                                        "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
+                                        state.settings.enableInstantLanguageRefresh !== false ? "bg-emerald-500" : "bg-slate-800"
+                                      )}
+                                    >
+                                      <div className={cn("absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-all", state.settings.enableInstantLanguageRefresh !== false ? "translate-x-7" : "")} />
+                                    </button>
+                                  </div>
+
+                                  {/* Show Language Preview Option */}
+                                  <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--card)] border border-[var(--border)]/60 shadow-xs md:col-span-2">
+                                    <div>
+                                      <p className="text-xs font-bold text-[var(--foreground)]">Interactive Language Preview Panel</p>
+                                      <p className="text-[10px] opacity-50 mt-0.5">Displays a real-time translation card for the selected mode below</p>
+                                    </div>
+                                    <button 
+                                      onClick={() => onUpdate({ showLanguagePreview: !state.settings.showLanguagePreview })}
+                                      className={cn(
+                                        "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
+                                        state.settings.showLanguagePreview !== false ? "bg-emerald-500" : "bg-slate-800"
+                                      )}
+                                    >
+                                      <div className={cn("absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-all", state.settings.showLanguagePreview !== false ? "translate-x-7" : "")} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Interactive Preview Panel */}
+                                {state.settings.showLanguagePreview !== false && (
+                                  <div className="mt-4 p-5 rounded-2xl bg-gradient-to-br from-[var(--primary)]/5 to-[var(--primary)]/10 border border-[var(--primary)]/20 shadow-inner">
+                                    <div className="flex items-center justify-between mb-4 border-b border-[var(--primary)]/15 pb-2">
+                                      <p className="text-xs font-black uppercase tracking-wider text-[var(--primary)]">
+                                        Live Linguistic Preview: {LANGUAGES.find(l => l.id === state.settings.language)?.name || state.settings.language} Mode
+                                      </p>
+                                      <span className="text-[10px] bg-[var(--primary)]/15 text-[var(--primary)] px-2 py-0.5 rounded-full font-bold">
+                                        Strict Mode Active
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-3 text-xs">
+                                      <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]/40">
+                                        <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Add Product</p>
+                                        <p className="font-bold text-[var(--foreground)] mt-0.5">
+                                          {state.settings.language === 'en' ? 'Add Product' : state.settings.language === 'hi-en' ? 'Saman Add Karo' : state.settings.language === 'hi' ? 'सामान जोड़ें' : 'सामान जोडा'}
+                                        </p>
+                                      </div>
+                                      
+                                      <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]/40">
+                                        <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Create Bill</p>
+                                        <p className="font-bold text-[var(--foreground)] mt-0.5">
+                                          {state.settings.language === 'en' ? 'Create Bill' : state.settings.language === 'hi-en' ? 'Bill Banao' : state.settings.language === 'hi' ? 'बिल बनाएं' : 'बिल तयार करा'}
+                                        </p>
+                                      </div>
+                                      
+                                      <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]/40">
+                                        <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Customer Info</p>
+                                        <p className="font-bold text-[var(--foreground)] mt-0.5">
+                                          {state.settings.language === 'en' ? 'Customer Info' : state.settings.language === 'hi-en' ? 'Customer Info' : state.settings.language === 'hi' ? 'ग्राहक की जानकारी' : 'ग्राहक माहिती'}
+                                        </p>
+                                      </div>
+                                      
+                                      <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]/40">
+                                        <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Stock</p>
+                                        <p className="font-bold text-[var(--foreground)] mt-0.5">
+                                          {state.settings.language === 'en' ? 'Stock' : state.settings.language === 'hi-en' ? 'Stock' : state.settings.language === 'hi' ? 'स्टॉक' : 'स्टॉक'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              )}
+
+              {/* PAGE 3: Themes Sub-Page */}
+              {interfacePage === 'themes' && (
+                <div className="space-y-6">
+                  {/* Back Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setInterfacePage('main')}
+                      className="flex items-center gap-2 text-xs font-bold text-[var(--primary)] hover:underline cursor-pointer group"
+                    >
+                      <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                      <span>Back to Interface</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+                      Theme Collection
+                    </span>
+                  </div>
+
+                  <section className="space-y-6">
+                    <div className="flex items-center gap-4">
+                       <div className="h-1 w-8 bg-violet-500 opacity-40 rounded-full" />
+                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-violet-500">{t.themeDeck}</label>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {THEMES.map(theme => (
                         <button
                           key={theme.id}
                           onClick={() => onUpdate({ theme: theme.id })}
                           className={cn(
-                            "relative flex items-center gap-5 rounded-[2.5rem] border p-6 text-left transition-all overflow-hidden group",
+                            "relative flex items-center gap-5 rounded-[2.5rem] border p-6 text-left transition-all overflow-hidden group cursor-pointer",
                             state.settings.theme === theme.id 
                               ? "border-[var(--primary)] bg-[var(--primary)]/20 shadow-2xl scale-[1.02]" 
                               : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)]/40"
@@ -530,9 +774,9 @@ export default function SettingsScreen({
                         </button>
                       ))}
                     </div>
-                  </div>
+                  </section>
                 </div>
-              </section>
+              )}
             </motion.div>
           )}
 

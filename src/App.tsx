@@ -68,6 +68,7 @@ import {
   LogOut,
   LogIn,
   MoreVertical,
+  Palette,
   Download,
   Upload,
   Database,
@@ -508,8 +509,9 @@ export default function App() {
   } | null>(null);
 
   const [showMenu, setShowMenu] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [menuTab, setMenuTab] = useState<'profile' | 'settings' | 'business_settings' | 'printer' | 'day_closing' | 'help'>('profile');
-  const [settingsSubTab, setSettingsSubTab] = useState<'interface' | 'security' | 'sound' | 'data'>('interface');
+  const [settingsSubTab, setSettingsSubTab] = useState<'overview' | 'interface' | 'security' | 'sound' | 'data'>('overview');
   const [businessSubTab, setBusinessSubTab] = useState<'overview' | 'journey' | 'profile' | 'features' | 'categories' | 'dashboard' | 'actions' | 'knowledge' | 'recovery'>('overview');
   const [drawerSearchQuery, setDrawerSearchQuery] = useState('');
   const [drawerSearchHistory, setDrawerSearchHistory] = useState<string[]>(() => {
@@ -566,6 +568,7 @@ export default function App() {
   }, [activeTab]);
 
   useBackModal(showMenu, () => setShowMenu(false), 'drawer_menu');
+  useBackModal(showMoreMenu, () => setShowMoreMenu(false), 'more_menu_popup');
   useBackModal(showMenu && menuTab !== 'profile', () => setMenuTab('profile'), 'drawer_sub_menu');
   useBackModal(showPlusActionMenu, () => setShowPlusActionMenu(false), 'plus_action_menu');
   useBackModal(showSmartBulkEntry, () => setShowSmartBulkEntry(false), 'smart_bulk_entry');
@@ -4202,14 +4205,109 @@ export default function App() {
               {state.settings.isLocked ? <Lock size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Unlock size={16} className="sm:w-[18px] sm:h-[18px]" />}
             </button>
 
-            {/* Menu (3 vertical dot :) Button */}
-            <button
-               onClick={() => { setShowMenu(true); setMenuTab('profile'); }}
-               className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl transition-all border border-white/10 bg-white/5 text-white/80 hover:bg-white/20 active:scale-95 shrink-0"
-               title="System Menu Control"
-            >
-               <MoreVertical size={16} className="sm:w-[18px] sm:h-[18px]" />
-            </button>
+            {/* Menu (3 vertical dot :) Button with Professional Popup */}
+            <div className="relative">
+              <button
+                 onClick={() => setShowMoreMenu(prev => !prev)}
+                 className={cn(
+                   "flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl transition-all border border-white/10 text-white/80 hover:bg-white/20 active:scale-95 shrink-0 cursor-pointer select-none",
+                   showMoreMenu ? "bg-white/20 text-white" : "bg-white/5"
+                 )}
+                 title="Menu Options"
+                 aria-label="Menu Options"
+              >
+                 <MoreVertical size={16} className="sm:w-[18px] sm:h-[18px]" />
+              </button>
+
+              {/* Professional Dropdown Popup Menu */}
+              <AnimatePresence>
+                {showMoreMenu && (
+                  <>
+                    {/* Fixed invisible backdrop for outside click */}
+                    <div 
+                      className="fixed inset-0 z-[110]" 
+                      onClick={() => setShowMoreMenu(false)} 
+                    />
+
+                    {/* Small Popup Dropdown */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.92, y: -6 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.92, y: -6 }}
+                      transition={{ type: "spring", stiffness: 480, damping: 26 }}
+                      className="absolute right-0 top-full mt-2 w-48 rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-2xl z-[120] py-1.5 overflow-hidden text-[var(--foreground)]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* 1. Profile */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMoreMenu(false);
+                          setMenuTab('profile');
+                          setShowMenu(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold hover:bg-[var(--foreground)]/5 transition-colors text-left cursor-pointer group select-none"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <User size={15} />
+                        </div>
+                        <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Profile</span>
+                      </button>
+
+                      {/* 2. Settings */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMoreMenu(false);
+                          setMenuTab('settings');
+                          setSettingsSubTab('overview');
+                          setShowMenu(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold hover:bg-[var(--foreground)]/5 transition-colors text-left cursor-pointer group select-none border-t border-[var(--border)]/40"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <SettingsIcon size={15} />
+                        </div>
+                        <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Settings</span>
+                      </button>
+
+                      {/* 3. Theme */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMoreMenu(false);
+                          setMenuTab('settings');
+                          setSettingsSubTab('interface');
+                          setShowMenu(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold hover:bg-[var(--foreground)]/5 transition-colors text-left cursor-pointer group select-none border-t border-[var(--border)]/40"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Palette size={15} />
+                        </div>
+                        <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Theme</span>
+                      </button>
+
+                      {/* 4. Help */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMoreMenu(false);
+                          setMenuTab('help');
+                          setShowMenu(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold hover:bg-[var(--foreground)]/5 transition-colors text-left cursor-pointer group select-none border-t border-[var(--border)]/40"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <HelpCircle size={15} />
+                        </div>
+                        <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Help</span>
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </header>
@@ -5852,71 +5950,86 @@ export default function App() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
                   <div>
-                    <h2 className="text-xl font-black text-[var(--foreground)] uppercase tracking-tighter">Control Center</h2>
-                    <p className="text-[10px] opacity-40 uppercase tracking-widest font-bold mt-1">System preferences & tools</p>
+                    <h2 className="text-xl font-black text-[var(--foreground)] uppercase tracking-tighter">
+                      {menuTab === 'help' ? 'Help & Tutorials' : menuTab === 'day_closing' ? 'Daily Closing & Shift Report' : 'Control Center'}
+                    </h2>
+                    <p className="text-[10px] opacity-40 uppercase tracking-widest font-bold mt-1">
+                      {menuTab === 'help' ? 'Interactive guides & support' : menuTab === 'day_closing' ? 'Aaj ki complete store sales & revenue summary' : 'System preferences & tools'}
+                    </p>
                   </div>
                   <Button variant="outline" size="icon" onClick={() => setShowMenu(false)} className="rounded-full h-8 w-8 border-[var(--border)] flex items-center justify-center text-[var(--foreground)]">
                     <X size={16} />
                   </Button>
                 </div>
 
-                {/* Profile, Business, Settings & Printer tab choices */}
-                <div className="flex border-b border-[var(--border)] pb-2 gap-1 overflow-x-auto scrollbar-none whitespace-nowrap">
-                  <button 
-                    onClick={() => setMenuTab('profile')}
-                    className={cn(
-                      "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
-                      menuTab === 'profile' ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--foreground)]/40 hover:text-[var(--foreground)]"
-                    )}
-                  >
-                    Profile
-                  </button>
-                  <button 
-                    onClick={() => setMenuTab('business_settings')}
-                    className={cn(
-                      "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
-                      menuTab === 'business_settings' ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--foreground)]/40 hover:text-[var(--foreground)]"
-                    )}
-                  >
-                    Biz Settings
-                  </button>
-                  <button 
-                    onClick={() => setMenuTab('settings')}
-                    className={cn(
-                      "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
-                      menuTab === 'settings' ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--foreground)]/40 hover:text-[var(--foreground)]"
-                    )}
-                  >
-                    Settings
-                  </button>
-                  <button 
-                    onClick={() => setMenuTab('printer')}
-                    className={cn(
-                      "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
-                      menuTab === 'printer' ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--foreground)]/40 hover:text-[var(--foreground)]"
-                    )}
-                  >
-                    Printer
-                  </button>
-                  <button 
-                    onClick={() => setMenuTab('day_closing')}
-                    className={cn(
-                      "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
-                      menuTab === 'day_closing' ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--foreground)]/40 hover:text-[var(--foreground)]"
-                    )}
-                  >
-                    📜AAJ KI REPORT
-                  </button>
-                  <button 
-                    onClick={() => setMenuTab('help')}
-                    className={cn(
-                      "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
-                      menuTab === 'help' ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--foreground)]/40 hover:text-[var(--foreground)]"
-                    )}
-                  >
-                    ❓ Help
-                  </button>
-                </div>
+                {menuTab === 'help' ? (
+                  <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setMenuTab('profile')}
+                      className="flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:underline cursor-pointer"
+                    >
+                      <ArrowLeft size={14} />
+                      <span>Back to Control Center</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-bold">Help Desk</span>
+                  </div>
+                ) : menuTab === 'day_closing' ? (
+                  <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setMenuTab('profile')}
+                      className="flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:underline cursor-pointer"
+                    >
+                      <ArrowLeft size={14} />
+                      <span>Back to Control Center</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-bold">Aaj Ki Report</span>
+                  </div>
+                ) : (
+                  /* Profile, Business, Settings & Printer tab choices (Help & Aaj Ki Report are accessed directly) */
+                  <div className="flex border-b border-[var(--border)] pb-2 gap-1 overflow-x-auto scrollbar-none whitespace-nowrap">
+                    <button 
+                      onClick={() => setMenuTab('profile')}
+                      className={cn(
+                        "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
+                        menuTab === 'profile' ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--foreground)]/40 hover:text-[var(--foreground)]"
+                      )}
+                    >
+                      Profile
+                    </button>
+                    <button 
+                      onClick={() => setMenuTab('business_settings')}
+                      className={cn(
+                        "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
+                        menuTab === 'business_settings' ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--foreground)]/40 hover:text-[var(--foreground)]"
+                      )}
+                    >
+                      Biz Settings
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setMenuTab('settings');
+                        setSettingsSubTab('overview');
+                      }}
+                      className={cn(
+                        "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
+                        menuTab === 'settings' ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--foreground)]/40 hover:text-[var(--foreground)]"
+                      )}
+                    >
+                      Settings
+                    </button>
+                    <button 
+                      onClick={() => setMenuTab('printer')}
+                      className={cn(
+                        "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
+                        menuTab === 'printer' ? "border-[var(--primary)] text-[var(--primary)]" : "border-transparent text-[var(--foreground)]/40 hover:text-[var(--foreground)]"
+                      )}
+                    >
+                      Printer
+                    </button>
+                  </div>
+                )}
 
                 {/* 🔍 UNIVERSAL FUZZY SYSTEM SEARCH ENGINE */}
                 {(() => {

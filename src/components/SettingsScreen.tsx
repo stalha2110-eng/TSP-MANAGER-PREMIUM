@@ -31,7 +31,8 @@ import {
   Settings2,
   ArrowLeft,
   ChevronRight,
-  Palette
+  Palette,
+  Share2
 } from 'lucide-react';
 import { AppState, AppSettings, ThemeType, LanguageType, CustomApiKeyItem } from '../types';
 import { 
@@ -235,6 +236,7 @@ export default function SettingsScreen({
   ];
 
   const [interfacePage, setInterfacePage] = useState<'main' | 'language' | 'themes'>('main');
+  const [dataPage, setDataPage] = useState<'main' | 'share_items' | 'backup_import' | 'backup' | 'import'>('main');
 
   const currentLangObj = LANGUAGES.find(l => l.id === state.settings.language) || LANGUAGES[0];
   const currentThemeObj = THEMES.find(th => th.id === state.settings.theme) || THEMES[0];
@@ -284,7 +286,10 @@ export default function SettingsScreen({
             {/* 2. Sync & Database */}
             <button
               type="button"
-              onClick={() => setActiveSubTab('data')}
+              onClick={() => {
+                setActiveSubTab('data');
+                setDataPage('main');
+              }}
               className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-cyan-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
             >
               <div className="flex items-center gap-3.5">
@@ -363,7 +368,7 @@ export default function SettingsScreen({
       )}
 
       {/* Dedicated Section Page Header */}
-      {activeSubTab !== 'overview' && (activeSubTab !== 'interface' || interfacePage === 'main') && (
+      {activeSubTab !== 'overview' && (activeSubTab !== 'interface' || interfacePage === 'main') && (activeSubTab !== 'data' || dataPage === 'main') && (
         <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
           <button
             type="button"
@@ -1704,198 +1709,421 @@ export default function SettingsScreen({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 10 }}
               transition={{ duration: 0.15 }}
-              className="space-y-8"
+              className="space-y-6"
             >
-              {/* Data Management Section */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                   <div className="h-1 w-8 bg-purple-500 opacity-30 rounded-full" />
-                   <label className="text-[10px] font-black uppercase tracking-[0.3em] text-purple-500">{t.dataLifecycle}</label>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="card p-6 rounded-[2rem] border-[var(--border)] bg-[var(--card)] space-y-6">
-                     <h4 className="text-xs font-black uppercase tracking-widest opacity-40 text-[var(--foreground)]">{t.exportVectors}</h4>
-                     <div className="flex flex-col gap-3">
-                        <Button 
-                          onClick={onExportExcel} 
-                          disabled={isExporting}
-                          variant="outline" 
-                          className="justify-start gap-3 rounded-xl py-6 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10 disabled:opacity-50"
-                        >
-                          {isExporting ? <RefreshCw size={18} className="animate-spin" /> : <FileSpreadsheet size={18} />} 
-                          <span className="text-[10px] font-black uppercase">{isExporting ? 'Processing...' : 'Export Data to Excel'}</span>
-                        </Button>
-                        <Button 
-                          onClick={onExportPDF} 
-                          disabled={isExporting}
-                          variant="outline" 
-                          className="justify-start gap-3 rounded-xl py-6 border-red-500/20 text-red-500 hover:bg-red-500/10 disabled:opacity-50"
-                        >
-                          {isExporting ? <RefreshCw size={18} className="animate-spin" /> : <FilePdf size={18} />} 
-                          <span className="text-[10px] font-black uppercase">{isExporting ? 'Processing...' : 'Export Data to PDF'}</span>
-                        </Button>
-                     </div>
+              {/* PAGE 1: Main Sync & Database Menu */}
+              {dataPage === 'main' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-1 w-6 bg-cyan-500 opacity-40 rounded-full" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-cyan-500">
+                      Data Lifecycle & Storage
+                    </span>
                   </div>
 
-                  <div className="card p-6 rounded-[2rem] border-[var(--border)] bg-[var(--card)] space-y-6">
-                     <h4 className="text-xs font-black uppercase tracking-widest opacity-40 text-[var(--foreground)]">{t.backupInfra}</h4>
-                     <div className="flex flex-col gap-3">
-                        <Button onClick={onBackup} variant="outline" className="justify-start gap-3 rounded-xl py-6 border-blue-500/20 text-blue-500 hover:bg-blue-500/10">
+                  <div className="flex flex-col gap-2.5">
+                    {/* 1. Share items list button */}
+                    <button
+                      type="button"
+                      onClick={() => setDataPage('share_items')}
+                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-emerald-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Share2 size={19} className="stroke-[2.2]" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-[var(--foreground)]">
+                            Share items list
+                          </span>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            Excel &amp; PDF
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-emerald-500/10 group-hover:border-emerald-500/30 group-hover:text-emerald-500 transition-all">
+                          <ChevronRight size={15} />
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* 2. Backup & Import button */}
+                    <button
+                      type="button"
+                      onClick={() => setDataPage('backup_import')}
+                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-cyan-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Database size={19} className="stroke-[2.2]" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-[var(--foreground)]">
+                            Backup &amp; Import
+                          </span>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">
+                            Cloud &amp; JSON
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-cyan-500/10 group-hover:border-cyan-500/30 group-hover:text-cyan-500 transition-all">
+                          <ChevronRight size={15} />
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* PAGE 2: Share items list sub-page */}
+              {dataPage === 'share_items' && (
+                <div className="space-y-6">
+                  {/* Header with Back Button */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setDataPage('main')}
+                      className="flex items-center gap-2 text-xs font-bold text-[var(--primary)] hover:underline cursor-pointer group"
+                    >
+                      <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                      <span>Back to Sync & Database</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+                      Share items list
+                    </span>
+                  </div>
+
+                  <div className="card p-6 rounded-[2rem] border-[var(--border)] bg-[var(--card)] space-y-5 shadow-xs">
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-widest text-[var(--foreground)]">Export & Share Reports</h4>
+                      <p className="text-[11px] opacity-50 font-medium mt-1">Download complete item catalogs, stock counts and price lists</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                      <Button 
+                        onClick={onExportExcel} 
+                        disabled={isExporting}
+                        variant="outline" 
+                        className="justify-start gap-3.5 rounded-2xl py-6 px-5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-50 cursor-pointer transition-all"
+                      >
+                        {isExporting ? <RefreshCw size={20} className="animate-spin" /> : <FileSpreadsheet size={20} />} 
+                        <div className="text-left">
+                          <span className="text-[11px] font-black uppercase block">{isExporting ? 'Processing...' : 'Export data excel'}</span>
+                          <span className="text-[9px] opacity-60 block">Spreadsheet (.xlsx format)</span>
+                        </div>
+                      </Button>
+
+                      <Button 
+                        onClick={onExportPDF} 
+                        disabled={isExporting}
+                        variant="outline" 
+                        className="justify-start gap-3.5 rounded-2xl py-6 px-5 border-red-500/30 text-red-500 hover:bg-red-500/10 disabled:opacity-50 cursor-pointer transition-all"
+                      >
+                        {isExporting ? <RefreshCw size={20} className="animate-spin" /> : <FilePdf size={20} />} 
+                        <div className="text-left">
+                          <span className="text-[11px] font-black uppercase block">{isExporting ? 'Processing...' : 'Export data to pdf'}</span>
+                          <span className="text-[9px] opacity-60 block">Print-ready document (.pdf)</span>
+                        </div>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PAGE 3: Backup & Import Hub */}
+              {dataPage === 'backup_import' && (
+                <div className="space-y-6">
+                  {/* Header with Back Button */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setDataPage('main')}
+                      className="flex items-center gap-2 text-xs font-bold text-[var(--primary)] hover:underline cursor-pointer group"
+                    >
+                      <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                      <span>Back to Sync & Database</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+                      Backup & Import
+                    </span>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-1 w-6 bg-cyan-500 opacity-40 rounded-full" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.25em] text-cyan-500">
+                        System Data Operations
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-2.5">
+                      {/* Backup Button */}
+                      <button
+                        type="button"
+                        onClick={() => setDataPage('backup')}
+                        className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-blue-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                            <Database size={19} className="stroke-[2.2]" />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-extrabold text-[var(--foreground)]">
+                              Backup
+                            </span>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                              System &amp; Cloud
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-blue-500/10 group-hover:border-blue-500/30 group-hover:text-blue-500 transition-all">
+                            <ChevronRight size={15} />
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* Import Button */}
+                      <button
+                        type="button"
+                        onClick={() => setDataPage('import')}
+                        className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-amber-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                            <Download size={19} className="stroke-[2.2]" />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-extrabold text-[var(--foreground)]">
+                              Import
+                            </span>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                              Maintenance &amp; Cache
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-amber-500/10 group-hover:border-amber-500/30 group-hover:text-amber-500 transition-all">
+                            <ChevronRight size={15} />
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PAGE 4: Backup Sub-Page (backupinfra + Automated Cloud Backups Plan) */}
+              {dataPage === 'backup' && (
+                <div className="space-y-6">
+                  {/* Header with Back Button */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setDataPage('backup_import')}
+                      className="flex items-center gap-2 text-xs font-bold text-[var(--primary)] hover:underline cursor-pointer group"
+                    >
+                      <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                      <span>Back to Backup & Import</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+                      Backup
+                    </span>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* backupinfra */}
+                    <div className="card p-6 rounded-[2rem] border-[var(--border)] bg-[var(--card)] space-y-5 shadow-xs">
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-[var(--foreground)]">{t.backupInfra}</h4>
+                        <p className="text-[11px] opacity-50 font-medium mt-1">Manual JSON snapshot creation and restore</p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <Button onClick={onBackup} variant="outline" className="justify-start gap-3 rounded-xl py-6 border-blue-500/20 text-blue-500 hover:bg-blue-500/10 cursor-pointer">
                           <Database size={18} /> <span className="text-[10px] font-black uppercase">Backup System Now</span>
                         </Button>
                         <label className="flex items-center justify-center gap-3 rounded-xl py-3.5 px-4 border border-dashed border-[var(--border)] text-xs font-black uppercase tracking-widest cursor-pointer hover:bg-white/5 text-[var(--foreground)] transition-colors">
                           <Upload size={18} /> Restore Backup
                           <input type="file" className="hidden" accept=".json" onChange={onRestore} />
                         </label>
-                     </div>
-                  </div>
+                      </div>
+                    </div>
 
-                  {/* ☁️ Scheduled Auto-Cloud Backups Plan */}
-                  <div className="card p-6 rounded-[2rem] border-[var(--border)] bg-[var(--card)] space-y-6 md:col-span-2">
-                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    {/* ☁️ Automated Cloud Backups Plan */}
+                    <div className="card p-6 rounded-[2rem] border-[var(--border)] bg-[var(--card)] space-y-6 shadow-xs">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="space-y-1">
-                           <div className="flex items-center gap-2">
-                              <span className="text-sm">☁️</span>
-                              <h4 className="text-sm font-black uppercase tracking-wider text-[var(--foreground)]">Automated Cloud Backups Plan</h4>
-                           </div>
-                           <p className="text-[10px] opacity-45 font-black uppercase tracking-widest leading-relaxed text-[var(--foreground)]">
-                              Automatically dispatch whole stock registries and transaction logs to cloud safely or as email transmission.
-                           </p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">☁️</span>
+                            <h4 className="text-sm font-black uppercase tracking-wider text-[var(--foreground)]">Automated Cloud Backups Plan</h4>
+                          </div>
+                          <p className="text-[10px] opacity-45 font-black uppercase tracking-widest leading-relaxed text-[var(--foreground)]">
+                            Automatically dispatch whole stock registries and transaction logs to cloud safely or as email transmission.
+                          </p>
                         </div>
                         <div>
-                           <button 
-                             onClick={() => onUpdate({ scheduledBackupEnabled: !state.settings.scheduledBackupEnabled })}
-                             className={cn(
-                               "h-8 w-16 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer",
-                               state.settings.scheduledBackupEnabled ? "bg-[var(--primary)]" : "bg-slate-800"
-                             )}
-                           >
-                             <div className={cn("absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all", state.settings.scheduledBackupEnabled ? "translate-x-8" : "")} />
-                           </button>
+                          <button 
+                            onClick={() => onUpdate({ scheduledBackupEnabled: !state.settings.scheduledBackupEnabled })}
+                            className={cn(
+                              "h-8 w-16 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer",
+                              state.settings.scheduledBackupEnabled ? "bg-[var(--primary)]" : "bg-slate-800"
+                            )}
+                          >
+                            <div className={cn("absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all", state.settings.scheduledBackupEnabled ? "translate-x-8" : "")} />
+                          </button>
                         </div>
-                     </div>
+                      </div>
 
-                     {state.settings.scheduledBackupEnabled && (
+                      {state.settings.scheduledBackupEnabled && (
                         <motion.div 
                           initial={{ opacity: 0, y: -10 }} 
                           animate={{ opacity: 1, y: 0 }} 
                           className="pt-4 border-t border-[var(--border)] space-y-6"
                         >
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div className="space-y-2">
-                                 <label className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)] opacity-60 flex items-center gap-1.5 flex-wrap">
-                                    <Mail size={12} className="text-[var(--primary)]" /> Destination Backup Email
-                                 </label>
-                                 <input
-                                   type="email"
-                                   placeholder="e.g. stalha2110@gmail.com"
-                                   value={state.settings.scheduledBackupEmail === undefined ? "stalha2110@gmail.com" : state.settings.scheduledBackupEmail}
-                                   onChange={(e) => onUpdate({ scheduledBackupEmail: e.target.value })}
-                                   className="bg-[var(--background)] border border-[var(--border)] px-4 py-3 rounded-2xl text-xs text-[var(--foreground)] outline-none w-full font-mono max-w-sm"
-                                 />
-                                 <p className="text-[9px] opacity-40 uppercase leading-snug">
-                                    The entire inventory state & billing archives will be packaged into a compressed JSON and transmitted here.
-                                 </p>
-                              </div>
-
-                              <div className="space-y-2">
-                                 <label className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)] opacity-60 flex items-center gap-1.5 flex-wrap">
-                                    <Clock size={12} className="text-[var(--primary)]" /> Recurrence Specific Time
-                                 </label>
-                                 <div className="flex gap-3">
-                                    <input
-                                      type="time"
-                                      value={state.settings.scheduledBackupTime || '21:00'}
-                                      onChange={(e) => onUpdate({ scheduledBackupTime: e.target.value })}
-                                      className="bg-[var(--background)] border border-[var(--border)] px-4 py-3 rounded-2xl text-xs text-[var(--foreground)] outline-none font-mono cursor-pointer"
-                                    />
-                                    <select
-                                      value={state.settings.scheduledBackupRecurrence || 'daily'}
-                                      onChange={(e) => onUpdate({ scheduledBackupRecurrence: e.target.value })}
-                                      className="bg-[var(--background)] border border-[var(--border)] px-4 py-3 rounded-2xl text-xs text-[var(--foreground)] font-black uppercase tracking-wider outline-none cursor-pointer"
-                                    >
-                                       <option value="daily">🕒 Daily Routine</option>
-                                       <option value="weekly">📅 Weekly Routine</option>
-                                    </select>
-                                 </div>
-                                 <p className="text-[9px] opacity-40 uppercase leading-snug">
-                                    Trigger will monitor actively while the application dashboard console session is active.
-                                 </p>
-                              </div>
-                           </div>
-
-                           <div className="space-y-4 pt-4 border-t border-[var(--border)] bg-[var(--foreground)]/[0.015] p-5 rounded-3xl border border-[var(--border)] bg-[var(--background)]/10">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
                               <label className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)] opacity-60 flex items-center gap-1.5 flex-wrap">
-                                 <Cloud size={12} className="text-[var(--primary)]" /> External Cloud Vault Storage Provider
+                                <Mail size={12} className="text-[var(--primary)]" /> Destination Backup Email
                               </label>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                 {[
-                                   { id: 'firestore_vault', name: 'Firebase Sync Vault', desc: 'Saves securely in Firestore database sync records', badge: 'Active & Cloud' },
-                                   { id: 'google_drive', name: 'Google Drive Sync', desc: 'Securely links using Google Workspace OAuth pipeline', badge: 'GCP Certified' },
-                                   { id: 'dropbox', name: 'Dropbox Secure Storage', desc: 'Automated webhook uploads to personal safe vault', badge: 'API Webhook' }
-                                 ].map((prov) => (
-                                   <button
-                                     key={prov.id}
-                                     onClick={() => onUpdate({ externalStorageProvider: prov.id })}
-                                     className={cn(
-                                       "flex flex-col text-left gap-2 p-4 rounded-2xl border transition-all cursor-pointer",
-                                       (state.settings.externalStorageProvider || 'firestore_vault') === prov.id
-                                         ? "border-[var(--primary)] bg-[var(--primary)]/10 shadow-lg text-[var(--foreground)]"
-                                         : "border-[var(--border)] bg-[var(--background)] opacity-70 hover:opacity-100 text-[var(--foreground)]"
-                                     )}
-                                   >
-                                      <div className="flex items-center justify-between w-full">
-                                         <span className="text-[10px] font-black uppercase tracking-wide">{prov.name}</span>
-                                         <span className="text-[7.5px] px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] font-black uppercase">{prov.badge}</span>
-                                      </div>
-                                      <p className="text-[8.5px] opacity-45 uppercase mt-1 leading-snug tracking-wider">{prov.desc}</p>
-                                   </button>
-                                 ))}
-                              </div>
-                           </div>
+                              <input
+                                type="email"
+                                placeholder="e.g. stalha2110@gmail.com"
+                                value={state.settings.scheduledBackupEmail === undefined ? "stalha2110@gmail.com" : state.settings.scheduledBackupEmail}
+                                onChange={(e) => onUpdate({ scheduledBackupEmail: e.target.value })}
+                                className="bg-[var(--background)] border border-[var(--border)] px-4 py-3 rounded-2xl text-xs text-[var(--foreground)] outline-none w-full font-mono max-w-sm"
+                              />
+                              <p className="text-[9px] opacity-40 uppercase leading-snug">
+                                The entire inventory state & billing archives will be packaged into a compressed JSON and transmitted here.
+                              </p>
+                            </div>
 
-                           {/* Interactive Tester & Diagnosis Status Console */}
-                           <div className="pt-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--primary)]/5 p-5 rounded-3xl border border-[var(--primary)]/20">
-                              <div className="space-y-1">
-                                 <div className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)]">Scheduled Cloud Pipeline Telemetry</div>
-                                 <div className="grid grid-cols-2 gap-x-6 gap-y-1 max-w-sm pt-1">
-                                    <span className="text-[9px] font-bold opacity-50 uppercase">LAST PIPELINE RUN:</span>
-                                    <span className="text-[9px] font-black text-[var(--foreground)] font-mono">{state.settings.lastScheduledBackupTime || 'NEVER'}</span>
-                                    
-                                    <span className="text-[9px] font-bold opacity-50 uppercase">NEXT PLANNED DISPATCH:</span>
-                                    <span className="text-[9px] font-black text-amber-500 font-mono">
-                                       TODAY AT {state.settings.scheduledBackupTime || '21:00'} ({state.settings.scheduledBackupRecurrence || 'daily'})
-                                    </span>
-                                 </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)] opacity-60 flex items-center gap-1.5 flex-wrap">
+                                <Clock size={12} className="text-[var(--primary)]" /> Recurrence Specific Time
+                              </label>
+                              <div className="flex gap-3">
+                                <input
+                                  type="time"
+                                  value={state.settings.scheduledBackupTime || '21:00'}
+                                  onChange={(e) => onUpdate({ scheduledBackupTime: e.target.value })}
+                                  className="bg-[var(--background)] border border-[var(--border)] px-4 py-3 rounded-2xl text-xs text-[var(--foreground)] outline-none font-mono cursor-pointer"
+                                />
+                                <select
+                                  value={state.settings.scheduledBackupRecurrence || 'daily'}
+                                  onChange={(e) => onUpdate({ scheduledBackupRecurrence: e.target.value })}
+                                  className="bg-[var(--background)] border border-[var(--border)] px-4 py-3 rounded-2xl text-xs text-[var(--foreground)] font-black uppercase tracking-wider outline-none cursor-pointer"
+                                >
+                                  <option value="daily">🕒 Daily Routine</option>
+                                  <option value="weekly">📅 Weekly Routine</option>
+                                </select>
                               </div>
-                              <Button
-                                onClick={onBackup}
-                                variant="outline"
-                                className="rounded-xl text-[9px] uppercase font-black px-4 py-2 bg-white text-[var(--primary)] hover:bg-white/90 shadow-md cursor-pointer duration-300 transform active:scale-95 border-0 hover:text-[var(--primary)]"
-                              >
-                                 ⚡ Validate & Test Scheduled Auto-Backup Now
-                              </Button>
-                           </div>
+                              <p className="text-[9px] opacity-40 uppercase leading-snug">
+                                Trigger will monitor actively while the application dashboard console session is active.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 pt-4 border-t border-[var(--border)] bg-[var(--foreground)]/[0.015] p-5 rounded-3xl border border-[var(--border)] bg-[var(--background)]/10">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)] opacity-60 flex items-center gap-1.5 flex-wrap">
+                              <Cloud size={12} className="text-[var(--primary)]" /> External Cloud Vault Storage Provider
+                            </label>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              {[
+                                { id: 'firestore_vault', name: 'Firebase Sync Vault', desc: 'Saves securely in Firestore database sync records', badge: 'Active & Cloud' },
+                                { id: 'google_drive', name: 'Google Drive Sync', desc: 'Securely links using Google Workspace OAuth pipeline', badge: 'GCP Certified' },
+                                { id: 'dropbox', name: 'Dropbox Secure Storage', desc: 'Automated webhook uploads to personal safe vault', badge: 'API Webhook' }
+                              ].map((prov) => (
+                                <button
+                                  key={prov.id}
+                                  onClick={() => onUpdate({ externalStorageProvider: prov.id })}
+                                  className={cn(
+                                    "flex flex-col text-left gap-2 p-4 rounded-2xl border transition-all cursor-pointer",
+                                    (state.settings.externalStorageProvider || 'firestore_vault') === prov.id
+                                      ? "border-[var(--primary)] bg-[var(--primary)]/10 shadow-lg text-[var(--foreground)]"
+                                      : "border-[var(--border)] bg-[var(--background)] opacity-70 hover:opacity-100 text-[var(--foreground)]"
+                                  )}
+                                >
+                                  <div className="flex items-center justify-between w-full">
+                                    <span className="text-[10px] font-black uppercase tracking-wide">{prov.name}</span>
+                                    <span className="text-[7.5px] px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] font-black uppercase">{prov.badge}</span>
+                                  </div>
+                                  <p className="text-[8.5px] opacity-45 uppercase mt-1 leading-snug tracking-wider">{prov.desc}</p>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Interactive Tester & Diagnosis Status Console */}
+                          <div className="pt-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--primary)]/5 p-5 rounded-3xl border border-[var(--primary)]/20">
+                            <div className="space-y-1">
+                              <div className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)]">Scheduled Cloud Pipeline Telemetry</div>
+                              <div className="grid grid-cols-2 gap-x-6 gap-y-1 max-w-sm pt-1">
+                                <span className="text-[9px] font-bold opacity-50 uppercase">LAST PIPELINE RUN:</span>
+                                <span className="text-[9px] font-black text-[var(--foreground)] font-mono">{state.settings.lastScheduledBackupTime || 'NEVER'}</span>
+                                
+                                <span className="text-[9px] font-bold opacity-50 uppercase">NEXT PLANNED DISPATCH:</span>
+                                <span className="text-[9px] font-black text-amber-500 font-mono">
+                                  TODAY AT {state.settings.scheduledBackupTime || '21:00'} ({state.settings.scheduledBackupRecurrence || 'daily'})
+                                </span>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={onBackup}
+                              variant="outline"
+                              className="rounded-xl text-[9px] uppercase font-black px-4 py-2 bg-white text-[var(--primary)] hover:bg-white/90 shadow-md cursor-pointer duration-300 transform active:scale-95 border-0 hover:text-[var(--primary)]"
+                            >
+                              ⚡ Validate & Test Scheduled Auto-Backup Now
+                            </Button>
+                          </div>
                         </motion.div>
-                     )}
-                  </div>
-
-                  <div className="card p-6 rounded-[2rem] border-[var(--border)] bg-[var(--card)] space-y-6 md:col-span-2">
-                     <h4 className="text-xs font-black uppercase tracking-widest opacity-40 text-[var(--foreground)]">{t.maintenanceCore}</h4>
-                     <div className="flex flex-wrap gap-3">
-                        <label className="flex items-center gap-3 rounded-xl py-3 px-6 bg-[var(--background)] border border-[var(--border)] text-[10px] font-black uppercase tracking-widest cursor-pointer hover:border-[var(--primary)] text-[var(--foreground)] transition-all">
-                          <Download size={18} /> Import External Data
-                          <input type="file" className="hidden" accept=".json" onChange={onImport} />
-                        </label>
-                        <Button onClick={onClearCache} variant="ghost" className="gap-3 rounded-xl px-6 border border-red-500/10 text-red-500/50 hover:text-red-500">
-                          <XCircle size={18} /> <span className="text-[10px] font-black uppercase">Clear Local Cache</span>
-                        </Button>
-                     </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </section>
+              )}
+
+              {/* PAGE 5: Import Sub-Page (maintenancecore) */}
+              {dataPage === 'import' && (
+                <div className="space-y-6">
+                  {/* Header with Back Button */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setDataPage('backup_import')}
+                      className="flex items-center gap-2 text-xs font-bold text-[var(--primary)] hover:underline cursor-pointer group"
+                    >
+                      <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                      <span>Back to Backup & Import</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+                      Import
+                    </span>
+                  </div>
+
+                  <div className="card p-6 rounded-[2rem] border-[var(--border)] bg-[var(--card)] space-y-6 shadow-xs">
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-widest text-[var(--foreground)]">{t.maintenanceCore}</h4>
+                      <p className="text-[11px] opacity-50 font-medium mt-1">Import database dumps and perform local client cache clearance</p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <label className="flex items-center gap-3 rounded-xl py-3 px-6 bg-[var(--background)] border border-[var(--border)] text-[10px] font-black uppercase tracking-widest cursor-pointer hover:border-[var(--primary)] text-[var(--foreground)] transition-all">
+                        <Download size={18} /> Import External Data
+                        <input type="file" className="hidden" accept=".json" onChange={onImport} />
+                      </label>
+                      <Button onClick={onClearCache} variant="ghost" className="gap-3 rounded-xl px-6 border border-red-500/10 text-red-500/50 hover:text-red-500 cursor-pointer">
+                        <XCircle size={18} /> <span className="text-[10px] font-black uppercase">Clear Local Cache</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

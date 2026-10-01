@@ -13,7 +13,7 @@ import { EmailAuthProvider, linkWithCredential, updatePassword } from 'firebase/
 import { playFeedbackEvent } from '../services/soundFeedbackService';
 import { cleanAndValidateText } from '../services/languageEngine';
 import { CloudSyncService } from '../services/cloudSyncService';
-import { cn } from '../lib/utils';
+import { cn, formatPhoneNumber } from '../lib/utils';
 import { AppState, AppSettings } from '../types';
 
 export function PasswordLinkManager({ user, settings }: { user: any; settings: any }) {
@@ -273,7 +273,7 @@ export function StoreCredentialsSection({
 }) {
   const [storeName, setStoreName] = useState(state.settings.storeName || "");
   const [storeOwnerName, setStoreOwnerName] = useState(state.settings.storeOwnerName || "");
-  const [storePhone, setStorePhone] = useState(state.settings.storePhone || "");
+  const [storePhone, setStorePhone] = useState(formatPhoneNumber(state.settings.storePhone || ""));
   const [storeAddress, setStoreAddress] = useState(state.settings.storeAddress || "");
   const [storeOpeningTime, setStoreOpeningTime] = useState(state.settings.storeOpeningTime || "08:00");
   const [storeClosingTime, setStoreClosingTime] = useState(state.settings.storeClosingTime || "21:00");
@@ -287,7 +287,7 @@ export function StoreCredentialsSection({
   useEffect(() => {
     setStoreName(state.settings.storeName || "");
     setStoreOwnerName(state.settings.storeOwnerName || "");
-    setStorePhone(state.settings.storePhone || "");
+    setStorePhone(formatPhoneNumber(state.settings.storePhone || ""));
     setStoreAddress(state.settings.storeAddress || "");
     setStoreOpeningTime(state.settings.storeOpeningTime || "08:00");
     setStoreClosingTime(state.settings.storeClosingTime || "21:00");
@@ -311,7 +311,7 @@ export function StoreCredentialsSection({
       await onUpdate({
         storeName: storeName.trim(),
         storeOwnerName: storeOwnerName.trim(),
-        storePhone: storePhone.trim(),
+        storePhone: formatPhoneNumber(storePhone).trim() || storePhone.trim(),
         storeAddress: storeAddress.trim(),
         storeOpeningTime,
         storeClosingTime,
@@ -427,9 +427,9 @@ export function StoreCredentialsSection({
             <input 
               type="text" 
               value={storePhone} 
-              onChange={e => setStorePhone(e.target.value)}
-              className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl px-4 py-3 text-xs font-bold placeholder:opacity-30 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all"
-              placeholder="e.g. +91 98765 43210"
+              onChange={e => setStorePhone(formatPhoneNumber(e.target.value))}
+              className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl px-4 py-3 text-xs font-bold placeholder:opacity-30 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all font-mono tracking-wide"
+              placeholder="+91 45623 32654"
             />
           </div>
 

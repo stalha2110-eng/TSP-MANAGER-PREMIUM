@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { AppSettings } from '../types';
+import { formatPhoneNumber } from '../lib/utils';
 import logoTSPM from '../logoTSPM.png';
 
 interface OnboardingFormProps {
@@ -211,11 +212,11 @@ export function OnboardingForm({ settings, onComplete, userEmail, onBack }: Onbo
                   type="text" 
                   value={storePhone} 
                   onChange={e => {
-                    setStorePhone(e.target.value);
+                    setStorePhone(formatPhoneNumber(e.target.value));
                     if (errors.storePhone) setErrors(prev => ({ ...prev, storePhone: '' }));
                   }}
-                  className={`w-full bg-slate-50 text-slate-950 border ${errors.storePhone ? 'border-rose-500' : 'border-slate-200 focus:border-indigo-500 focus:bg-white'} rounded-2xl px-4 py-3.5 text-xs font-bold outline-none transition-all placeholder:text-slate-400`}
-                  placeholder="e.g. +91 9876543210"
+                  className={`w-full bg-slate-50 text-slate-950 border ${errors.storePhone ? 'border-rose-500' : 'border-slate-200 focus:border-indigo-500 focus:bg-white'} rounded-2xl px-4 py-3.5 text-xs font-bold outline-none transition-all placeholder:text-slate-400 font-mono`}
+                  placeholder="e.g. +91 45623 32654"
                 />
                 {errors.storePhone && (
                   <p className="text-[10px] text-rose-600 font-bold flex items-center gap-1 mt-1">

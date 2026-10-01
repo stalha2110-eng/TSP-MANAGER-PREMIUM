@@ -41,7 +41,7 @@ import {
   Filter
 } from 'lucide-react';
 import { AppState, AppSettings, Bill, UdharTransaction } from '../types';
-import { cn, formatCurrency, formatNumber } from '../lib/utils';
+import { cn, formatCurrency, formatNumber, formatPhoneNumber } from '../lib/utils';
 import * as XLSX from 'xlsx-js-style';
 
 interface StoreClosingControlCenterProps {
@@ -1575,10 +1575,10 @@ Average Bill : ₹${target.billsCount > 0 ? (target.sales / target.billsCount).t
                         <span className="text-[8px] font-black uppercase tracking-wider text-[var(--foreground)]/45">Contact Number</span>
                         <input
                           type="text"
-                          value={state.settings.storePhone || ''}
-                          onChange={(e) => onUpdateSettings({ storePhone: e.target.value })}
-                          placeholder="e.g. 9876543210"
-                          className="w-full text-[10px] font-bold border border-[var(--border)] rounded-xl p-2 bg-transparent text-[var(--foreground)] focus:ring-1 focus:ring-[var(--primary)] focus:outline-none"
+                          value={state.settings.storePhone ? formatPhoneNumber(state.settings.storePhone) : ''}
+                          onChange={(e) => onUpdateSettings({ storePhone: formatPhoneNumber(e.target.value) })}
+                          placeholder="+91 45623 32654"
+                          className="w-full text-[10px] font-bold border border-[var(--border)] rounded-xl p-2 bg-transparent text-[var(--foreground)] focus:ring-1 focus:ring-[var(--primary)] focus:outline-none font-mono"
                         />
                       </div>
                     </div>

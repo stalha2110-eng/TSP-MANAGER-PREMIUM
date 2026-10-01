@@ -203,4 +203,48 @@ export function calculateBillProfit(bill: any, itemsCatalog?: any[]): number {
   return Number(netProfit.toFixed(2));
 }
 
+/**
+ * Formats a phone number with automatic standard spacing: "+91 45623 32654"
+ */
+export function formatPhoneNumber(input?: string | null): string {
+  if (!input) return "";
+  const trimmed = input.trim();
+  if (!trimmed) return "";
+
+  // If user clears to just '+' or '+9' or '+91'
+  if (trimmed === "+" || trimmed === "+9" || trimmed === "+91" || trimmed === "+91 ") {
+    return "+91 ";
+  }
+
+  let raw = trimmed;
+  // If explicitly starts with +91 or +
+  if (raw.startsWith("+91")) {
+    raw = raw.slice(3);
+  } else if (raw.startsWith("+")) {
+    raw = raw.slice(1);
+  }
+
+  let digits = raw.replace(/\D/g, "");
+
+  // If input was without +, but has 12 digits starting with 91 (e.g., 914562332654)
+  if (digits.length === 12 && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  } else if (digits.length === 11 && digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
+
+  // Cap at 10 mobile digits
+  digits = digits.slice(0, 10);
+
+  if (digits.length === 0) {
+    return trimmed.startsWith("+") ? "+91 " : "";
+  }
+
+  if (digits.length <= 5) {
+    return `+91 ${digits}`;
+  }
+
+  return `+91 ${digits.slice(0, 5)} ${digits.slice(5, 10)}`;
+}
+
 

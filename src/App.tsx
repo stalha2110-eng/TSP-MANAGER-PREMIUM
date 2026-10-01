@@ -206,6 +206,7 @@ import {
   cn, 
   formatCurrency, 
   formatNumber,
+  formatPhoneNumber,
   parseTimestamp
 } from './lib/utils';
 import { trackRecentUnit, useRecentUnits } from './lib/unitUtils';
@@ -4103,7 +4104,7 @@ export default function App() {
           height: '49.5px',
           backgroundColor: 'var(--primary)',
           paddingLeft: 'max(10px, env(safe-area-inset-left))',
-          paddingRight: 'max(10px, env(safe-area-inset-right))',
+          paddingRight: 'max(12px, env(safe-area-inset-right))',
           paddingTop: 'max(8px, env(safe-area-inset-top))'
         }}
       >
@@ -4157,7 +4158,7 @@ export default function App() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 z-10">
+          <div className="flex items-center justify-end gap-2.5 sm:gap-3.5 shrink-0 z-10 ml-auto">
 
 
             {/* Notification Badge Badge with sliding drawer */}
@@ -4340,12 +4341,19 @@ export default function App() {
                style={{ marginBottom: '23px' }}
                className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-r from-[var(--primary)] to-[var(--primary)]/90 p-8 text-white shadow-xl shadow-[var(--primary)]/15"
             >
+               {/* 🏪 Kirana Store / Business Mode Tag in TOP RIGHT CORNER of widget */}
+               <div className="absolute top-4 right-4 md:top-6 md:right-6 z-20">
+                  <span className="font-mono text-[10px] uppercase tracking-wider px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/25 shadow-xs font-black inline-flex items-center gap-1.5">
+                     <span>{BUSINESS_MODES[state.settings.businessMode]?.name || 'Kirana Store'}</span>
+                  </span>
+               </div>
+
                {/* Ambient decorative elements */}
                <div className="absolute top-0 right-0 p-6 opacity-10 translate-x-6 -translate-y-6">
                   <Store size={150} />
                </div>
                <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent pointer-events-none" />
-               <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+               <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
                   <div className="space-y-2">
                      <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tighter leading-none text-white drop-shadow">
                         {state.settings.storeName || "My Shop(मेरी दुकान)"}
@@ -4401,8 +4409,7 @@ export default function App() {
                      </div>
                   </div>
                   <div 
-                     style={{ width: '251px', height: '55.5px', marginRight: '11px', marginLeft: '2px' }}
-                     className="md:text-right shrink-0 flex flex-col md:items-end justify-between overflow-hidden"
+                     className="md:text-right shrink-0 flex flex-col md:items-end justify-center gap-2 mt-2 md:mt-0"
                   >
                      {state.settings.storeAddress && (
                         <div>
@@ -4410,63 +4417,28 @@ export default function App() {
                               style={{ color: '#c4ee22' }}
                               className="text-[9px] font-black uppercase tracking-widest mb-0.5 flex items-center md:justify-end gap-1"
                            >
-                              <svg
-                                 xmlns="http://www.w3.org/2000/svg"
-                                 width="11"
-                                 height="11"
-                                 viewBox="0 0 24 24"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 strokeWidth="2"
-                                 strokeLinecap="round"
-                                 strokeLinejoin="round"
-                              >
-                                 <path 
-                                    d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" 
-                                    style={{ borderColor: '#efebeb' }}
-                                 />
-                                 <circle cx="12" cy="10" r="3" />
-                              </svg>
+                              <MapPin size={11} className="stroke-[2.5]" />
                               Store Location
                            </p>
-                           <p className="text-xs font-black max-w-[200px] line-clamp-1 md:text-right text-white/90">{state.settings.storeAddress}</p>
+                           <p className="text-xs font-black max-w-[220px] line-clamp-1 md:text-right text-white/90">{state.settings.storeAddress}</p>
                         </div>
                      )}
-                     <div className="flex items-center md:justify-end gap-2 text-[10px] mt-0.5">
-                        {state.settings.storePhone && (
+                     {state.settings.storePhone && (
+                        <div className="flex items-center md:justify-end">
                            <span 
                               style={{
-                                 color: '#000000',
-                                 backgroundColor: '#ffffff',
-                                 marginRight: '1px',
-                                 paddingRight: '3px',
-                                 height: '16px',
-                                 paddingTop: '1px',
-                                 fontWeight: 'bold',
-                                 lineHeight: '15px',
-                                 fontSize: '11px',
-                                 paddingLeft: '0px',
-                                 marginLeft: '2px',
-                                 borderRadius: '5px',
-                                 borderColor: '#063606'
+                                 marginRight: '0px',
+                                 paddingRight: '10.5px',
+                                 marginLeft: '134px',
+                                 marginTop: '-31px'
                               }}
-                              className="font-mono inline-flex items-center border"
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 text-white font-mono text-xs font-black tracking-wider shadow-xs"
                            >
-                              {state.settings.storePhone}
+                              <Phone size={11} className="text-emerald-300 shrink-0 stroke-[2.5]" />
+                              <span>{formatPhoneNumber(state.settings.storePhone)}</span>
                            </span>
-                        )}
-                        {state.settings.storePhone && <span className="text-white/30">•</span>}
-                        <span 
-                           style={{
-                              borderStyle: 'solid',
-                              borderWidth: '0px',
-                              fontWeight: 'normal'
-                           }}
-                           className="font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/15 text-white shrink-0"
-                        >
-                           {BUSINESS_MODES[state.settings.businessMode]?.emoji || '🏪'} {BUSINESS_MODES[state.settings.businessMode]?.name || 'Kirana Store'}
-                        </span>
-                     </div>
+                        </div>
+                     )}
                   </div>
                </div>
             </div>

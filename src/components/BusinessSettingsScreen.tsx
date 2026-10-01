@@ -57,7 +57,7 @@ import BusinessKnowledgeHub from './BusinessKnowledgeHub';
 import BusinessRecoveryCenter from './BusinessRecoveryCenter';
 import { RecoveryService } from '../services/recoveryService';
 import { BUSINESS_MODES, BUSINESS_MODES as modesMap, BusinessModeType, BusinessModeDef } from '../services/businessModeConfig';
-import { cn, formatCurrency } from '../lib/utils';
+import { cn, formatCurrency, formatPhoneNumber } from '../lib/utils';
 import { getCalculatedAchievements, downloadCertificateOfMilestone, ensureIsoString } from '../lib/achievementUtils';
 import { jsPDF } from 'jspdf';
 
@@ -152,7 +152,7 @@ export default function BusinessSettingsScreen({
   // Inline Quick Profile edit fields
   const [profileStoreName, setProfileStoreName] = useState(state.settings.storeName || '');
   const [profileOwnerName, setProfileOwnerName] = useState(state.settings.storeOwnerName || '');
-  const [profilePhone, setProfilePhone] = useState(state.settings.storePhone || '');
+  const [profilePhone, setProfilePhone] = useState(formatPhoneNumber(state.settings.storePhone || ''));
   const [profileAddress, setProfileAddress] = useState(state.settings.storeAddress || '');
   const [profileGst, setProfileGst] = useState(state.settings.gstNumber || '');
   const [profileWhatsApp, setProfileWhatsApp] = useState(state.settings.whatsAppNumber || '');
@@ -1016,7 +1016,7 @@ export default function BusinessSettingsScreen({
     onUpdateSettings({
       storeName: profileStoreName.trim() || "TS Price Manager",
       storeOwnerName: profileOwnerName.trim(),
-      storePhone: profilePhone.trim(),
+      storePhone: formatPhoneNumber(profilePhone).trim() || profilePhone.trim(),
       storeAddress: profileAddress.trim(),
       gstNumber: profileGst.trim(),
       whatsAppNumber: profileWhatsApp.trim(),
@@ -2180,9 +2180,9 @@ export default function BusinessSettingsScreen({
                                                   <input 
                                                     type="text" 
                                                     value={profilePhone} 
-                                                    onChange={e => setProfilePhone(e.target.value)}
-                                                    placeholder="9876543210"
-                                                    className="w-full bg-[var(--card)] border border-[var(--border)] rounded-lg py-1 px-2.5 text-xs font-semibold focus:outline-none focus:border-[var(--primary)] text-foreground"
+                                                    onChange={e => setProfilePhone(formatPhoneNumber(e.target.value))}
+                                                    placeholder="+91 45623 32654"
+                                                    className="w-full bg-[var(--card)] border border-[var(--border)] rounded-lg py-1 px-2.5 text-xs font-semibold focus:outline-none focus:border-[var(--primary)] text-foreground font-mono"
                                                   />
                                                 </div>
                                                 <div>

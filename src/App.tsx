@@ -511,6 +511,7 @@ export default function App() {
 
   const [showMenu, setShowMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [moreMenuView, setMoreMenuView] = useState<'main' | 'themes'>('main');
   const [menuTab, setMenuTab] = useState<'profile' | 'settings' | 'business_settings' | 'printer' | 'day_closing' | 'help'>('profile');
   const [settingsSubTab, setSettingsSubTab] = useState<'overview' | 'interface' | 'security' | 'sound' | 'data'>('overview');
   const [businessSubTab, setBusinessSubTab] = useState<'overview' | 'journey' | 'profile' | 'features' | 'categories' | 'dashboard' | 'actions' | 'knowledge' | 'recovery'>('overview');
@@ -569,7 +570,7 @@ export default function App() {
   }, [activeTab]);
 
   useBackModal(showMenu, () => setShowMenu(false), 'drawer_menu');
-  useBackModal(showMoreMenu, () => setShowMoreMenu(false), 'more_menu_popup');
+  useBackModal(showMoreMenu, () => { setShowMoreMenu(false); setMoreMenuView('main'); }, 'more_menu_popup');
   useBackModal(showMenu && menuTab !== 'profile', () => setMenuTab('profile'), 'drawer_sub_menu');
   useBackModal(showPlusActionMenu, () => setShowPlusActionMenu(false), 'plus_action_menu');
   useBackModal(showSmartBulkEntry, () => setShowSmartBulkEntry(false), 'smart_bulk_entry');
@@ -4209,7 +4210,16 @@ export default function App() {
             {/* Menu (3 vertical dot :) Button with Professional Popup */}
             <div className="relative">
               <button
-                 onClick={() => setShowMoreMenu(prev => !prev)}
+                 onClick={() => {
+                   setShowMoreMenu(prev => {
+                     if (prev) {
+                       setMoreMenuView('main');
+                       return false;
+                     }
+                     setMoreMenuView('main');
+                     return true;
+                   });
+                 }}
                  className={cn(
                    "flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl transition-all border border-white/10 text-white/80 hover:bg-white/20 active:scale-95 shrink-0 cursor-pointer select-none",
                    showMoreMenu ? "bg-white/20 text-white" : "bg-white/5"
@@ -4227,83 +4237,167 @@ export default function App() {
                     {/* Fixed invisible backdrop for outside click */}
                     <div 
                       className="fixed inset-0 z-[110]" 
-                      onClick={() => setShowMoreMenu(false)} 
+                      onClick={() => {
+                        setShowMoreMenu(false);
+                        setMoreMenuView('main');
+                      }} 
                     />
 
                     {/* Small Popup Dropdown */}
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.92, y: -6 }}
+                      key={moreMenuView}
+                      initial={{ opacity: 0, scale: 0.94, y: -6 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.92, y: -6 }}
+                      exit={{ opacity: 0, scale: 0.94, y: -6 }}
                       transition={{ type: "spring", stiffness: 480, damping: 26 }}
-                      className="absolute right-0 top-full mt-2 w-48 rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-2xl z-[120] py-1.5 overflow-hidden text-[var(--foreground)]"
+                      className={cn(
+                        "absolute right-0 top-full mt-2 rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-2xl z-[120] overflow-hidden text-[var(--foreground)]",
+                        moreMenuView === 'themes' ? "w-64 sm:w-72 max-w-[90vw]" : "w-48 py-1.5"
+                      )}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {/* 1. Profile */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowMoreMenu(false);
-                          setMenuTab('profile');
-                          setShowMenu(true);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold hover:bg-[var(--foreground)]/5 transition-colors text-left cursor-pointer group select-none"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                          <User size={15} />
-                        </div>
-                        <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Profile</span>
-                      </button>
+                      {moreMenuView === 'main' ? (
+                        <>
+                          {/* 1. Profile */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowMoreMenu(false);
+                              setMenuTab('profile');
+                              setShowMenu(true);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold hover:bg-[var(--foreground)]/5 transition-colors text-left cursor-pointer group select-none"
+                          >
+                            <div className="w-7 h-7 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                              <User size={15} />
+                            </div>
+                            <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Profile</span>
+                          </button>
 
-                      {/* 2. Settings */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowMoreMenu(false);
-                          setMenuTab('settings');
-                          setSettingsSubTab('overview');
-                          setShowMenu(true);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold hover:bg-[var(--foreground)]/5 transition-colors text-left cursor-pointer group select-none border-t border-[var(--border)]/40"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                          <SettingsIcon size={15} />
-                        </div>
-                        <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Settings</span>
-                      </button>
+                          {/* 2. Settings */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowMoreMenu(false);
+                              setMenuTab('settings');
+                              setSettingsSubTab('overview');
+                              setShowMenu(true);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold hover:bg-[var(--foreground)]/5 transition-colors text-left cursor-pointer group select-none border-t border-[var(--border)]/40"
+                          >
+                            <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                              <SettingsIcon size={15} />
+                            </div>
+                            <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Settings</span>
+                          </button>
 
-                      {/* 3. Theme */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowMoreMenu(false);
-                          setMenuTab('settings');
-                          setSettingsSubTab('interface');
-                          setShowMenu(true);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold hover:bg-[var(--foreground)]/5 transition-colors text-left cursor-pointer group select-none border-t border-[var(--border)]/40"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                          <Palette size={15} />
-                        </div>
-                        <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Theme</span>
-                      </button>
+                          {/* 3. Theme */}
+                          <button
+                            type="button"
+                            onClick={() => setMoreMenuView('themes')}
+                            className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold hover:bg-[var(--foreground)]/5 transition-colors text-left cursor-pointer group select-none border-t border-[var(--border)]/40"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                <Palette size={15} />
+                              </div>
+                              <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Theme</span>
+                            </div>
+                            <ChevronRight size={14} className="text-[var(--foreground)]/40 group-hover:text-[var(--foreground)] group-hover:translate-x-0.5 transition-all" />
+                          </button>
 
-                      {/* 4. Help */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowMoreMenu(false);
-                          setMenuTab('help');
-                          setShowMenu(true);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold hover:bg-[var(--foreground)]/5 transition-colors text-left cursor-pointer group select-none border-t border-[var(--border)]/40"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                          <HelpCircle size={15} />
+                          {/* 4. Help */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowMoreMenu(false);
+                              setMenuTab('help');
+                              setShowMenu(true);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold hover:bg-[var(--foreground)]/5 transition-colors text-left cursor-pointer group select-none border-t border-[var(--border)]/40"
+                          >
+                            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                              <HelpCircle size={15} />
+                            </div>
+                            <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Help</span>
+                          </button>
+                        </>
+                      ) : (
+                        /* Themes View inside the Popup */
+                        <div className="flex flex-col">
+                          <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--border)] bg-[var(--foreground)]/[0.03]">
+                            <button
+                              type="button"
+                              onClick={() => setMoreMenuView('main')}
+                              className="flex items-center gap-1.5 text-xs font-extrabold text-[var(--foreground)]/70 hover:text-[var(--foreground)] cursor-pointer group transition-colors"
+                            >
+                              <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+                              <span>Back</span>
+                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <Palette size={13} className="text-violet-500" />
+                              <span className="text-[11px] font-black uppercase tracking-wider text-[var(--foreground)]">Themes</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowMoreMenu(false);
+                                setMoreMenuView('main');
+                              }}
+                              className="p-1 rounded-lg hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/60 hover:text-[var(--foreground)] cursor-pointer transition-colors"
+                              title="Close"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+
+                          <div className="max-h-[320px] overflow-y-auto p-1.5 space-y-1 overscroll-contain">
+                            {THEMES.map((th) => {
+                              const isSelected = state.settings.theme === th.id;
+                              return (
+                                <button
+                                  key={th.id}
+                                  type="button"
+                                  onClick={() => {
+                                    handleUpdateSettings({ theme: th.id });
+                                    if (state.settings.soundOn !== false) {
+                                      try { playFeedbackEvent('notification', state.settings); } catch (e) {}
+                                    }
+                                  }}
+                                  className={cn(
+                                    "w-full flex items-center justify-between p-2 rounded-xl text-left transition-all cursor-pointer group border",
+                                    isSelected
+                                      ? "bg-[var(--primary)]/10 border-[var(--primary)]/30 text-[var(--foreground)] shadow-xs"
+                                      : "border-transparent hover:bg-[var(--foreground)]/5 text-[var(--foreground)]/80 hover:text-[var(--foreground)]"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="text-lg leading-none shrink-0 group-hover:scale-110 transition-transform">
+                                      {th.emoji}
+                                    </span>
+                                    <div className="min-w-0">
+                                      <p className={cn(
+                                        "text-xs font-black truncate",
+                                        isSelected ? "text-[var(--primary)]" : "text-[var(--foreground)]"
+                                      )}>
+                                        {th.name}
+                                      </p>
+                                      <p className="text-[10px] opacity-60 font-medium truncate">
+                                        {th.description}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  {isSelected && (
+                                    <div className="w-5 h-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground,white)] flex items-center justify-center shrink-0 ml-2 shadow-xs">
+                                      <Check size={11} className="stroke-[3]" />
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                        <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Help</span>
-                      </button>
+                      )}
                     </motion.div>
                   </>
                 )}

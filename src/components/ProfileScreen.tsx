@@ -336,11 +336,9 @@ export function StoreCredentialsSection({
         <div>
           <h3 className="text-lg font-black uppercase tracking-tight text-[var(--foreground)] flex items-center gap-2">
             <Store size={22} className="text-[var(--primary)] shrink-0" /> 
-            {cleanAndValidateText("Store Credentials / दुकान की जानकारी", state.settings.language, state.settings)}
+            {cleanAndValidateText("Store Info (दुकान की जानकारी)", state.settings.language, state.settings)}
           </h3>
-          <p className="text-[10px] opacity-60 uppercase font-bold tracking-wider mt-1">
-            Configure official shop details for receipts, invoices, SMS billing, and cloud synchronization.
-          </p>
+        
         </div>
 
         <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--background)] border border-[var(--border)] w-fit">
@@ -452,11 +450,8 @@ export function StoreCredentialsSection({
           <div className="space-y-1.5 md:col-span-2 pt-4 border-t border-[var(--border)] mt-2">
             <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--primary)] flex items-center gap-2">
               <Clock size={14} className="text-[var(--primary)] shrink-0" /> 
-              {cleanAndValidateText("Store Hours & Operational Cycle (दुकान का समय और दैनिक चक्र)", state.settings.language, state.settings)}
+              {cleanAndValidateText("Store Timing (दुकान खुलने और बंद होने का समय)", state.settings.language, state.settings)}
             </h4>
-            <p className="text-[9px] opacity-50 uppercase font-bold tracking-wider">
-              Define opening and closing times. Daily prompts will assist you in saving end-of-day reports and shift registers.
-            </p>
           </div>
 
           <div className="space-y-1.5">
@@ -507,7 +502,7 @@ export function StoreCredentialsSection({
 
         <div className="pt-4 border-t border-[var(--border)] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[10px] opacity-60 uppercase font-bold">
-            Press save to write credentials directly to Cloud Database & Local Storage.
+            Press below Save Button 👇
           </p>
 
           <button
@@ -532,7 +527,7 @@ export function StoreCredentialsSection({
             ) : (
               <>
                 <Save size={16} />
-                <span>Save Store Credentials / सेव करें</span>
+                <span>Save Store Details</span>
               </>
             )}
           </button>

@@ -328,6 +328,24 @@ export function StoreCredentialsSection({
     }
   };
 
+  const isFormComplete = Boolean(
+    storeName.trim() &&
+    storeOwnerName.trim() &&
+    storeAddress.trim() &&
+    storePhone.replace(/\D/g, "").length >= 10
+  );
+
+  const hasUnsavedChanges = 
+    storeName.trim() !== (state.settings.storeName || "").trim() ||
+    storeOwnerName.trim() !== (state.settings.storeOwnerName || "").trim() ||
+    formatPhoneNumber(storePhone).trim() !== formatPhoneNumber(state.settings.storePhone || "").trim() ||
+    storeAddress.trim() !== (state.settings.storeAddress || "").trim() ||
+    storeOpeningTime !== (state.settings.storeOpeningTime || "08:00") ||
+    storeClosingTime !== (state.settings.storeClosingTime || "21:00") ||
+    reminderTimeBeforeMinutes !== (state.settings.reminderTimeBeforeMinutes !== undefined ? state.settings.reminderTimeBeforeMinutes : 15);
+
+  const isButtonDim = !saveSuccess && (!isFormComplete || !hasUnsavedChanges || isSaving);
+
   const isCloudActive = !!(state.user && state.user.uid !== 'guest_user' && state.settings.autoCloudSync !== false);
 
   return (
@@ -500,19 +518,18 @@ export function StoreCredentialsSection({
           </div>
         </div>
 
-        <div className="pt-4 border-t border-[var(--border)] flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-[10px] opacity-60 uppercase font-bold">
-            Press below Save Button 👇
-          </p>
-
+        <div className="pt-4 border-t border-[var(--border)] flex items-center justify-end">
           <button
             type="submit"
-            disabled={isSaving}
-            className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2.5 transition-all shadow-lg active:scale-95 cursor-pointer ${
-              saveSuccess 
-                ? 'bg-emerald-600 text-white shadow-emerald-500/25 ring-2 ring-emerald-400' 
-                : 'bg-[var(--primary)] hover:opacity-95 text-white shadow-[var(--primary)]/25'
-            }`}
+            disabled={isButtonDim}
+            className={cn(
+              "w-full sm:w-auto px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2.5 transition-all shadow-md",
+              saveSuccess
+                ? "bg-emerald-600 text-white shadow-emerald-500/25 ring-2 ring-emerald-400 cursor-default"
+                : isButtonDim
+                ? "opacity-35 bg-[var(--foreground)]/10 text-[var(--foreground)]/40 border border-[var(--border)] cursor-not-allowed shadow-none"
+                : "bg-[var(--primary)] hover:opacity-95 text-white shadow-lg shadow-[var(--primary)]/25 cursor-pointer active:scale-95"
+            )}
           >
             {isSaving ? (
               <>

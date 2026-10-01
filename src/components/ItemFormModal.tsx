@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Edit2, X, ChevronDown, Camera, Image as ImageIcon, Trash2, Upload } from 'lucide-react';
+import { Plus, Edit2, X, ChevronDown, Camera, Image as ImageIcon, Trash2, Upload, Check } from 'lucide-react';
 import { Button } from './ui/Button';
 import { UnitSelectorModal } from './ui/UnitSelectorModal';
+import { LiveCameraModal } from './LiveCameraModal';
 import { trackRecentUnit, useRecentUnits } from '../lib/unitUtils';
 import { translateItemName } from '../services/translationService';
 import { Item, Category, LanguageType } from '../types';
@@ -55,12 +56,69 @@ export function ItemFormModal({
   const [activeUnitSelection, setActiveUnitSelection] = useState<'base'|'retail'|'wholesale'|'buy'|null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showLiveCamera, setShowLiveCamera] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const lastActionTimestamp = useRef<number>(0);
+  const isActionLockedRef = useRef<boolean>(false);
   const { recentUnits } = useRecentUnits();
 
+  const openCameraPicker = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const now = Date.now();
+    if (now - lastActionTimestamp.current < 1500 || isActionLockedRef.current || isUploadingImage) {
+      return;
+    }
+    lastActionTimestamp.current = now;
+
+    // Primary: Open live in-app camera viewfinder if supported
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+      setShowLiveCamera(true);
+    } else if (cameraInputRef.current) {
+      isActionLockedRef.current = true;
+      cameraInputRef.current.value = '';
+      cameraInputRef.current.click();
+      setTimeout(() => {
+        isActionLockedRef.current = false;
+      }, 1500);
+    }
+  };
+
+  const openGalleryPicker = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const now = Date.now();
+    if (now - lastActionTimestamp.current < 1500 || isActionLockedRef.current || isUploadingImage) {
+      return;
+    }
+    lastActionTimestamp.current = now;
+    isActionLockedRef.current = true;
+
+    if (galleryInputRef.current) {
+      galleryInputRef.current.value = '';
+      galleryInputRef.current.click();
+    }
+    setTimeout(() => {
+      isActionLockedRef.current = false;
+    }, 1500);
+  };
+
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Record current timestamp immediately so any deferred click events returning from picker are discarded
+    lastActionTimestamp.current = Date.now();
+    isActionLockedRef.current = true;
+
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      setTimeout(() => { isActionLockedRef.current = false; }, 800);
+      return;
+    }
+
     try {
       setIsUploadingImage(true);
       const dataUrl = await compressImageFile(file, 360, 360, 0.82);
@@ -69,13 +127,40 @@ export function ItemFormModal({
       console.error("Failed to compress and save image", err);
     } finally {
       setIsUploadingImage(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      lastActionTimestamp.current = Date.now();
+      // Keep action locked for 1.2s to absorb the post-picker focus and synthetic click events
+      setTimeout(() => {
+        isActionLockedRef.current = false;
+        if (galleryInputRef.current) galleryInputRef.current.value = '';
+        if (cameraInputRef.current) cameraInputRef.current.value = '';
+      }, 1200);
     }
   };
 
+  const handleLiveCameraCapture = (dataUrl: string) => {
+    setFormData(prev => ({ ...prev, imageUrl: dataUrl }));
+    setShowLiveCamera(false);
+    lastActionTimestamp.current = Date.now();
+  };
+
+  const handleLiveCameraFallback = () => {
+    setShowLiveCamera(false);
+    lastActionTimestamp.current = Date.now();
+    setTimeout(() => {
+      if (cameraInputRef.current) {
+        cameraInputRef.current.value = '';
+        cameraInputRef.current.click();
+      }
+    }, 200);
+  };
+
   const handleRemoveImage = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
+    lastActionTimestamp.current = Date.now();
     setFormData(prev => ({ ...prev, imageUrl: undefined }));
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -205,65 +290,106 @@ export function ItemFormModal({
                </div>
 
                {/* Product Photo Attachment */}
-               <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-[var(--card)] border-2 border-[var(--border)] shadow-xs">
-                 <input
-                   type="file"
-                   ref={fileInputRef}
-                   accept="image/*"
-                   onChange={handleImageFileChange}
-                   className="hidden"
-                 />
-                 {formData.imageUrl ? (
-                   <div className="relative group shrink-0">
-                     <img
-                       src={formData.imageUrl}
-                       alt="Item preview"
-                       className="w-16 h-16 rounded-xl object-cover border-2 border-[var(--primary)] shadow-md"
-                     />
-                     <button
-                       type="button"
-                       onClick={handleRemoveImage}
-                       className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center shadow-lg transition-transform active:scale-90 cursor-pointer"
-                       title="Remove image"
-                     >
-                       <X size={12} strokeWidth={3} />
-                     </button>
-                   </div>
-                 ) : (
-                   <div 
-                     onClick={() => fileInputRef.current?.click()}
-                     className="w-16 h-16 rounded-xl border-2 border-dashed border-[var(--border)] hover:border-[var(--primary)] flex flex-col items-center justify-center text-zinc-400 hover:text-[var(--primary)] bg-[var(--background)] shrink-0 cursor-pointer transition-colors"
-                     title="Attach Item Photo"
-                   >
-                     <Camera size={22} className="opacity-70" />
-                     <span className="text-[7.5px] font-black uppercase mt-1 tracking-wider">Photo</span>
-                   </div>
-                 )}
+               <div className="p-3.5 rounded-2xl bg-[var(--card)] border-2 border-[var(--border)] shadow-xs space-y-3">
+                 <div className="flex items-center justify-between">
+                   <span className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)] flex items-center gap-1.5">
+                     <Camera size={13} /> Product Photo / सामान की तस्वीर
+                   </span>
+                   <span className="text-[9px] font-bold text-zinc-400 uppercase">
+                     {formData.imageUrl ? 'Photo Attached' : 'Optional / वैकल्पिक'}
+                   </span>
+                 </div>
 
-                 <div className="flex-1 min-w-0 flex flex-col justify-center">
-                   <div className="flex items-center gap-2 flex-wrap">
-                     <button
-                       type="button"
-                       onClick={() => fileInputRef.current?.click()}
-                       disabled={isUploadingImage}
-                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--primary)]/10 hover:bg-[var(--primary)] text-[var(--primary)] hover:text-white font-black text-[10px] uppercase tracking-wider transition-all active:scale-95 cursor-pointer shadow-xs border border-[var(--primary)]/20"
-                     >
-                       <Camera size={13} />
-                       <span>{formData.imageUrl ? 'Change Photo / फोटो बदलें' : 'Attach Photo / तस्वीर जोड़ें'}</span>
-                     </button>
-                     {formData.imageUrl && (
+                 <div className="flex items-center gap-3.5">
+                   {/* Hidden Native File Inputs with safe off-screen styles */}
+                   <input
+                     type="file"
+                     ref={cameraInputRef}
+                     accept="image/*"
+                     capture="environment"
+                     onChange={handleImageFileChange}
+                     className="sr-only pointer-events-none"
+                     tabIndex={-1}
+                     aria-hidden="true"
+                   />
+                   <input
+                     type="file"
+                     ref={galleryInputRef}
+                     accept="image/*"
+                     onChange={handleImageFileChange}
+                     className="sr-only pointer-events-none"
+                     tabIndex={-1}
+                     aria-hidden="true"
+                   />
+
+                   {formData.imageUrl ? (
+                     <div className="relative group shrink-0">
+                       <img
+                         src={formData.imageUrl}
+                         alt="Item preview"
+                         className="w-18 h-18 rounded-2xl object-cover border-2 border-[var(--primary)] shadow-md"
+                       />
                        <button
                          type="button"
                          onClick={handleRemoveImage}
-                         className="px-2 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1"
+                         className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center shadow-lg transition-transform active:scale-90 cursor-pointer"
+                         title="Remove image"
                        >
-                         <Trash2 size={11} /> Remove
+                         <X size={12} strokeWidth={3} />
                        </button>
-                     )}
+                     </div>
+                   ) : (
+                     <button 
+                       type="button"
+                       onClick={openCameraPicker}
+                       disabled={isUploadingImage}
+                       className="w-18 h-18 rounded-2xl border-2 border-dashed border-[var(--primary)]/60 bg-[var(--primary)]/5 hover:bg-[var(--primary)]/10 flex flex-col items-center justify-center text-[var(--primary)] shrink-0 cursor-pointer transition-all active:scale-95 group"
+                       title="Click Photo with Camera"
+                     >
+                       <Camera size={24} className="opacity-90 group-hover:scale-110 transition-transform" />
+                       <span className="text-[8px] font-black uppercase mt-1 tracking-wider">Camera</span>
+                     </button>
+                   )}
+
+                   <div className="flex-1 min-w-0 flex flex-col justify-center gap-2">
+                     <div className="flex items-center gap-2 flex-wrap">
+                       {/* 1. PRIMARY: Click Photo from Camera */}
+                       <button
+                         type="button"
+                         onClick={openCameraPicker}
+                         disabled={isUploadingImage}
+                         className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[var(--primary)] hover:opacity-95 text-white font-black text-[11px] uppercase tracking-wider transition-all active:scale-95 cursor-pointer shadow-md shadow-[var(--primary)]/20"
+                       >
+                         <Camera size={14} className="stroke-[2.5]" />
+                         <span>{formData.imageUrl ? 'Retake (Camera)' : 'Click Photo (Camera)'}</span>
+                       </button>
+
+                       {/* 2. SECONDARY: Attach from Gallery */}
+                       <button
+                         type="button"
+                         onClick={openGalleryPicker}
+                         disabled={isUploadingImage}
+                         className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-[var(--background)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)]/90 border border-[var(--border)] font-bold text-[10.5px] uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+                       >
+                         <ImageIcon size={13} className="text-zinc-400" />
+                         <span>{formData.imageUrl ? 'Change Gallery' : 'Attach Photo'}</span>
+                       </button>
+
+                       {/* Remove Button if image exists */}
+                       {formData.imageUrl && (
+                         <button
+                           type="button"
+                           onClick={handleRemoveImage}
+                           className="px-2.5 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1"
+                         >
+                           <Trash2 size={12} /> Remove
+                         </button>
+                       )}
+                     </div>
+                     <p className="text-[9.5px] font-medium text-zinc-500 dark:text-zinc-400 leading-tight">
+                       Click directly from camera (primary) or attach photo from gallery. Displayed on item catalog and billing.
+                     </p>
                    </div>
-                   <p className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400 mt-1 leading-tight">
-                     Replaces emoji icon on inventory cards. Saved directly in local device storage.
-                   </p>
                  </div>
                </div>
 
@@ -439,6 +565,18 @@ export function ItemFormModal({
             />
           )}
         </AnimatePresence>
+
+        {/* Live Camera Viewfinder Modal */}
+        {showLiveCamera && (
+          <LiveCameraModal
+            onCapture={handleLiveCameraCapture}
+            onClose={() => {
+              setShowLiveCamera(false);
+              lastActionTimestamp.current = Date.now();
+            }}
+            onFallbackToFileInput={handleLiveCameraFallback}
+          />
+        )}
       </motion.div>
     </motion.div>
   );

@@ -1234,79 +1234,134 @@ export function VoiceProductAssistant({
                   ))}
                 </div>
 
-                {/* Pulsing visualizer circle */}
-                <div className="relative flex items-center justify-center h-28 w-28">
-                  <AnimatePresence>
-                    {isListening && (
+                {/* Main Interactive Mic Button Section */}
+                <div className="relative flex flex-col items-center justify-center py-2 my-2">
+                  <div className="relative flex items-center justify-center h-36 w-36 sm:h-40 sm:w-40">
+                    {/* Continuous Idle & Active Ripple Waves */}
+                    {isListening ? (
                       <>
                         <motion.div 
-                           initial={{ scale: 0.8, opacity: 0.5 }}
-                           animate={{ scale: [1, 2.2], opacity: [0.5, 0] }}
-                           exit={{ opacity: 0 }}
-                           transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
-                           className="absolute inset-0 rounded-full border border-amber-500/40 pointer-events-none"
+                          initial={{ scale: 0.8, opacity: 0.8 }}
+                          animate={{ scale: [1, 2.4], opacity: [0.8, 0] }}
+                          transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut" }}
+                          className="absolute inset-0 rounded-full border-2 border-rose-500/60 bg-rose-500/10 pointer-events-none"
                         />
                         <motion.div 
-                           initial={{ scale: 0.8, opacity: 0.3 }}
-                           animate={{ scale: [1, 1.8], opacity: [0.3, 0] }}
-                           exit={{ opacity: 0 }}
-                           transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.5 }}
-                           className="absolute inset-0 rounded-full border border-amber-500/40 pointer-events-none"
+                          initial={{ scale: 0.8, opacity: 0.6 }}
+                          animate={{ scale: [1, 1.9], opacity: [0.6, 0] }}
+                          transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut", delay: 0.4 }}
+                          className="absolute inset-0 rounded-full border-2 border-amber-500/50 bg-amber-500/10 pointer-events-none"
+                        />
+                        <motion.div 
+                          initial={{ scale: 0.8, opacity: 0.4 }}
+                          animate={{ scale: [1, 1.5], opacity: [0.4, 0] }}
+                          transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut", delay: 0.8 }}
+                          className="absolute inset-0 rounded-full border border-red-500/40 pointer-events-none"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        {/* Inviting Idle Ripple Wave 1 */}
+                        <motion.div 
+                          animate={{ scale: [1, 1.8], opacity: [0.55, 0] }}
+                          transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut" }}
+                          className="absolute inset-0 rounded-full border-2 border-amber-500/50 bg-amber-500/5 pointer-events-none"
+                        />
+                        {/* Inviting Idle Ripple Wave 2 */}
+                        <motion.div 
+                          animate={{ scale: [1, 1.45], opacity: [0.4, 0] }}
+                          transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut", delay: 1.2 }}
+                          className="absolute inset-0 rounded-full border border-amber-400/40 bg-amber-400/5 pointer-events-none"
+                        />
+                        {/* Rotating subtle conic glow aura */}
+                        <motion.div 
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                          className="absolute -inset-3 rounded-full bg-gradient-to-tr from-amber-500/20 via-orange-500/10 to-amber-300/25 blur-md pointer-events-none"
                         />
                       </>
                     )}
-                  </AnimatePresence>
 
-                  <motion.button
-                    id="voice-assistant-mic-record-btn"
+                    {/* Hero Mic Button */}
+                    <motion.button
+                      id="voice-assistant-mic-record-btn"
+                      onClick={toggleListening}
+                      whileHover={{ scale: 1.08 }}
+                      whileTap={{ scale: 0.92 }}
+                      animate={isListening ? {
+                        scale: [1, 1.06, 1],
+                        boxShadow: [
+                          "0 15px 35px -5px rgba(239, 68, 68, 0.6), 0 0 0 4px rgba(239, 68, 68, 0.4)",
+                          "0 20px 45px -5px rgba(245, 158, 11, 0.8), 0 0 25px 15px rgba(239, 68, 68, 0.2)",
+                          "0 15px 35px -5px rgba(239, 68, 68, 0.6), 0 0 0 4px rgba(239, 68, 68, 0.4)"
+                        ]
+                      } : {
+                        scale: [1, 1.04, 1],
+                        boxShadow: [
+                          "0 12px 30px -4px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.3)",
+                          "0 18px 45px 0px rgba(245, 158, 11, 0.75), 0 0 20px 8px rgba(245, 158, 11, 0.25)",
+                          "0 12px 30px -4px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.3)"
+                        ]
+                      }}
+                      transition={{
+                        scale: {
+                          duration: isListening ? 1.0 : 2.2,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        },
+                        boxShadow: {
+                          duration: isListening ? 1.0 : 2.2,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }
+                      }}
+                      className={`relative z-10 flex items-center justify-center h-28 w-28 sm:h-32 sm:w-32 rounded-full cursor-pointer select-none outline-none focus:outline-none focus:ring-4 focus:ring-amber-400/50 transition-colors border-4 ${
+                        isListening 
+                          ? 'bg-gradient-to-tr from-rose-600 via-red-500 to-amber-500 border-rose-300/80 text-white shadow-2xl' 
+                          : 'bg-gradient-to-tr from-amber-500 via-amber-600 to-orange-500 border-amber-300/80 text-white shadow-2xl'
+                      }`}
+                      title={isListening ? "Click to Stop Listening" : "Click to Speak Products"}
+                    >
+                      {/* Inner highlight rim */}
+                      <div className="absolute inset-1.5 rounded-full border border-white/30 pointer-events-none" />
+
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={isListening ? "mic-off" : "mic-on"}
+                          initial={{ scale: 0.6, rotate: -25, opacity: 0 }}
+                          animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                          exit={{ scale: 0.6, rotate: 25, opacity: 0 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 18 }}
+                          className="flex flex-col items-center justify-center"
+                        >
+                          {isListening ? (
+                            <MicOff size={44} className="text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] animate-pulse stroke-[2.5]" />
+                          ) : (
+                            <Mic size={44} className="text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] stroke-[2.5]" />
+                          )}
+                        </motion.div>
+                      </AnimatePresence>
+                    </motion.button>
+                  </div>
+
+                  {/* Prominent Action Prompt Badge */}
+                  <motion.div 
                     onClick={toggleListening}
-                    whileHover={{ scale: 1.06 }}
-                    whileTap={{ scale: 0.94 }}
-                    animate={isListening ? {
-                      scale: [1, 1.05, 1],
-                      boxShadow: [
-                        "0 10px 25px -5px rgba(245, 158, 11, 0.4), 0 0 0 0px rgba(245, 158, 11, 0.4)",
-                        "0 15px 30px -5px rgba(245, 158, 11, 0.5), 0 0 15px 12px rgba(245, 158, 11, 0)",
-                        "0 10px 25px -5px rgba(245, 158, 11, 0.4), 0 0 0 0px rgba(245, 158, 11, 0)"
-                      ]
-                    } : {
-                      scale: 1,
-                      boxShadow: "0 4px 10px rgba(0, 0, 0, 0.05)"
-                    }}
-                    transition={isListening ? {
-                      scale: {
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      },
-                      boxShadow: {
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeOut"
-                      }
-                    } : { duration: 0.2 }}
-                    className={`relative z-10 flex items-center justify-center h-24 w-24 rounded-full border-2 border-[var(--border)] select-none outline-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
-                      isListening 
-                        ? 'bg-gradient-to-tr from-amber-500 to-amber-600 text-white shadow-amber-500/30' 
-                        : 'bg-[var(--background)] hover:bg-[var(--primary)]/10 text-amber-500'
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
+                    className={`mt-4 px-4 py-1.5 rounded-full text-[11px] font-black tracking-wider uppercase flex items-center gap-2 cursor-pointer shadow-md transition-all ${
+                      isListening
+                        ? 'bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/40'
+                        : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 hover:bg-amber-500/30'
                     }`}
                   >
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={isListening ? "mic-off" : "mic-on"}
-                        initial={{ scale: 0.6, rotate: -30, opacity: 0 }}
-                        animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                        exit={{ scale: 0.6, rotate: 30, opacity: 0 }}
-                        transition={{ type: "spring", stiffness: 350, damping: 15 }}
-                      >
-                        {isListening ? (
-                          <MicOff size={36} className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.15)]" />
-                        ) : (
-                          <Mic size={36} className="text-amber-500 drop-shadow-[0_2px_8px_rgba(245,158,11,0.2)]" />
-                        )}
-                      </motion.div>
-                    </AnimatePresence>
-                  </motion.button>
+                    <span className={`w-2 h-2 rounded-full ${isListening ? 'bg-rose-500 animate-ping' : 'bg-amber-500 animate-ping'}`} />
+                    <span>
+                      {isListening 
+                        ? 'Listening... Tap to Stop (सुन रहा है... रोकने के लिए दबाएं)' 
+                        : 'Tap to Speak (बोलने के लिए दबाएं)'}
+                    </span>
+                  </motion.div>
                 </div>
 
                 {/* Step indicator pipeline */}

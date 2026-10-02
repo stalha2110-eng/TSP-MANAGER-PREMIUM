@@ -1211,7 +1211,6 @@ export function VoiceProductAssistant({
 
                 {/* Instant Quick Lang Selector */}
                 <div className="flex flex-wrap justify-center items-center gap-2 pt-2 pb-1 relative z-20">
-                  <span className="text-[9px] uppercase font-black tracking-widest text-[var(--foreground)]/50 mr-1">Locale Listener:</span>
                   {[
                     { id: "hi-IN", label: "🇮🇳 हिन्दी", code: "hi" },
                     { id: "mr-IN", label: "🇮🇳 मराठी", code: "mr" },

@@ -3,6 +3,8 @@
 import { AppSettings } from '../types';
 
 let isSpeechMuted = false;
+let isVoiceAssistantSuspended = false;
+let activeConfirmationTimer: any = null;
 
 // Check localStorage for saved audio preference
 if (typeof window !== 'undefined') {
@@ -48,9 +50,28 @@ export function setVoiceMuted(muted: boolean): void {
   }
 }
 
+/**
+ * Suspends or resumes all background TTS voice confirmations
+ * while Voice Product Assistant or microphone recording is active.
+ */
+export function setVoiceAssistantActive(active: boolean): void {
+  isVoiceAssistantSuspended = active;
+  if (active) {
+    stopHindiSpeech();
+  }
+}
+
 export function stopHindiSpeech(): void {
+  if (activeConfirmationTimer) {
+    clearTimeout(activeConfirmationTimer);
+    activeConfirmationTimer = null;
+  }
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     try {
+      window.speechSynthesis.cancel();
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
       window.speechSynthesis.cancel();
     } catch (e) {
       console.warn('SpeechSynthesis cancel error:', e);
@@ -153,6 +174,7 @@ export function speakHindiConfirmation(
   settings?: Partial<AppSettings>,
   options?: { rate?: number; pitch?: number; delay?: number }
 ): void {
+  if (isVoiceAssistantSuspended || isSpeechMuted) return;
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 
   if (settings) {
@@ -161,9 +183,17 @@ export function speakHindiConfirmation(
     if (settings.soundHindiVoiceEnabled === false) return;
   }
 
+  if (activeConfirmationTimer) {
+    clearTimeout(activeConfirmationTimer);
+    activeConfirmationTimer = null;
+  }
+
   const delayMs = options?.delay ?? 90;
 
-  setTimeout(() => {
+  activeConfirmationTimer = setTimeout(() => {
+    activeConfirmationTimer = null;
+    if (isVoiceAssistantSuspended || isSpeechMuted) return;
+
     try {
       window.speechSynthesis.cancel();
 
@@ -210,9 +240,19 @@ export function speakItemAddedConfirmation(
   itemName?: string,
   settings?: Partial<AppSettings>
 ): void {
-  // If item name provided, clean it (remove extra slashes or packaging notes)
-  const cleanName = itemName ? itemName.split('/')[0].split('(')[0].trim() : '';
-  const text = cleanName ? `${cleanName} जोड़ा गया` : 'सामान जोड़ा गया';
+  if (isVoiceAssistantSuspended || isSpeechMuted) return;
+  
+  // Guard: If item name is missing, empty, or whitespace, NEVER trigger generic "सामान जोड़ा गया"!
+  // This completely eliminates false-positive voice speech when opening modals or clicking buttons.
+  if (!itemName || !itemName.trim()) {
+    return;
+  }
+
+  // Clean item name (remove extra slashes or packaging notes)
+  const cleanName = itemName.split('/')[0].split('(')[0].trim();
+  if (!cleanName) return;
+
+  const text = `${cleanName} जोड़ा गया`;
   speakHindiConfirmation(text, settings, { delay: 100 });
 }
 

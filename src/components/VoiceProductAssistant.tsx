@@ -12,7 +12,8 @@ import {
   saveSessionToHistory, getVoiceSessionHistory, fastClientVoiceParser 
 } from "../services/voiceProcessingService";
 import { keyPoolManager } from "../services/apiKeyPoolService";
-import { playFeedbackEvent } from "../services/soundFeedbackService";
+import { playSynthesizedSound } from "../services/soundFeedbackService";
+import { setVoiceAssistantActive, stopHindiSpeech } from "../services/hindiVoiceService";
 import { Button } from "./ui/Button";
 import { useBackModal } from "../utils/backNavigationManager";
 import { deviceFeatures } from "../utils/device";
@@ -25,9 +26,9 @@ function cleanTranscriptText(text: string): string {
 
   // Phonetic & Dialect Normalization for Indian Speech Recognition:
   // Normalize "paw kilo", "pao kilo", "paav kilo", "pau kilo", "pa kilo", "paa kilo", "पाव किलो", "पावकिलो" -> "pav kilo"
-  cleaned = cleaned.replace(/\b(?:paw\s*kilo|paov?\s*kilo|pau\s*kilo|pa\s*kilo|paa\s*kilo|paw|paov?|paa?v|pau)\b/gi, "pav kilo");
+  cleaned = cleaned.replace(/\b(?:paw\s*kilo|paov?\s*kilo|pau\s*kilo|pa\s*kilo|paa\s*kilo|pav\s*kilo|paav\s*kilo)\b/gi, "pav kilo");
   cleaned = cleaned.replace(/\b(?:पाव\s*किलो|पावकिलो)\b/gi, "pav kilo");
-  cleaned = cleaned.replace(/\b(?:पाव)\b/gi, "pav");
+  cleaned = cleaned.replace(/\b(?:पाव|paav|pao|pau|paw)\b/gi, "pav");
   // Normalize "retel", "ratel", "reteil", "रिटेल", "chiller price", "chillar price", "chiller", "chillar" -> "retail"
   cleaned = cleaned.replace(/\b(?:chiller\s*price|chillar\s*price|chiller\s*rate|chillar\s*rate|chiller\s*bhav|chillar\s*bhav|chilar\s*price|चिल्लर\s*भाव|चिल्लर\s*रेट|चिल्लर\s*प्राइस|चिल्लर\s*प्राइज़|chiller|chillar|chilar|chhilhar|चिल्लर|खुद्रा|फुटकर)\b/gi, "retail");
   cleaned = cleaned.replace(/\b(?:retel|ratel|reteil|रिटेल)\b/gi, "retail");
@@ -320,8 +321,25 @@ export function VoiceProductAssistant({
       return;
     }
 
+    // If merged successfully replaced or unified lastPhrase with an overlap, update in place
+    const defaultSep = /[,;]\s*$/.test(lastPhrase) ? " " : " , ";
+    if (merged !== (lastPhrase + defaultSep + cleanChunk).trim()) {
+      accumulatedPhrasesRef.current[lastIndex] = merged;
+      return;
+    }
+
     accumulatedPhrasesRef.current.push(cleanChunk);
   };
+
+  // Suspend all background TTS voice confirmations and flush queued audio while Voice Assistant is active
+  useEffect(() => {
+    setVoiceAssistantActive(true);
+    stopHindiSpeech();
+    return () => {
+      setVoiceAssistantActive(false);
+      stopHindiSpeech();
+    };
+  }, []);
 
   // Clear silence and speech pause timeout on unmount
   useEffect(() => {
@@ -415,13 +433,12 @@ export function VoiceProductAssistant({
   // History cache
   const [historyList, setHistoryList] = useState<VoiceSession[]>([]);
 
-  // Sound play wrapper
+  // Pure synthesized audio effect wrapper (plays crisp sound effect without speaking TTS text)
   const triggerSound = (
-    event: 'bill_saved' | 'product_added' | 'print_success' | 'notification',
-    context?: { itemName?: string; amount?: number }
+    event: 'bill_saved' | 'product_added' | 'print_success' | 'notification' = 'notification'
   ) => {
     if (vSettings.soundFeedback) {
-      playFeedbackEvent(event, appSettings, context);
+      playSynthesizedSound(event, { settings: appSettings });
     }
   };
 
@@ -671,17 +688,24 @@ export function VoiceProductAssistant({
           console.warn(`Speech auto-restart retry (${retriesLeft} left) failed:`, err);
           if (retriesLeft > 0 && !isManuallyStopped.current) {
             attemptRestart(Math.floor(delayMs * 1.6), retriesLeft - 1);
+          } else {
+            setIsListening(false);
+            rec.__working = false;
           }
         }
       }, delayMs);
     };
 
     rec.onstart = () => {
+      // Ensure any ongoing speech synthesis is immediately cancelled so microphone never hears it
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
       rec.__working = true;
       setIsListening(true);
       setRecognitionError("");
       setProcessStep('listening');
-      triggerSound('product_added'); // soft bubble click
+      triggerSound('notification'); // subtle audio chime indicating mic active, zero speech
     };
 
     rec.onresult = (event: any) => {
@@ -930,6 +954,12 @@ export function VoiceProductAssistant({
       setFinalTranscript("");
       setInterimTranscript("");
       setRecognitionError("");
+
+      // Cancel any ongoing speech synthesis so microphone never hears computer's own voice
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+
       try {
         recognitionObj.start();
       } catch (e) {
@@ -1366,19 +1396,58 @@ export function VoiceProductAssistant({
                 {/* Step indicator pipeline */}
                 {vSettings.showSteps && (
                   <div className="flex flex-wrap justify-center items-center gap-3 text-[10px] uppercase font-black tracking-wider text-[var(--foreground)]/50">
-                    <span className={`px-2 py-1 rounded border border-[var(--border)]/60 bg-[var(--background)] flex items-center gap-1.5 transition-colors ${processStep === 'listening' ? 'text-amber-500 border-amber-500/30 bg-amber-500/10' : ''}`}>
+                    <span 
+                      style={{
+                        marginRight: '-13px',
+                        paddingLeft: '2px',
+                        marginLeft: '15px',
+                        marginTop: '0px',
+                        borderColor: '#ffffff',
+                        borderStyle: 'none',
+                        borderWidth: '0px',
+                        borderRadius: '8.5px'
+                      }}
+                      className={`px-2 py-1 rounded border border-[var(--border)]/60 bg-[var(--background)] flex items-center gap-1.5 transition-colors ${processStep === 'listening' ? 'text-amber-500 border-amber-500/30 bg-amber-500/10' : ''}`}
+                    >
                       🎤 1. Listening
                     </span>
                     <span className="opacity-20">→</span>
-                    <span className={`px-2 py-1 rounded border border-[var(--border)]/60 bg-[var(--background)] flex items-center gap-1.5 transition-colors ${processStep === 'captured' ? 'text-amber-500 border-amber-500/30 bg-amber-500/10' : ''}`}>
+                    <span 
+                      style={{
+                        marginRight: '-2px',
+                        marginLeft: '2px',
+                        borderWidth: '0px',
+                        borderStyle: 'none',
+                        borderRadius: '8.5px'
+                      }}
+                      className={`px-2 py-1 rounded border border-[var(--border)]/60 bg-[var(--background)] flex items-center gap-1.5 transition-colors ${processStep === 'captured' ? 'text-amber-500 border-amber-500/30 bg-amber-500/10' : ''}`}
+                    >
                       📥 2. Captured
                     </span>
                     <span className="opacity-20">→</span>
-                    <span className={`px-2 py-1 rounded border border-[var(--border)]/60 bg-[var(--background)] flex items-center gap-1.5 transition-colors ${processStep === 'analyzing' ? 'text-amber-500 border-amber-500/30 bg-amber-500/10' : ''}`}>
+                    <span 
+                      style={{
+                        marginLeft: '-3px',
+                        paddingLeft: '-1px',
+                        paddingRight: '3px',
+                        borderColor: '#ffffff',
+                        borderStyle: 'none',
+                        borderRadius: '8.5px'
+                      }}
+                      className={`px-2 py-1 rounded border border-[var(--border)]/60 bg-[var(--background)] flex items-center gap-1.5 transition-colors ${processStep === 'analyzing' ? 'text-amber-500 border-amber-500/30 bg-amber-500/10' : ''}`}
+                    >
                       ⚡ 3. Structuring
                     </span>
                     <span className="opacity-20">→</span>
-                    <span className={`px-2 py-1 rounded border border-[var(--border)]/60 bg-[var(--background)] flex items-center gap-1.5 transition-colors ${processStep === 'done' ? 'text-teal-500 border-teal-500/30 bg-teal-500/10' : ''}`}>
+                    <span 
+                      style={{
+                        marginLeft: '-13px',
+                        borderColor: '#ffffff',
+                        borderStyle: 'none',
+                        borderRadius: '8.5px'
+                      }}
+                      className={`px-2 py-1 rounded border border-[var(--border)]/60 bg-[var(--background)] flex items-center gap-1.5 transition-colors ${processStep === 'done' ? 'text-teal-500 border-teal-500/30 bg-teal-500/10' : ''}`}
+                    >
                       ✓ 4. Extracted
                     </span>
                   </div>

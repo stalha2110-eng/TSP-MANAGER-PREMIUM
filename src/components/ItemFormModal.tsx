@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Edit2, X, ChevronDown, Camera, Image as ImageIcon, Trash2, Upload, Check } from 'lucide-react';
+import { Plus, Edit2, X, ChevronDown, Camera, Image as ImageIcon, Trash2, Check, ChevronRight, Eye, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { UnitSelectorModal } from './ui/UnitSelectorModal';
-import { LiveCameraModal } from './LiveCameraModal';
+import { previewImage } from './ImagePreviewModal';
 import { trackRecentUnit, useRecentUnits } from '../lib/unitUtils';
 import { translateItemName } from '../services/translationService';
 import { Item, Category, LanguageType } from '../types';
@@ -67,108 +67,51 @@ export function ItemFormModal({
   const [activeUnitSelection, setActiveUnitSelection] = useState<'base'|'retail'|'wholesale'|'buy'|null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [showLiveCamera, setShowLiveCamera] = useState(false);
+  const [showPhotoSourceModal, setShowPhotoSourceModal] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  const lastActionTimestamp = useRef<number>(0);
-  const isActionLockedRef = useRef<boolean>(false);
   const { recentUnits } = useRecentUnits();
 
-  const openCameraPicker = (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    const now = Date.now();
-    if (now - lastActionTimestamp.current < 1500 || isActionLockedRef.current || isUploadingImage) {
-      return;
-    }
-    lastActionTimestamp.current = now;
-
-    // Primary: Open live in-app camera viewfinder if supported
-    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
-      setShowLiveCamera(true);
-    } else if (cameraInputRef.current) {
-      isActionLockedRef.current = true;
+  // Directly trigger device native camera via input with capture="environment"
+  const triggerDeviceCamera = () => {
+    setShowPhotoSourceModal(false);
+    if (cameraInputRef.current) {
       cameraInputRef.current.value = '';
       cameraInputRef.current.click();
-      setTimeout(() => {
-        isActionLockedRef.current = false;
-      }, 1500);
     }
   };
 
-  const openGalleryPicker = (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    const now = Date.now();
-    if (now - lastActionTimestamp.current < 1500 || isActionLockedRef.current || isUploadingImage) {
-      return;
-    }
-    lastActionTimestamp.current = now;
-    isActionLockedRef.current = true;
-
+  // Directly trigger device photo gallery / file picker
+  const triggerDeviceGallery = () => {
+    setShowPhotoSourceModal(false);
     if (galleryInputRef.current) {
       galleryInputRef.current.value = '';
       galleryInputRef.current.click();
     }
-    setTimeout(() => {
-      isActionLockedRef.current = false;
-    }, 1500);
   };
 
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Record current timestamp immediately so any deferred click events returning from picker are discarded
-    lastActionTimestamp.current = Date.now();
-    isActionLockedRef.current = true;
-
     const file = e.target.files?.[0];
-    if (!file) {
-      setTimeout(() => { isActionLockedRef.current = false; }, 800);
-      return;
-    }
+    if (!file) return;
 
     try {
       setIsUploadingImage(true);
-      const dataUrl = await compressImageFile(file, 360, 360, 0.82);
+      const dataUrl = await compressImageFile(file, 400, 400, 0.85);
       setFormData(prev => ({ ...prev, imageUrl: dataUrl }));
     } catch (err) {
       console.error("Failed to compress and save image", err);
     } finally {
       setIsUploadingImage(false);
-      lastActionTimestamp.current = Date.now();
-      // Keep action locked for 1.2s to absorb the post-picker focus and synthetic click events
-      setTimeout(() => {
-        isActionLockedRef.current = false;
-        if (galleryInputRef.current) galleryInputRef.current.value = '';
-        if (cameraInputRef.current) cameraInputRef.current.value = '';
-      }, 1200);
+      if (galleryInputRef.current) galleryInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
     }
   };
 
-  const handleLiveCameraCapture = (dataUrl: string) => {
-    setFormData(prev => ({ ...prev, imageUrl: dataUrl }));
-    setShowLiveCamera(false);
-    lastActionTimestamp.current = Date.now();
-  };
-
-  const handleLiveCameraFallback = () => {
-    setShowLiveCamera(false);
-    lastActionTimestamp.current = Date.now();
-    setTimeout(() => {
-      if (cameraInputRef.current) {
-        cameraInputRef.current.value = '';
-        cameraInputRef.current.click();
-      }
-    }, 200);
-  };
-
-  const handleRemoveImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    lastActionTimestamp.current = Date.now();
+  const handleRemoveImage = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setFormData(prev => ({ ...prev, imageUrl: undefined }));
     if (galleryInputRef.current) galleryInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
@@ -308,107 +251,143 @@ export function ItemFormModal({
                </div>
 
                {/* Product Photo Attachment */}
-               <div className="p-3.5 rounded-2xl bg-[var(--card)] border-2 border-[var(--border)] shadow-xs space-y-3">
+               <div className="rounded-2xl border-2 border-[var(--border)] bg-[var(--card)] p-4 shadow-sm space-y-3 transition-all">
                  <div className="flex items-center justify-between">
-                   <span className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)] flex items-center gap-1.5">
-                     <Camera size={13} /> Add Product Photo
+                   <span className="text-[11px] font-black uppercase tracking-wider text-[var(--primary)] flex items-center gap-2">
+                     <Camera size={14} /> Product Photo (सामान की फोटो)
                    </span>
-                   <span className="text-[8px] font-bold text-zinc-400 uppercase">
-                     {formData.imageUrl ? 'Photo Attached' : '(Optional)'}
-                   </span>
+                   {formData.imageUrl ? (
+                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-black tracking-wide flex items-center gap-1">
+                       <Check size={11} strokeWidth={3} /> Photo Added
+                     </span>
+                   ) : (
+                     <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+                       Optional
+                     </span>
+                   )}
                  </div>
 
-                 <div className="flex items-center gap-3.5">
-                   {/* Hidden Native File Inputs with safe off-screen styles */}
-                   <input
-                     type="file"
-                     ref={cameraInputRef}
-                     accept="image/*"
-                     capture="environment"
-                     onChange={handleImageFileChange}
-                     className="sr-only pointer-events-none"
-                     tabIndex={-1}
-                     aria-hidden="true"
-                   />
-                   <input
-                     type="file"
-                     ref={galleryInputRef}
-                     accept="image/*"
-                     onChange={handleImageFileChange}
-                     className="sr-only pointer-events-none"
-                     tabIndex={-1}
-                     aria-hidden="true"
-                   />
+                 {/* Hidden Native File Inputs */}
+                 <input
+                   type="file"
+                   ref={cameraInputRef}
+                   accept="image/*"
+                   capture="environment"
+                   onChange={handleImageFileChange}
+                   className="sr-only pointer-events-none"
+                   tabIndex={-1}
+                   aria-hidden="true"
+                 />
+                 <input
+                   type="file"
+                   ref={galleryInputRef}
+                   accept="image/*"
+                   onChange={handleImageFileChange}
+                   className="sr-only pointer-events-none"
+                   tabIndex={-1}
+                   aria-hidden="true"
+                 />
 
-                   {formData.imageUrl ? (
-                     <div className="relative group shrink-0">
+                 {formData.imageUrl ? (
+                   /* Attached State: Sleek preview & management */
+                   <div className="flex items-center gap-4 p-3 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+                     {/* Thumbnail with hover zoom */}
+                     <div 
+                       className="relative group shrink-0 cursor-pointer"
+                       onClick={() => previewImage(formData.imageUrl!, formData.name || 'Product Photo')}
+                       title="Click to preview full image"
+                     >
                        <img
                          src={formData.imageUrl}
-                         alt="Item preview"
-                         className="w-18 h-18 rounded-2xl object-cover border-2 border-[var(--primary)] shadow-md"
+                         alt="Product preview"
+                         className="w-20 h-20 rounded-xl object-cover border-2 border-[var(--primary)]/40 shadow-sm group-hover:opacity-90 transition-opacity"
                        />
-                       <button
-                         type="button"
-                         onClick={handleRemoveImage}
-                         className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center shadow-lg transition-transform active:scale-90 cursor-pointer"
-                         title="Remove image"
-                       >
-                         <X size={12} strokeWidth={3} />
-                       </button>
+                       <div className="absolute inset-0 rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                         <Eye size={18} />
+                       </div>
                      </div>
-                   ) : (
-                     <button 
-                       type="button"
-                       onClick={openCameraPicker}
-                       disabled={isUploadingImage}
-                       className="w-18 h-18 rounded-2xl border-2 border-dashed border-[var(--primary)]/60 bg-[var(--primary)]/5 hover:bg-[var(--primary)]/10 flex flex-col items-center justify-center text-[var(--primary)] shrink-0 cursor-pointer transition-all active:scale-95 group"
-                       title="Click Photo with Camera"
-                     >
-                       <Camera size={24} className="opacity-90 group-hover:scale-110 transition-transform" />
-                       <span className="text-[8px] font-black uppercase mt-1 tracking-wider">Camera</span>
-                     </button>
-                   )}
 
-                   <div className="flex-1 min-w-0 flex flex-col justify-center gap-2">
-                     <div className="flex items-center gap-2 flex-wrap">
-                       {/* 1. PRIMARY: Click Photo from Camera */}
-                       <button
-                         type="button"
-                         onClick={openCameraPicker}
-                         disabled={isUploadingImage}
-                         className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[var(--primary)] hover:opacity-95 text-white font-black text-[11px] uppercase tracking-wider transition-all active:scale-95 cursor-pointer shadow-md shadow-[var(--primary)]/20"
-                       >
-                         <Camera size={14} className="stroke-[2.5]" />
-                         <span>{formData.imageUrl ? 'Retake (Camera)' : 'Click Photo (Camera)'}</span>
-                       </button>
+                     {/* Info & Action Buttons */}
+                     <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                       <div>
+                         <div className="flex items-center gap-1.5 text-xs font-black text-[var(--foreground)] truncate">
+                           <span>Image Attached</span>
+                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                         </div>
+                         <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed mt-0.5">
+                           Shown on billing screen, item list & receipts
+                         </p>
+                       </div>
 
-                       {/* 2. SECONDARY: Attach from Gallery */}
-                       <button
-                         type="button"
-                         onClick={openGalleryPicker}
-                         disabled={isUploadingImage}
-                         className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-[var(--background)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)]/90 border border-[var(--border)] font-bold text-[10.5px] uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
-                       >
-                         <ImageIcon size={13} className="text-zinc-400" />
-                         <span>{formData.imageUrl ? 'Change Gallery' : 'Attach Photo'}</span>
-                       </button>
+                       <div className="flex items-center gap-2 pt-2 flex-wrap">
+                         <button
+                           type="button"
+                           onClick={() => setShowPhotoSourceModal(true)}
+                           disabled={isUploadingImage}
+                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--primary)] hover:opacity-90 text-white font-bold text-[11px] uppercase tracking-wider transition-all cursor-pointer shadow-sm active:scale-95"
+                         >
+                           <RefreshCw size={12} className={isUploadingImage ? 'animate-spin' : ''} />
+                           <span>Change Photo</span>
+                         </button>
 
-                       {/* Remove Button if image exists */}
-                       {formData.imageUrl && (
+                         <button
+                           type="button"
+                           onClick={() => previewImage(formData.imageUrl!, formData.name || 'Product Photo')}
+                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[var(--card)] hover:bg-zinc-200 dark:hover:bg-zinc-800 text-[var(--foreground)] font-bold text-[11px] transition-all cursor-pointer border border-[var(--border)]"
+                           title="Preview full photo"
+                         >
+                           <Eye size={12} />
+                           <span>View</span>
+                         </button>
+
                          <button
                            type="button"
                            onClick={handleRemoveImage}
-                           className="px-2.5 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1"
+                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-rose-500 hover:bg-rose-500/10 font-bold text-[11px] transition-all cursor-pointer"
+                           title="Remove photo"
                          >
-                           <Trash2 size={12} /> Remove
+                           <Trash2 size={12} />
+                           <span>Remove</span>
                          </button>
-                       )}
+                       </div>
                      </div>
-                     <p className="text-[9.5px] font-medium text-zinc-500 dark:text-zinc-400 leading-tight">
-                       सामान की फोटो बिलिंग पेज और लिस्ट में दिखाई जाएगी
-                     </p>
                    </div>
-                 </div>
+                 ) : (
+                   /* Empty State: Inviting, high-grade interactive uploader card */
+                   <button
+                     type="button"
+                     onClick={() => setShowPhotoSourceModal(true)}
+                     disabled={isUploadingImage}
+                     className="w-full text-left p-4 sm:p-5 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-[var(--primary)] bg-gradient-to-br from-[var(--background)] to-[var(--card)] hover:bg-[var(--primary)]/5 transition-all duration-200 flex items-center justify-between gap-4 cursor-pointer group active:scale-[0.99]"
+                   >
+                     <div className="flex items-center gap-3.5 min-w-0">
+                       <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-[var(--primary)] group-hover:text-white transition-all shadow-inner">
+                         {isUploadingImage ? (
+                           <Loader2 size={22} className="animate-spin" />
+                         ) : (
+                           <Camera size={22} className="stroke-[2.2]" />
+                         )}
+                       </div>
+                       <div className="min-w-0">
+                         <p className="text-sm font-black text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors flex items-center gap-1.5">
+                           <span>Add Product Photo</span>
+                           <span className="text-[10px] font-bold text-zinc-400 group-hover:text-[var(--primary)]/70 transition-colors">(Camera / Gallery)</span>
+                         </p>
+                         <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium truncate mt-0.5">
+                           Tap to take a photo or select from device
+                         </p>
+                         <p className="text-[10px] text-zinc-400 font-medium">
+                           कैमरा या गैलरी से सामान की फोटो जोड़ें
+                         </p>
+                       </div>
+                     </div>
+
+                     <div className="shrink-0 px-3.5 py-2 rounded-xl bg-[var(--primary)] text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-[var(--primary)]/20 group-hover:scale-105 transition-transform">
+                       <Plus size={14} strokeWidth={3} />
+                       <span>Add Photo</span>
+                     </div>
+                   </button>
+                 )}
                </div>
 
                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
@@ -614,17 +593,127 @@ export function ItemFormModal({
           )}
         </AnimatePresence>
 
-        {/* Live Camera Viewfinder Modal */}
-        {showLiveCamera && (
-          <LiveCameraModal
-            onCapture={handleLiveCameraCapture}
-            onClose={() => {
-              setShowLiveCamera(false);
-              lastActionTimestamp.current = Date.now();
-            }}
-            onFallbackToFileInput={handleLiveCameraFallback}
-          />
-        )}
+        {/* Photo Source Selection Popup Modal */}
+        <AnimatePresence>
+          {showPhotoSourceModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+              onClick={() => setShowPhotoSourceModal(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.94, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.94, y: 15 }}
+                transition={{ type: "spring", duration: 0.3, bounce: 0.1 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-sm overflow-hidden rounded-3xl bg-[var(--card)] border border-[var(--border)] shadow-2xl p-6 space-y-5"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shadow-inner">
+                      <Camera size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black tracking-tight text-[var(--foreground)]">
+                        Add Product Photo
+                      </h3>
+                      <p className="text-[11px] font-semibold text-zinc-400">
+                        फोटो का माध्यम चुनें (Select Source)
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPhotoSourceModal(false)}
+                    className="w-8 h-8 rounded-xl bg-[var(--background)] hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                {/* Option Buttons */}
+                <div className="space-y-3 pt-1">
+                  {/* Option 1: Open Camera (Native Device Camera) */}
+                  <button
+                    type="button"
+                    onClick={triggerDeviceCamera}
+                    className="w-full p-4 rounded-2xl border-2 border-[var(--border)] hover:border-blue-500 bg-blue-500/5 hover:bg-blue-500/10 flex items-center gap-4 transition-all duration-200 text-left group cursor-pointer active:scale-[0.98]"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                      <Camera size={22} className="stroke-[2.2]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-sm text-[var(--foreground)] group-hover:text-blue-500 transition-colors">
+                          Open Camera
+                        </span>
+                        <ChevronRight size={18} className="text-zinc-400 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">
+                        Take a photo using device camera
+                      </p>
+                      <p className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold mt-0.5">
+                        डिवाइस कैमरा से तुरंत फोटो खींचें
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Option 2: Open Gallery */}
+                  <button
+                    type="button"
+                    onClick={triggerDeviceGallery}
+                    className="w-full p-4 rounded-2xl border-2 border-[var(--border)] hover:border-purple-500 bg-purple-500/5 hover:bg-purple-500/10 flex items-center gap-4 transition-all duration-200 text-left group cursor-pointer active:scale-[0.98]"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform">
+                      <ImageIcon size={22} className="stroke-[2.2]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-sm text-[var(--foreground)] group-hover:text-purple-500 transition-colors">
+                          Open Gallery
+                        </span>
+                        <ChevronRight size={18} className="text-zinc-400 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">
+                        Choose photo from device gallery
+                      </p>
+                      <p className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold mt-0.5">
+                        गैलरी या डिवाइस से फोटो चुनें
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* If photo exists, option to remove */}
+                  {formData.imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleRemoveImage();
+                        setShowPhotoSourceModal(false);
+                      }}
+                      className="w-full p-3 rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 text-rose-500 flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer"
+                    >
+                      <Trash2 size={14} /> Remove Current Photo
+                    </button>
+                  )}
+                </div>
+
+                {/* Cancel Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowPhotoSourceModal(false)}
+                  className="w-full py-3 rounded-2xl bg-[var(--background)] hover:bg-zinc-200 dark:hover:bg-zinc-800 text-[var(--foreground)] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer border border-[var(--border)]"
+                >
+                  Cancel
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );

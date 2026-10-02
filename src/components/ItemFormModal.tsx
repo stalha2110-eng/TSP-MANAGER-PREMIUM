@@ -20,6 +20,14 @@ export interface ItemFormModalProps {
   language: LanguageType;
 }
 
+type ItemFormData = Omit<Partial<Item>, 'retailPrice' | 'wholesalePrice' | 'buyingPrice' | 'quantity' | 'minStockLevel'> & {
+  retailPrice?: number | string;
+  wholesalePrice?: number | string;
+  buyingPrice?: number | string;
+  quantity?: number | string;
+  minStockLevel?: number | string;
+};
+
 export function ItemFormModal({ 
   onClose, 
   onSave, 
@@ -28,10 +36,13 @@ export function ItemFormModal({
   t, 
   language 
 }: ItemFormModalProps) {
-  const [formData, setFormData] = useState<Partial<Item>>(() => {
+  const [formData, setFormData] = useState<ItemFormData>(() => {
     if (initialData) {
       return {
         ...initialData,
+        retailPrice: initialData.retailPrice === 0 ? ('' as any) : initialData.retailPrice,
+        wholesalePrice: initialData.wholesalePrice === 0 ? ('' as any) : initialData.wholesalePrice,
+        buyingPrice: initialData.buyingPrice === 0 ? ('' as any) : initialData.buyingPrice,
         minStockLevel: initialData.minStockLevel ?? 10
       };
     }
@@ -40,11 +51,11 @@ export function ItemFormModal({
       categoryId: categories[0]?.id || '',
       quantity: 1,
       unit: 'KG',
-      retailPrice: 0,
+      retailPrice: '' as any,
       retailPriceUnit: 'KG',
-      wholesalePrice: 0,
+      wholesalePrice: '' as any,
       wholesalePriceUnit: 'KG',
-      buyingPrice: 0,
+      buyingPrice: '' as any,
       buyingPriceUnit: 'KG',
       profitMargin: 0,
       translations: { en: '', hi: '', mr: '', 'hi-en': '' },
@@ -216,7 +227,14 @@ export function ItemFormModal({
 
   const handleSave = () => {
     if (!formData.name) return alert('Name is required');
-    onSave(formData);
+    onSave({
+      ...formData,
+      quantity: formData.quantity === '' || formData.quantity === undefined ? 1 : Number(formData.quantity),
+      retailPrice: formData.retailPrice === '' || formData.retailPrice === undefined ? 0 : Number(formData.retailPrice),
+      wholesalePrice: formData.wholesalePrice === '' || formData.wholesalePrice === undefined ? 0 : Number(formData.wholesalePrice),
+      buyingPrice: formData.buyingPrice === '' || formData.buyingPrice === undefined ? 0 : Number(formData.buyingPrice),
+      minStockLevel: formData.minStockLevel === '' || formData.minStockLevel === undefined ? 10 : Number(formData.minStockLevel),
+    } as any);
     onClose();
   };
 
@@ -268,7 +286,7 @@ export function ItemFormModal({
             className="space-y-6 pt-4"
           >
              <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[var(--primary)] px-2">
-               <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">01</span> 1. Basic Details / सामान की जानकारी
+               <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">01</span> 1. Product Details (सामान की जानकारी)
              </label>
              <div className="space-y-4">
                <div className="group relative">
@@ -278,7 +296,7 @@ export function ItemFormModal({
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   onBlur={handleNameBlur}
-                  placeholder="Item Name / सामान का नाम (e.g. Milk, Rice)..."
+                  placeholder="Item Name (सामान का नाम) (e.g. Rice, Oil)..."
                 />
                 {isTranslating && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-1">
@@ -293,10 +311,10 @@ export function ItemFormModal({
                <div className="p-3.5 rounded-2xl bg-[var(--card)] border-2 border-[var(--border)] shadow-xs space-y-3">
                  <div className="flex items-center justify-between">
                    <span className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)] flex items-center gap-1.5">
-                     <Camera size={13} /> Product Photo / सामान की तस्वीर
+                     <Camera size={13} /> Add Product Photo
                    </span>
-                   <span className="text-[9px] font-bold text-zinc-400 uppercase">
-                     {formData.imageUrl ? 'Photo Attached' : 'Optional / वैकल्पिक'}
+                   <span className="text-[8px] font-bold text-zinc-400 uppercase">
+                     {formData.imageUrl ? 'Photo Attached' : '(Optional)'}
                    </span>
                  </div>
 
@@ -387,7 +405,7 @@ export function ItemFormModal({
                        )}
                      </div>
                      <p className="text-[9.5px] font-medium text-zinc-500 dark:text-zinc-400 leading-tight">
-                       Click directly from camera (primary) or attach photo from gallery. Displayed on item catalog and billing.
+                       सामान की फोटो बिलिंग पेज और लिस्ट में दिखाई जाएगी
                      </p>
                    </div>
                  </div>
@@ -441,9 +459,19 @@ export function ItemFormModal({
                  <div className="flex gap-2">
                    <input 
                      type="number"
-                     id="item-qty-input" className="flex-1 rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] p-4 font-black text-xl focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
-                     value={formData.quantity}
-                     onChange={(e) => setFormData(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 0 }))}
+                     step="any"
+                     id="item-qty-input"
+                     placeholder="0"
+                     className="flex-1 rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] p-4 font-black text-xl focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner placeholder:opacity-25"
+                     value={formData.quantity === 0 || formData.quantity === '' ? '' : formData.quantity}
+                     onFocus={(e) => e.target.select()}
+                     onChange={(e) => {
+                       const val = e.target.value;
+                       setFormData(prev => ({ 
+                         ...prev, 
+                         quantity: val === '' ? '' : (val.startsWith('0') && val.length > 1 && !val.startsWith('0.') ? parseFloat(val) : val)
+                       }));
+                     }}
                    />
                    <button 
                      id="item-unit-btn"
@@ -466,9 +494,19 @@ export function ItemFormModal({
                  <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Low Stock Alert (कम स्टॉक चेतावनी)</p>
                  <input 
                    type="number"
-                   id="item-min-stock-input" className="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] p-4 font-black text-xl focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
-                   value={formData.minStockLevel ?? 10}
-                   onChange={(e) => setFormData(prev => ({ ...prev, minStockLevel: parseFloat(e.target.value) || 0 }))}
+                   step="any"
+                   id="item-min-stock-input"
+                   placeholder="10"
+                   className="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] p-4 font-black text-xl focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner placeholder:opacity-25"
+                   value={formData.minStockLevel === 0 || formData.minStockLevel === '' ? '' : (formData.minStockLevel ?? 10)}
+                   onFocus={(e) => e.target.select()}
+                   onChange={(e) => {
+                     const val = e.target.value;
+                     setFormData(prev => ({ 
+                       ...prev, 
+                       minStockLevel: val === '' ? '' : (val.startsWith('0') && val.length > 1 && !val.startsWith('0.') ? parseFloat(val) : val)
+                     }));
+                   }}
                  />
                  <div className="flex flex-wrap gap-1.5 pt-2">
                    {[2, 5, 10, 20, 50].map(threshold => (
@@ -515,9 +553,19 @@ export function ItemFormModal({
                         </span>
                         <input 
                            type="number"
-                           id={`item-price-${field.key}`} className="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] py-4 pl-10 pr-4 font-black text-lg focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
-                           value={(formData as any)[field.key]}
-                           onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: parseFloat(e.target.value) || 0 }))}
+                           step="any"
+                           id={`item-price-${field.key}`}
+                           placeholder="0.00"
+                           className="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] py-4 pl-10 pr-4 font-black text-lg focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner placeholder:opacity-25"
+                           value={(formData as any)[field.key] === 0 || (formData as any)[field.key] === '' || (formData as any)[field.key] === undefined || (formData as any)[field.key] === null ? '' : (formData as any)[field.key]}
+                           onFocus={(e) => e.target.select()}
+                           onChange={(e) => {
+                             const val = e.target.value;
+                             setFormData(prev => ({ 
+                               ...prev, 
+                               [field.key]: val === '' ? '' : (val.startsWith('0') && val.length > 1 && !val.startsWith('0.') ? parseFloat(val) : val) 
+                             }));
+                           }}
                         />
                      </div>
                      {field.selection && (

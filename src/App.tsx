@@ -5905,7 +5905,7 @@ export default function App() {
                   </h3>
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--primary)] mt-1 leading-none">
                     {dailyCycleModal.type === 'opening' 
-                      ? "लॉग इतिहास साफ़ करें और नया दिन शुरू करें" 
+                      ? "सभी बिलों को सेव करें" 
                       : "दैनिक बिक्री इतिहास बचाएं और डेटा बैकअप लें"}
                   </p>
                 </div>
@@ -5914,9 +5914,9 @@ export default function App() {
               <div className="space-y-4 text-xs font-bold leading-relaxed opacity-80 mb-8 border-b border-[var(--border)] pb-6">
                 {dailyCycleModal.type === 'opening' ? (
                   <p>
-                    Good morning! The store is opening. For maximum speed, security, and cloud sync integrity, it is highly recommended to <strong>Download Excel Backup</strong> of the previous cycle &amp; flush active bill histories.
+                    Click on "DOWNLOAD BACKUP & RESET SHIIFT" Button. it will download all the Bills in your Device And start Fresh session. 
                     <br/><br/>
-                    सुप्रभात! आपकी दुकान खुल चुकी है। सिस्टम को हल्का व तेज रखने के लिए पुराने बिलों का बैकअप एक्सेल डाउनलोड कर इतिहास खाली कर लें।
+                    कृपया "DOWNLOAD BACKUP & RESET SHIFT" बटन पर क्लिक करें। यह आपके डिवाइस में सभी बिलों को डाउनलोड कर देगा
                   </p>
                 ) : (
                   <p>

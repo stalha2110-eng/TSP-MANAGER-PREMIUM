@@ -250,145 +250,106 @@ export function ItemFormModal({
                 )}
                </div>
 
-               {/* Product Photo Attachment */}
-               <div className="rounded-2xl border-2 border-[var(--border)] bg-[var(--card)] p-4 shadow-sm space-y-3 transition-all">
-                 <div className="flex items-center justify-between">
-                   <span className="text-[11px] font-black uppercase tracking-wider text-[var(--primary)] flex items-center gap-2">
-                     <Camera size={14} /> Product Photo (सामान की फोटो)
-                   </span>
-                   {formData.imageUrl ? (
-                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-black tracking-wide flex items-center gap-1">
-                       <Check size={11} strokeWidth={3} /> Photo Added
-                     </span>
-                   ) : (
-                     <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-                       Optional
-                     </span>
-                   )}
-                 </div>
+               {/* Hidden Native File Inputs */}
+               <input
+                 type="file"
+                 ref={cameraInputRef}
+                 accept="image/*"
+                 capture="environment"
+                 onChange={handleImageFileChange}
+                 className="sr-only pointer-events-none"
+                 tabIndex={-1}
+                 aria-hidden="true"
+               />
+               <input
+                 type="file"
+                 ref={galleryInputRef}
+                 accept="image/*"
+                 onChange={handleImageFileChange}
+                 className="sr-only pointer-events-none"
+                 tabIndex={-1}
+                 aria-hidden="true"
+               />
 
-                 {/* Hidden Native File Inputs */}
-                 <input
-                   type="file"
-                   ref={cameraInputRef}
-                   accept="image/*"
-                   capture="environment"
-                   onChange={handleImageFileChange}
-                   className="sr-only pointer-events-none"
-                   tabIndex={-1}
-                   aria-hidden="true"
-                 />
-                 <input
-                   type="file"
-                   ref={galleryInputRef}
-                   accept="image/*"
-                   onChange={handleImageFileChange}
-                   className="sr-only pointer-events-none"
-                   tabIndex={-1}
-                   aria-hidden="true"
-                 />
-
-                 {formData.imageUrl ? (
-                   /* Attached State: Sleek preview & management */
-                   <div className="flex items-center gap-4 p-3 rounded-xl bg-[var(--background)] border border-[var(--border)]">
-                     {/* Thumbnail with hover zoom */}
-                     <div 
-                       className="relative group shrink-0 cursor-pointer"
+               {/* Minimalist, Shorter & Professional Photo Section */}
+               {formData.imageUrl ? (
+                 /* Attached State: Compact inline bar (~44px) */
+                 <div className="flex items-center justify-between px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors shadow-xs">
+                   <div className="flex items-center gap-2.5 min-w-0">
+                     <button
+                       type="button"
                        onClick={() => previewImage(formData.imageUrl!, formData.name || 'Product Photo')}
-                       title="Click to preview full image"
+                       className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-black/10 dark:border-white/10 group cursor-pointer"
+                       title="Click to view photo"
                      >
                        <img
                          src={formData.imageUrl}
-                         alt="Product preview"
-                         className="w-20 h-20 rounded-xl object-cover border-2 border-[var(--primary)]/40 shadow-sm group-hover:opacity-90 transition-opacity"
+                         alt="Product"
+                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                        />
-                       <div className="absolute inset-0 rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
-                         <Eye size={18} />
+                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                         <Eye size={12} />
                        </div>
-                     </div>
+                     </button>
 
-                     {/* Info & Action Buttons */}
-                     <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                       <div>
-                         <div className="flex items-center gap-1.5 text-xs font-black text-[var(--foreground)] truncate">
-                           <span>Image Attached</span>
-                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                         </div>
-                         <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed mt-0.5">
-                           Shown on billing screen, item list & receipts
-                         </p>
-                       </div>
-
-                       <div className="flex items-center gap-2 pt-2 flex-wrap">
-                         <button
-                           type="button"
-                           onClick={() => setShowPhotoSourceModal(true)}
-                           disabled={isUploadingImage}
-                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--primary)] hover:opacity-90 text-white font-bold text-[11px] uppercase tracking-wider transition-all cursor-pointer shadow-sm active:scale-95"
-                         >
-                           <RefreshCw size={12} className={isUploadingImage ? 'animate-spin' : ''} />
-                           <span>Change Photo</span>
-                         </button>
-
-                         <button
-                           type="button"
-                           onClick={() => previewImage(formData.imageUrl!, formData.name || 'Product Photo')}
-                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[var(--card)] hover:bg-zinc-200 dark:hover:bg-zinc-800 text-[var(--foreground)] font-bold text-[11px] transition-all cursor-pointer border border-[var(--border)]"
-                           title="Preview full photo"
-                         >
-                           <Eye size={12} />
-                           <span>View</span>
-                         </button>
-
-                         <button
-                           type="button"
-                           onClick={handleRemoveImage}
-                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-rose-500 hover:bg-rose-500/10 font-bold text-[11px] transition-all cursor-pointer"
-                           title="Remove photo"
-                         >
-                           <Trash2 size={12} />
-                           <span>Remove</span>
-                         </button>
-                       </div>
+                     <div className="min-w-0 flex items-center gap-2">
+                       <span className="text-xs font-semibold text-[var(--foreground)] truncate">
+                         Photo Attached
+                       </span>
+                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                      </div>
                    </div>
-                 ) : (
-                   /* Empty State: Inviting, high-grade interactive uploader card */
-                   <button
-                     type="button"
-                     onClick={() => setShowPhotoSourceModal(true)}
-                     disabled={isUploadingImage}
-                     className="w-full text-left p-4 sm:p-5 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-[var(--primary)] bg-gradient-to-br from-[var(--background)] to-[var(--card)] hover:bg-[var(--primary)]/5 transition-all duration-200 flex items-center justify-between gap-4 cursor-pointer group active:scale-[0.99]"
-                   >
-                     <div className="flex items-center gap-3.5 min-w-0">
-                       <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-[var(--primary)] group-hover:text-white transition-all shadow-inner">
-                         {isUploadingImage ? (
-                           <Loader2 size={22} className="animate-spin" />
-                         ) : (
-                           <Camera size={22} className="stroke-[2.2]" />
-                         )}
-                       </div>
-                       <div className="min-w-0">
-                         <p className="text-sm font-black text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors flex items-center gap-1.5">
-                           <span>Add Product Photo</span>
-                           <span className="text-[10px] font-bold text-zinc-400 group-hover:text-[var(--primary)]/70 transition-colors">(Camera / Gallery)</span>
-                         </p>
-                         <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium truncate mt-0.5">
-                           Tap to take a photo or select from device
-                         </p>
-                         <p className="text-[10px] text-zinc-400 font-medium">
-                           कैमरा या गैलरी से सामान की फोटो जोड़ें
-                         </p>
-                       </div>
-                     </div>
 
-                     <div className="shrink-0 px-3.5 py-2 rounded-xl bg-[var(--primary)] text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-[var(--primary)]/20 group-hover:scale-105 transition-transform">
-                       <Plus size={14} strokeWidth={3} />
-                       <span>Add Photo</span>
+                   <div className="flex items-center gap-1 shrink-0">
+                     <button
+                       type="button"
+                       onClick={() => setShowPhotoSourceModal(true)}
+                       disabled={isUploadingImage}
+                       className="px-2.5 py-1 rounded-lg text-xs font-medium text-[var(--foreground)] hover:bg-[var(--card)] hover:text-[var(--primary)] border border-transparent hover:border-[var(--border)] transition-colors cursor-pointer flex items-center gap-1"
+                     >
+                       <RefreshCw size={11} className={isUploadingImage ? 'animate-spin' : ''} />
+                       <span>Change</span>
+                     </button>
+                     <button
+                       type="button"
+                       onClick={handleRemoveImage}
+                       className="p-1 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                       title="Remove photo"
+                     >
+                       <Trash2 size={13} />
+                     </button>
+                   </div>
+                 </div>
+               ) : (
+                 /* Empty State: Sleek, compact single-row trigger (~42px) */
+                 <button
+                   type="button"
+                   onClick={() => setShowPhotoSourceModal(true)}
+                   disabled={isUploadingImage}
+                   className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700/80 hover:border-[var(--primary)] hover:bg-[var(--primary)]/[0.02] bg-[var(--background)] transition-all cursor-pointer group text-left shadow-xs"
+                 >
+                   <div className="flex items-center gap-2.5 min-w-0">
+                     <div className="w-6 h-6 rounded-md bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                       {isUploadingImage ? (
+                         <Loader2 size={13} className="animate-spin" />
+                       ) : (
+                         <Camera size={13} className="stroke-[2.2]" />
+                       )}
                      </div>
-                   </button>
-                 )}
-               </div>
+                     <span className="text-xs font-medium text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors">
+                       Add Product Photo
+                     </span>
+                     <span className="text-[10px] text-zinc-400 font-normal">
+                       (Optional)
+                     </span>
+                   </div>
+
+                   <div className="flex items-center gap-1 text-[11px] font-medium text-[var(--primary)] group-hover:translate-x-0.5 transition-transform shrink-0">
+                     <span>Upload</span>
+                     <ChevronRight size={13} className="opacity-70" />
+                   </div>
+                 </button>
+               )}
 
                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                  {LANGUAGES.map(lang => (
@@ -600,64 +561,56 @@ export function ItemFormModal({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
               onClick={() => setShowPhotoSourceModal(false)}
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.94, y: 15 }}
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.94, y: 15 }}
-                transition={{ type: "spring", duration: 0.3, bounce: 0.1 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ type: "spring", duration: 0.25, bounce: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-sm overflow-hidden rounded-3xl bg-[var(--card)] border border-[var(--border)] shadow-2xl p-6 space-y-5"
+                className="w-full max-w-[310px] overflow-hidden rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-xl p-5 space-y-4"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shadow-inner">
-                      <Camera size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-black tracking-tight text-[var(--foreground)]">
-                        Add Product Photo
-                      </h3>
-                      <p className="text-[11px] font-semibold text-zinc-400">
-                        फोटो का माध्यम चुनें (Select Source)
-                      </p>
-                    </div>
+                <div className="flex items-center justify-between pb-1 border-b border-[var(--border)]/50">
+                  <div>
+                    <h3 className="text-sm font-bold tracking-tight text-[var(--foreground)]">
+                      Add Product Photo
+                    </h3>
+                    <p className="text-[10px] text-zinc-400 font-medium">
+                      Select photo source
+                    </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setShowPhotoSourceModal(false)}
-                    className="w-8 h-8 rounded-xl bg-[var(--background)] hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 flex items-center justify-center transition-colors cursor-pointer"
+                    className="w-7 h-7 rounded-lg bg-[var(--background)] hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 flex items-center justify-center transition-colors cursor-pointer"
                   >
-                    <X size={16} />
+                    <X size={14} />
                   </button>
                 </div>
 
-                {/* Option Buttons */}
-                <div className="space-y-3 pt-1">
-                  {/* Option 1: Open Camera (Native Device Camera) */}
+                {/* Compact Option Items */}
+                <div className="space-y-2">
+                  {/* Option 1: Open Camera (Device Camera) */}
                   <button
                     type="button"
                     onClick={triggerDeviceCamera}
-                    className="w-full p-4 rounded-2xl border-2 border-[var(--border)] hover:border-blue-500 bg-blue-500/5 hover:bg-blue-500/10 flex items-center gap-4 transition-all duration-200 text-left group cursor-pointer active:scale-[0.98]"
+                    className="w-full p-3 rounded-xl border border-[var(--border)] hover:border-blue-500/60 bg-[var(--background)] hover:bg-blue-500/5 flex items-center gap-3 transition-all text-left group cursor-pointer active:scale-[0.98]"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-                      <Camera size={22} className="stroke-[2.2]" />
+                    <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                      <Camera size={17} className="stroke-[2.2]" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="font-black text-sm text-[var(--foreground)] group-hover:text-blue-500 transition-colors">
+                        <span className="font-semibold text-xs text-[var(--foreground)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                           Open Camera
                         </span>
-                        <ChevronRight size={18} className="text-zinc-400 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+                        <ChevronRight size={14} className="text-zinc-400 group-hover:text-blue-500 transition-colors" />
                       </div>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">
-                        Take a photo using device camera
-                      </p>
-                      <p className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold mt-0.5">
-                        डिवाइस कैमरा से तुरंत फोटो खींचें
+                      <p className="text-[10px] text-zinc-400 font-medium mt-0.5">
+                        Capture using device camera
                       </p>
                     </div>
                   </button>
@@ -666,28 +619,25 @@ export function ItemFormModal({
                   <button
                     type="button"
                     onClick={triggerDeviceGallery}
-                    className="w-full p-4 rounded-2xl border-2 border-[var(--border)] hover:border-purple-500 bg-purple-500/5 hover:bg-purple-500/10 flex items-center gap-4 transition-all duration-200 text-left group cursor-pointer active:scale-[0.98]"
+                    className="w-full p-3 rounded-xl border border-[var(--border)] hover:border-purple-500/60 bg-[var(--background)] hover:bg-purple-500/5 flex items-center gap-3 transition-all text-left group cursor-pointer active:scale-[0.98]"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform">
-                      <ImageIcon size={22} className="stroke-[2.2]" />
+                    <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 group-hover:bg-purple-600 group-hover:text-white transition-all">
+                      <ImageIcon size={17} className="stroke-[2.2]" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="font-black text-sm text-[var(--foreground)] group-hover:text-purple-500 transition-colors">
+                        <span className="font-semibold text-xs text-[var(--foreground)] group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                           Open Gallery
                         </span>
-                        <ChevronRight size={18} className="text-zinc-400 group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" />
+                        <ChevronRight size={14} className="text-zinc-400 group-hover:text-purple-500 transition-colors" />
                       </div>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">
-                        Choose photo from device gallery
-                      </p>
-                      <p className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold mt-0.5">
-                        गैलरी या डिवाइस से फोटो चुनें
+                      <p className="text-[10px] text-zinc-400 font-medium mt-0.5">
+                        Select from photos or files
                       </p>
                     </div>
                   </button>
 
-                  {/* If photo exists, option to remove */}
+                  {/* Remove Current Photo if exists */}
                   {formData.imageUrl && (
                     <button
                       type="button"
@@ -695,9 +645,9 @@ export function ItemFormModal({
                         handleRemoveImage();
                         setShowPhotoSourceModal(false);
                       }}
-                      className="w-full p-3 rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 text-rose-500 flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer"
+                      className="w-full py-2 px-3 rounded-lg text-rose-500 hover:bg-rose-500/10 flex items-center justify-center gap-1.5 text-xs font-medium transition-colors cursor-pointer"
                     >
-                      <Trash2 size={14} /> Remove Current Photo
+                      <Trash2 size={13} /> Remove Current Photo
                     </button>
                   )}
                 </div>
@@ -706,7 +656,7 @@ export function ItemFormModal({
                 <button
                   type="button"
                   onClick={() => setShowPhotoSourceModal(false)}
-                  className="w-full py-3 rounded-2xl bg-[var(--background)] hover:bg-zinc-200 dark:hover:bg-zinc-800 text-[var(--foreground)] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer border border-[var(--border)]"
+                  className="w-full py-2 rounded-xl bg-[var(--background)] hover:bg-zinc-200 dark:hover:bg-zinc-800 text-[var(--foreground)] font-semibold text-xs transition-colors cursor-pointer border border-[var(--border)]"
                 >
                   Cancel
                 </button>

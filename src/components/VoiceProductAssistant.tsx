@@ -1560,7 +1560,7 @@ export function VoiceProductAssistant({
                   </div>
                 ) : (
                   <div className="opacity-60 space-y-1.5 text-[var(--foreground)] text-center max-w-xl px-4">
-                    <p className="text-xs font-semibold">Tap the mic to start listing. Anything you say before <strong>"retail"</strong> or <strong>"chiller price"</strong> is set as the product name!</p>
+                    <p className="text-xs font-semibold">Tap the mic to start listing.</p>
                     <p className="text-[10px] font-mono opacity-90 text-amber-600 dark:text-amber-400">Example: "Badam retail 900rs, wholesale 850rs, kharidi 800rs"</p>
                   </div>
                 )}

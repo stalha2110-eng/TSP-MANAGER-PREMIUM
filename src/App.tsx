@@ -2130,12 +2130,15 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
+        const wasGuest = localStorage.getItem('ts_guest_logged_in') === 'true';
+        localStorage.removeItem('ts_guest_logged_in');
         if (user.email && user.uid !== 'guest_user') {
           localStorage.setItem('ts_last_logged_in_email', user.email);
         }
         setState(prev => ({ 
           ...prev, 
-          user: { uid: user.uid, email: user.email } 
+          user: { uid: user.uid, email: user.email },
+          ...(wasGuest ? { items: [], bills: [], notes: [], unbilledEntries: [] } : {})
         }));
       } else {
         const isGuest = localStorage.getItem('ts_guest_logged_in') === 'true';
@@ -2677,14 +2680,21 @@ export default function App() {
 
   // --- Handlers ---
   const handleLogout = useCallback(async () => {
+    const wasGuest = localStorage.getItem('ts_guest_logged_in') === 'true' || state.user?.uid === 'guest_user';
     localStorage.removeItem('ts_guest_logged_in');
     await auth.signOut();
-    setState(prev => ({ ...prev, user: null }));
+    setState(prev => ({ 
+      ...prev, 
+      user: null,
+      ...(wasGuest ? { items: [], bills: [], notes: [], unbilledEntries: [] } : {})
+    }));
     addToast("Session terminated / लॉगआउट सफल!", "success");
-  }, []);
+  }, [state.user]);
 
   const handleGoogleLogin = useCallback(async () => {
     try {
+      const wasGuest = localStorage.getItem('ts_guest_logged_in') === 'true' || state.user?.uid === 'guest_user';
+      localStorage.removeItem('ts_guest_logged_in');
       const user = await loginWithGoogle();
       if (user) {
         if (user.email) {
@@ -2692,7 +2702,8 @@ export default function App() {
         }
         setState(prev => ({ 
           ...prev, 
-          user: { uid: user.uid, email: user.email } 
+          user: { uid: user.uid, email: user.email },
+          ...(wasGuest ? { items: [], bills: [], notes: [], unbilledEntries: [] } : {})
         }));
         addToast("Logged in with Google / गूगल लॉगिन सफल!", "success");
       }

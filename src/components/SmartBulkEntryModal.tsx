@@ -19,6 +19,7 @@ import { Category, Item } from '../types';
 import { UNITS } from '../constants';
 import { cn } from '../lib/utils';
 import { useCustomUnits, useRecentUnits, trackRecentUnit } from '../lib/unitUtils';
+import { UnitSelectorModal } from './ui/UnitSelectorModal';
 
 interface SmartBulkEntryModalProps {
   isOpen: boolean;
@@ -108,131 +109,18 @@ export function SmartBulkEntryModal({
 
   const [rows, setRows] = useState<BulkRowState[]>([]);
   const [activeCategoryDropdown, setActiveCategoryDropdown] = useState<number | null>(null);
-  const [activeUnitDropdown, setActiveUnitDropdown] = useState<{ rowIndex: number; field: 'retail' | 'wholesale' | 'cost' } | null>(null);
+  const [activeUnitModal, setActiveUnitModal] = useState<{
+    rowIndex: number;
+    field: 'retail' | 'wholesale' | 'cost';
+    currentUnit: string;
+    productName?: string;
+  } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
 
   // Custom & Recent Units management
   const { customUnits, addCustomUnit, removeCustomUnit, allUnitsFlat } = useCustomUnits();
   const { recentUnits } = useRecentUnits();
-  const [quickNewUnit, setQuickNewUnit] = useState('');
-
-  // Helper renderer for unit selector dropdown in Smart Entry
-  const renderSmartUnitDropdown = (currentValue: string, onSelectUnit: (u: string) => void) => {
-    const handleSelectWithTrack = (u: string) => {
-      trackRecentUnit(u);
-      onSelectUnit(u);
-      setActiveUnitDropdown(null);
-    };
-
-    const sortedStandardUnits = [...UNITS.flatMap(g => g.values)].sort((a, b) => {
-      const idxA = recentUnits.findIndex(r => r.toLowerCase() === a.toLowerCase());
-      const idxB = recentUnits.findIndex(r => r.toLowerCase() === b.toLowerCase());
-      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-      if (idxA !== -1) return -1;
-      if (idxB !== -1) return 1;
-      return 0;
-    });
-
-    return (
-      <div className="absolute right-0 mt-1 w-48 max-h-64 overflow-y-auto rounded-xl bg-[var(--card)] border border-[var(--border)] shadow-2xl z-40 no-scrollbar p-2 space-y-2">
-        {/* Quick Add Custom Unit Bar inside Smart Entry */}
-        <div className="space-y-1 pb-1.5 border-b border-[var(--border)]">
-          <div className="text-[7.5px] font-black uppercase text-amber-500 tracking-wider">Add Custom Unit</div>
-          <div className="flex gap-1">
-            <input
-              type="text"
-              placeholder="+ e.g. Bora, Rim..."
-              className="w-full bg-[var(--background)] border border-[var(--border)] rounded-md px-1.5 py-0.5 text-[9px] font-bold text-[var(--foreground)] outline-none focus:border-amber-500"
-              value={quickNewUnit}
-              onChange={(e) => setQuickNewUnit(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  if (quickNewUnit.trim()) {
-                    addCustomUnit(quickNewUnit.trim());
-                    handleSelectWithTrack(quickNewUnit.trim());
-                    setQuickNewUnit('');
-                  }
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                if (quickNewUnit.trim()) {
-                  addCustomUnit(quickNewUnit.trim());
-                  handleSelectWithTrack(quickNewUnit.trim());
-                  setQuickNewUnit('');
-                }
-              }}
-              className="px-2 py-0.5 bg-amber-500 hover:bg-amber-600 text-white rounded text-[9px] font-black shrink-0"
-            >
-              Add
-            </button>
-          </div>
-        </div>
-
-        {/* Standard Units List */}
-        <div className="space-y-0.5">
-          <div className="text-[7.5px] font-black uppercase text-zinc-400 tracking-wider px-1">Standard Units</div>
-          <div className="max-h-28 overflow-y-auto no-scrollbar space-y-0.5">
-            {sortedStandardUnits.map(unit => (
-              <button
-                key={unit}
-                type="button"
-                onClick={() => handleSelectWithTrack(unit)}
-                className={cn(
-                  "w-full text-left px-2 py-1 rounded text-[8.5px] font-black tracking-wider transition-colors flex items-center justify-between",
-                  currentValue.toLowerCase() === unit.toLowerCase() ? "text-[var(--primary)] bg-[var(--primary)]/10" : "text-zinc-400 hover:text-white hover:bg-[var(--foreground)]/5"
-                )}
-              >
-                <span>{unit.toUpperCase()}</span>
-                {unit === 'Chatak' && <span className="text-[7px] text-amber-400 font-bold ml-1">50g</span>}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Custom Units List */}
-        {customUnits.length > 0 && (
-          <div className="space-y-0.5 pt-1.5 border-t border-[var(--border)]">
-            <div className="text-[7.5px] font-black uppercase text-amber-500 tracking-wider px-1">Custom Units</div>
-            <div className="max-h-24 overflow-y-auto no-scrollbar space-y-0.5">
-              {customUnits.map(unit => (
-                <div
-                  key={unit}
-                  className={cn(
-                    "w-full px-2 py-0.5 rounded text-[8.5px] font-black tracking-wider flex items-center justify-between transition-colors",
-                    currentValue.toLowerCase() === unit.toLowerCase() ? "text-amber-400 bg-amber-500/10" : "text-zinc-300 hover:bg-[var(--foreground)]/5"
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => handleSelectWithTrack(unit)}
-                    className="flex-1 text-left truncate pr-1"
-                  >
-                    {unit.toUpperCase()}
-                  </button>
-                  <button
-                    type="button"
-                    title="Remove custom unit"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeCustomUnit(unit);
-                    }}
-                    className="p-0.5 hover:bg-red-500/20 rounded text-red-400 hover:text-red-500 shrink-0"
-                  >
-                    <Trash2 size={10} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   
   // Quick bulk parse state
@@ -245,7 +133,7 @@ export function SmartBulkEntryModal({
     if (isOpen) {
       setRows([createEmptyRow()]);
       setActiveCategoryDropdown(null);
-      setActiveUnitDropdown(null);
+      setActiveUnitModal(null);
       setShowValidationErrors(false);
       setShowQuickParser(false);
       setQuickParseText('');
@@ -880,7 +768,7 @@ export function SmartBulkEntryModal({
                           <button
                             onClick={() => {
                               setActiveCategoryDropdown(activeCategoryDropdown === index ? null : index);
-                              setActiveUnitDropdown(null);
+                              setActiveUnitModal(null);
                             }}
                             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-zinc-500 text-zinc-300 hover:text-white transition-colors text-[10px] font-bold"
                           >
@@ -976,7 +864,7 @@ export function SmartBulkEntryModal({
                             id={`name-${index}`}
                             type="text"
                             placeholder="Item name (सामान का नाम)..."
-                            style={{ height: '29.5px' }}
+                            style={{ height: '32.5px' }}
                             className={cn(
                               "w-full bg-[var(--background)] border rounded-xl px-3 py-1.5 font-bold text-xs focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all placeholder:text-zinc-650 shadow-inner",
                               showValidationErrors && errors.name 
@@ -1047,21 +935,20 @@ export function SmartBulkEntryModal({
                             <button
                               type="button"
                               onClick={() => {
-                                setActiveUnitDropdown(
-                                  activeUnitDropdown?.rowIndex === index && activeUnitDropdown?.field === 'retail'
-                                    ? null
-                                    : { rowIndex: index, field: 'retail' }
-                                );
+                                setActiveUnitModal({
+                                  rowIndex: index,
+                                  field: 'retail',
+                                  currentUnit: row.retailPriceUnit,
+                                  productName: row.name
+                                });
                                 setActiveCategoryDropdown(null);
                               }}
-                              className="px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] hover:border-emerald-500 text-[8px] font-black text-zinc-400 hover:text-[var(--foreground)] transition-colors uppercase tracking-widest min-w-[32px]"
+                              className="px-2 py-0.5 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-emerald-500 text-[10px] font-black text-zinc-400 hover:text-[var(--foreground)] transition-all uppercase tracking-wider min-w-[36px] flex items-center justify-center gap-0.5 cursor-pointer active:scale-95 shadow-2xs"
+                              title="Click to select or add unit for Retail Price"
                             >
-                              {row.retailPriceUnit}
+                              <span>{row.retailPriceUnit}</span>
+                              <ChevronDown size={10} className="opacity-40 shrink-0" />
                             </button>
-                             {/* Retail Unit Selector Dropdown Overlay */}
-                            {activeUnitDropdown?.rowIndex === index && activeUnitDropdown?.field === 'retail' && (
-                              renderSmartUnitDropdown(row.retailPriceUnit, (unit) => handleUpdateRow(index, { retailPriceUnit: unit }))
-                            )}
                           </div>
                         </div>
 
@@ -1106,22 +993,20 @@ export function SmartBulkEntryModal({
                             <button
                               type="button"
                               onClick={() => {
-                                setActiveUnitDropdown(
-                                  activeUnitDropdown?.rowIndex === index && activeUnitDropdown?.field === 'wholesale'
-                                    ? null
-                                    : { rowIndex: index, field: 'wholesale' }
-                                );
+                                setActiveUnitModal({
+                                  rowIndex: index,
+                                  field: 'wholesale',
+                                  currentUnit: row.wholesalePriceUnit,
+                                  productName: row.name
+                                });
                                 setActiveCategoryDropdown(null);
                               }}
-                              className="px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] hover:border-blue-500 text-[8px] font-black text-zinc-400 hover:text-[var(--foreground)] transition-colors uppercase tracking-widest min-w-[32px]"
+                              className="px-2 py-0.5 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-blue-500 text-[10px] font-black text-zinc-400 hover:text-[var(--foreground)] transition-all uppercase tracking-wider min-w-[36px] flex items-center justify-center gap-0.5 cursor-pointer active:scale-95 shadow-2xs"
+                              title="Click to select or add unit for Wholesale Price"
                             >
-                              {row.wholesalePriceUnit}
+                              <span>{row.wholesalePriceUnit}</span>
+                              <ChevronDown size={10} className="opacity-40 shrink-0" />
                             </button>
-
-                            {/* Wholesale Unit Selector Dropdown Overlay */}
-                            {activeUnitDropdown?.rowIndex === index && activeUnitDropdown?.field === 'wholesale' && (
-                              renderSmartUnitDropdown(row.wholesalePriceUnit, (unit) => handleUpdateRow(index, { wholesalePriceUnit: unit }))
-                            )}
                           </div>
                         </div>
 
@@ -1163,22 +1048,20 @@ export function SmartBulkEntryModal({
                             <button
                               type="button"
                               onClick={() => {
-                                setActiveUnitDropdown(
-                                  activeUnitDropdown?.rowIndex === index && activeUnitDropdown?.field === 'cost'
-                                    ? null
-                                    : { rowIndex: index, field: 'cost' }
-                                );
+                                setActiveUnitModal({
+                                  rowIndex: index,
+                                  field: 'cost',
+                                  currentUnit: row.buyingPriceUnit,
+                                  productName: row.name
+                                });
                                 setActiveCategoryDropdown(null);
                               }}
-                              className="px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] hover:border-amber-500 text-[8px] font-black text-zinc-400 hover:text-[var(--foreground)] transition-colors uppercase tracking-widest min-w-[32px]"
+                              className="px-2 py-0.5 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-amber-500 text-[10px] font-black text-zinc-400 hover:text-[var(--foreground)] transition-all uppercase tracking-wider min-w-[36px] flex items-center justify-center gap-0.5 cursor-pointer active:scale-95 shadow-2xs"
+                              title="Click to select or add unit for Cost Price"
                             >
-                              {row.buyingPriceUnit}
+                              <span>{row.buyingPriceUnit}</span>
+                              <ChevronDown size={10} className="opacity-40 shrink-0" />
                             </button>
-
-                            {/* Cost Unit Selector Dropdown Overlay */}
-                            {activeUnitDropdown?.rowIndex === index && activeUnitDropdown?.field === 'cost' && (
-                              renderSmartUnitDropdown(row.buyingPriceUnit, (unit) => handleUpdateRow(index, { buyingPriceUnit: unit }))
-                            )}
                           </div>
                         </div>
 
@@ -1249,6 +1132,39 @@ export function SmartBulkEntryModal({
             BATCH SAVE ASSETS
           </button>
         </div>
+
+        {/* Professional Full-Featured Unit Selector & Creator Modal */}
+        <AnimatePresence>
+          {activeUnitModal && (
+            <UnitSelectorModal
+              currentUnit={activeUnitModal.currentUnit}
+              title={activeUnitModal.field === 'retail' ? 'Retail Unit' : activeUnitModal.field === 'wholesale' ? 'Wholesale Unit' : 'Cost Unit'}
+              subtitle={activeUnitModal.productName || undefined}
+              showApplyToAllOption={true}
+              onSelect={(unit, applyToAll) => {
+                const idx = activeUnitModal.rowIndex;
+                const fld = activeUnitModal.field;
+                if (applyToAll) {
+                  handleUpdateRow(idx, {
+                    retailPriceUnit: unit,
+                    wholesalePriceUnit: unit,
+                    buyingPriceUnit: unit
+                  });
+                } else {
+                  if (fld === 'retail') {
+                    handleUpdateRow(idx, { retailPriceUnit: unit });
+                  } else if (fld === 'wholesale') {
+                    handleUpdateRow(idx, { wholesalePriceUnit: unit });
+                  } else {
+                    handleUpdateRow(idx, { buyingPriceUnit: unit });
+                  }
+                }
+                setActiveUnitModal(null);
+              }}
+              onClose={() => setActiveUnitModal(null)}
+            />
+          )}
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );

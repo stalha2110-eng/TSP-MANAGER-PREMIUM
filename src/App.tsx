@@ -4103,7 +4103,7 @@ export default function App() {
         id="tour-header"
         className="sticky top-0 z-40 px-2.5 sm:px-6 py-2 text-[var(--primary-foreground)] shadow-2xl transition-all border-b border-white/10 flex items-center"
         style={{ 
-          height: '49.5px',
+          height: '51.5px',
           backgroundColor: 'var(--primary)',
           paddingLeft: 'max(10px, env(safe-area-inset-left))',
           paddingRight: 'max(12px, env(safe-area-inset-right))',

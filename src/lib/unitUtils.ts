@@ -143,6 +143,67 @@ export function getAllUnitsFlat(customUnitsList?: string[]): string[] {
   return [...standard, ...custom];
 }
 
+const HIDDEN_UNITS_STORAGE_KEY = 'ts_hidden_units';
+const HIDDEN_UNITS_EVENT_NAME = 'ts_hidden_units_updated';
+
+export function getHiddenUnits(): string[] {
+  try {
+    const raw = localStorage.getItem(HIDDEN_UNITS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function hideUnit(unit: string): string[] {
+  try {
+    const current = getHiddenUnits();
+    const updated = Array.from(new Set([...current, unit.trim().toLowerCase()]));
+    localStorage.setItem(HIDDEN_UNITS_STORAGE_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent(HIDDEN_UNITS_EVENT_NAME, { detail: updated }));
+    return updated;
+  } catch {
+    return [];
+  }
+}
+
+export function restoreAllHiddenUnits(): void {
+  try {
+    localStorage.removeItem(HIDDEN_UNITS_STORAGE_KEY);
+    window.dispatchEvent(new CustomEvent(HIDDEN_UNITS_EVENT_NAME, { detail: [] }));
+  } catch {}
+}
+
+export function useHiddenUnits() {
+  const [hiddenUnits, setHiddenUnits] = useState<string[]>(getHiddenUnits());
+
+  useEffect(() => {
+    const handleUpdate = (e: Event) => {
+      if ('detail' in e && Array.isArray((e as CustomEvent).detail)) {
+        setHiddenUnits((e as CustomEvent).detail);
+      } else {
+        setHiddenUnits(getHiddenUnits());
+      }
+    };
+
+    window.addEventListener(HIDDEN_UNITS_EVENT_NAME, handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    return () => {
+      window.removeEventListener(HIDDEN_UNITS_EVENT_NAME, handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
+
+  return {
+    hiddenUnits,
+    hideUnit: (unit: string) => hideUnit(unit),
+    restoreAllHiddenUnits
+  };
+}
+
 export function useCustomUnits() {
   const [customUnits, setCustomUnits] = useState<string[]>(getCustomUnits());
 

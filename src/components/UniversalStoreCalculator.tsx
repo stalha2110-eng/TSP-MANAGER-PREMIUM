@@ -172,6 +172,7 @@ export default function UniversalStoreCalculator() {
 
   // Sizing controls bar toggle
   const [showSizingControls, setShowSizingControls] = useState(false);
+  const [showDisplayToolbar, setShowDisplayToolbar] = useState(false);
 
   // Stepping keypad button height
   const handleStepHeight = (delta: number) => {
@@ -1683,143 +1684,178 @@ Total MRP: ₹${gstCalc.totalAmount.toFixed(2)}`;
           {/* Main Calculator Screen & Keypad */}
           <div className="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] p-4 sm:p-6 rounded-3xl shadow-lg space-y-4">
             
-            {/* Top Toolbar: Sizing & Display Flexibility Bar */}
-            <div className="flex items-center justify-between gap-2 p-2 rounded-2xl bg-[var(--foreground)]/[0.03] border border-[var(--border)] flex-wrap">
-              {/* Presets & Zoom */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-black uppercase text-[var(--foreground)]/60 px-1.5 flex items-center gap-1">
-                  <Maximize2 size={12} className="text-amber-500" /> Size:
-                </span>
-                
-                {/* Preset Chips */}
-                {(['compact', 'standard', 'large', 'xlarge'] as const).map((preset) => {
-                  const labels = { compact: 'Compact', standard: 'Normal', large: 'Large', xlarge: 'Giant POS' };
-                  return (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setLengthPreset(preset)}
-                      className={cn(
-                        "px-2.5 py-1 rounded-xl text-xs font-black transition-all cursor-pointer border",
-                        lengthPreset === preset
-                          ? "bg-amber-500 text-white border-amber-600 shadow-xs"
-                          : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
-                      )}
-                      title={`Set button height to ${preset === 'compact' ? '48px' : preset === 'standard' ? '60px' : preset === 'large' ? '74px' : '92px'}`}
-                    >
-                      {labels[preset]}
-                    </button>
-                  );
-                })}
-
-                {/* Auto Fit Screen */}
+            {/* Top Toolbar: Single Button with Expandable Options */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
                 <button
                   type="button"
-                  onClick={() => setLengthPreset('screen_fit')}
+                  onClick={() => setShowDisplayToolbar(prev => !prev)}
                   className={cn(
-                    "px-2.5 py-1 rounded-xl text-xs font-black transition-all cursor-pointer border flex items-center gap-1",
-                    lengthPreset === 'screen_fit'
-                      ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                    "px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 border transition-all cursor-pointer shadow-xs",
+                    showDisplayToolbar
+                      ? "bg-amber-500 text-white border-amber-600 shadow-sm"
                       : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
                   )}
-                  title="Auto-scale buttons to fit your device screen height"
+                  title="Click to show button sizes, zoom, sound, and quick tools"
                 >
-                  <Smartphone size={12} /> Fit Screen
-                </button>
-
-                {/* Step Zoom Buttons */}
-                <div className="flex items-center ml-1 bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-xs">
-                  <button
-                    type="button"
-                    onClick={() => handleStepHeight(-6)}
-                    className="px-2 py-1 hover:bg-[var(--foreground)]/10 text-xs font-black text-[var(--foreground)] cursor-pointer border-r border-[var(--border)]"
-                    title="Decrease button and display size (-6px)"
-                  >
-                    <ZoomOut size={12} />
-                  </button>
-                  <span className="px-1.5 text-[10px] font-mono font-bold text-[var(--foreground)]/70">
-                    {effectiveBtnHeight}px
+                  <Sliders size={13} className={showDisplayToolbar ? "text-white" : "text-amber-500"} />
+                  <span>Size & Display Options</span>
+                  <span className="text-[10px] font-mono opacity-80 font-bold">
+                    ({lengthPreset === 'compact' ? 'Compact' : lengthPreset === 'standard' ? 'Normal' : lengthPreset === 'large' ? 'Large' : lengthPreset === 'xlarge' ? 'Giant' : lengthPreset === 'screen_fit' ? 'Fit Screen' : `${effectiveBtnHeight}px`})
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => handleStepHeight(6)}
-                    className="px-2 py-1 hover:bg-[var(--foreground)]/10 text-xs font-black text-[var(--foreground)] cursor-pointer border-l border-[var(--border)]"
-                    title="Increase button and display size (+6px)"
+                  <ChevronDown size={14} className={cn("transition-transform duration-200", showDisplayToolbar && "rotate-180")} />
+                </button>
+              </div>
+
+              {/* All Toolbar Buttons (Revealed after clicking the single button) */}
+              <AnimatePresence>
+                {showDisplayToolbar && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
                   >
-                    <ZoomIn size={12} />
-                  </button>
-                </div>
-              </div>
+                    <div className="flex items-center justify-between gap-2 p-2 rounded-2xl bg-[var(--foreground)]/[0.03] border border-[var(--border)] flex-wrap">
+                      {/* Presets & Zoom */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-black uppercase text-[var(--foreground)]/60 px-1.5 flex items-center gap-1">
+                          <Maximize2 size={12} className="text-amber-500" /> Size:
+                        </span>
+                        
+                        {/* Preset Chips */}
+                        {(['compact', 'standard', 'large', 'xlarge'] as const).map((preset) => {
+                          const labels = { compact: 'Compact', standard: 'Normal', large: 'Large', xlarge: 'Giant POS' };
+                          return (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => setLengthPreset(preset)}
+                              className={cn(
+                                "px-2.5 py-1 rounded-xl text-xs font-black transition-all cursor-pointer border",
+                                lengthPreset === preset
+                                  ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                                  : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
+                              )}
+                              title={`Set button height to ${preset === 'compact' ? '48px' : preset === 'standard' ? '60px' : preset === 'large' ? '74px' : '92px'}`}
+                            >
+                              {labels[preset]}
+                            </button>
+                          );
+                        })}
 
-              {/* Action Toggles: Settings, Tools, Audit Tape, Sound */}
-              <div className="flex items-center gap-1.5">
-                {/* Sound Toggle */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = !soundEnabled;
-                    setSoundEnabled(next);
-                    triggerToast(next ? "Keypad Sound Enabled 🔊" : "Keypad Muted 🔇");
-                  }}
-                  className={cn(
-                    "p-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
-                    soundEnabled
-                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                      : "bg-[var(--card)] text-[var(--foreground)]/40 border-[var(--border)]"
-                  )}
-                  title={soundEnabled ? "Sound Enabled (Click to mute)" : "Muted (Click to enable audio)"}
-                >
-                  {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
-                </button>
+                        {/* Auto Fit Screen */}
+                        <button
+                          type="button"
+                          onClick={() => setLengthPreset('screen_fit')}
+                          className={cn(
+                            "px-2.5 py-1 rounded-xl text-xs font-black transition-all cursor-pointer border flex items-center gap-1",
+                            lengthPreset === 'screen_fit'
+                              ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                              : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
+                          )}
+                          title="Auto-scale buttons to fit your device screen height"
+                        >
+                          <Smartphone size={12} /> Fit Screen
+                        </button>
 
-                {/* Advanced Quick Tools Bar Toggle */}
-                <button
-                  type="button"
-                  onClick={() => setShowAdvancedTools(prev => !prev)}
-                  className={cn(
-                    "px-2.5 py-1 rounded-xl text-xs font-black uppercase flex items-center gap-1 border transition-all cursor-pointer",
-                    showAdvancedTools
-                      ? "bg-amber-500 text-white border-amber-600 shadow-xs"
-                      : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
-                  )}
-                  title="Toggle GST Tax, Discounts & Rounding tools"
-                >
-                  <Sparkles size={12} />
-                  <span className="hidden sm:inline">Quick Tools</span>
-                  <span className="sm:hidden">Tools</span>
-                </button>
+                        {/* Step Zoom Buttons */}
+                        <div className="flex items-center ml-1 bg-[var(--card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-xs">
+                          <button
+                            type="button"
+                            onClick={() => handleStepHeight(-6)}
+                            className="px-2 py-1 hover:bg-[var(--foreground)]/10 text-xs font-black text-[var(--foreground)] cursor-pointer border-r border-[var(--border)]"
+                            title="Decrease button and display size (-6px)"
+                          >
+                            <ZoomOut size={12} />
+                          </button>
+                          <span className="px-1.5 text-[10px] font-mono font-bold text-[var(--foreground)]/70">
+                            {effectiveBtnHeight}px
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleStepHeight(6)}
+                            className="px-2 py-1 hover:bg-[var(--foreground)]/10 text-xs font-black text-[var(--foreground)] cursor-pointer border-l border-[var(--border)]"
+                            title="Increase button and display size (+6px)"
+                          >
+                            <ZoomIn size={12} />
+                          </button>
+                        </div>
+                      </div>
 
-                {/* Audit Tape Toggle */}
-                <button
-                  type="button"
-                  onClick={() => setShowAuditTape(prev => !prev)}
-                  className={cn(
-                    "px-2.5 py-1 rounded-xl text-xs font-black uppercase flex items-center gap-1 border transition-all cursor-pointer",
-                    showAuditTape
-                      ? "bg-emerald-600 text-white border-emerald-700 shadow-xs"
-                      : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
-                  )}
-                  title="Toggle itemized formula breakdown tape"
-                >
-                  <Receipt size={12} />
-                  <span className="hidden sm:inline">Tape</span>
-                </button>
+                      {/* Action Toggles: Settings, Tools, Audit Tape, Sound */}
+                      <div className="flex items-center gap-1.5">
+                        {/* Sound Toggle */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !soundEnabled;
+                            setSoundEnabled(next);
+                            triggerToast(next ? "Keypad Sound Enabled 🔊" : "Keypad Muted 🔇");
+                          }}
+                          className={cn(
+                            "p-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                            soundEnabled
+                              ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                              : "bg-[var(--card)] text-[var(--foreground)]/40 border-[var(--border)]"
+                          )}
+                          title={soundEnabled ? "Sound Enabled (Click to mute)" : "Muted (Click to enable audio)"}
+                        >
+                          {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                        </button>
 
-                {/* Settings & Precision Drawer Toggle */}
-                <button
-                  type="button"
-                  onClick={() => setShowSizingControls(prev => !prev)}
-                  className={cn(
-                    "p-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
-                    showSizingControls
-                      ? "bg-amber-500 text-white border-amber-600 shadow-xs"
-                      : "bg-[var(--card)] text-[var(--foreground)]/70 hover:text-[var(--foreground)] border-[var(--border)]"
-                  )}
-                  title="Calculator display sizing & precision settings"
-                >
-                  <Sliders size={15} />
-                </button>
-              </div>
+                        {/* Advanced Quick Tools Bar Toggle */}
+                        <button
+                          type="button"
+                          onClick={() => setShowAdvancedTools(prev => !prev)}
+                          className={cn(
+                            "px-2.5 py-1 rounded-xl text-xs font-black uppercase flex items-center gap-1 border transition-all cursor-pointer",
+                            showAdvancedTools
+                              ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                              : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
+                          )}
+                          title="Toggle GST Tax, Discounts & Rounding tools"
+                        >
+                          <Sparkles size={12} />
+                          <span className="hidden sm:inline">Quick Tools</span>
+                          <span className="sm:hidden">Tools</span>
+                        </button>
+
+                        {/* Audit Tape Toggle */}
+                        <button
+                          type="button"
+                          onClick={() => setShowAuditTape(prev => !prev)}
+                          className={cn(
+                            "px-2.5 py-1 rounded-xl text-xs font-black uppercase flex items-center gap-1 border transition-all cursor-pointer",
+                            showAuditTape
+                              ? "bg-emerald-600 text-white border-emerald-700 shadow-xs"
+                              : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)] border-[var(--border)]"
+                          )}
+                          title="Toggle itemized formula breakdown tape"
+                        >
+                          <Receipt size={12} />
+                          <span className="hidden sm:inline">Tape</span>
+                        </button>
+
+                        {/* Settings & Precision Drawer Toggle */}
+                        <button
+                          type="button"
+                          onClick={() => setShowSizingControls(prev => !prev)}
+                          className={cn(
+                            "p-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                            showSizingControls
+                              ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                              : "bg-[var(--card)] text-[var(--foreground)]/70 hover:text-[var(--foreground)] border-[var(--border)]"
+                          )}
+                          title="Calculator display sizing & precision settings"
+                        >
+                          <Sliders size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Sizing & Precision Drawer (When Expanded) */}

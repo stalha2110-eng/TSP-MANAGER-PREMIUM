@@ -624,75 +624,120 @@ export function ItemFormModal({
              <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[var(--primary)] px-2">
                 <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">02</span> 2. Stock Quantity / स्टॉक मात्रा
              </label>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-               <div className="space-y-3">
-                 <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Stock Quantity (स्टॉक मात्रा)</p>
-                 <div className="flex gap-2">
-                   <input 
-                     type="number"
-                     step="any"
-                     id="item-qty-input"
-                     placeholder="0"
-                     className="flex-1 rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] p-4 font-black text-xl focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner placeholder:opacity-25"
-                     value={formData.quantity === 0 || formData.quantity === '' ? '' : formData.quantity}
-                     onFocus={(e) => e.target.select()}
-                     onChange={(e) => {
-                       const val = e.target.value;
-                       setFormData(prev => ({ 
-                         ...prev, 
-                         quantity: val === '' ? '' : (val.startsWith('0') && val.length > 1 && !val.startsWith('0.') ? parseFloat(val) : val)
-                       }));
-                     }}
-                   />
-                   <button 
-                     id="item-unit-btn"
-                     data-navigable="true"
-                     onClick={() => setActiveUnitSelection('base')}
-                     className="rounded-2xl border-2 border-[var(--border)] bg-[var(--card)] px-6 font-black uppercase text-[10px] hover:border-[var(--primary)] transition-all flex items-center gap-2 cursor-pointer"
-                   >
-                     {formData.unit} <ChevronDown size={14} />
-                   </button>
+             <div className="space-y-3">
+               {/* 1-Line Responsive Grid for Stock Quantity & Low Stock Alert */}
+               <div className="grid grid-cols-2 gap-2.5 sm:gap-4 items-start">
+                 {/* 1. Stock Quantity Field */}
+                 <div className="space-y-1.5 min-w-0">
+                   <div className="flex items-center justify-between">
+                     <p className="text-[10px] font-black uppercase tracking-wider text-[var(--foreground)]/60 truncate">
+                       Stock Qty (स्टॉक)
+                     </p>
+                   </div>
+                   
+                   <div className="flex items-center h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] focus-within:border-[var(--primary)] focus-within:ring-1 focus-within:ring-[var(--primary)]/20 transition-all overflow-hidden shadow-2xs">
+                     <input 
+                       type="number"
+                       step="any"
+                       id="item-qty-input"
+                       placeholder="0"
+                       className="flex-1 min-w-0 h-full bg-transparent px-2.5 sm:px-3 font-black text-sm sm:text-base text-[var(--foreground)] focus:outline-none placeholder:opacity-25"
+                       value={formData.quantity === 0 || formData.quantity === '' ? '' : formData.quantity}
+                       onFocus={(e) => e.target.select()}
+                       onChange={(e) => {
+                         const val = e.target.value;
+                         setFormData(prev => ({ 
+                           ...prev, 
+                           quantity: val === '' ? '' : (val.startsWith('0') && val.length > 1 && !val.startsWith('0.') ? parseFloat(val) : val)
+                         }));
+                       }}
+                     />
+                     <button 
+                       type="button"
+                       id="item-unit-btn"
+                       data-navigable="true"
+                       onClick={() => setActiveUnitSelection('base')}
+                       className="h-full px-2 sm:px-3 bg-[var(--card)] hover:bg-[var(--foreground)]/5 border-l border-[var(--border)] text-[10px] sm:text-xs font-black uppercase text-[var(--foreground)] flex items-center gap-1 cursor-pointer shrink-0 transition-colors"
+                       title="Change unit"
+                     >
+                       <span className="truncate max-w-[50px] sm:max-w-none">{formData.unit}</span>
+                       <ChevronDown size={11} className="text-zinc-400 shrink-0" />
+                     </button>
+                   </div>
+
+                   {/* Compact Quick Steppers */}
+                   <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
+                     {quickQtys.map(q => (
+                       <button
+                         key={q}
+                         type="button"
+                         onClick={() => setFormData(prev => ({ ...prev, quantity: q }))}
+                         className="px-1.5 py-0.5 rounded bg-[var(--card)] hover:bg-[var(--foreground)]/10 border border-[var(--border)] text-[9px] font-bold text-zinc-400 hover:text-[var(--primary)] transition-all cursor-pointer shrink-0"
+                       >
+                         {q}
+                       </button>
+                     ))}
+                   </div>
                  </div>
 
-                 <div className="flex flex-wrap gap-1.5 pt-2">
-                   {quickQtys.map(q => (
-                     <button key={q} onClick={() => setFormData(prev => ({ ...prev, quantity: q }))} className="px-3 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[9px] font-black opacity-30 hover:opacity-100 hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all cursor-pointer">{q} {formData.unit}</button>
-                   ))}
+                 {/* 2. Low Stock Alert Field */}
+                 <div className="space-y-1.5 min-w-0">
+                   <div className="flex items-center justify-between">
+                     <p className="text-[10px] font-black uppercase tracking-wider text-[var(--foreground)]/60 truncate flex items-center gap-1">
+                       <AlertCircle size={10} className="text-amber-500 shrink-0" /> Alert (कम स्टॉक)
+                     </p>
+                   </div>
+
+                   <div className="flex items-center h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500/20 transition-all overflow-hidden shadow-2xs">
+                     <input 
+                       type="number"
+                       step="any"
+                       id="item-min-stock-input"
+                       placeholder="10"
+                       className="flex-1 min-w-0 h-full bg-transparent px-2.5 sm:px-3 font-black text-sm sm:text-base text-[var(--foreground)] focus:outline-none placeholder:opacity-25"
+                       value={formData.minStockLevel === 0 || formData.minStockLevel === '' ? '' : (formData.minStockLevel ?? 10)}
+                       onFocus={(e) => e.target.select()}
+                       onChange={(e) => {
+                         const val = e.target.value;
+                         setFormData(prev => ({ 
+                           ...prev, 
+                           minStockLevel: val === '' ? '' : (val.startsWith('0') && val.length > 1 && !val.startsWith('0.') ? parseFloat(val) : val)
+                         }));
+                       }}
+                     />
+                     <span className="h-full px-2 sm:px-2.5 bg-[var(--card)] border-l border-[var(--border)] text-[9px] sm:text-[10px] font-bold uppercase text-zinc-400 flex items-center shrink-0">
+                       Min
+                     </span>
+                   </div>
+
+                   {/* Compact Quick Thresholds */}
+                   <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
+                     {[2, 5, 10, 20, 50].map(threshold => (
+                       <button
+                         key={threshold}
+                         type="button"
+                         onClick={() => setFormData(prev => ({ ...prev, minStockLevel: threshold }))}
+                         className="px-1.5 py-0.5 rounded bg-[var(--card)] hover:bg-[var(--foreground)]/10 border border-[var(--border)] text-[9px] font-bold text-zinc-400 hover:text-amber-500 transition-all cursor-pointer shrink-0"
+                       >
+                         {threshold}
+                       </button>
+                     ))}
+                   </div>
                  </div>
                </div>
 
-               <div className="space-y-3">
-                 <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Low Stock Alert (कम स्टॉक चेतावनी)</p>
+               {/* Notes Field: Sleek, compact 1-line row underneath */}
+               <div className="pt-1">
+                 <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-[var(--foreground)]/50 mb-1">
+                   <span>Notes / Remarks (अतिरिक्त विवरण - वैकल्पिक)</span>
+                 </div>
                  <input 
-                   type="number"
-                   step="any"
-                   id="item-min-stock-input"
-                   placeholder="10"
-                   className="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] p-4 font-black text-xl focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner placeholder:opacity-25"
-                   value={formData.minStockLevel === 0 || formData.minStockLevel === '' ? '' : (formData.minStockLevel ?? 10)}
-                   onFocus={(e) => e.target.select()}
-                   onChange={(e) => {
-                     const val = e.target.value;
-                     setFormData(prev => ({ 
-                       ...prev, 
-                       minStockLevel: val === '' ? '' : (val.startsWith('0') && val.length > 1 && !val.startsWith('0.') ? parseFloat(val) : val)
-                     }));
-                   }}
-                 />
-                 <div className="flex flex-wrap gap-1.5 pt-2">
-                   {[2, 5, 10, 20, 50].map(threshold => (
-                     <button key={threshold} onClick={() => setFormData(prev => ({ ...prev, minStockLevel: threshold }))} className="px-3 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[9px] font-black opacity-30 hover:opacity-100 hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all cursor-pointer">{threshold}</button>
-                   ))}
-                 </div>
-               </div>
-
-               <div className="space-y-3 col-span-1 md:col-span-2 lg:col-span-1">
-                 <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Notes / अतिरिक्त विवरण</p>
-                 <textarea 
-                    id="item-notes-textarea" className="w-full h-[98px] rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] p-4 font-bold text-xs focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner resize-none"
-                    placeholder="Supplier name or batch details (होलसेलर या बैच विवरण)..."
-                    value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                   type="text"
+                   id="item-notes-textarea"
+                   className="w-full h-9 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 font-medium text-xs text-[var(--foreground)] placeholder:text-zinc-500 focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
+                   placeholder="Supplier name, batch or rack location details..."
+                   value={formData.notes || ''}
+                   onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                  />
                </div>
              </div>

@@ -3157,6 +3157,7 @@ export default function App() {
     
     await handleUpdateSettings({ customCategories: updatedCategories });
     setShowAddCategory(false);
+    return newCategory;
   }, [state.settings.customCategories, state.categories, handleUpdateSettings]);
 
   const handleEditCategory = useCallback(async (catId: string, newName: string) => {
@@ -5601,6 +5602,8 @@ export default function App() {
             categories={activeCategories}
             t={t}
             language={state.settings.language}
+            onCreateCategory={handleAddCategory}
+            onDeleteCategory={handleDeleteCategory}
           />
         )}
       </AnimatePresence>
@@ -5900,12 +5903,12 @@ export default function App() {
                 <div>
                   <h3 className="text-xl font-black uppercase tracking-tight leading-none">
                     {dailyCycleModal.type === 'opening' 
-                      ? "Store Opening Checklist" 
+                      ? "Save All Bills" 
                       : "Daily Store Close Backup"}
                   </h3>
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--primary)] mt-1 leading-none">
                     {dailyCycleModal.type === 'opening' 
-                      ? "सभी बिलों को सेव करें" 
+                      ? "(सभी बिलों को सेव करें)" 
                       : "दैनिक बिक्री इतिहास बचाएं और डेटा बैकअप लें"}
                   </p>
                 </div>
@@ -5927,7 +5930,7 @@ export default function App() {
                 )}
                 
                 <div className="bg-[var(--primary)]/5 rounded-2xl p-4 border border-[var(--primary)]/10 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[var(--primary)]">
-                  <span>Active Bill Counts (कुल बिल रिकॉर्ड):</span>
+                  <span>Total Bills:</span>
                   <span>{(state.bills || []).length} Invoices</span>
                 </div>
               </div>

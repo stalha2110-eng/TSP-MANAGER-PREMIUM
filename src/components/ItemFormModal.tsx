@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Edit2, X, ChevronDown, Camera, CameraOff, AlertCircle, Image as ImageIcon, Trash2, Check, ChevronRight, Eye, RefreshCw, Loader2 } from 'lucide-react';
+import { Plus, Edit2, X, ChevronDown, Camera, CameraOff, AlertCircle, Image as ImageIcon, Trash2, Check, ChevronRight, Eye, RefreshCw, Loader2, Settings2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { UnitSelectorModal } from './ui/UnitSelectorModal';
 import { previewImage } from './ImagePreviewModal';
@@ -17,6 +17,8 @@ export interface ItemFormModalProps {
   initialData?: Item;
   t: any;
   language: LanguageType;
+  onCreateCategory?: (name: string) => Promise<any> | any;
+  onDeleteCategory?: (id: string) => Promise<any> | any;
 }
 
 type ItemFormData = Omit<Partial<Item>, 'retailPrice' | 'wholesalePrice' | 'buyingPrice' | 'quantity' | 'minStockLevel'> & {
@@ -33,7 +35,9 @@ export function ItemFormModal({
   categories, 
   initialData, 
   t, 
-  language 
+  language,
+  onCreateCategory,
+  onDeleteCategory
 }: ItemFormModalProps) {
   const [formData, setFormData] = useState<ItemFormData>(() => {
     if (initialData) {
@@ -70,6 +74,46 @@ export function ItemFormModal({
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const { recentUnits } = useRecentUnits();
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
+  const [isEditCategoryMode, setIsEditCategoryMode] = useState(false);
+  const newCategoryInputRef = useRef<HTMLInputElement>(null);
+
+  const handleInlineCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newCategoryName.trim();
+    if (!trimmed || isSubmittingCategory) return;
+
+    try {
+      setIsSubmittingCategory(true);
+      if (onCreateCategory) {
+        const created = await onCreateCategory(trimmed);
+        if (created && typeof created === 'object' && 'id' in created) {
+          setFormData(prev => ({ ...prev, categoryId: (created as any).id }));
+        }
+      }
+      setNewCategoryName('');
+      setIsAddingCategory(false);
+    } catch (err) {
+      console.error('Failed to create category', err);
+    } finally {
+      setIsSubmittingCategory(false);
+    }
+  };
+
+  const handleInlineDeleteCategory = async (catId: string) => {
+    if (formData.categoryId === catId) {
+      setFormData(prev => ({ ...prev, categoryId: '' }));
+    }
+    if (onDeleteCategory) {
+      try {
+        await onDeleteCategory(catId);
+      } catch (err) {
+        console.error('Failed to delete category', err);
+      }
+    }
+  };
   const [cameraPermissionStatus, setCameraPermissionStatus] = useState<'prompt' | 'granted' | 'denied' | 'unknown'>('unknown');
   const [showSettingsHelp, setShowSettingsHelp] = useState(false);
 
@@ -278,7 +322,7 @@ export function ItemFormModal({
             className="space-y-4 pt-1"
           >
              <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[var(--primary)] px-2">
-               <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">01</span> 1. Product Details (सामान की जानकारी)
+               <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">01</span> 1. Product Name
              </label>
              <div className="space-y-4">
                <div className="group relative">
@@ -379,8 +423,7 @@ export function ItemFormModal({
                          <Camera size={16} className="stroke-[2.2] text-[var(--primary)]" />
                        </div>
                        <div className="flex flex-col min-w-0">
-                         <span className="text-xs font-bold text-[var(--foreground)] truncate">Product Photo</span>
-                         <span className="text-[10px] text-zinc-400 font-medium truncate">Optional · Shown on bills & catalog</span>
+                         <span className="text-xs font-bold text-[var(--foreground)] truncate">Product Photo (optional)</span>
                        </div>
                      </div>
 
@@ -441,22 +484,131 @@ export function ItemFormModal({
                  )}
                </div>
 
-               <div className="flex gap-2 overflow-x-auto no-scrollbar py-2">
-                 {categories.map(cat => (
-                   <button
-                     key={cat.id}
-                     onClick={() => setFormData(prev => ({ ...prev, categoryId: cat.id }))}
-                     className={cn(
-                       "flex items-center gap-3 rounded-xl border-2 px-5 py-3 transition-all shrink-0 font-black text-[10px] uppercase cursor-pointer",
-                       formData.categoryId === cat.id 
-                         ? "border-[var(--primary)] bg-[var(--primary)] text-white shadow-lg scale-105" 
-                         : "border-[var(--border)] bg-[var(--background)] opacity-60 hover:border-[var(--primary)]/40 hover:opacity-100"
-                     )}
-                   >
-                     <span>{cat.name}</span>
-                   </button>
-                 ))}
-               </div>
+                {/* Option A: Short, Clean & Minimalist Category Pill Strip */}
+                <div className="space-y-1.5 pt-0.5">
+                  <div className="flex items-center justify-between px-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                        Category
+                      </span>
+                      {/* "+ Add" button placed directly next to the "Category" text */}
+                      {!isAddingCategory ? (
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingCategory(true)}
+                          className="h-5 px-2 rounded-md bg-[var(--primary)]/10 hover:bg-[var(--primary)] text-[var(--primary)] hover:text-white text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs active:scale-95"
+                          title="Add new category"
+                        >
+                          <Plus size={11} strokeWidth={2.5} />
+                          <span>Add</span>
+                        </button>
+                      ) : (
+                        <form onSubmit={handleInlineCreateCategory} className="flex items-center gap-1">
+                          <input
+                            ref={newCategoryInputRef}
+                            type="text"
+                            placeholder="New category..."
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            className="h-6 px-2 rounded-md bg-[var(--background)] border border-[var(--primary)] text-xs font-semibold focus:outline-none w-28 sm:w-36 shadow-xs"
+                            autoFocus
+                          />
+                          <button
+                            type="submit"
+                            disabled={!newCategoryName.trim() || isSubmittingCategory}
+                            className="h-6 px-1.5 rounded-md bg-[var(--primary)] hover:opacity-90 text-white disabled:opacity-40 text-xs font-bold transition-all cursor-pointer flex items-center justify-center shrink-0"
+                            title="Save category"
+                          >
+                            {isSubmittingCategory ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} strokeWidth={2.5} />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAddingCategory(false);
+                              setNewCategoryName('');
+                            }}
+                            className="h-6 px-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                            title="Cancel"
+                          >
+                            <X size={11} />
+                          </button>
+                        </form>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsEditCategoryMode(!isEditCategoryMode)}
+                      style={{ 
+                        color: '#8e5f08', 
+                        fontFamily: 'system-ui', 
+                        fontWeight: 'bold', 
+                        fontSize: '11px',
+                        borderRadius: '6.25px',
+                        borderWidth: '0px',
+                        borderColor: '#583a03'
+                      }}
+                      className={cn(
+                        "flex items-center gap-1 px-2 py-0.5 rounded-md transition-colors cursor-pointer",
+                        isEditCategoryMode 
+                          ? "bg-[var(--primary)]/10" 
+                          : "hover:opacity-80"
+                      )}
+                    >
+                      {isEditCategoryMode ? (
+                        <>
+                          <Check size={11} strokeWidth={2.5} />
+                          <span>Done</span>
+                        </>
+                      ) : (
+                        <>
+                          <Settings2 size={11} />
+                          <span>Manage</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                    {/* Category Chips */}
+                    {categories.map(cat => {
+                      const isSelected = formData.categoryId === cat.id;
+                      return (
+                        <div
+                          key={cat.id}
+                          className="relative flex items-center shrink-0"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, categoryId: isSelected ? '' : cat.id }))}
+                            className={cn(
+                              "h-7.5 px-3 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-2xs",
+                              isSelected 
+                                ? "bg-[var(--primary)] text-white shadow-xs" 
+                                : "bg-[var(--background)] hover:bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]"
+                            )}
+                          >
+                            <span>{cat.name}</span>
+                            {isEditCategoryMode && (
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleInlineDeleteCategory(cat.id);
+                                }}
+                                className="w-3.5 h-3.5 rounded-full bg-rose-500/20 hover:bg-rose-500 text-rose-500 hover:text-white flex items-center justify-center transition-colors ml-1 cursor-pointer"
+                                title={`Delete ${cat.name}`}
+                              >
+                                <X size={9} strokeWidth={2.5} />
+                              </span>
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
              </div>
           </motion.div>
 
@@ -613,7 +765,7 @@ export function ItemFormModal({
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[var(--card)] via-[var(--card)]/95 to-transparent z-10 pointer-events-none">
            <div className="flex gap-4 pointer-events-auto">
              <Button id="item-save-btn" data-save="true" className="w-full py-5 rounded-2xl font-black uppercase text-sm shadow-xl shadow-[var(--primary)]/20 cursor-pointer" onClick={handleSave}>
-                {initialData ? "Save Changes / बदलाव सेव करें" : "Save Item / सामान सेव करें"}
+                {initialData ? "Save Changes / बदलाव सेव करें" : "SAVE"}
              </Button>
            </div>
         </div>

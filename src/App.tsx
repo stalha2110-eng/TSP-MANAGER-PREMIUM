@@ -5891,6 +5891,13 @@ export default function App() {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
+              style={{
+                height: '422.25px',
+                marginTop: '-11px',
+                marginBottom: '0px',
+                paddingTop: '11px',
+                paddingBottom: '10px'
+              }}
               className="bg-[var(--background)] border border-[var(--border)] rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl relative overflow-hidden text-[var(--foreground)]"
             >
               {/* Top ambient decor line */}
@@ -5918,8 +5925,8 @@ export default function App() {
                 {dailyCycleModal.type === 'opening' ? (
                   <p>
                     Click on "DOWNLOAD BACKUP & RESET SHIIFT" Button. it will download all the Bills in your Device And start Fresh session. 
-                    <br/><br/>
-                    कृपया "DOWNLOAD BACKUP & RESET SHIFT" बटन पर क्लिक करें। यह आपके डिवाइस में सभी बिलों को डाउनलोड कर देगा
+                    <br/>
+                    (कृपया "DOWNLOAD BACKUP & RESET SHIFT" बटन पर क्लिक करें। यह आपके डिवाइस में सभी बिलों को डाउनलोड कर देगा)
                   </p>
                 ) : (
                   <p>
@@ -5929,7 +5936,16 @@ export default function App() {
                   </p>
                 )}
                 
-                <div className="bg-[var(--primary)]/5 rounded-2xl p-4 border border-[var(--primary)]/10 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[var(--primary)]">
+                <div 
+                  style={{ 
+                    width: '196px',
+                    borderWidth: '3px',
+                    borderStyle: 'outset',
+                    borderColor: '#328e82',
+                    borderRadius: '17px'
+                  }}
+                  className="bg-[var(--primary)]/5 rounded-2xl p-4 border border-[var(--primary)]/10 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-[var(--primary)]"
+                >
                   <span>Total Bills:</span>
                   <span>{(state.bills || []).length} Invoices</span>
                 </div>
@@ -5951,6 +5967,7 @@ export default function App() {
                       setDailyCycleModal(null);
                     }
                   }}
+                  style={{ width: '272px' }}
                   className="bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black uppercase tracking-[0.1em] text-xs h-13 rounded-2xl shadow-xl w-full"
                 >
                   <Download size={16} className="mr-2" /> Download Backup &amp; Reset Shift
@@ -5972,23 +5989,24 @@ export default function App() {
                     }}
                     className="flex-1 text-[10px] uppercase font-black tracking-widest h-12 rounded-2xl text-[var(--foreground)] border-[var(--border)] bg-transparent"
                   >
-                    Snooze Today (आज छोड़ें)
+                    Remind Tomorrow
                   </Button>
                   
                   <Button 
                     variant="ghost"
                     onClick={() => {
-                      const snoozeUntil = Date.now() + 60 * 60 * 1000; // Snooze for 1 hour
-                      if (dailyCycleModal.type === 'opening') {
-                        sessionStorage.setItem('price_manager_snooze_opening_until', String(snoozeUntil));
-                      } else {
-                        sessionStorage.setItem('price_manager_snooze_closing_until', String(snoozeUntil));
-                      }
                       setDailyCycleModal(null);
                     }}
-                    className="flex-1 text-[10px] uppercase font-black tracking-widest h-12 rounded-2xl text-red-400 font-bold hover:bg-red-500/10"
+                    style={{ 
+                      color: '#cf0000',
+                      borderWidth: '1px',
+                      borderStyle: 'double',
+                      borderColor: '#dd3f3f',
+                      borderRadius: '19px'
+                    }}
+                    className="flex-1 text-[10px] uppercase font-black tracking-widest h-12 rounded-2xl hover:bg-red-500/10"
                   >
-                    Remind Later
+                    Cancel
                   </Button>
                 </div>
               </div>

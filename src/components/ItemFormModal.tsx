@@ -376,7 +376,7 @@ export function ItemFormModal({
                 {initialData ? t.updateRecord : t.newEntry}
               </h2>
               <p className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)]">
-                Product Details / सामान का विवरण
+                Fill Product Details
               </p>
             </div>
           </div>
@@ -408,13 +408,13 @@ export function ItemFormModal({
               <span className="w-5 h-5 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-[10px] font-black shadow-xs shrink-0">
                 01
               </span>{" "}
-              <span>1. Product Name (सामान का नाम)</span>
+              <span>Product Name (सामान का नाम)</span>
             </label>
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="group relative">
                 <input
                   id="item-name-input"
-                  className="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] p-6 font-black text-2xl focus:border-[var(--primary)] focus:outline-none transition-all placeholder:opacity-20 shadow-inner"
+                  className="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] p-6 font-black text-2xl focus:border-[var(--primary)] focus:outline-none transition-all placeholder:opacity-15 shadow-inner"
                   value={formData.name}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, name: e.target.value }))
@@ -910,7 +910,7 @@ export function ItemFormModal({
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-500/10 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-500/25 text-[10.5px] font-black uppercase tracking-wider">
                     <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
-                    Notes / Remarks (अतिरिक्त विवरण - वैकल्पिक)
+                    Notes/Remarks (जानकारी)
                   </span>
                 </div>
                 <input

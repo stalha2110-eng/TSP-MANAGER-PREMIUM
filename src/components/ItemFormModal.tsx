@@ -348,7 +348,6 @@ export function ItemFormModal({
     },
   };
 
-  const quickQtys = [5, 10, 25, 50, 100];
   const quickAmounts = [100, 500, 1000, 5000];
 
   return (
@@ -770,13 +769,8 @@ export function ItemFormModal({
             ref={section2Ref}
             className="space-y-4 border-t border-[var(--border)] pt-6"
           >
-            <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[var(--primary)] px-2">
-              <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">
-                02
-              </span>{" "}
-              2. Stock Quantity / स्टॉक मात्रा
-            </label>
-            <div className="space-y-3">
+           
+            <div className="space-y-0">
               {/* 1-Line Responsive Grid for Stock Quantity & Low Stock Alert */}
               <div className="grid grid-cols-2 gap-2.5 sm:gap-4 items-start">
                 {/* 1. Stock Quantity Field */}
@@ -851,22 +845,6 @@ export function ItemFormModal({
                       />
                     </button>
                   </div>
-
-                  {/* Compact Quick Steppers */}
-                  <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
-                    {quickQtys.map((q) => (
-                      <button
-                        key={q}
-                        type="button"
-                        onClick={() =>
-                          setFormData((prev) => ({ ...prev, quantity: q }))
-                        }
-                        className="px-1.5 py-0.5 rounded bg-[var(--card)] hover:bg-[var(--foreground)]/10 border border-[var(--border)] text-[9px] font-bold text-zinc-400 hover:text-[var(--primary)] transition-all cursor-pointer shrink-0"
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 {/* 2. Low Stock Alert Field */}
@@ -922,25 +900,6 @@ export function ItemFormModal({
                       Min
                     </span>
                   </div>
-
-                  {/* Compact Quick Thresholds */}
-                  <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
-                    {[2, 5, 10, 20, 50].map((threshold) => (
-                      <button
-                        key={threshold}
-                        type="button"
-                        onClick={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            minStockLevel: threshold,
-                          }))
-                        }
-                        className="px-1.5 py-0.5 rounded bg-[var(--card)] hover:bg-[var(--foreground)]/10 border border-[var(--border)] text-[9px] font-bold text-zinc-400 hover:text-amber-500 transition-all cursor-pointer shrink-0"
-                      >
-                        {threshold}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </div>
 
@@ -981,9 +940,9 @@ export function ItemFormModal({
           >
             <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[var(--primary)] px-2">
               <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">
-                03
+                02
               </span>{" "}
-              3. Selling & Cost Rates / दाम व मूल्य
+             ALL RATES (दाम व मूल्य)
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[

@@ -4,6 +4,7 @@ import { getDeviceId, getDeviceName } from '../utils/device';
 import { getUnbilledEntries } from '../lib/unbilledStorage';
 
 import { isItemDeleted } from '../utils/deletionTracker';
+import { getLocalProductImage } from '../utils/localImageStorage';
 
 export const INITIAL_SETTINGS: AppSettings = {
   theme: 'minimalist-ivory',
@@ -231,6 +232,7 @@ export const getInitialState = (): AppState => {
       if (parsed) {
         items = (parsed.items || []).map((data: any) => ({
           ...data,
+          imageUrl: data.imageUrl || getLocalProductImage(data.id) || undefined,
           translations: {
             en: data.name || '',
             hi: '',

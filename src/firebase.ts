@@ -115,6 +115,10 @@ export function sanitizeForFirestore<T>(obj: T): T {
   }
   const result: any = {};
   for (const key of Object.keys(obj)) {
+    // Explicitly exclude product images from Cloud Firestore - stored strictly in device local storage!
+    if (key === 'imageUrl') {
+      continue;
+    }
     const val = (obj as any)[key];
     if (val !== undefined) {
       result[key] = sanitizeForFirestore(val);

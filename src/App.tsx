@@ -146,6 +146,12 @@ import { playFeedbackEvent, playSynthesizedSound, playWelcomeAnnouncement } from
 import { getCalculatedAchievements, Milestone, downloadCertificateOfMilestone, ensureIsoString } from './lib/achievementUtils';
 import { getUnbilledEntries, saveUnbilledEntries } from './lib/unbilledStorage';
 import { 
+  saveLocalProductImage, 
+  removeLocalProductImage, 
+  removeMultipleLocalProductImages, 
+  getAllLocalProductImages 
+} from './utils/localImageStorage';
+import { 
   db, 
   auth, 
   loginWithGoogle, 
@@ -169,6 +175,7 @@ import {
   addDoc, 
   updateDoc, 
   deleteDoc, 
+  deleteField,
   Timestamp,
   serverTimestamp 
 } from 'firebase/firestore';
@@ -2255,12 +2262,16 @@ export default function App() {
     const itemsRef = collection(db, 'users', state.user.uid, 'items');
     const unsubItems = onSnapshot(query(itemsRef, orderBy('lastUpdated', 'desc')), (snap) => {
       const itemsList: Item[] = [];
+      const localImages = getAllLocalProductImages();
       snap.forEach(docSnap => {
         const data = docSnap.data();
         if (!isItemDeleted(docSnap.id)) {
+          // Attached product images are stored strictly in device local storage, never in Firestore
+          const localImg = localImages[docSnap.id];
           itemsList.push({
             ...data,
             id: docSnap.id,
+            imageUrl: localImg || undefined,
             translations: {
               en: data.name || '',
               hi: '',
@@ -2789,6 +2800,13 @@ export default function App() {
       // Unmark deleted tombstone if previously deleted
       unmarkItemsAsDeleted(id);
 
+      // Store product image strictly in device local storage, never in Cloud Firestore
+      if (newItem.imageUrl) {
+        saveLocalProductImage(id, newItem.imageUrl);
+      } else {
+        removeLocalProductImage(id);
+      }
+
       // Optimistic update
       setState(prev => ({
         ...prev,
@@ -2827,6 +2845,13 @@ export default function App() {
 
       // Unmark deleted tombstones
       unmarkItemsAsDeleted(newItems.map(i => i.id));
+
+      // Persist any product images strictly into device local storage
+      newItems.forEach(item => {
+        if (item.imageUrl) {
+          saveLocalProductImage(item.id, item.imageUrl);
+        }
+      });
 
       // Optimistic update of local state
       setState(prev => ({
@@ -2917,6 +2942,15 @@ export default function App() {
         updates.lastChangedBy = state.settings.deviceName;
       }
 
+      // Handle product image updates strictly on device local storage
+      if (data.imageUrl !== undefined) {
+        if (data.imageUrl) {
+          saveLocalProductImage(id, data.imageUrl);
+        } else {
+          removeLocalProductImage(id);
+        }
+      }
+
       // Optimistic update
       setState(prev => ({
         ...prev,
@@ -2926,7 +2960,12 @@ export default function App() {
 
       if (state.user && state.settings.autoCloudSync) {
         try {
-          await setDoc(doc(db, 'users', state.user.uid, 'items', id), sanitizeForFirestore(updates), { merge: true });
+          // Never save imageUrl to Firestore, and explicitly deleteField if an old field exists in Firestore
+          const firestorePayload = {
+            ...sanitizeForFirestore(updates),
+            imageUrl: deleteField()
+          };
+          await setDoc(doc(db, 'users', state.user.uid, 'items', id), firestorePayload, { merge: true });
         } catch (e) {
           handleFirestoreError(e, OperationType.UPDATE, `users/${state.user.uid}/items/${id}`);
         }
@@ -3081,6 +3120,9 @@ export default function App() {
       ...prev,
       items: prev.items.filter(item => !idsToDelete.includes(item.id))
     }));
+
+    // Clean up local product images from device storage
+    removeMultipleLocalProductImages(idsToDelete);
 
     // 4. Immediately persist clean items to localStorage
     try {
@@ -3542,6 +3584,9 @@ export default function App() {
           });
 
           for (const item of changedItems) {
+            if (item.imageUrl) {
+              saveLocalProductImage(item.id, item.imageUrl);
+            }
             try {
               await setDoc(doc(db, 'users', uId, 'items', item.id), sanitizeForFirestore(item));
             } catch (e) {
@@ -4524,7 +4569,7 @@ export default function App() {
                               style={{
                                  marginRight: '0px',
                                  paddingRight: '10.5px',
-                                 marginLeft: '134px',
+                                 marginLeft: '142px',
                                  marginTop: '-31px'
                               }}
                               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 text-white font-mono text-xs font-black tracking-wider shadow-xs"

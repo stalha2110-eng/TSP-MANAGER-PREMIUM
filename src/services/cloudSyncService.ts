@@ -15,6 +15,7 @@ import { RecoveryService } from './recoveryService';
 import { deduplicateById } from '../constants/initialState';
 import { getUnbilledEntries, saveUnbilledEntries } from '../lib/unbilledStorage';
 import { isItemDeleted } from '../utils/deletionTracker';
+import { getAllLocalProductImages } from '../utils/localImageStorage';
 
 export interface SyncResult {
   success: boolean;
@@ -150,11 +151,14 @@ export class CloudSyncService {
         }
       }
 
+      const localImages = getAllLocalProductImages();
       snap.forEach(docSnap => {
         const data = docSnap.data();
+        const localImg = localImages[docSnap.id] || localItems.find(li => li.id === docSnap.id)?.imageUrl;
         itemsList.push({
           ...data,
           id: docSnap.id,
+          imageUrl: localImg || undefined,
           translations: {
             en: data.name || '',
             hi: '',

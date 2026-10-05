@@ -372,10 +372,10 @@ export function ItemFormModal({
               {initialData ? <Edit2 size={20} /> : <Plus size={20} />}
             </div>
             <div>
-              <h2 className="text-lg font-black tracking-tighter uppercase">
+              <h2 className="text-lg font-black tracking-tighter uppercase text-[var(--foreground)]">
                 {initialData ? t.updateRecord : t.newEntry}
               </h2>
-              <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+              <p className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)]">
                 Product Details / सामान का विवरण
               </p>
             </div>
@@ -404,11 +404,11 @@ export function ItemFormModal({
             ref={section1Ref}
             className="space-y-4 pt-1"
           >
-            <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[var(--primary)] px-2">
-              <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">
+            <label className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--primary)] px-0.5">
+              <span className="w-5 h-5 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-[10px] font-black shadow-xs shrink-0">
                 01
               </span>{" "}
-              1. Product Name
+              <span>1. Product Name (सामान का नाम)</span>
             </label>
             <div className="space-y-4">
               <div className="group relative">
@@ -622,7 +622,8 @@ export function ItemFormModal({
               <div className="space-y-1.5 pt-0.5">
                 <div className="flex items-center justify-between px-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 border border-indigo-500/25 text-[10.5px] font-black uppercase tracking-wider">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
                       Category
                     </span>
                     {/* "+ Add" button placed directly next to the "Category" text */}
@@ -776,7 +777,8 @@ export function ItemFormModal({
                 {/* 1. Stock Quantity Field */}
                 <div className="space-y-1.5 min-w-0">
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--foreground)]/60 truncate">
+                    <p className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-teal-500/10 dark:bg-teal-500/20 text-teal-800 dark:text-teal-300 border border-teal-500/25 text-[10.5px] font-black uppercase tracking-wider truncate">
+                      <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" />
                       Stock Qty (स्टॉक)
                     </p>
                   </div>
@@ -841,7 +843,7 @@ export function ItemFormModal({
                       </span>
                       <ChevronDown
                         size={11}
-                        className="text-zinc-400 shrink-0"
+                        className="text-[var(--foreground)]/70 shrink-0"
                       />
                     </button>
                   </div>
@@ -850,10 +852,10 @@ export function ItemFormModal({
                 {/* 2. Low Stock Alert Field */}
                 <div className="space-y-1.5 min-w-0">
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--foreground)]/60 truncate flex items-center gap-1">
+                    <p className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/25 text-[10.5px] font-black uppercase tracking-wider truncate">
                       <Bell
-                        size={10}
-                        className="text-amber-500 shrink-0"
+                        size={11}
+                        className="text-amber-500 shrink-0 fill-amber-500/30"
                       />{" "}
                       Alert (स्टॉक की चेतावनी)
                     </p>
@@ -896,7 +898,7 @@ export function ItemFormModal({
                         }));
                       }}
                     />
-                    <span className="h-full px-2 sm:px-2.5 bg-[var(--card)] border-l border-[var(--border)] text-[9px] sm:text-[10px] font-bold uppercase text-zinc-400 flex items-center shrink-0">
+                    <span className="h-full px-2 sm:px-2.5 bg-[var(--card)] border-l border-[var(--border)] text-[9px] sm:text-[10px] font-black uppercase text-[var(--foreground)] flex items-center shrink-0">
                       Min
                     </span>
                   </div>
@@ -905,8 +907,11 @@ export function ItemFormModal({
 
               {/* Notes Field: Sleek, compact 1-line row underneath */}
               <div className="pt-1">
-                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-[var(--foreground)]/50 mb-1">
-                  <span>Notes / Remarks (अतिरिक्त विवरण - वैकल्पिक)</span>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-500/10 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-500/25 text-[10.5px] font-black uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
+                    Notes / Remarks (अतिरिक्त विवरण - वैकल्पिक)
+                  </span>
                 </div>
                 <input
                   type="text"
@@ -938,11 +943,11 @@ export function ItemFormModal({
             ref={section3Ref}
             className="space-y-4 border-t border-[var(--border)] pt-6 pb-8"
           >
-            <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[var(--primary)] px-2">
-              <span className="w-6 h-6 rounded bg-[var(--primary)]/10 flex items-center justify-center text-[10px]">
+            <label className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--primary)] px-0.5">
+              <span className="w-5 h-5 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-[10px] font-black shadow-xs shrink-0">
                 02
               </span>{" "}
-             ALL RATES (दाम व मूल्य)
+              <span>ALL RATES (दाम व मूल्य)</span>
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
@@ -951,7 +956,9 @@ export function ItemFormModal({
                   key: "retailPrice",
                   unitKey: "retailPriceUnit",
                   selection: "retail",
-                  color: "bg-green-500/10",
+                  color: "bg-green-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+                  badgeClass: "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/25",
+                  dotColor: "bg-emerald-500",
                   nextInputId: "item-price-wholesalePrice",
                 },
                 {
@@ -959,7 +966,9 @@ export function ItemFormModal({
                   key: "wholesalePrice",
                   unitKey: "wholesalePriceUnit",
                   selection: "wholesale",
-                  color: "bg-blue-500/10",
+                  color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+                  badgeClass: "bg-blue-500/10 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border-blue-500/25",
+                  dotColor: "bg-blue-500",
                   nextInputId: "item-price-buyingPrice",
                 },
                 {
@@ -967,16 +976,21 @@ export function ItemFormModal({
                   key: "buyingPrice",
                   unitKey: "buyingPriceUnit",
                   selection: "buy",
-                  color: "bg-orange-500/10",
+                  color: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
+                  badgeClass: "bg-orange-500/10 dark:bg-orange-500/20 text-orange-800 dark:text-orange-300 border-orange-500/25",
+                  dotColor: "bg-orange-500",
                   nextInputId: "item-notes-textarea",
                 },
               ].map((field) => (
-                <div key={field.key} className="space-y-3">
-                  <p className="text-[9px] font-black uppercase tracking-widest opacity-30">
-                    {field.label}
-                  </p>
+                <div key={field.key} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10.5px] font-black uppercase tracking-wider", field.badgeClass)}>
+                      <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", field.dotColor)} />
+                      {field.label}
+                    </p>
+                  </div>
                   <div className="relative group">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-xl opacity-10 group-focus-within:opacity-40 transition-opacity">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-xl text-[var(--foreground)] opacity-40 group-focus-within:opacity-90 transition-opacity">
                       {field.key === "profitMargin" ? "%" : "₹"}
                     </span>
                     <input

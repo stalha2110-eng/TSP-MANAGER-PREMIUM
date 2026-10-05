@@ -4186,7 +4186,10 @@ export default function App() {
             </div>
             <div className="flex flex-col justify-center min-w-0 truncate">
               <h1 className="text-base sm:text-2xl font-black tracking-tight text-white mb-0 leading-none flex items-baseline truncate">
-                TS <span className="text-[10px] sm:text-xs font-bold opacity-60 ml-1 sm:ml-1.5 tracking-[0.12em] sm:tracking-[0.3em] uppercase truncate hidden min-[360px]:inline">Price Manager</span>
+                TS <span 
+                  className="text-[10px] sm:text-xs font-bold opacity-60 ml-1 sm:ml-1.5 tracking-[0.12em] sm:tracking-[0.3em] uppercase truncate hidden min-[360px]:inline mr-0 pr-1 pl-[3px]"
+                  style={{ marginRight: '0px', paddingRight: '4px', paddingLeft: '3px' }}
+                >Price Manager</span>
               </h1>
               <div className="flex items-center gap-1.5 mt-1 sm:mt-1.5">
                 <button

@@ -269,12 +269,45 @@ export function SmartBulkEntryModal({
     return { errors, isValid };
   };
 
+  // Open unit selector modal helper
+  const openUnitModal = (rowIndex: number, field: 'retail' | 'wholesale' | 'cost') => {
+    const row = rows[rowIndex];
+    if (row) {
+      setActiveUnitModal({
+        rowIndex,
+        field,
+        currentUnit: field === 'retail' ? row.retailPriceUnit : field === 'wholesale' ? row.wholesalePriceUnit : row.buyingPriceUnit,
+        productName: row.name
+      });
+      setActiveCategoryDropdown(null);
+    }
+  };
+
   // Keyboard Navigation
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, rowIndex: number, field: 'qty' | 'name' | 'retail' | 'wholesale' | 'cost') => {
-    handleMarkTouched(rowIndex, field === 'qty' ? 'quantity' : field === 'retail' ? 'retailPrice' : field === 'wholesale' ? 'wholesalePrice' : field === 'cost' ? 'buyingPrice' : 'name');
+  type NavField = 'qty' | 'name' | 'retail' | 'retail-unit' | 'wholesale' | 'wholesale-unit' | 'cost' | 'cost-unit';
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>, rowIndex: number, field: NavField) => {
+    if (field === 'qty') handleMarkTouched(rowIndex, 'quantity');
+    else if (field === 'name') handleMarkTouched(rowIndex, 'name');
+    else if (field === 'retail') handleMarkTouched(rowIndex, 'retailPrice');
+    else if (field === 'wholesale') handleMarkTouched(rowIndex, 'wholesalePrice');
+    else if (field === 'cost') handleMarkTouched(rowIndex, 'buyingPrice');
     
     if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
+
+      // When Enter is pressed on any unit button, immediately open its unit selector popup!
+      if (field === 'retail-unit') {
+        openUnitModal(rowIndex, 'retail');
+        return;
+      } else if (field === 'wholesale-unit') {
+        openUnitModal(rowIndex, 'wholesale');
+        return;
+      } else if (field === 'cost-unit') {
+        openUnitModal(rowIndex, 'cost');
+        return;
+      }
       
       let nextId = '';
       if (field === 'qty') {
@@ -282,29 +315,27 @@ export function SmartBulkEntryModal({
       } else if (field === 'name') {
         nextId = `retail-${rowIndex}`;
       } else if (field === 'retail') {
-        nextId = `wholesale-${rowIndex}`;
+        nextId = `retail-unit-${rowIndex}`;
       } else if (field === 'wholesale') {
-        nextId = `cost-${rowIndex}`;
+        nextId = `wholesale-unit-${rowIndex}`;
       } else if (field === 'cost') {
-        if (rowIndex < rows.length - 1) {
-          nextId = `qty-${rowIndex + 1}`;
-        } else {
-          // At the last field of the last row -> Automatically spawn a new row and focus it!
-          handleAddRow();
-          return;
-        }
+        nextId = `cost-unit-${rowIndex}`;
       }
 
       if (nextId) {
         const nextEl = document.getElementById(nextId);
         if (nextEl) {
           nextEl.focus();
-          if ('select' in nextEl) {
+          if ('select' in nextEl && typeof (nextEl as any).select === 'function') {
             (nextEl as any).select();
           }
           nextEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       }
+    } else if ((e.key === ' ' || e.key === 'ArrowDown') && field.endsWith('-unit')) {
+      e.preventDefault();
+      const unitField = field === 'retail-unit' ? 'retail' : field === 'wholesale-unit' ? 'wholesale' : 'cost';
+      openUnitModal(rowIndex, unitField);
     }
   };
 
@@ -314,8 +345,11 @@ export function SmartBulkEntryModal({
       list.push({ id: `qty-${i}`, rowIndex: i });
       list.push({ id: `name-${i}`, rowIndex: i });
       list.push({ id: `retail-${i}`, rowIndex: i });
+      list.push({ id: `retail-unit-${i}`, rowIndex: i });
       list.push({ id: `wholesale-${i}`, rowIndex: i });
+      list.push({ id: `wholesale-unit-${i}`, rowIndex: i });
       list.push({ id: `cost-${i}`, rowIndex: i });
+      list.push({ id: `cost-unit-${i}`, rowIndex: i });
     });
     return list;
   };
@@ -899,12 +933,12 @@ export function SmartBulkEntryModal({
                         
                         {/* 2. Retail Price per unit Boundary Box */}
                         <div className={cn(
-                          "flex items-center justify-center gap-1.5 w-auto max-w-[170px] px-2.5 py-1.5 md:py-1 rounded-xl border-2 transition-all bg-[var(--card)] shadow-xs shrink-0",
+                          "flex items-center justify-center gap-1.5 w-auto min-w-[160px] px-2.5 py-1.5 md:py-1 rounded-xl border-2 transition-all bg-[var(--card)] shadow-xs shrink-0",
                           showValidationErrors && errors.retailPrice 
                             ? "border-red-500 ring-2 ring-red-500/30 bg-red-500/[0.04]" 
                             : "border-emerald-500/60 dark:border-emerald-500/40 hover:border-emerald-500 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/25"
                         )}>
-                          <span className="text-[7.5px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-1 py-0.5 rounded shrink-0 select-none">
+                          <span className="text-[8px] font-black uppercase text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded shrink-0 select-none">
                             Retail
                           </span>
                           <span className="text-zinc-500 dark:text-zinc-400 font-mono text-xs select-none font-black shrink-0">₹</span>
@@ -915,7 +949,7 @@ export function SmartBulkEntryModal({
                             pattern="[0-9]*\.?[0-9]*"
                             placeholder="0.00"
                             className={cn(
-                              "w-14 sm:w-16 min-w-0 bg-transparent font-black font-mono text-center text-sm md:text-xs text-[var(--foreground)] focus:outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
+                              "w-16 min-w-[56px] shrink-0 bg-transparent font-black font-mono text-center text-sm md:text-xs text-[var(--foreground)] focus:outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
                               showValidationErrors && errors.retailPrice ? "text-red-500" : ""
                             )}
                             value={row.retailPrice}
@@ -934,17 +968,11 @@ export function SmartBulkEntryModal({
                           <div className="relative shrink-0">
                             <button
                               type="button"
-                              onClick={() => {
-                                setActiveUnitModal({
-                                  rowIndex: index,
-                                  field: 'retail',
-                                  currentUnit: row.retailPriceUnit,
-                                  productName: row.name
-                                });
-                                setActiveCategoryDropdown(null);
-                              }}
-                              className="px-2 py-0.5 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-emerald-500 text-[10px] font-black text-zinc-400 hover:text-[var(--foreground)] transition-all uppercase tracking-wider min-w-[36px] flex items-center justify-center gap-0.5 cursor-pointer active:scale-95 shadow-2xs"
-                              title="Click to select or add unit for Retail Price"
+                              id={`retail-unit-${index}`}
+                              onClick={() => openUnitModal(index, 'retail')}
+                              onKeyDown={(e) => handleKeyDown(e, index, 'retail-unit')}
+                              className="px-2 py-0.5 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-[10px] font-black text-zinc-400 hover:text-[var(--foreground)] focus:text-emerald-500 transition-all uppercase tracking-wider min-w-[36px] flex items-center justify-center gap-0.5 cursor-pointer active:scale-95 shadow-2xs"
+                              title="Click or press Enter to open unit selector"
                             >
                               <span>{row.retailPriceUnit}</span>
                               <ChevronDown size={10} className="opacity-40 shrink-0" />
@@ -954,14 +982,13 @@ export function SmartBulkEntryModal({
 
                         {/* 3. Wholesale Price per unit Boundary Box */}
                         <div className={cn(
-                          "flex items-center justify-center gap-1.5 w-auto max-w-[170px] px-2.5 py-1.5 md:py-1 rounded-xl border-2 transition-all bg-[var(--card)] shadow-xs shrink-0",
+                          "flex items-center justify-center gap-1.5 w-auto min-w-[175px] px-2.5 py-1.5 md:py-1 rounded-xl border-2 transition-all bg-[var(--card)] shadow-xs shrink-0",
                           showValidationErrors && errors.wholesalePrice 
                             ? "border-red-500 ring-2 ring-red-500/30 bg-red-500/[0.04]" 
                             : "border-blue-500/60 dark:border-blue-500/40 hover:border-blue-500 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/25"
                         )}>
                           <span 
-                            style={{ paddingLeft: '1.5px' }}
-                            className="text-[7.5px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-500/15 px-1 py-0.5 rounded shrink-0 select-none"
+                            className="text-[8px] font-black uppercase text-blue-600 dark:text-blue-400 bg-blue-500/15 px-1.5 py-0.5 rounded shrink-0 select-none"
                           >
                             Wholesale
                           </span>
@@ -973,7 +1000,7 @@ export function SmartBulkEntryModal({
                             pattern="[0-9]*\.?[0-9]*"
                             placeholder="0.00"
                             className={cn(
-                              "w-14 sm:w-16 min-w-0 bg-transparent font-black font-mono text-center text-sm md:text-xs text-[var(--foreground)] focus:outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
+                              "w-16 min-w-[56px] shrink-0 bg-transparent font-black font-mono text-center text-sm md:text-xs text-[var(--foreground)] focus:outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
                               showValidationErrors && errors.wholesalePrice ? "text-red-500" : ""
                             )}
                             value={row.wholesalePrice}
@@ -992,17 +1019,11 @@ export function SmartBulkEntryModal({
                           <div className="relative shrink-0">
                             <button
                               type="button"
-                              onClick={() => {
-                                setActiveUnitModal({
-                                  rowIndex: index,
-                                  field: 'wholesale',
-                                  currentUnit: row.wholesalePriceUnit,
-                                  productName: row.name
-                                });
-                                setActiveCategoryDropdown(null);
-                              }}
-                              className="px-2 py-0.5 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-blue-500 text-[10px] font-black text-zinc-400 hover:text-[var(--foreground)] transition-all uppercase tracking-wider min-w-[36px] flex items-center justify-center gap-0.5 cursor-pointer active:scale-95 shadow-2xs"
-                              title="Click to select or add unit for Wholesale Price"
+                              id={`wholesale-unit-${index}`}
+                              onClick={() => openUnitModal(index, 'wholesale')}
+                              onKeyDown={(e) => handleKeyDown(e, index, 'wholesale-unit')}
+                              className="px-2 py-0.5 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-[10px] font-black text-zinc-400 hover:text-[var(--foreground)] focus:text-blue-500 transition-all uppercase tracking-wider min-w-[36px] flex items-center justify-center gap-0.5 cursor-pointer active:scale-95 shadow-2xs"
+                              title="Click or press Enter to open unit selector"
                             >
                               <span>{row.wholesalePriceUnit}</span>
                               <ChevronDown size={10} className="opacity-40 shrink-0" />
@@ -1012,12 +1033,12 @@ export function SmartBulkEntryModal({
 
                         {/* 4. Cost Price per unit Boundary Box */}
                         <div className={cn(
-                          "flex items-center justify-center gap-1.5 w-auto max-w-[170px] px-2.5 py-1.5 md:py-1 rounded-xl border-2 transition-all bg-[var(--card)] shadow-xs shrink-0",
+                          "flex items-center justify-center gap-1.5 w-auto min-w-[160px] px-2.5 py-1.5 md:py-1 rounded-xl border-2 transition-all bg-[var(--card)] shadow-xs shrink-0",
                           showValidationErrors && errors.buyingPrice 
                             ? "border-red-500 ring-2 ring-red-500/30 bg-red-500/[0.04]" 
                             : "border-amber-500/60 dark:border-amber-500/40 hover:border-amber-500 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/25"
                         )}>
-                          <span className="text-[7.5px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/15 px-1 py-0.5 rounded shrink-0 select-none">
+                          <span className="text-[8px] font-black uppercase text-amber-600 dark:text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded shrink-0 select-none">
                             Cost
                           </span>
                           <span className="text-zinc-500 dark:text-zinc-400 font-mono text-xs select-none font-black shrink-0">₹</span>
@@ -1028,7 +1049,7 @@ export function SmartBulkEntryModal({
                             pattern="[0-9]*\.?[0-9]*"
                             placeholder="0.00"
                             className={cn(
-                              "w-14 sm:w-16 min-w-0 bg-transparent font-black font-mono text-center text-sm md:text-xs text-[var(--foreground)] focus:outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
+                              "w-16 min-w-[56px] shrink-0 bg-transparent font-black font-mono text-center text-sm md:text-xs text-[var(--foreground)] focus:outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
                               showValidationErrors && errors.buyingPrice ? "text-red-500" : ""
                             )}
                             value={row.buyingPrice}
@@ -1047,17 +1068,11 @@ export function SmartBulkEntryModal({
                           <div className="relative shrink-0">
                             <button
                               type="button"
-                              onClick={() => {
-                                setActiveUnitModal({
-                                  rowIndex: index,
-                                  field: 'cost',
-                                  currentUnit: row.buyingPriceUnit,
-                                  productName: row.name
-                                });
-                                setActiveCategoryDropdown(null);
-                              }}
-                              className="px-2 py-0.5 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-amber-500 text-[10px] font-black text-zinc-400 hover:text-[var(--foreground)] transition-all uppercase tracking-wider min-w-[36px] flex items-center justify-center gap-0.5 cursor-pointer active:scale-95 shadow-2xs"
-                              title="Click to select or add unit for Cost Price"
+                              id={`cost-unit-${index}`}
+                              onClick={() => openUnitModal(index, 'cost')}
+                              onKeyDown={(e) => handleKeyDown(e, index, 'cost-unit')}
+                              className="px-2 py-0.5 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-[10px] font-black text-zinc-400 hover:text-[var(--foreground)] focus:text-amber-500 transition-all uppercase tracking-wider min-w-[36px] flex items-center justify-center gap-0.5 cursor-pointer active:scale-95 shadow-2xs"
+                              title="Click or press Enter to open unit selector"
                             >
                               <span>{row.buyingPriceUnit}</span>
                               <ChevronDown size={10} className="opacity-40 shrink-0" />
@@ -1160,6 +1175,28 @@ export function SmartBulkEntryModal({
                   }
                 }
                 setActiveUnitModal(null);
+
+                // Auto-advance focus to the next field in order
+                const nextFieldId = fld === 'retail' 
+                  ? `wholesale-${idx}` 
+                  : fld === 'wholesale' 
+                    ? `cost-${idx}` 
+                    : (idx < rows.length - 1 ? `name-${idx + 1}` : undefined);
+
+                if (nextFieldId) {
+                  setTimeout(() => {
+                    const el = document.getElementById(nextFieldId);
+                    if (el) {
+                      el.focus();
+                      if ('select' in el && typeof (el as any).select === 'function') {
+                        (el as any).select();
+                      }
+                      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                  }, 60);
+                } else if (fld === 'cost' && idx === rows.length - 1) {
+                  handleAddRow();
+                }
               }}
               onClose={() => setActiveUnitModal(null)}
             />

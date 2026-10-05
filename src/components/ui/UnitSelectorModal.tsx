@@ -95,7 +95,14 @@ export function UnitSelectorModal({
 
   const handleSelectOrAdd = (val: string) => {
     const trimmed = val.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      if (currentUnit) {
+        handleSelect(currentUnit);
+      } else if (filteredUnits[0]) {
+        handleSelect(filteredUnits[0].name);
+      }
+      return;
+    }
 
     // If exists, select it
     const existing = allUnits.find(u => u.name.toLowerCase() === trimmed.toLowerCase());

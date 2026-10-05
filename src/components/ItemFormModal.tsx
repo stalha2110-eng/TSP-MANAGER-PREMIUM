@@ -7,7 +7,7 @@ import {
   ChevronDown,
   Camera,
   CameraOff,
-  AlertCircle,
+  Bell,
   Image as ImageIcon,
   Trash2,
   Check,
@@ -873,11 +873,11 @@ export function ItemFormModal({
                 <div className="space-y-1.5 min-w-0">
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] font-black uppercase tracking-wider text-[var(--foreground)]/60 truncate flex items-center gap-1">
-                      <AlertCircle
+                      <Bell
                         size={10}
                         className="text-amber-500 shrink-0"
                       />{" "}
-                      Alert (कम स्टॉक)
+                      Alert (स्टॉक की चेतावनी)
                     </p>
                   </div>
 

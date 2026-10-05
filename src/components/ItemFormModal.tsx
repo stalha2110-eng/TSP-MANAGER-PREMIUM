@@ -779,7 +779,7 @@ export function ItemFormModal({
                   <div className="flex items-center justify-between">
                     <p className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-teal-500/10 dark:bg-teal-500/20 text-teal-800 dark:text-teal-300 border border-teal-500/25 text-[10.5px] font-black uppercase tracking-wider truncate">
                       <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" />
-                      Stock Qty (स्टॉक)
+                      Stock Qty(स्टॉक संख्या)
                     </p>
                   </div>
 
@@ -857,7 +857,7 @@ export function ItemFormModal({
                         size={11}
                         className="text-amber-500 shrink-0 fill-amber-500/30"
                       />{" "}
-                      Alert (स्टॉक की चेतावनी)
+                      Alert(स्टॉक चेतावनी)
                     </p>
                   </div>
 

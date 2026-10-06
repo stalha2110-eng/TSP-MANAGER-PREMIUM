@@ -409,33 +409,64 @@ export function ItemFormModal({
               <span>Product Name (सामान का नाम)</span>
             </label>
             <div className="space-y-3">
-              <div className="group relative">
-                <input
-                  id="item-name-input"
-                  style={{ height: "50px" }}
-                  className="w-full h-[50px] px-4 rounded-xl border-2 border-[var(--border)] bg-[var(--background)] font-black text-lg sm:text-xl focus:border-[var(--primary)] focus:outline-none transition-all placeholder:opacity-15 shadow-inner"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const next = document.getElementById("item-qty-input");
-                      next?.focus();
-                      if (next && "select" in next) (next as any).select();
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                {/* Product Name Input */}
+                <div className="relative flex-1 min-w-0">
+                  <input
+                    id="item-name-input"
+                    style={{ height: "50px" }}
+                    className="w-full h-[50px] px-3.5 sm:px-4 rounded-xl border-2 border-[var(--border)] bg-[var(--background)] font-black text-base sm:text-lg focus:border-[var(--primary)] focus:outline-none transition-all placeholder:opacity-15 shadow-inner"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, name: e.target.value }))
                     }
-                  }}
-                  onBlur={handleNameBlur}
-                  placeholder="Item Name (सामान का नाम) (e.g. Rice, Oil)..."
-                />
-                {isTranslating && (
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce [animation-delay:0.2s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce [animation-delay:0.4s]" />
-                  </div>
-                )}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const next = document.getElementById("item-qty-input");
+                        next?.focus();
+                        if (next && "select" in next) (next as any).select();
+                      }
+                    }}
+                    onBlur={handleNameBlur}
+                    placeholder="Item Name (सामान का नाम) (e.g. Rice, Oil)..."
+                  />
+                  {isTranslating && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1 pointer-events-none">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce [animation-delay:0.2s]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce [animation-delay:0.4s]" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Separate Camera / Add Photo Button */}
+                <button
+                  type="button"
+                  id="item-add-photo-btn"
+                  onClick={() => setShowPhotoSourceModal(true)}
+                  disabled={isUploadingImage}
+                  style={{ height: "50px", width: "50px" }}
+                  className={cn(
+                    "h-[50px] w-[50px] rounded-xl flex items-center justify-center shrink-0 border-2 transition-all cursor-pointer shadow-xs active:scale-95",
+                    formData.imageUrl
+                      ? "p-1 border-[var(--primary)] bg-[var(--card)] hover:ring-2 hover:ring-[var(--primary)]/30"
+                      : "border-[var(--border)] bg-[var(--card)] hover:bg-[var(--primary)] text-[var(--primary)] hover:text-white hover:border-[var(--primary)]"
+                  )}
+                  title={formData.imageUrl ? "Change / View Photo" : "Add Product Photo (फोटो जोड़ें)"}
+                >
+                  {isUploadingImage ? (
+                    <Loader2 size={20} className="animate-spin text-[var(--primary)]" />
+                  ) : formData.imageUrl ? (
+                    <img
+                      src={formData.imageUrl}
+                      alt="Product"
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <Camera size={21} className="stroke-[2.2]" />
+                  )}
+                </button>
               </div>
 
               {/* Hidden Native File Inputs */}
@@ -459,163 +490,133 @@ export function ItemFormModal({
                 aria-hidden="true"
               />
 
-              {/* Professional Product Photo Section with Tactile Action Button */}
-              <div className="space-y-2.5">
-                {formData.imageUrl ? (
-                  /* Attached State: Sleek row with photo & Change button */
-                  <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xs">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          previewImage(
-                            formData.imageUrl!,
-                            formData.name || "Product Photo",
-                          )
-                        }
-                        className="relative w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-black/10 dark:border-white/10 group cursor-pointer"
-                        title="Click to view photo"
-                      >
-                        <img
-                          src={formData.imageUrl}
-                          alt="Product"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
-                          <Eye size={12} />
-                        </div>
-                      </button>
-
-                      <div className="min-w-0 flex flex-col">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-bold text-[var(--foreground)] truncate">
-                            Photo Attached
-                          </span>
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                        </div>
-                        <span className="text-[10px] text-zinc-400 font-medium truncate">
-                          Ready for POS & search
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setShowPhotoSourceModal(true)}
-                        disabled={isUploadingImage}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[var(--background)] hover:bg-[var(--primary)]/10 text-[var(--foreground)] hover:text-[var(--primary)] border border-[var(--border)] font-bold text-xs transition-all cursor-pointer shadow-xs active:scale-95"
-                      >
-                        <RefreshCw
-                          size={11}
-                          className={isUploadingImage ? "animate-spin" : ""}
-                        />
-                        <span>Change</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="p-1.5 rounded-xl text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                        title="Remove photo"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  /* Empty State: Real, Prominent, Professional Action Button */
-                  <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xs">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0">
-                        <Camera
-                          size={16}
-                          className="stroke-[2.2] text-[var(--primary)]"
-                        />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-[var(--foreground)] truncate">
-                          Product Photo (optional)
-                        </span>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      id="item-add-photo-btn"
-                      onClick={() => setShowPhotoSourceModal(true)}
-                      disabled={isUploadingImage}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--primary)] hover:opacity-95 active:scale-95 text-white font-bold text-xs shadow-sm hover:shadow-md transition-all cursor-pointer shrink-0"
-                    >
-                      {isUploadingImage ? (
-                        <Loader2 size={13} className="animate-spin" />
-                      ) : (
-                        <Plus size={14} strokeWidth={2.5} />
-                      )}
-                      <span>Add Photo</span>
-                    </button>
-                  </div>
-                )}
-
-                {/* Prominent Visual Error State when Camera Permission is Denied */}
-                {cameraPermissionStatus === "denied" && (
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-200">
-                        <CameraOff
-                          size={15}
-                          className="text-amber-600 dark:text-amber-400 shrink-0"
-                        />
-                        <span>Camera Access Blocked</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowSettingsHelp(!showSettingsHelp)}
-                        className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 underline hover:no-underline cursor-pointer"
-                      >
-                        {showSettingsHelp
-                          ? "Hide Instructions"
-                          : "How to Enable"}
-                      </button>
-                    </div>
-                    <p className="text-[11px] text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                      Camera permission was blocked by your browser. You can
-                      still pick photos from your Gallery, or allow camera
-                      access in browser/device settings.
-                    </p>
-                    {showSettingsHelp && (
-                      <div className="p-2.5 rounded-lg bg-black/5 dark:bg-black/20 text-[10.5px] space-y-1.5 border border-amber-500/20">
-                        <div className="font-bold text-amber-700 dark:text-amber-300">
-                          How to enable camera access:
-                        </div>
-                        <ul className="list-disc pl-4 space-y-1 text-zinc-600 dark:text-zinc-300">
-                          <li>
-                            <strong>Desktop (Chrome/Edge):</strong> Click the
-                            lock or tune icon 🔒 on the left side of the address
-                            bar → turn on <strong>Camera</strong> → reload page.
-                          </li>
-                          <li>
-                            <strong>Android Chrome:</strong> Tap ⋮ (menu) →
-                            Settings → Site settings → Camera → find this site
-                            and choose Allow.
-                          </li>
-                          <li>
-                            <strong>iPhone / iPad Safari:</strong> Tap{" "}
-                            <strong>aA</strong> in the address bar → Website
-                            Settings → set Camera to <strong>Allow</strong>.
-                          </li>
-                        </ul>
+              {/* Product Photo State (Shown when photo attached or camera blocked) */}
+              {(formData.imageUrl || cameraPermissionStatus === "denied") && (
+                <div className="space-y-2.5">
+                  {formData.imageUrl && (
+                    /* Attached State: Sleek row with photo & Change button */
+                    <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-xs">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <button
                           type="button"
-                          onClick={requestCameraPermission}
-                          className="mt-1 px-3 py-1 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+                          onClick={() =>
+                            previewImage(
+                              formData.imageUrl!,
+                              formData.name || "Product Photo",
+                            )
+                          }
+                          className="relative w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-black/10 dark:border-white/10 group cursor-pointer"
+                          title="Click to view photo"
                         >
-                          Retry Camera Permission
+                          <img
+                            src={formData.imageUrl}
+                            alt="Product"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                            <Eye size={12} />
+                          </div>
+                        </button>
+
+                        <div className="min-w-0 flex flex-col">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-[var(--foreground)] truncate">
+                              Photo Attached
+                            </span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          </div>
+                          <span className="text-[10px] text-zinc-400 font-medium truncate">
+                            Ready for POS & search
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setShowPhotoSourceModal(true)}
+                          disabled={isUploadingImage}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[var(--background)] hover:bg-[var(--primary)]/10 text-[var(--foreground)] hover:text-[var(--primary)] border border-[var(--border)] font-bold text-xs transition-all cursor-pointer shadow-xs active:scale-95"
+                        >
+                          <RefreshCw
+                            size={11}
+                            className={isUploadingImage ? "animate-spin" : ""}
+                          />
+                          <span>Change</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="p-1.5 rounded-xl text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          title="Remove photo"
+                        >
+                          <Trash2 size={13} />
                         </button>
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                    </div>
+                  )}
+
+                  {/* Prominent Visual Error State when Camera Permission is Denied */}
+                  {cameraPermissionStatus === "denied" && (
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-200">
+                          <CameraOff
+                            size={15}
+                            className="text-amber-600 dark:text-amber-400 shrink-0"
+                          />
+                          <span>Camera Access Blocked</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowSettingsHelp(!showSettingsHelp)}
+                          className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 underline hover:no-underline cursor-pointer"
+                        >
+                          {showSettingsHelp
+                            ? "Hide Instructions"
+                            : "How to Enable"}
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                        Camera permission was blocked by your browser. You can
+                        still pick photos from your Gallery, or allow camera
+                        access in browser/device settings.
+                      </p>
+                      {showSettingsHelp && (
+                        <div className="p-2.5 rounded-lg bg-black/5 dark:bg-black/20 text-[10.5px] space-y-1.5 border border-amber-500/20">
+                          <div className="font-bold text-amber-700 dark:text-amber-300">
+                            How to enable camera access:
+                          </div>
+                          <ul className="list-disc pl-4 space-y-1 text-zinc-600 dark:text-zinc-300">
+                            <li>
+                              <strong>Desktop (Chrome/Edge):</strong> Click the
+                              lock or tune icon 🔒 on the left side of the address
+                              bar → turn on <strong>Camera</strong> → reload page.
+                            </li>
+                            <li>
+                              <strong>Android Chrome:</strong> Tap ⋮ (menu) →
+                              Settings → Site settings → Camera → find this site
+                              and choose Allow.
+                            </li>
+                            <li>
+                              <strong>iPhone / iPad Safari:</strong> Tap{" "}
+                              <strong>aA</strong> in the address bar → Website
+                              Settings → set Camera to <strong>Allow</strong>.
+                            </li>
+                          </ul>
+                          <button
+                            type="button"
+                            onClick={requestCameraPermission}
+                            className="mt-1 px-3 py-1 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+                          >
+                            Retry Camera Permission
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Option A: Short, Clean & Minimalist Category Pill Strip */}
               <div className="space-y-1.5 pt-0.5">

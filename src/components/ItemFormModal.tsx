@@ -908,7 +908,7 @@ export function ItemFormModal({
               {/* Notes Field: Sleek, compact 1-line row underneath */}
               <div className="pt-1">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-500/10 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-500/25 text-[10.5px] font-black uppercase tracking-wider">
+                  <span className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-purple-500/10 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-500/25 text-[10.5px] font-black uppercase tracking-wider">
                     <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
                     Notes/Remarks (जानकारी)
                   </span>

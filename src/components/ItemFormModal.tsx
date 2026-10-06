@@ -348,8 +348,6 @@ export function ItemFormModal({
     },
   };
 
-  const quickAmounts = [100, 500, 1000, 5000];
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -1079,20 +1077,6 @@ export function ItemFormModal({
                     </button>
                   )}
                 </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-4 gap-2">
-              {quickAmounts.map((amt, idx) => (
-                <button
-                  key={`amt-${amt}-${idx}`}
-                  onClick={() =>
-                    setFormData((prev) => ({ ...prev, retailPrice: amt }))
-                  }
-                  className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)] text-[9px] font-black opacity-30 hover:opacity-100 hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all cursor-pointer"
-                >
-                  ₹{amt}
-                </button>
               ))}
             </div>
           </motion.div>

@@ -148,21 +148,28 @@ export function ItemFormModal({
     "prompt" | "granted" | "denied" | "unknown"
   >("unknown");
   const [showSettingsHelp, setShowSettingsHelp] = useState(false);
+  const [isRetryingCamera, setIsRetryingCamera] = useState(false);
+  const [dismissCameraError, setDismissCameraError] = useState(false);
 
-  // Explicitly request camera permissions on mount
-  const requestCameraPermission = async () => {
+  // Explicitly request camera permissions on mount or user retry
+  const requestCameraPermission = async (autoTriggerCamera = false): Promise<boolean> => {
     if (
       typeof navigator === "undefined" ||
       !navigator.mediaDevices?.getUserMedia
     ) {
       setCameraPermissionStatus("unknown");
-      return;
+      return false;
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       // Stop the test tracks immediately so hardware light turns off
       stream.getTracks().forEach((track) => track.stop());
       setCameraPermissionStatus("granted");
+      setDismissCameraError(false);
+      if (autoTriggerCamera) {
+        triggerDeviceCamera();
+      }
+      return true;
     } catch (err: any) {
       if (
         err.name === "NotAllowedError" ||
@@ -172,6 +179,20 @@ export function ItemFormModal({
       } else {
         setCameraPermissionStatus("unknown");
       }
+      return false;
+    }
+  };
+
+  const handleRetryCameraPermission = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setIsRetryingCamera(true);
+    try {
+      await requestCameraPermission(true);
+    } finally {
+      setIsRetryingCamera(false);
     }
   };
 
@@ -206,8 +227,15 @@ export function ItemFormModal({
   }, []);
 
   // Directly trigger device native camera via input with capture="environment"
-  const triggerDeviceCamera = () => {
+  const triggerDeviceCamera = async () => {
     setShowPhotoSourceModal(false);
+    if (cameraPermissionStatus === "denied") {
+      const granted = await requestCameraPermission(false);
+      if (!granted) {
+        setDismissCameraError(false);
+        return;
+      }
+    }
     if (cameraInputRef.current) {
       cameraInputRef.current.value = "";
       cameraInputRef.current.click();
@@ -451,7 +479,10 @@ export function ItemFormModal({
                 <button
                   type="button"
                   id="item-add-photo-btn"
-                  onClick={() => setShowPhotoSourceModal(true)}
+                  onClick={() => {
+                    setDismissCameraError(false);
+                    setShowPhotoSourceModal(true);
+                  }}
                   disabled={isUploadingImage}
                   style={{ height: "50px", width: "50px" }}
                   className={cn(
@@ -563,61 +594,89 @@ export function ItemFormModal({
                     </div>
                   )}
 
-                  {/* Prominent Visual Error State when Camera Permission is Denied */}
-                  {cameraPermissionStatus === "denied" && (
-                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-200">
+                  {/* Slim, Collapsible Camera Permission Error Notice to save vertical space */}
+                  {cameraPermissionStatus === "denied" && !dismissCameraError && (
+                    <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 overflow-hidden transition-all text-xs">
+                      {/* Slim Single-Line Header Bar */}
+                      <div className="flex items-center justify-between gap-2 px-3 py-1.5 min-h-[34px]">
+                        <div className="flex items-center gap-1.5 min-w-0">
                           <CameraOff
-                            size={15}
+                            size={13}
                             className="text-amber-600 dark:text-amber-400 shrink-0"
                           />
-                          <span>Camera Access Blocked</span>
+                          <span className="font-bold text-[11px] text-amber-800 dark:text-amber-200 truncate">
+                            Camera blocked
+                          </span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowSettingsHelp(!showSettingsHelp)}
-                          className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 underline hover:no-underline cursor-pointer"
-                        >
-                          {showSettingsHelp
-                            ? "Hide Instructions"
-                            : "How to Enable"}
-                        </button>
-                      </div>
-                      <p className="text-[11px] text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                        Camera permission was blocked by your browser. You can
-                        still pick photos from your Gallery, or allow camera
-                        access in browser/device settings.
-                      </p>
-                      {showSettingsHelp && (
-                        <div className="p-2.5 rounded-lg bg-black/5 dark:bg-black/20 text-[10.5px] space-y-1.5 border border-amber-500/20">
-                          <div className="font-bold text-amber-700 dark:text-amber-300">
-                            How to enable camera access:
-                          </div>
-                          <ul className="list-disc pl-4 space-y-1 text-zinc-600 dark:text-zinc-300">
-                            <li>
-                              <strong>Desktop (Chrome/Edge):</strong> Click the
-                              lock or tune icon 🔒 on the left side of the address
-                              bar → turn on <strong>Camera</strong> → reload page.
-                            </li>
-                            <li>
-                              <strong>Android Chrome:</strong> Tap ⋮ (menu) →
-                              Settings → Site settings → Camera → find this site
-                              and choose Allow.
-                            </li>
-                            <li>
-                              <strong>iPhone / iPad Safari:</strong> Tap{" "}
-                              <strong>aA</strong> in the address bar → Website
-                              Settings → set Camera to <strong>Allow</strong>.
-                            </li>
-                          </ul>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Working Retry Button */}
                           <button
                             type="button"
-                            onClick={requestCameraPermission}
-                            className="mt-1 px-3 py-1 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+                            onClick={handleRetryCameraPermission}
+                            disabled={isRetryingCamera}
+                            style={{
+                              marginLeft: "-4px",
+                              marginRight: "55px",
+                              marginTop: "-1px",
+                              paddingRight: "5px",
+                            }}
+                            className="h-6 px-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
+                            title="Retry requesting camera permission"
                           >
-                            Retry Camera Permission
+                            <RefreshCw
+                              size={10}
+                              className={isRetryingCamera ? "animate-spin" : ""}
+                            />
+                            <span>{isRetryingCamera ? "Checking..." : "Retry"}</span>
                           </button>
+
+                          {/* Collapsible Help Toggle */}
+                          <button
+                            type="button"
+                            onClick={() => setShowSettingsHelp(!showSettingsHelp)}
+                            className="h-6 px-1.5 rounded-md text-amber-800 dark:text-amber-200 hover:bg-amber-500/15 text-[10px] font-bold flex items-center gap-0.5 transition-colors cursor-pointer"
+                            title={showSettingsHelp ? "Hide instructions" : "Show how to enable camera"}
+                          >
+                            <span>{showSettingsHelp ? "Less" : "Help"}</span>
+                            <ChevronDown
+                              size={11}
+                              className={cn(
+                                "transition-transform duration-200 shrink-0",
+                                showSettingsHelp && "rotate-180"
+                              )}
+                            />
+                          </button>
+
+                          {/* Dismiss Close Icon */}
+                          <button
+                            type="button"
+                            onClick={() => setDismissCameraError(true)}
+                            className="w-5 h-5 rounded flex items-center justify-center text-amber-700/70 hover:text-amber-800 dark:text-amber-300 hover:bg-amber-500/20 transition-colors cursor-pointer"
+                            title="Dismiss notice"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Collapsible Instructions (Only visible when Help is clicked) */}
+                      {showSettingsHelp && (
+                        <div className="p-2.5 pt-2 border-t border-amber-500/20 bg-black/5 dark:bg-black/20 text-[10.5px] space-y-1.5">
+                          <p className="text-zinc-600 dark:text-zinc-300 leading-snug">
+                            Camera was blocked by your browser. Allow camera in browser settings or pick from Gallery:
+                          </p>
+                          <ul className="list-disc pl-4 space-y-0.5 text-zinc-600 dark:text-zinc-300">
+                            <li>
+                              <strong>Desktop:</strong> Click 🔒 left of address bar → turn on <strong>Camera</strong> → click Retry.
+                            </li>
+                            <li>
+                              <strong>Android:</strong> Menu ⋮ → Settings → Site settings → Camera → Allow.
+                            </li>
+                            <li>
+                              <strong>iPhone/iPad:</strong> Tap <strong>aA</strong> in address bar → Website Settings → Camera → Allow.
+                            </li>
+                          </ul>
                         </div>
                       )}
                     </div>

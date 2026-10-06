@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Plus,
@@ -26,6 +26,12 @@ import { translateItemName } from "../services/translationService";
 import { Item, Category, LanguageType } from "../types";
 import { cn } from "../lib/utils";
 import { compressImageFile } from "../utils/imageUtils";
+import {
+  getCategoryUsageMap,
+  trackCategoryUsage,
+  sortCategoriesByUsage,
+  CategoryUsageEntry,
+} from "../utils/categoryUsageUtils";
 
 export interface ItemFormModalProps {
   onClose: () => void;
@@ -107,34 +113,65 @@ export function ItemFormModal({
   const { recentUnits } = useRecentUnits();
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
-  const [isAddingCategory, setIsAddingCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
   const [isEditCategoryMode, setIsEditCategoryMode] = useState(false);
-  const newCategoryInputRef = useRef<HTMLInputElement>(null);
+  const categorySearchInputRef = useRef<HTMLInputElement>(null);
+
+  const [categoryUsageMap, setCategoryUsageMap] = useState<
+    Record<string, CategoryUsageEntry>
+  >(() => getCategoryUsageMap());
 
   const selectedCategory = categories.find((c) => c.id === formData.categoryId);
-  const filteredCategories = categories.filter((c) =>
-    c.name.toLowerCase().includes(categorySearch.toLowerCase().trim()),
-  );
 
-  const handleInlineCreateCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = newCategoryName.trim();
-    if (!trimmed || isSubmittingCategory) return;
+  // Sorted by last used / most used / clicked count
+  const sortedCategories = useMemo(() => {
+    return sortCategoriesByUsage(categories, categoryUsageMap);
+  }, [categories, categoryUsageMap]);
+
+  const filteredCategories = useMemo(() => {
+    const q = categorySearch.toLowerCase().trim();
+    if (!q) return sortedCategories;
+    return sortedCategories.filter((c) => c.name.toLowerCase().includes(q));
+  }, [sortedCategories, categorySearch]);
+
+  const handleSelectCategory = (catId: string) => {
+    if (catId) {
+      trackCategoryUsage(catId);
+      setCategoryUsageMap(getCategoryUsageMap());
+    }
+    setFormData((prev) => ({ ...prev, categoryId: catId }));
+    setShowCategoryModal(false);
+  };
+
+  const handleAddCategoryFromSearch = async () => {
+    const trimmed = categorySearch.trim();
+    if (!trimmed) {
+      categorySearchInputRef.current?.focus();
+      return;
+    }
+    if (isSubmittingCategory) return;
+
+    // Check if category already exists (case-insensitive)
+    const existing = categories.find(
+      (c) => c.name.toLowerCase().trim() === trimmed.toLowerCase(),
+    );
+
+    if (existing) {
+      handleSelectCategory(existing.id);
+      return;
+    }
 
     try {
       setIsSubmittingCategory(true);
       if (onCreateCategory) {
         const created = await onCreateCategory(trimmed);
         if (created && typeof created === "object" && "id" in created) {
-          setFormData((prev) => ({ ...prev, categoryId: (created as any).id }));
+          handleSelectCategory((created as any).id);
         }
       }
-      setNewCategoryName("");
-      setIsAddingCategory(false);
+      setCategorySearch("");
     } catch (err) {
-      console.error("Failed to create category", err);
+      console.error("Failed to create category from search", err);
     } finally {
       setIsSubmittingCategory(false);
     }
@@ -464,7 +501,7 @@ export function ItemFormModal({
                 type="button"
                 onClick={() => {
                   setCategorySearch("");
-                  setIsAddingCategory(false);
+                  setCategoryUsageMap(getCategoryUsageMap());
                   setIsEditCategoryMode(false);
                   setShowCategoryModal(true);
                 }}
@@ -1235,57 +1272,39 @@ export function ItemFormModal({
                 className="w-full max-w-[340px] rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between gap-2 p-3 border-b border-[var(--border)] shrink-0">
+                <div className="flex items-center justify-between gap-2 p-3.5 pb-2.5 border-b border-[var(--border)] shrink-0">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="w-2 h-2 rounded-full bg-[var(--primary)] shrink-0" />
                     <h3 className="text-xs sm:text-sm font-black text-[var(--foreground)] uppercase tracking-wider shrink-0">
                       Categories
                     </h3>
-
-                    {/* "+ Add Category" button placed next to "Categories" text */}
-                    {!isAddingCategory && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsAddingCategory(true);
-                          setTimeout(() => newCategoryInputRef.current?.focus(), 50);
-                        }}
-                        className="h-6.5 px-2 rounded-lg bg-[var(--primary)] hover:opacity-90 text-white text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
-                        title="Add Category"
-                      >
-                        <Plus size={11} strokeWidth={2.5} />
-                        <span>Add Category</span>
-                      </button>
-                    )}
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     {/* "Manage" button on the right side */}
-                    {!isAddingCategory && (
-                      <button
-                        type="button"
-                        onClick={() => setIsEditCategoryMode(!isEditCategoryMode)}
-                        className={cn(
-                          "h-6.5 px-2 rounded-lg border text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0",
-                          isEditCategoryMode
-                            ? "border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                            : "border-[var(--border)] bg-[var(--card)] hover:bg-black/5 dark:hover:bg-white/5 text-[var(--foreground)]",
-                        )}
-                        title="Manage categories (delete)"
-                      >
-                        {isEditCategoryMode ? (
-                          <>
-                            <Check size={11} strokeWidth={2.5} />
-                            <span>Done</span>
-                          </>
-                        ) : (
-                          <>
-                            <Settings2 size={11} />
-                            <span>Manage</span>
-                          </>
-                        )}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsEditCategoryMode(!isEditCategoryMode)}
+                      className={cn(
+                        "h-6.5 px-2.5 rounded-lg border text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0",
+                        isEditCategoryMode
+                          ? "border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                          : "border-[var(--border)] bg-[var(--card)] hover:bg-black/5 dark:hover:bg-white/5 text-[var(--foreground)]",
+                      )}
+                      title="Manage categories (delete)"
+                    >
+                      {isEditCategoryMode ? (
+                        <>
+                          <Check size={11} strokeWidth={2.5} />
+                          <span>Done</span>
+                        </>
+                      ) : (
+                        <>
+                          <Settings2 size={11} />
+                          <span>Manage</span>
+                        </>
+                      )}
+                    </button>
 
                     <button
                       type="button"
@@ -1298,95 +1317,84 @@ export function ItemFormModal({
                   </div>
                 </div>
 
-                {/* Search Bar & Inline Add Category Area */}
-                <div className="p-3 border-b border-[var(--border)] space-y-2 shrink-0 bg-[var(--background)]/40">
-                  {/* Inline Add Category Form */}
-                  {isAddingCategory && (
-                    <form
-                      onSubmit={handleInlineCreateCategory}
-                      className="flex items-center gap-1.5"
-                    >
-                      <input
-                        ref={newCategoryInputRef}
-                        type="text"
-                        placeholder="New category name..."
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        className="h-8 flex-1 min-w-0 px-2.5 rounded-lg bg-[var(--card)] border border-[var(--primary)] text-xs font-semibold focus:outline-none shadow-xs"
-                        autoFocus
-                      />
-                      <button
-                        type="submit"
-                        disabled={!newCategoryName.trim() || isSubmittingCategory}
-                        className="h-8 px-2.5 rounded-lg bg-[var(--primary)] hover:opacity-90 text-white disabled:opacity-40 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 shrink-0"
-                        title="Save category"
-                      >
-                        {isSubmittingCategory ? (
-                          <Loader2 size={12} className="animate-spin" />
-                        ) : (
-                          <>
-                            <Check size={12} strokeWidth={2.5} />
-                            <span>Save</span>
-                          </>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsAddingCategory(false);
-                          setNewCategoryName("");
-                        }}
-                        className="h-8 px-2 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs transition-colors cursor-pointer flex items-center justify-center shrink-0 border border-[var(--border)]"
-                        title="Cancel"
-                      >
-                        <X size={12} />
-                      </button>
-                    </form>
-                  )}
-
-                  {/* Search Input */}
-                  <div className="relative">
+                {/* Search Bar with +Add Button inside on the right */}
+                <div className="p-3 border-b border-[var(--border)] shrink-0 bg-[var(--background)]/40">
+                  <div className="relative flex items-center">
                     <Search
-                      size={13}
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                      size={14}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
                     />
                     <input
+                      ref={categorySearchInputRef}
                       type="text"
-                      placeholder="Search categories..."
+                      placeholder="Search or add category..."
                       value={categorySearch}
                       onChange={(e) => setCategorySearch(e.target.value)}
-                      className="w-full h-8 pl-8 pr-7 rounded-lg border border-[var(--border)] bg-[var(--card)] font-medium text-xs text-[var(--foreground)] placeholder:text-zinc-400 focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddCategoryFromSearch();
+                        }
+                      }}
+                      className="w-full h-9 pl-9 pr-24 rounded-xl border border-[var(--border)] bg-[var(--card)] font-medium text-xs text-[var(--foreground)] placeholder:text-zinc-400 focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
+                      autoFocus
                     />
-                    {categorySearch && (
+
+                    {/* Right side controls: Clear (if typed) + "+ Add" button */}
+                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                      {categorySearch && (
+                        <button
+                          type="button"
+                          onClick={() => setCategorySearch("")}
+                          className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                          title="Clear search"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+
                       <button
                         type="button"
-                        onClick={() => setCategorySearch("")}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                        onClick={handleAddCategoryFromSearch}
+                        disabled={isSubmittingCategory}
+                        className={cn(
+                          "h-6.5 px-2.5 rounded-lg font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0",
+                          categorySearch.trim()
+                            ? "bg-[var(--primary)] hover:opacity-90 text-white"
+                            : "bg-[var(--primary)]/10 hover:bg-[var(--primary)] text-[var(--primary)] hover:text-white",
+                        )}
+                        title={
+                          categorySearch.trim()
+                            ? `Add "${categorySearch.trim()}"`
+                            : "Type category name and click Add"
+                        }
                       >
-                        <X size={12} />
+                        {isSubmittingCategory ? (
+                          <Loader2 size={11} className="animate-spin" />
+                        ) : (
+                          <Plus size={12} strokeWidth={2.5} />
+                        )}
+                        <span>Add</span>
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Category List */}
-                <div className="p-2 overflow-y-auto max-h-[300px] space-y-1 no-scrollbar">
+                {/* Category Pill / Chip Cloud */}
+                <div className="p-3 overflow-y-auto max-h-[300px] flex flex-wrap gap-1.5 no-scrollbar content-start">
                   {/* None / Clear Option */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({ ...prev, categoryId: "" }));
-                      setShowCategoryModal(false);
-                    }}
+                    onClick={() => handleSelectCategory("")}
                     className={cn(
-                      "w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer text-left",
+                      "h-8 px-3 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95",
                       !formData.categoryId
-                        ? "bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/30 font-black"
-                        : "text-zinc-500 hover:bg-black/5 dark:hover:bg-white/5",
+                        ? "bg-[var(--primary)] text-white font-black shadow-xs"
+                        : "bg-[var(--background)] hover:bg-[var(--card)] text-zinc-500 border border-[var(--border)]",
                     )}
                   >
                     <span>None</span>
-                    {!formData.categoryId && <Check size={14} className="text-[var(--primary)]" />}
+                    {!formData.categoryId && <Check size={12} strokeWidth={2.5} className="shrink-0" />}
                   </button>
 
                   {filteredCategories.map((cat) => {
@@ -1395,25 +1403,28 @@ export function ItemFormModal({
                       <div
                         key={cat.id}
                         className={cn(
-                          "group flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all",
+                          "relative inline-flex items-center rounded-full transition-all group",
                           isSelected
-                            ? "bg-[var(--primary)] text-white font-black shadow-xs"
-                            : "text-[var(--foreground)] hover:bg-black/5 dark:hover:bg-white/5 font-semibold"
+                            ? "bg-[var(--primary)] text-white shadow-xs"
+                            : "bg-[var(--background)] hover:bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]",
                         )}
                       >
                         <button
                           type="button"
                           onClick={() => {
                             if (!isEditCategoryMode) {
-                              setFormData((prev) => ({ ...prev, categoryId: cat.id }));
-                              setShowCategoryModal(false);
+                              handleSelectCategory(cat.id);
                             }
                           }}
-                          className="flex-1 text-left flex items-center justify-between min-w-0 cursor-pointer"
+                          className={cn(
+                            "h-8 flex items-center gap-1.5 text-xs font-semibold cursor-pointer active:scale-95 transition-transform",
+                            isEditCategoryMode ? "pl-3 pr-1.5" : "px-3",
+                            isSelected && "font-black",
+                          )}
                         >
-                          <span className="truncate">{cat.name}</span>
+                          <span className="truncate max-w-[140px]">{cat.name}</span>
                           {isSelected && !isEditCategoryMode && (
-                            <Check size={14} className="text-white shrink-0 ml-2" />
+                            <Check size={12} strokeWidth={2.5} className="text-white shrink-0" />
                           )}
                         </button>
 
@@ -1424,10 +1435,10 @@ export function ItemFormModal({
                               e.stopPropagation();
                               handleInlineDeleteCategory(cat.id);
                             }}
-                            className="w-6 h-6 rounded-lg bg-rose-500/20 hover:bg-rose-500 text-rose-500 hover:text-white flex items-center justify-center transition-colors ml-2 cursor-pointer shrink-0"
+                            className="w-5 h-5 mr-1.5 rounded-full bg-rose-500/20 hover:bg-rose-500 text-rose-500 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
                             title={`Delete ${cat.name}`}
                           >
-                            <Trash2 size={11} strokeWidth={2.5} />
+                            <Trash2 size={10} strokeWidth={2.5} />
                           </button>
                         )}
                       </div>
@@ -1435,18 +1446,21 @@ export function ItemFormModal({
                   })}
 
                   {filteredCategories.length === 0 && (
-                    <div className="py-6 text-center text-xs text-zinc-400 space-y-2">
-                      <p>No categories found{categorySearch ? ` for "${categorySearch}"` : ""}</p>
-                      {categorySearch.trim() && !isAddingCategory && (
+                    <div className="w-full py-6 text-center text-xs text-zinc-400 space-y-2.5">
+                      <p>No category matching "{categorySearch.trim()}"</p>
+                      {categorySearch.trim() && (
                         <button
                           type="button"
-                          onClick={() => {
-                            setNewCategoryName(categorySearch.trim());
-                            setIsAddingCategory(true);
-                          }}
-                          className="text-xs font-bold text-[var(--primary)] underline hover:no-underline cursor-pointer"
+                          onClick={handleAddCategoryFromSearch}
+                          disabled={isSubmittingCategory}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[var(--primary)] text-white text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-xs active:scale-95"
                         >
-                          + Create "{categorySearch.trim()}"
+                          {isSubmittingCategory ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Plus size={12} strokeWidth={2.5} />
+                          )}
+                          <span>Add "{categorySearch.trim()}"</span>
                         </button>
                       )}
                     </div>

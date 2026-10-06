@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Loader2,
   Settings2,
+  Search,
 } from "lucide-react";
 import { Button } from "./ui/Button";
 import { UnitSelectorModal } from "./ui/UnitSelectorModal";
@@ -104,11 +105,18 @@ export function ItemFormModal({
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const { recentUnits } = useRecentUnits();
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [categorySearch, setCategorySearch] = useState("");
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
   const [isEditCategoryMode, setIsEditCategoryMode] = useState(false);
   const newCategoryInputRef = useRef<HTMLInputElement>(null);
+
+  const selectedCategory = categories.find((c) => c.id === formData.categoryId);
+  const filteredCategories = categories.filter((c) =>
+    c.name.toLowerCase().includes(categorySearch.toLowerCase().trim()),
+  );
 
   const handleInlineCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -437,6 +445,40 @@ export function ItemFormModal({
             ref={section1Ref}
             className="space-y-4 pt-1"
           >
+            {/* Minimalist Category Row Upper of Product Name (Close together) */}
+            <div className="flex items-center gap-2 px-0.5">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[var(--foreground)] opacity-80 shrink-0">
+                category:
+              </span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setCategorySearch("");
+                  setIsAddingCategory(false);
+                  setIsEditCategoryMode(false);
+                  setShowCategoryModal(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[var(--background)] hover:bg-[var(--primary)]/10 text-[var(--foreground)] hover:text-[var(--primary)] border border-[var(--border)] hover:border-[var(--primary)]/30 font-black text-xs transition-all cursor-pointer shadow-2xs active:scale-95 group"
+                title="Click to select or manage category"
+              >
+                <span
+                  className={cn(
+                    "truncate max-w-[180px] sm:max-w-[260px]",
+                    selectedCategory
+                      ? "text-[var(--primary)] font-black"
+                      : "text-zinc-500 font-bold",
+                  )}
+                >
+                  {selectedCategory ? selectedCategory.name : "Select Category"}
+                </span>
+                <ChevronRight
+                  size={13}
+                  className="text-zinc-400 group-hover:text-[var(--primary)] group-hover:translate-x-0.5 transition-all shrink-0"
+                />
+              </button>
+            </div>
+
             <label className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--primary)] px-0.5">
               <span className="w-5 h-5 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-[10px] font-black shadow-xs shrink-0">
                 01
@@ -683,147 +725,6 @@ export function ItemFormModal({
                   )}
                 </div>
               )}
-
-              {/* Option A: Short, Clean & Minimalist Category Pill Strip */}
-              <div className="space-y-1.5 pt-0.5">
-                <div className="flex items-center justify-between px-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 border border-indigo-500/25 text-[10.5px] font-black uppercase tracking-wider">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
-                      Category
-                    </span>
-                    {/* "+ Add" button placed directly next to the "Category" text */}
-                    {!isAddingCategory ? (
-                      <button
-                        type="button"
-                        onClick={() => setIsAddingCategory(true)}
-                        className="h-5 px-2 rounded-md bg-[var(--primary)]/10 hover:bg-[var(--primary)] text-[var(--primary)] hover:text-white text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs active:scale-95"
-                        title="Add new category"
-                      >
-                        <Plus size={11} strokeWidth={2.5} />
-                        <span>Add</span>
-                      </button>
-                    ) : (
-                      <form
-                        onSubmit={handleInlineCreateCategory}
-                        className="flex items-center gap-1"
-                      >
-                        <input
-                          ref={newCategoryInputRef}
-                          type="text"
-                          placeholder="New category..."
-                          value={newCategoryName}
-                          onChange={(e) => setNewCategoryName(e.target.value)}
-                          className="h-6 px-2 rounded-md bg-[var(--background)] border border-[var(--primary)] text-xs font-semibold focus:outline-none w-28 sm:w-36 shadow-xs"
-                          autoFocus
-                        />
-                        <button
-                          type="submit"
-                          disabled={
-                            !newCategoryName.trim() || isSubmittingCategory
-                          }
-                          className="h-6 px-1.5 rounded-md bg-[var(--primary)] hover:opacity-90 text-white disabled:opacity-40 text-xs font-bold transition-all cursor-pointer flex items-center justify-center shrink-0"
-                          title="Save category"
-                        >
-                          {isSubmittingCategory ? (
-                            <Loader2 size={11} className="animate-spin" />
-                          ) : (
-                            <Check size={11} strokeWidth={2.5} />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsAddingCategory(false);
-                            setNewCategoryName("");
-                          }}
-                          className="h-6 px-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs transition-colors cursor-pointer flex items-center justify-center shrink-0"
-                          title="Cancel"
-                        >
-                          <X size={11} />
-                        </button>
-                      </form>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsEditCategoryMode(!isEditCategoryMode)}
-                    style={{
-                      color: "#8e5f08",
-                      fontFamily: "system-ui",
-                      fontWeight: "bold",
-                      fontSize: "11px",
-                      borderRadius: "6.25px",
-                      borderWidth: "0px",
-                      borderColor: "#583a03",
-                    }}
-                    className={cn(
-                      "flex items-center gap-1 px-2 py-0.5 rounded-md transition-colors cursor-pointer",
-                      isEditCategoryMode
-                        ? "bg-[var(--primary)]/10"
-                        : "hover:opacity-80",
-                    )}
-                  >
-                    {isEditCategoryMode ? (
-                      <>
-                        <Check size={11} strokeWidth={2.5} />
-                        <span>Done</span>
-                      </>
-                    ) : (
-                      <>
-                        <Settings2 size={11} />
-                        <span>Manage</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                  {/* Category Chips */}
-                  {categories.map((cat) => {
-                    const isSelected = formData.categoryId === cat.id;
-                    return (
-                      <div
-                        key={cat.id}
-                        className="relative flex items-center shrink-0"
-                      >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              categoryId: isSelected ? "" : cat.id,
-                            }))
-                          }
-                          className={cn(
-                            "h-7.5 px-3 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-2xs",
-                            isSelected
-                              ? "bg-[var(--primary)] text-white shadow-xs"
-                              : "bg-[var(--background)] hover:bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]",
-                          )}
-                        >
-                          <span>{cat.name}</span>
-                          {isEditCategoryMode && (
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleInlineDeleteCategory(cat.id);
-                              }}
-                              className="w-3.5 h-3.5 rounded-full bg-rose-500/20 hover:bg-rose-500 text-rose-500 hover:text-white flex items-center justify-center transition-colors ml-1 cursor-pointer"
-                              title={`Delete ${cat.name}`}
-                            >
-                              <X size={9} strokeWidth={2.5} />
-                            </span>
-                          )}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
           </motion.div>
 
@@ -1305,6 +1206,238 @@ export function ItemFormModal({
                 >
                   Cancel
                 </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Small Category Selection Popup Modal */}
+        <AnimatePresence>
+          {showCategoryModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
+              onClick={() => setShowCategoryModal(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ type: "spring", duration: 0.25, bounce: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-[340px] rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between p-3.5 pb-2.5 border-b border-[var(--border)] shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[var(--primary)] shrink-0" />
+                    <h3 className="text-sm font-black text-[var(--foreground)] uppercase tracking-wider">
+                      Categories (श्रेणी)
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryModal(false)}
+                    className="w-7 h-7 rounded-lg bg-[var(--background)] hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+
+                {/* Search Bar & Action Buttons */}
+                <div className="p-3 border-b border-[var(--border)] space-y-2.5 shrink-0 bg-[var(--background)]/40">
+                  {/* Search Input */}
+                  <div className="relative">
+                    <Search
+                      size={13}
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Search categories..."
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                      className="w-full h-8 pl-8 pr-7 rounded-lg border border-[var(--border)] bg-[var(--card)] font-medium text-xs text-[var(--foreground)] placeholder:text-zinc-400 focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
+                      autoFocus
+                    />
+                    {categorySearch && (
+                      <button
+                        type="button"
+                        onClick={() => setCategorySearch("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Actions Row: + Add Button & Manage Button */}
+                  <div className="flex items-center justify-between gap-2">
+                    {!isAddingCategory ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingCategory(true);
+                          setTimeout(() => newCategoryInputRef.current?.focus(), 50);
+                        }}
+                        className="h-7 px-2.5 rounded-lg bg-[var(--primary)] hover:opacity-90 text-white text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                      >
+                        <Plus size={12} strokeWidth={2.5} />
+                        <span>Add Category</span>
+                      </button>
+                    ) : (
+                      <form
+                        onSubmit={handleInlineCreateCategory}
+                        className="flex items-center gap-1.5 flex-1 min-w-0"
+                      >
+                        <input
+                          ref={newCategoryInputRef}
+                          type="text"
+                          placeholder="Category name..."
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          className="h-7 flex-1 min-w-0 px-2 rounded-lg bg-[var(--card)] border border-[var(--primary)] text-xs font-semibold focus:outline-none shadow-xs"
+                          autoFocus
+                        />
+                        <button
+                          type="submit"
+                          disabled={!newCategoryName.trim() || isSubmittingCategory}
+                          className="h-7 px-2 rounded-lg bg-[var(--primary)] hover:opacity-90 text-white disabled:opacity-40 text-xs font-bold transition-all cursor-pointer flex items-center justify-center shrink-0"
+                          title="Save category"
+                        >
+                          {isSubmittingCategory ? (
+                            <Loader2 size={11} className="animate-spin" />
+                          ) : (
+                            <Check size={12} strokeWidth={2.5} />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsAddingCategory(false);
+                            setNewCategoryName("");
+                          }}
+                          className="h-7 px-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                          title="Cancel"
+                        >
+                          <X size={12} />
+                        </button>
+                      </form>
+                    )}
+
+                    {!isAddingCategory && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditCategoryMode(!isEditCategoryMode)}
+                        className={cn(
+                          "h-7 px-2.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0 ml-auto",
+                          isEditCategoryMode
+                            ? "border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                            : "border-[var(--border)] bg-[var(--card)] hover:bg-black/5 dark:hover:bg-white/5 text-[var(--foreground)]"
+                        )}
+                        title="Manage categories (delete)"
+                      >
+                        {isEditCategoryMode ? (
+                          <>
+                            <Check size={11} strokeWidth={2.5} />
+                            <span>Done</span>
+                          </>
+                        ) : (
+                          <>
+                            <Settings2 size={11} />
+                            <span>Manage</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Category List */}
+                <div className="p-2 overflow-y-auto max-h-[300px] space-y-1 no-scrollbar">
+                  {/* None / Clear Option */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev) => ({ ...prev, categoryId: "" }));
+                      setShowCategoryModal(false);
+                    }}
+                    className={cn(
+                      "w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer text-left",
+                      !formData.categoryId
+                        ? "bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/30 font-black"
+                        : "text-zinc-500 hover:bg-black/5 dark:hover:bg-white/5"
+                    )}
+                  >
+                    <span>None (बिना श्रेणी)</span>
+                    {!formData.categoryId && <Check size={14} className="text-[var(--primary)]" />}
+                  </button>
+
+                  {filteredCategories.map((cat) => {
+                    const isSelected = formData.categoryId === cat.id;
+                    return (
+                      <div
+                        key={cat.id}
+                        className={cn(
+                          "group flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all",
+                          isSelected
+                            ? "bg-[var(--primary)] text-white font-black shadow-xs"
+                            : "text-[var(--foreground)] hover:bg-black/5 dark:hover:bg-white/5 font-semibold"
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isEditCategoryMode) {
+                              setFormData((prev) => ({ ...prev, categoryId: cat.id }));
+                              setShowCategoryModal(false);
+                            }
+                          }}
+                          className="flex-1 text-left flex items-center justify-between min-w-0 cursor-pointer"
+                        >
+                          <span className="truncate">{cat.name}</span>
+                          {isSelected && !isEditCategoryMode && (
+                            <Check size={14} className="text-white shrink-0 ml-2" />
+                          )}
+                        </button>
+
+                        {isEditCategoryMode && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleInlineDeleteCategory(cat.id);
+                            }}
+                            className="w-6 h-6 rounded-lg bg-rose-500/20 hover:bg-rose-500 text-rose-500 hover:text-white flex items-center justify-center transition-colors ml-2 cursor-pointer shrink-0"
+                            title={`Delete ${cat.name}`}
+                          >
+                            <Trash2 size={11} strokeWidth={2.5} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {filteredCategories.length === 0 && (
+                    <div className="py-6 text-center text-xs text-zinc-400 space-y-2">
+                      <p>No categories found{categorySearch ? ` for "${categorySearch}"` : ""}</p>
+                      {categorySearch.trim() && !isAddingCategory && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewCategoryName(categorySearch.trim());
+                            setIsAddingCategory(true);
+                          }}
+                          className="text-xs font-bold text-[var(--primary)] underline hover:no-underline cursor-pointer"
+                        >
+                          + Create "{categorySearch.trim()}"
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </motion.div>
             </motion.div>
           )}

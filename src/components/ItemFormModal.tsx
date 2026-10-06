@@ -445,12 +445,21 @@ export function ItemFormModal({
             ref={section1Ref}
             className="space-y-4 pt-1"
           >
-            {/* Minimalist Category Row Upper of Product Name (Close together) */}
-            <div className="flex items-center gap-2 px-0.5">
-              <span className="text-[11px] font-black uppercase tracking-wider text-[var(--foreground)] opacity-80 shrink-0">
-                category:
-              </span>
+            {/* Header row: 01 Name with distinct bordered category box next to it */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap px-0.5">
+              <label
+                htmlFor="item-name-input"
+                className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--primary)] shrink-0 cursor-pointer"
+              >
+                <span className="w-5 h-5 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-[10px] font-black shadow-xs shrink-0">
+                  01
+                </span>{" "}
+                <span>Name(सामान का नाम)</span>
+              </label>
 
+              <span className="h-3.5 w-px bg-[var(--border)] shrink-0 hidden sm:inline-block" />
+
+              {/* Category in a dedicated border box so it stands out distinctly as a separate UI element */}
               <button
                 type="button"
                 onClick={() => {
@@ -459,32 +468,28 @@ export function ItemFormModal({
                   setIsEditCategoryMode(false);
                   setShowCategoryModal(true);
                 }}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[var(--background)] hover:bg-[var(--primary)]/10 text-[var(--foreground)] hover:text-[var(--primary)] border border-[var(--border)] hover:border-[var(--primary)]/30 font-black text-xs transition-all cursor-pointer shadow-2xs active:scale-95 group"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 hover:bg-[var(--card)] transition-all cursor-pointer shadow-2xs active:scale-95 group shrink-0"
                 title="Click to select or manage category"
               >
+                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 shrink-0">
+                  category:
+                </span>
                 <span
                   className={cn(
-                    "truncate max-w-[180px] sm:max-w-[260px]",
+                    "truncate max-w-[130px] sm:max-w-[180px] font-black text-xs",
                     selectedCategory
-                      ? "text-[var(--primary)] font-black"
+                      ? "text-[var(--primary)]"
                       : "text-zinc-500 font-bold",
                   )}
                 >
                   {selectedCategory ? selectedCategory.name : "Select Category"}
                 </span>
                 <ChevronRight
-                  size={13}
+                  size={12}
                   className="text-zinc-400 group-hover:text-[var(--primary)] group-hover:translate-x-0.5 transition-all shrink-0"
                 />
               </button>
             </div>
-
-            <label className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--primary)] px-0.5">
-              <span className="w-5 h-5 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-[10px] font-black shadow-xs shrink-0">
-                01
-              </span>{" "}
-              <span>Product Name (सामान का नाम)</span>
-            </label>
             <div className="space-y-3">
               <div className="flex items-center gap-2 sm:gap-2.5">
                 {/* Product Name Input */}
@@ -1230,112 +1235,41 @@ export function ItemFormModal({
                 className="w-full max-w-[340px] rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between p-3.5 pb-2.5 border-b border-[var(--border)] shrink-0">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-2 p-3 border-b border-[var(--border)] shrink-0">
+                  <div className="flex items-center gap-2 min-w-0">
                     <span className="w-2 h-2 rounded-full bg-[var(--primary)] shrink-0" />
-                    <h3 className="text-sm font-black text-[var(--foreground)] uppercase tracking-wider">
-                      Categories (श्रेणी)
+                    <h3 className="text-xs sm:text-sm font-black text-[var(--foreground)] uppercase tracking-wider shrink-0">
+                      Categories
                     </h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowCategoryModal(false)}
-                    className="w-7 h-7 rounded-lg bg-[var(--background)] hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 flex items-center justify-center transition-colors cursor-pointer"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
 
-                {/* Search Bar & Action Buttons */}
-                <div className="p-3 border-b border-[var(--border)] space-y-2.5 shrink-0 bg-[var(--background)]/40">
-                  {/* Search Input */}
-                  <div className="relative">
-                    <Search
-                      size={13}
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Search categories..."
-                      value={categorySearch}
-                      onChange={(e) => setCategorySearch(e.target.value)}
-                      className="w-full h-8 pl-8 pr-7 rounded-lg border border-[var(--border)] bg-[var(--card)] font-medium text-xs text-[var(--foreground)] placeholder:text-zinc-400 focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
-                      autoFocus
-                    />
-                    {categorySearch && (
-                      <button
-                        type="button"
-                        onClick={() => setCategorySearch("")}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
-                      >
-                        <X size={12} />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Actions Row: + Add Button & Manage Button */}
-                  <div className="flex items-center justify-between gap-2">
-                    {!isAddingCategory ? (
+                    {/* "+ Add Category" button placed next to "Categories" text */}
+                    {!isAddingCategory && (
                       <button
                         type="button"
                         onClick={() => {
                           setIsAddingCategory(true);
                           setTimeout(() => newCategoryInputRef.current?.focus(), 50);
                         }}
-                        className="h-7 px-2.5 rounded-lg bg-[var(--primary)] hover:opacity-90 text-white text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                        className="h-6.5 px-2 rounded-lg bg-[var(--primary)] hover:opacity-90 text-white text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
+                        title="Add Category"
                       >
-                        <Plus size={12} strokeWidth={2.5} />
+                        <Plus size={11} strokeWidth={2.5} />
                         <span>Add Category</span>
                       </button>
-                    ) : (
-                      <form
-                        onSubmit={handleInlineCreateCategory}
-                        className="flex items-center gap-1.5 flex-1 min-w-0"
-                      >
-                        <input
-                          ref={newCategoryInputRef}
-                          type="text"
-                          placeholder="Category name..."
-                          value={newCategoryName}
-                          onChange={(e) => setNewCategoryName(e.target.value)}
-                          className="h-7 flex-1 min-w-0 px-2 rounded-lg bg-[var(--card)] border border-[var(--primary)] text-xs font-semibold focus:outline-none shadow-xs"
-                          autoFocus
-                        />
-                        <button
-                          type="submit"
-                          disabled={!newCategoryName.trim() || isSubmittingCategory}
-                          className="h-7 px-2 rounded-lg bg-[var(--primary)] hover:opacity-90 text-white disabled:opacity-40 text-xs font-bold transition-all cursor-pointer flex items-center justify-center shrink-0"
-                          title="Save category"
-                        >
-                          {isSubmittingCategory ? (
-                            <Loader2 size={11} className="animate-spin" />
-                          ) : (
-                            <Check size={12} strokeWidth={2.5} />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsAddingCategory(false);
-                            setNewCategoryName("");
-                          }}
-                          className="h-7 px-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs transition-colors cursor-pointer flex items-center justify-center shrink-0"
-                          title="Cancel"
-                        >
-                          <X size={12} />
-                        </button>
-                      </form>
                     )}
+                  </div>
 
+                  <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                    {/* "Manage" button on the right side */}
                     {!isAddingCategory && (
                       <button
                         type="button"
                         onClick={() => setIsEditCategoryMode(!isEditCategoryMode)}
                         className={cn(
-                          "h-7 px-2.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0 ml-auto",
+                          "h-6.5 px-2 rounded-lg border text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0",
                           isEditCategoryMode
                             ? "border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                            : "border-[var(--border)] bg-[var(--card)] hover:bg-black/5 dark:hover:bg-white/5 text-[var(--foreground)]"
+                            : "border-[var(--border)] bg-[var(--card)] hover:bg-black/5 dark:hover:bg-white/5 text-[var(--foreground)]",
                         )}
                         title="Manage categories (delete)"
                       >
@@ -1350,6 +1284,86 @@ export function ItemFormModal({
                             <span>Manage</span>
                           </>
                         )}
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryModal(false)}
+                      className="w-6.5 h-6.5 rounded-lg bg-[var(--background)] hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                      title="Close"
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search Bar & Inline Add Category Area */}
+                <div className="p-3 border-b border-[var(--border)] space-y-2 shrink-0 bg-[var(--background)]/40">
+                  {/* Inline Add Category Form */}
+                  {isAddingCategory && (
+                    <form
+                      onSubmit={handleInlineCreateCategory}
+                      className="flex items-center gap-1.5"
+                    >
+                      <input
+                        ref={newCategoryInputRef}
+                        type="text"
+                        placeholder="New category name..."
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        className="h-8 flex-1 min-w-0 px-2.5 rounded-lg bg-[var(--card)] border border-[var(--primary)] text-xs font-semibold focus:outline-none shadow-xs"
+                        autoFocus
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newCategoryName.trim() || isSubmittingCategory}
+                        className="h-8 px-2.5 rounded-lg bg-[var(--primary)] hover:opacity-90 text-white disabled:opacity-40 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 shrink-0"
+                        title="Save category"
+                      >
+                        {isSubmittingCategory ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <>
+                            <Check size={12} strokeWidth={2.5} />
+                            <span>Save</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingCategory(false);
+                          setNewCategoryName("");
+                        }}
+                        className="h-8 px-2 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs transition-colors cursor-pointer flex items-center justify-center shrink-0 border border-[var(--border)]"
+                        title="Cancel"
+                      >
+                        <X size={12} />
+                      </button>
+                    </form>
+                  )}
+
+                  {/* Search Input */}
+                  <div className="relative">
+                    <Search
+                      size={13}
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Search categories..."
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                      className="w-full h-8 pl-8 pr-7 rounded-lg border border-[var(--border)] bg-[var(--card)] font-medium text-xs text-[var(--foreground)] placeholder:text-zinc-400 focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
+                    />
+                    {categorySearch && (
+                      <button
+                        type="button"
+                        onClick={() => setCategorySearch("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                      >
+                        <X size={12} />
                       </button>
                     )}
                   </div>
@@ -1368,10 +1382,10 @@ export function ItemFormModal({
                       "w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer text-left",
                       !formData.categoryId
                         ? "bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/30 font-black"
-                        : "text-zinc-500 hover:bg-black/5 dark:hover:bg-white/5"
+                        : "text-zinc-500 hover:bg-black/5 dark:hover:bg-white/5",
                     )}
                   >
-                    <span>None (बिना श्रेणी)</span>
+                    <span>None</span>
                     {!formData.categoryId && <Check size={14} className="text-[var(--primary)]" />}
                   </button>
 

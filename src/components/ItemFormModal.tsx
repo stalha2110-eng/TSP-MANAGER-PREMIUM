@@ -353,46 +353,53 @@ export function ItemFormModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 md:items-center md:p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex flex-col bg-[var(--card)]"
     >
       <motion.div
         role="dialog"
         aria-modal="true"
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        className="h-[95vh] w-full max-w-2xl overflow-hidden rounded-t-[2rem] bg-[var(--card)] flex flex-col md:h-[90vh] md:rounded-[2.5rem] shadow-2xl border border-white/5"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 15 }}
+        transition={{ duration: 0.2 }}
+        className="h-full w-full overflow-hidden bg-[var(--card)] flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[var(--border)] shrink-0 bg-[var(--card)]/80 backdrop-blur-md z-20">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] shadow-inner">
-              {initialData ? <Edit2 size={20} /> : <Plus size={20} />}
+        <div 
+          className="w-full border-b border-[var(--border)] shrink-0 bg-[var(--card)]/90 backdrop-blur-md z-20"
+          style={{ paddingTop: 'max(0px, env(safe-area-inset-top))' }}
+        >
+          <div className="flex items-center justify-between px-4 py-3.5 sm:px-6 sm:py-4 max-w-3xl mx-auto">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              <div className="h-10 w-10 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] shadow-inner shrink-0">
+                {initialData ? <Edit2 size={20} /> : <Plus size={20} />}
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg font-black tracking-tighter uppercase text-[var(--foreground)] truncate leading-tight">
+                  {initialData ? t.updateRecord : t.newEntry}
+                </h2>
+                <p className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)] truncate leading-tight">
+                  Fill Product Details
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-black tracking-tighter uppercase text-[var(--foreground)]">
-                {initialData ? t.updateRecord : t.newEntry}
-              </h2>
-              <p className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)]">
-                Fill Product Details
-              </p>
-            </div>
+            <Button
+              variant="ghost"
+              onClick={onClose}
+              size="icon"
+              className="rounded-xl bg-[var(--background)] hover:bg-[var(--primary)]/10 transition-colors cursor-pointer shrink-0"
+            >
+              <X size={20} />
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            size="icon"
-            className="rounded-xl bg-[var(--background)] hover:bg-[var(--primary)]/10 transition-colors cursor-pointer"
-          >
-            <X size={20} />
-          </Button>
         </div>
 
         {/* Content */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 no-scrollbar pb-24 scroll-smooth"
+          className="flex-1 overflow-y-auto no-scrollbar scroll-smooth"
         >
+          <div className="p-4 sm:p-6 space-y-6 max-w-3xl mx-auto pb-32">
           {/* Section 1: Identity */}
           <motion.div
             variants={sectionVariants}
@@ -1082,11 +1089,15 @@ export function ItemFormModal({
               ))}
             </div>
           </motion.div>
+          </div>
         </div>
 
         {/* Action Bar */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[var(--card)] via-[var(--card)]/95 to-transparent z-10 pointer-events-none">
-          <div className="flex gap-4 pointer-events-auto">
+        <div 
+          className="fixed bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-[var(--card)] via-[var(--card)]/95 to-transparent z-20 pointer-events-none"
+          style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
+        >
+          <div className="flex gap-4 pointer-events-auto max-w-3xl mx-auto">
             <Button
               id="item-save-btn"
               data-save="true"

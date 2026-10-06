@@ -923,7 +923,14 @@ export function ItemFormModal({
                 <input
                   type="text"
                   id="item-notes-textarea"
-                  className="w-full h-9 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 font-medium text-xs text-[var(--foreground)] placeholder:text-zinc-500 focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
+                  style={{
+                    height: "48.5px",
+                    width: "290px",
+                    marginTop: "3px",
+                    paddingTop: "-7px",
+                    paddingBottom: "16px",
+                  }}
+                  className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 font-medium text-xs text-[var(--foreground)] placeholder:text-zinc-500 focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
                   placeholder="Supplier name, batch or rack location details..."
                   value={formData.notes || ""}
                   onKeyDown={(e) => {

@@ -412,7 +412,8 @@ export function ItemFormModal({
               <div className="group relative">
                 <input
                   id="item-name-input"
-                  className="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] p-6 font-black text-2xl focus:border-[var(--primary)] focus:outline-none transition-all placeholder:opacity-15 shadow-inner"
+                  style={{ height: "50px" }}
+                  className="w-full h-[50px] px-4 rounded-xl border-2 border-[var(--border)] bg-[var(--background)] font-black text-lg sm:text-xl focus:border-[var(--primary)] focus:outline-none transition-all placeholder:opacity-15 shadow-inner"
                   value={formData.name}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, name: e.target.value }))

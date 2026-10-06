@@ -4502,7 +4502,7 @@ export default function App() {
                         {state.settings.storeName || "My Shop(मेरी दुकान)"}
                      </h1>
                      <p className="text-sm font-extrabold text-white/80 select-none">
-                        Hi, <span className="text-amber-300 font-black">{state.settings.storeOwnerName || "Store Owner"}</span> 👋 welcome back to your STORE MANAGER.
+                        Hi, <span className="text-amber-300 font-black">{state.settings.storeOwnerName || "Store Owner"}</span> 👋 welcome back to your STORE MANAGER APP.
                      </p>
                      <div 
                         style={{ paddingLeft: '1px', marginLeft: '-7px' }}

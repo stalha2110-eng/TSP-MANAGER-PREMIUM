@@ -57,16 +57,16 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
     "hi-en": "Buying Rate"
   },
   wholesale: {
-    en: "Wholesale Price",
+    en: "Wholesale Rate",
     hi: "थोक भाव",
     mr: "घाऊक भाव",
-    "hi-en": "Wholesale Price"
+    "hi-en": "Wholesale Rate"
   },
   retail: {
-    en: "Retail Price",
+    en: "Retail Rate",
     hi: "रिटेल भाव",
     mr: "किरकोळ भाव",
-    "hi-en": "Retail Price"
+    "hi-en": "Retail Rate"
   },
   addItem: {
     en: "Add Product",

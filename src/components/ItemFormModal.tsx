@@ -1020,7 +1020,7 @@ export function ItemFormModal({
               <span className="w-5 h-5 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-[10px] font-black shadow-xs shrink-0">
                 02
               </span>{" "}
-              <span>ALL RATES (दाम व मूल्य)</span>
+              <span>ALL RATES(दाम व मूल्य):</span>
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[

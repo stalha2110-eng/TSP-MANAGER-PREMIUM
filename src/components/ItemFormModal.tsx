@@ -134,6 +134,8 @@ export function ItemFormModal({
   >(() => getCategoryUsageMap());
 
   const selectedCategory = categories.find((c) => c.id === formData.categoryId);
+  const isCategoryNone = !selectedCategory;
+  const isShortCategoryName = selectedCategory ? selectedCategory.name.length <= 6 : true;
 
   // Sorted by last used / most used / clicked count
   const sortedCategories = useMemo(() => {
@@ -518,26 +520,34 @@ export function ItemFormModal({
                 className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 hover:bg-[var(--card)] transition-all cursor-pointer shadow-2xs active:scale-95 group shrink-0 min-w-0 max-w-[50%]"
                 title="Click to select or manage category"
               >
-                {/* Category Icon: always visible so purpose is immediately clear even on smaller devices */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--primary)] transition-colors shrink-0"
-                >
-                  <path d="M12 2l10 5-10 5-10-5 10-5z" />
-                  <path d="M2 12l10 5 10-5" />
-                  <path d="M2 17l10 5 10-5" />
-                </svg>
+                {/* Category SVG icon: Hidden when category is none, when name is short, or on tablet/desktop with enough screen space.
+                    Shown ONLY on narrow mobile screens (<sm) when a long category name requires saving space. */}
+                {!isCategoryNone && !isShortCategoryName && (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="sm:hidden text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--primary)] transition-colors shrink-0"
+                  >
+                    <path d="M12 2l10 5-10 5-10-5 10-5z" />
+                    <path d="M2 12l10 5 10-5" />
+                    <path d="M2 17l10 5 10-5" />
+                  </svg>
+                )}
 
-                {/* "category:" label: hidden on small screens to save space, visible on tablet/desktop */}
-                <span className="hidden sm:inline text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 shrink-0">
+                {/* "category:" label: Always shown on desktop/tablet, and on mobile when category is none or name is short */}
+                <span
+                  className={cn(
+                    "text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 shrink-0",
+                    !isCategoryNone && !isShortCategoryName ? "hidden sm:inline" : "inline"
+                  )}
+                >
                   category:
                 </span>
 

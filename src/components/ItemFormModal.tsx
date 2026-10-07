@@ -20,7 +20,6 @@ import {
   FileText,
   PenLine,
   Layers,
-  Tag,
 } from "lucide-react";
 import { Button } from "./ui/Button";
 import { UnitSelectorModal } from "./ui/UnitSelectorModal";
@@ -121,6 +120,7 @@ export function ItemFormModal({
   const [isEditCategoryMode, setIsEditCategoryMode] = useState(false);
   const categorySearchInputRef = useRef<HTMLInputElement>(null);
   const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isNotesFocused, setIsNotesFocused] = useState(false);
 
   React.useEffect(() => {
     if (notesTextareaRef.current) {
@@ -519,10 +519,22 @@ export function ItemFormModal({
                 title="Click to select or manage category"
               >
                 {/* Category Icon: always visible so purpose is immediately clear even on smaller devices */}
-                <Tag
-                  size={11}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   className="text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--primary)] transition-colors shrink-0"
-                />
+                >
+                  <path d="M12 2l10 5-10 5-10-5 10-5z" />
+                  <path d="M2 12l10 5 10-5" />
+                  <path d="M2 17l10 5 10-5" />
+                </svg>
 
                 {/* "category:" label: hidden on small screens to save space, visible on tablet/desktop */}
                 <span className="hidden sm:inline text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 shrink-0">
@@ -804,25 +816,63 @@ export function ItemFormModal({
            
             <div className="space-y-3">
               {/* 1. Distinct Notes & Remarks Notepad Card (FIRST) */}
-              <div className="rounded-xl border border-slate-200 dark:border-zinc-800 [data-theme]:border-[var(--border)] bg-slate-50/80 dark:bg-zinc-900/60 [data-theme]:bg-[var(--card)]/70 p-2.5 sm:p-3 space-y-2 shadow-2xs transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-md bg-slate-200/70 dark:bg-zinc-800 [data-theme]:bg-[var(--muted)] text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
-                      <FileText size={11} strokeWidth={2.2} />
+              <div
+                className={cn(
+                  "rounded-xl border p-2.5 sm:p-3 space-y-2 transition-all duration-200 shadow-2xs",
+                  isNotesFocused
+                    ? "border-[var(--primary)]/50 ring-2 ring-[var(--primary)]/15 bg-white dark:bg-zinc-900/95 shadow-sm"
+                    : "border-slate-200 dark:border-zinc-800 [data-theme]:border-[var(--border)] bg-slate-50/80 dark:bg-zinc-900/60 [data-theme]:bg-[var(--card)]/70"
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span
+                      className={cn(
+                        "w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors duration-150",
+                        isNotesFocused
+                          ? "bg-[var(--primary)] text-white shadow-xs"
+                          : "bg-slate-200/70 dark:bg-zinc-800 [data-theme]:bg-[var(--muted)] text-slate-600 dark:text-slate-300"
+                      )}
+                    >
+                      <FileText size={11} strokeWidth={2.3} />
                     </span>
-                    <span className="text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400 [data-theme]:text-[var(--muted-foreground)]">
-                      Extra Info (optional)
+                    <span
+                      className={cn(
+                        "text-[11px] uppercase tracking-wider transition-colors duration-150",
+                        isNotesFocused
+                          ? "font-extrabold text-[var(--primary)]"
+                          : "font-bold text-slate-500 dark:text-slate-400 [data-theme]:text-[var(--muted-foreground)]"
+                      )}
+                    >
+                      Extra Info
+                    </span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium italic hidden md:inline-block truncate">
+                      (Supplier, rack, or batch)
                     </span>
                   </div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium italic hidden sm:inline-block">
-                    Supplier, rack, or batch details
+
+                  {/* Dedicated OPTIONAL badge at the right corner */}
+                  <span
+                    className={cn(
+                      "text-[9.5px] uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0 transition-all duration-150 select-none",
+                      isNotesFocused
+                        ? "border-[var(--primary)]/40 bg-[var(--primary)]/15 text-[var(--primary)] font-extrabold shadow-2xs"
+                        : "border-slate-200/90 dark:border-zinc-700 bg-slate-100/90 dark:bg-zinc-800/80 text-slate-500 dark:text-slate-400 font-bold"
+                    )}
+                  >
+                    Optional
                   </span>
                 </div>
 
                 <div className="relative">
                   <PenLine
                     size={13}
-                    className="absolute left-3 top-3 text-slate-400 dark:text-slate-500 pointer-events-none"
+                    className={cn(
+                      "absolute left-3 top-3 pointer-events-none transition-colors duration-150",
+                      isNotesFocused
+                        ? "text-[var(--primary)]"
+                        : "text-slate-400 dark:text-slate-500"
+                    )}
                   />
                   <textarea
                     ref={notesTextareaRef}
@@ -830,6 +880,8 @@ export function ItemFormModal({
                     rows={1}
                     placeholder="Supplier name, rack location, batch number, or memo..."
                     value={formData.notes || ""}
+                    onFocus={() => setIsNotesFocused(true)}
+                    onBlur={() => setIsNotesFocused(false)}
                     onChange={(e) => {
                       const target = e.target;
                       target.style.height = "auto";
@@ -851,7 +903,12 @@ export function ItemFormModal({
                         if (next && "select" in next) (next as any).select();
                       }
                     }}
-                    className="w-full min-h-[42px] max-h-48 py-2.5 pl-8.5 pr-3 rounded-lg border border-slate-200/90 dark:border-zinc-800 [data-theme]:border-[var(--border)] bg-white dark:bg-zinc-950/80 [data-theme]:bg-[var(--background)] font-medium text-xs text-[var(--foreground)] placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-slate-400 dark:focus:border-zinc-600 focus:outline-none transition-all resize-none shadow-2xs leading-relaxed"
+                    className={cn(
+                      "w-full min-h-[42px] max-h-48 py-2.5 pl-8.5 pr-3 rounded-lg border font-medium text-xs transition-all resize-none leading-relaxed",
+                      isNotesFocused
+                        ? "border-[var(--primary)] ring-2 ring-[var(--primary)]/20 bg-white dark:bg-zinc-950 text-[var(--foreground)] placeholder:text-slate-400 shadow-2xs"
+                        : "border-slate-200/90 dark:border-zinc-800 [data-theme]:border-[var(--border)] bg-white dark:bg-zinc-950/80 [data-theme]:bg-[var(--background)] text-[var(--foreground)] placeholder:text-slate-400 dark:placeholder:text-zinc-500 shadow-2xs"
+                    )}
                   />
                 </div>
               </div>
@@ -1301,7 +1358,22 @@ export function ItemFormModal({
                 {/* Header */}
                 <div className="flex items-center justify-between gap-2 p-3.5 pb-2.5 border-b border-[var(--border)] shrink-0">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="w-2 h-2 rounded-full bg-[var(--primary)] shrink-0" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-[var(--primary)] shrink-0"
+                    >
+                      <path d="M12 2l10 5-10 5-10-5 10-5z" />
+                      <path d="M2 12l10 5 10-5" />
+                      <path d="M2 17l10 5 10-5" />
+                    </svg>
                     <h3 className="text-xs sm:text-sm font-black text-[var(--foreground)] uppercase tracking-wider shrink-0">
                       Categories
                     </h3>

@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
   Trash2, 
   ChevronDown, 
+  ChevronRight,
   Sparkles, 
   ArrowLeft, 
   ArrowRight, 
@@ -13,13 +14,23 @@ import {
   AlertCircle, 
   Check, 
   HelpCircle,
-  FileText
+  FileText,
+  Search,
+  Settings2,
+  Loader2,
+  Layers
 } from 'lucide-react';
 import { Category, Item } from '../types';
 import { UNITS } from '../constants';
 import { cn } from '../lib/utils';
 import { useCustomUnits, useRecentUnits, trackRecentUnit } from '../lib/unitUtils';
 import { UnitSelectorModal } from './ui/UnitSelectorModal';
+import {
+  getCategoryUsageMap,
+  trackCategoryUsage,
+  sortCategoriesByUsage,
+  CategoryUsageEntry,
+} from '../utils/categoryUsageUtils';
 
 interface SmartBulkEntryModalProps {
   isOpen: boolean;
@@ -28,6 +39,8 @@ interface SmartBulkEntryModalProps {
   categories: Category[];
   t: any;
   theme?: string;
+  onCreateCategory?: (name: string) => Promise<any> | any;
+  onDeleteCategory?: (id: string) => Promise<any> | any;
 }
 
 interface BulkRowState {
@@ -91,11 +104,13 @@ export function SmartBulkEntryModal({
   onSaveBatch,
   categories,
   t,
-  theme = 'minimalist-ivory'
+  theme = 'minimalist-ivory',
+  onCreateCategory,
+  onDeleteCategory,
 }: SmartBulkEntryModalProps) {
   // Initial state with 1 default row
   const createEmptyRow = (catId?: string): BulkRowState => ({
-    categoryId: catId || categories[0]?.id || '1',
+    categoryId: catId !== undefined ? catId : (categories[0]?.id || ''),
     quantity: '1',
     name: '',
     retailPrice: '',
@@ -108,7 +123,87 @@ export function SmartBulkEntryModal({
   });
 
   const [rows, setRows] = useState<BulkRowState[]>([]);
-  const [activeCategoryDropdown, setActiveCategoryDropdown] = useState<number | null>(null);
+  // Category popup modal states matching Full Entry interface
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [activeCategoryRowIndex, setActiveCategoryRowIndex] = useState<number | null>(null);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [isEditCategoryMode, setIsEditCategoryMode] = useState(false);
+  const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
+  const categorySearchInputRef = useRef<HTMLInputElement>(null);
+
+  const [categoryUsageMap, setCategoryUsageMap] = useState<
+    Record<string, CategoryUsageEntry>
+  >(() => getCategoryUsageMap());
+
+  const sortedCategories = useMemo(() => {
+    return sortCategoriesByUsage(categories, categoryUsageMap);
+  }, [categories, categoryUsageMap]);
+
+  const filteredCategories = useMemo(() => {
+    const q = categorySearch.toLowerCase().trim();
+    if (!q) return sortedCategories;
+    return sortedCategories.filter((c) => c.name.toLowerCase().includes(q));
+  }, [sortedCategories, categorySearch]);
+
+  const handleSelectCategory = (catId: string) => {
+    if (activeCategoryRowIndex !== null && activeCategoryRowIndex >= 0) {
+      if (catId) {
+        trackCategoryUsage(catId);
+        setCategoryUsageMap(getCategoryUsageMap());
+      }
+      handleUpdateRow(activeCategoryRowIndex, { categoryId: catId });
+    }
+    setShowCategoryModal(false);
+    setActiveCategoryRowIndex(null);
+  };
+
+  const handleAddCategoryFromSearch = async () => {
+    const trimmed = categorySearch.trim();
+    if (!trimmed) {
+      categorySearchInputRef.current?.focus();
+      return;
+    }
+    if (isSubmittingCategory) return;
+
+    // Check if category already exists (case-insensitive)
+    const existing = categories.find(
+      (c) => c.name.toLowerCase().trim() === trimmed.toLowerCase(),
+    );
+
+    if (existing) {
+      handleSelectCategory(existing.id);
+      return;
+    }
+
+    try {
+      setIsSubmittingCategory(true);
+      if (onCreateCategory) {
+        const created = await onCreateCategory(trimmed);
+        if (created && typeof created === "object" && "id" in created) {
+          handleSelectCategory((created as any).id);
+        }
+      }
+      setCategorySearch("");
+    } catch (err) {
+      console.error("Failed to create category from search", err);
+    } finally {
+      setIsSubmittingCategory(false);
+    }
+  };
+
+  const handleInlineDeleteCategory = async (catId: string) => {
+    setRows((prev) =>
+      prev.map((r) => (r.categoryId === catId ? { ...r, categoryId: "" } : r)),
+    );
+    if (onDeleteCategory) {
+      try {
+        await onDeleteCategory(catId);
+      } catch (err) {
+        console.error("Failed to delete category", err);
+      }
+    }
+  };
+
   const [activeUnitModal, setActiveUnitModal] = useState<{
     rowIndex: number;
     field: 'retail' | 'wholesale' | 'cost';
@@ -132,7 +227,10 @@ export function SmartBulkEntryModal({
   useEffect(() => {
     if (isOpen) {
       setRows([createEmptyRow()]);
-      setActiveCategoryDropdown(null);
+      setShowCategoryModal(false);
+      setActiveCategoryRowIndex(null);
+      setCategorySearch('');
+      setIsEditCategoryMode(false);
       setActiveUnitModal(null);
       setShowValidationErrors(false);
       setShowQuickParser(false);
@@ -279,7 +377,8 @@ export function SmartBulkEntryModal({
         currentUnit: field === 'retail' ? row.retailPriceUnit : field === 'wholesale' ? row.wholesalePriceUnit : row.buyingPriceUnit,
         productName: row.name
       });
-      setActiveCategoryDropdown(null);
+      setShowCategoryModal(false);
+      setActiveCategoryRowIndex(null);
     }
   };
 
@@ -767,7 +866,9 @@ export function SmartBulkEntryModal({
           <div className="space-y-4">
             <AnimatePresence initial={false}>
               {rows.map((row, index) => {
-                const selectedCategory = categories.find(c => c.id === row.categoryId) || categories[0];
+                const selectedCategory = categories.find(c => c.id === row.categoryId);
+                const isCategoryNone = !selectedCategory;
+                const isShortCategoryName = selectedCategory ? selectedCategory.name.length <= 6 : true;
                 const { errors, isValid } = getRowErrors(row);
                 const hasError = showValidationErrors && !isValid;
                 
@@ -786,10 +887,11 @@ export function SmartBulkEntryModal({
                     )}
                   >
                     {/* Row Header Actions */}
-                    <div className="flex items-center justify-between border-b border-[var(--border)]/40 pb-1.5 mb-1.5">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between border-b border-[var(--border)]/40 pb-1.5 mb-1.5 gap-2">
+                      {/* Left: Row Numbering, Category Button (close to number), and Stock Widget (next after category) */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
                         <span className={cn(
-                          "h-5 w-5 rounded-full text-[10px] font-black flex items-center justify-center border transition-colors",
+                          "h-5 w-5 rounded-full text-[10px] font-black flex items-center justify-center border transition-colors shrink-0",
                           hasError 
                             ? "bg-red-500/10 text-red-500 border-red-500/30" 
                             : "bg-[var(--background)] text-zinc-400 border-[var(--border)]"
@@ -797,90 +899,124 @@ export function SmartBulkEntryModal({
                           {index + 1}
                         </span>
 
-                        {/* Category Dropdown Selector */}
-                        <div className="relative">
-                          <button
-                            onClick={() => {
-                              setActiveCategoryDropdown(activeCategoryDropdown === index ? null : index);
-                              setActiveUnitModal(null);
-                            }}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:border-zinc-500 text-zinc-300 hover:text-white transition-colors text-[10px] font-bold"
-                          >
-                            <span className="text-xs">{selectedCategory?.icon || '🏷️'}</span>
-                            <span className="uppercase text-[9px] tracking-wider">{selectedCategory?.name || 'SELECT'}</span>
-                            <ChevronDown size={12} className="opacity-50" />
-                          </button>
-
-                          {/* Category Dropdown List Overlay */}
-                          {activeCategoryDropdown === index && (
-                            <div className="absolute left-0 mt-1.5 w-52 rounded-xl bg-[var(--card)] border border-[var(--border)] shadow-2xl z-30 overflow-hidden no-scrollbar py-1 animate-in fade-in slide-in-from-top-2 duration-150">
-                              {categories.map(cat => (
-                                <button
-                                  key={cat.id}
-                                  onClick={() => {
-                                    handleUpdateRow(index, { categoryId: cat.id });
-                                    setActiveCategoryDropdown(null);
-                                  }}
-                                  className={cn(
-                                    "w-full text-left px-3.5 py-1.5 text-[10px] flex items-center gap-2 hover:bg-zinc-800/20 transition-colors font-bold",
-                                    row.categoryId === cat.id ? "text-[var(--primary)] bg-[var(--primary)]/5" : "text-zinc-400 hover:text-zinc-100"
-                                  )}
-                                >
-                                  <span className="text-xs">{cat.icon}</span>
-                                  <span className="uppercase text-[9px] tracking-wider">{cat.name}</span>
-                                </button>
-                              ))}
-                            </div>
+                        {/* Category button matching Full Entry - placed close to the number indexing */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCategorySearch("");
+                            setCategoryUsageMap(getCategoryUsageMap());
+                            setIsEditCategoryMode(false);
+                            setActiveCategoryRowIndex(index);
+                            setShowCategoryModal(true);
+                          }}
+                          className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 hover:bg-[var(--card)] transition-all cursor-pointer shadow-2xs active:scale-95 group shrink-0 min-w-0 max-w-[125px] xs:max-w-[165px] sm:max-w-[220px]"
+                          title="Click to select or manage category"
+                        >
+                          {/* Category SVG icon: Hidden when category is none, when name is short, or on tablet/desktop with enough screen space.
+                              Shown ONLY on narrow mobile screens (<sm) when a long category name requires saving space. */}
+                          {!isCategoryNone && !isShortCategoryName && (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="sm:hidden text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--primary)] transition-colors shrink-0"
+                            >
+                              <path d="M12 2l10 5-10 5-10-5 10-5z" />
+                              <path d="M2 12l10 5 10-5" />
+                              <path d="M2 17l10 5 10-5" />
+                            </svg>
                           )}
-                        </div>
 
-                        {/* Quick Spec Copy Button (from previous row) */}
-                        {index > 0 && (
-                          <button
-                            onClick={() => handleCopyPrevRow(index)}
-                            title="Copy Category & Units from row above"
-                            className="p-1 rounded-md bg-[var(--background)] border border-[var(--border)] text-zinc-500 hover:text-[var(--foreground)] hover:border-zinc-500 transition-all cursor-pointer"
+                          {/* "category:" label: Always shown on desktop/tablet, and on mobile when category is none or name is short */}
+                          <span
+                            className={cn(
+                              "text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 shrink-0",
+                              !isCategoryNone && !isShortCategoryName ? "hidden sm:inline" : "inline"
+                            )}
                           >
-                            <Copy size={11} />
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {/* Validation warning indicator */}
-                        {hasError && (
-                          <span className="text-[9px] text-red-500 font-bold flex items-center gap-0.5 animate-pulse">
-                            <AlertCircle size={10} />
-                            Missing Fields
+                            category:
                           </span>
-                        )}
 
-                        {/* Quantity Input */}
+                          {/* Category Name: always in capital letters, truncated cleanly on mobile so it never goes off-screen */}
+                          <span
+                            className={cn(
+                              "truncate max-w-[60px] xs:max-w-[90px] sm:max-w-[140px] font-black text-xs uppercase tracking-wide",
+                              selectedCategory
+                                ? "text-[var(--primary)]"
+                                : "text-zinc-500 font-bold",
+                            )}
+                          >
+                            {selectedCategory ? selectedCategory.name.toUpperCase() : "SELECT"}
+                          </span>
+
+                          <ChevronRight
+                            size={12}
+                            className="text-zinc-400 group-hover:text-[var(--primary)] group-hover:translate-x-0.5 transition-all shrink-0 ml-0.5"
+                          />
+                        </button>
+
+                        {/* Stock Widget (replaces previous QTY widget, uses same SVG & styling as Full Entry) */}
                         <div className={cn(
-                          "flex items-center gap-1.5 bg-[var(--background)] border px-2 py-0.5 rounded-lg transition-all",
+                          "flex items-center gap-1 sm:gap-1.5 bg-[var(--background)] border px-2 py-0.5 sm:py-1 rounded-xl transition-all shrink-0 shadow-2xs",
                           showValidationErrors && errors.quantity 
                             ? "border-red-500 ring-1 ring-red-500/30" 
-                            : "border-[var(--border)]"
+                            : "border-[var(--border)] hover:border-[var(--primary)]/40 focus-within:border-[var(--primary)] focus-within:ring-1 focus-within:ring-[var(--primary)]/20"
                         )}>
-                          <span className="text-[8px] font-black text-zinc-500 uppercase tracking-wider">QTY</span>
+                          <div className="flex items-center gap-1 shrink-0 select-none">
+                            <Layers size={11} className="text-teal-600 dark:text-teal-400 shrink-0" />
+                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-teal-800 dark:text-teal-300">
+                              Stock:
+                            </span>
+                          </div>
                           <input
                             id={`qty-${index}`}
                             type="number"
-                            min="1"
+                            min="0"
                             step="any"
-                            className="w-10 bg-transparent text-right font-black font-mono text-[10px] text-amber-500 focus:outline-none focus:text-[var(--foreground)]"
+                            placeholder="0"
+                            className="w-10 sm:w-12 bg-transparent text-right font-black font-mono text-[10.5px] sm:text-[11px] text-[var(--foreground)] focus:outline-none placeholder:opacity-30"
                             value={row.quantity}
                             onChange={(e) => handleUpdateRow(index, { quantity: e.target.value })}
                             onBlur={() => handleMarkTouched(index, 'quantity')}
                             onKeyDown={(e) => handleKeyDown(e, index, 'qty')}
                           />
                         </div>
+                      </div>
+
+                      {/* Right: Validation warning indicator, Copy previous row button, Delete button */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 justify-end">
+                        {/* Validation warning indicator */}
+                        {hasError && (
+                          <span className="text-[9px] text-red-500 font-bold flex items-center gap-0.5 animate-pulse shrink-0 hidden md:inline-flex">
+                            <AlertCircle size={10} />
+                            Missing Fields
+                          </span>
+                        )}
+
+                        {/* Quick Spec Copy Button (from previous row) */}
+                        {index > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleCopyPrevRow(index)}
+                            title="Copy Category & Units from row above"
+                            className="px-1.5 py-1 rounded-lg bg-[var(--background)] border border-[var(--border)] text-zinc-500 hover:text-[var(--foreground)] hover:border-zinc-500 transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-2xs"
+                          >
+                            <Copy size={11} />
+                            <span className="text-[9px] font-black uppercase tracking-wider hidden sm:inline text-zinc-400">Copy</span>
+                          </button>
+                        )}
 
                         {/* Mobile Delete Row Button */}
                         <button
                           type="button"
                           onClick={() => handleDeleteRow(index)}
-                          className="p-1 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          className="p-1 sm:p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
                           title="Delete Row"
                         >
                           <Trash2 size={13} />
@@ -1200,6 +1336,249 @@ export function SmartBulkEntryModal({
               }}
               onClose={() => setActiveUnitModal(null)}
             />
+          )}
+        </AnimatePresence>
+
+        {/* Small Category Selection Popup Modal (Identical to Full Entry) */}
+        <AnimatePresence>
+          {showCategoryModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[250] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
+              onClick={() => {
+                setShowCategoryModal(false);
+                setActiveCategoryRowIndex(null);
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ type: "spring", duration: 0.25, bounce: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-[340px] rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between gap-2 p-3.5 pb-2.5 border-b border-[var(--border)] shrink-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-[var(--primary)] shrink-0"
+                    >
+                      <path d="M12 2l10 5-10 5-10-5 10-5z" />
+                      <path d="M2 12l10 5 10-5" />
+                      <path d="M2 17l10 5 10-5" />
+                    </svg>
+                    <h3 className="text-xs sm:text-sm font-black text-[var(--foreground)] uppercase tracking-wider shrink-0">
+                      Categories
+                    </h3>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* "Manage" button on the right side */}
+                    <button
+                      type="button"
+                      onClick={() => setIsEditCategoryMode(!isEditCategoryMode)}
+                      className={cn(
+                        "h-6.5 px-2.5 rounded-lg border text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0",
+                        isEditCategoryMode
+                          ? "border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                          : "border-[var(--border)] bg-[var(--card)] hover:bg-black/5 dark:hover:bg-white/5 text-[var(--foreground)]",
+                      )}
+                      title="Manage categories (delete)"
+                    >
+                      {isEditCategoryMode ? (
+                        <>
+                          <Check size={11} strokeWidth={2.5} />
+                          <span>Done</span>
+                        </>
+                      ) : (
+                        <>
+                          <Settings2 size={11} />
+                          <span>Manage</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCategoryModal(false);
+                        setActiveCategoryRowIndex(null);
+                      }}
+                      className="w-6.5 h-6.5 rounded-lg bg-[var(--background)] hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                      title="Close"
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search Bar with +Add Button inside on the right */}
+                <div className="p-3 border-b border-[var(--border)] shrink-0 bg-[var(--background)]/40">
+                  <div className="relative flex items-center">
+                    <Search
+                      size={14}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                    />
+                    <input
+                      ref={categorySearchInputRef}
+                      type="text"
+                      placeholder="Search or add category..."
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddCategoryFromSearch();
+                        }
+                      }}
+                      className="w-full h-9 pl-9 pr-24 rounded-xl border border-[var(--border)] bg-[var(--card)] font-medium text-xs text-[var(--foreground)] placeholder:text-zinc-400 focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
+                      autoFocus
+                    />
+
+                    {/* Right side controls: Clear (if typed) + "+ Add" button */}
+                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                      {categorySearch && (
+                        <button
+                          type="button"
+                          onClick={() => setCategorySearch("")}
+                          className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                          title="Clear search"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={handleAddCategoryFromSearch}
+                        disabled={isSubmittingCategory}
+                        className={cn(
+                          "h-6.5 px-2.5 rounded-lg font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0",
+                          categorySearch.trim()
+                            ? "bg-[var(--primary)] hover:opacity-90 text-white"
+                            : "bg-[var(--primary)]/10 hover:bg-[var(--primary)] text-[var(--primary)] hover:text-white",
+                        )}
+                        title={
+                          categorySearch.trim()
+                            ? `Add "${categorySearch.trim()}"`
+                            : "Type category name and click Add"
+                        }
+                      >
+                        {isSubmittingCategory ? (
+                          <Loader2 size={11} className="animate-spin" />
+                        ) : (
+                          <Plus size={12} strokeWidth={2.5} />
+                        )}
+                        <span>Add</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Category Pill / Chip Cloud */}
+                <div className="p-3 overflow-y-auto max-h-[300px] flex flex-wrap gap-1.5 no-scrollbar content-start">
+                  {/* None / Clear Option */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectCategory("")}
+                    className={cn(
+                      "h-8 px-3 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95 uppercase tracking-wide",
+                      activeCategoryRowIndex !== null && !rows[activeCategoryRowIndex]?.categoryId
+                        ? "bg-[var(--primary)] text-white font-black shadow-xs"
+                        : "bg-[var(--background)] hover:bg-[var(--card)] text-zinc-500 border border-[var(--border)]",
+                    )}
+                  >
+                    <span>NONE</span>
+                    {activeCategoryRowIndex !== null && !rows[activeCategoryRowIndex]?.categoryId && (
+                      <Check size={12} strokeWidth={2.5} className="shrink-0" />
+                    )}
+                  </button>
+
+                  {filteredCategories.map((cat) => {
+                    const isSelected = activeCategoryRowIndex !== null && rows[activeCategoryRowIndex]?.categoryId === cat.id;
+                    return (
+                      <div
+                        key={cat.id}
+                        className={cn(
+                          "relative inline-flex items-center rounded-full transition-all group",
+                          isSelected
+                            ? "bg-[var(--primary)] text-white shadow-xs"
+                            : "bg-[var(--background)] hover:bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]",
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isEditCategoryMode) {
+                              handleSelectCategory(cat.id);
+                            }
+                          }}
+                          className={cn(
+                            "h-8 flex items-center gap-1.5 text-xs font-semibold cursor-pointer active:scale-95 transition-transform",
+                            isEditCategoryMode ? "pl-3 pr-1.5" : "px-3",
+                            isSelected && "font-black",
+                          )}
+                        >
+                          <span className="truncate max-w-[140px] uppercase font-bold tracking-wide">
+                            {cat.name.toUpperCase()}
+                          </span>
+                          {isSelected && !isEditCategoryMode && (
+                            <Check size={12} strokeWidth={2.5} className="text-white shrink-0" />
+                          )}
+                        </button>
+
+                        {isEditCategoryMode && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleInlineDeleteCategory(cat.id);
+                            }}
+                            className="w-5 h-5 mr-1.5 rounded-full bg-rose-500/20 hover:bg-rose-500 text-rose-500 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                            title={`Delete ${cat.name}`}
+                          >
+                            <Trash2 size={10} strokeWidth={2.5} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {filteredCategories.length === 0 && (
+                    <div className="w-full py-6 text-center text-xs text-zinc-400 space-y-2.5">
+                      <p>No category matching "{categorySearch.trim().toUpperCase()}"</p>
+                      {categorySearch.trim() && (
+                        <button
+                          type="button"
+                          onClick={handleAddCategoryFromSearch}
+                          disabled={isSubmittingCategory}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[var(--primary)] text-white text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-xs active:scale-95 uppercase tracking-wide"
+                        >
+                          {isSubmittingCategory ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Plus size={12} strokeWidth={2.5} />
+                          )}
+                          <span>Create "{categorySearch.trim().toUpperCase()}"</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
           )}
         </AnimatePresence>
       </motion.div>

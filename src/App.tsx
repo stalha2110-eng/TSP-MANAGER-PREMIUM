@@ -5711,6 +5711,8 @@ export default function App() {
             categories={activeCategories}
             t={t}
             theme={state.settings.theme}
+            onCreateCategory={handleAddCategory}
+            onDeleteCategory={handleDeleteCategory}
           />
         )}
       </AnimatePresence>

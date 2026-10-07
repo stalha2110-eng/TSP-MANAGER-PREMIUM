@@ -120,6 +120,14 @@ export function ItemFormModal({
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
   const [isEditCategoryMode, setIsEditCategoryMode] = useState(false);
   const categorySearchInputRef = useRef<HTMLInputElement>(null);
+  const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  React.useEffect(() => {
+    if (notesTextareaRef.current) {
+      notesTextareaRef.current.style.height = "auto";
+      notesTextareaRef.current.style.height = `${Math.max(42, notesTextareaRef.current.scrollHeight)}px`;
+    }
+  }, [formData.notes]);
 
   const [categoryUsageMap, setCategoryUsageMap] = useState<
     Record<string, CategoryUsageEntry>
@@ -796,43 +804,54 @@ export function ItemFormModal({
            
             <div className="space-y-3">
               {/* 1. Distinct Notes & Remarks Notepad Card (FIRST) */}
-              <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 dark:bg-purple-500/10 p-2.5 sm:p-3 space-y-2 shadow-2xs">
+              <div className="rounded-xl border border-slate-200 dark:border-zinc-800 [data-theme]:border-[var(--border)] bg-slate-50/80 dark:bg-zinc-900/60 [data-theme]:bg-[var(--card)]/70 p-2.5 sm:p-3 space-y-2 shadow-2xs transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-md bg-purple-500/20 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
-                      <FileText size={12} strokeWidth={2.5} />
+                    <span className="w-5 h-5 rounded-md bg-slate-200/70 dark:bg-zinc-800 [data-theme]:bg-[var(--muted)] text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+                      <FileText size={11} strokeWidth={2.2} />
                     </span>
-                    <span className="text-[11px] font-black uppercase tracking-wider text-purple-900 dark:text-purple-200">
+                    <span className="text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400 [data-theme]:text-[var(--muted-foreground)]">
                       Extra Info (optional)
                     </span>
                   </div>
-                  <span className="text-[10px] text-zinc-400 font-medium italic hidden sm:inline-block">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium italic hidden sm:inline-block">
                     Supplier, rack, or batch details
                   </span>
                 </div>
 
-                <div className="relative flex items-center">
+                <div className="relative">
                   <PenLine
                     size={13}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-500/70 pointer-events-none"
+                    className="absolute left-3 top-3 text-slate-400 dark:text-slate-500 pointer-events-none"
                   />
-                  <input
-                    type="text"
+                  <textarea
+                    ref={notesTextareaRef}
                     id="item-notes-textarea"
+                    rows={1}
                     placeholder="Supplier name, rack location, batch number, or memo..."
                     value={formData.notes || ""}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, notes: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      const target = e.target;
+                      target.style.height = "auto";
+                      target.style.height = `${Math.max(42, target.scrollHeight)}px`;
+                      setFormData((prev) => ({ ...prev, notes: target.value }));
+                    }}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        if (!formData.notes || formData.notes.trim() === "") {
+                          e.preventDefault();
+                          const next = document.getElementById("item-qty-input");
+                          next?.focus();
+                          if (next && "select" in next) (next as any).select();
+                        }
+                      } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                         e.preventDefault();
                         const next = document.getElementById("item-qty-input");
                         next?.focus();
                         if (next && "select" in next) (next as any).select();
                       }
                     }}
-                    className="w-full h-9 pl-8.5 pr-3 rounded-lg border border-purple-500/25 bg-[var(--background)] font-medium text-xs text-[var(--foreground)] placeholder:text-zinc-400 focus:border-purple-500 focus:outline-none transition-all shadow-inner"
+                    className="w-full min-h-[42px] max-h-48 py-2.5 pl-8.5 pr-3 rounded-lg border border-slate-200/90 dark:border-zinc-800 [data-theme]:border-[var(--border)] bg-white dark:bg-zinc-950/80 [data-theme]:bg-[var(--background)] font-medium text-xs text-[var(--foreground)] placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-slate-400 dark:focus:border-zinc-600 focus:outline-none transition-all resize-none shadow-2xs leading-relaxed"
                   />
                 </div>
               </div>
@@ -900,15 +919,15 @@ export function ItemFormModal({
                       if (next && "select" in next) (next as any).select();
                     }
                   }}
-                  className="h-full px-2.5 sm:px-3 bg-[var(--card)] hover:bg-[var(--foreground)]/5 border-x border-[var(--border)] text-[10.5px] sm:text-xs font-black uppercase text-[var(--foreground)] flex items-center gap-1 cursor-pointer shrink-0 transition-colors focus:ring-1 focus:ring-[var(--primary)] focus:outline-none select-none"
+                  className="h-full px-2.5 sm:px-3 bg-[var(--card)] hover:bg-[var(--foreground)]/5 border-x border-[var(--border)] text-[10.5px] sm:text-xs font-black uppercase text-black dark:text-white flex items-center gap-1 cursor-pointer shrink-0 transition-colors focus:ring-1 focus:ring-[var(--primary)] focus:outline-none select-none"
                   title="Change unit (click to select)"
                 >
-                  <span className="truncate max-w-[48px] sm:max-w-none">
+                  <span className="truncate max-w-[48px] sm:max-w-none text-black dark:text-white font-black">
                     {formData.unit}
                   </span>
                   <ChevronDown
                     size={10}
-                    className="text-[var(--foreground)]/70 shrink-0"
+                    className="text-black dark:text-white opacity-80 shrink-0 stroke-[2.5]"
                   />
                 </button>
 
@@ -983,7 +1002,6 @@ export function ItemFormModal({
                   key: "retailPrice",
                   unitKey: "retailPriceUnit",
                   selection: "retail",
-                  color: "bg-green-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
                   badgeClass: "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/25",
                   dotColor: "bg-emerald-500",
                   nextInputId: "item-price-wholesalePrice",
@@ -993,7 +1011,6 @@ export function ItemFormModal({
                   key: "wholesalePrice",
                   unitKey: "wholesalePriceUnit",
                   selection: "wholesale",
-                  color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
                   badgeClass: "bg-blue-500/10 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border-blue-500/25",
                   dotColor: "bg-blue-500",
                   nextInputId: "item-price-buyingPrice",
@@ -1003,10 +1020,9 @@ export function ItemFormModal({
                   key: "buyingPrice",
                   unitKey: "buyingPriceUnit",
                   selection: "buy",
-                  color: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
                   badgeClass: "bg-orange-500/10 dark:bg-orange-500/20 text-orange-800 dark:text-orange-300 border-orange-500/25",
                   dotColor: "bg-orange-500",
-                  nextInputId: "item-notes-textarea",
+                  nextInputId: "item-save-btn",
                 },
               ].map((field) => (
                 <div key={field.key} className="space-y-2">
@@ -1016,8 +1032,9 @@ export function ItemFormModal({
                       {field.label}
                     </p>
                   </div>
-                  <div className="relative group">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-xl text-[var(--foreground)] opacity-40 group-focus-within:opacity-90 transition-opacity">
+                  {/* Unified Input with Unit Button on the Right Side */}
+                  <div className="flex items-center h-[52px] rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/15 transition-all shadow-inner overflow-hidden group">
+                    <span className="pl-3.5 sm:pl-4 font-black text-lg sm:text-xl text-[var(--foreground)] opacity-40 group-focus-within:opacity-90 group-focus-within:text-[var(--primary)] transition-all select-none shrink-0">
                       {field.key === "profitMargin" ? "%" : "₹"}
                     </span>
                     <input
@@ -1025,7 +1042,7 @@ export function ItemFormModal({
                       step="any"
                       id={`item-price-${field.key}`}
                       placeholder="0.00"
-                      className="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--background)] py-4 pl-10 pr-4 font-black text-lg focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner placeholder:opacity-25"
+                      className="flex-1 min-w-0 h-full bg-transparent px-2.5 font-black text-base sm:text-lg text-[var(--foreground)] focus:outline-none transition-all placeholder:opacity-25"
                       value={
                         (formData as any)[field.key] === 0 ||
                         (formData as any)[field.key] === "" ||
@@ -1068,43 +1085,42 @@ export function ItemFormModal({
                         }));
                       }}
                     />
-                  </div>
-                  {field.selection && (
-                    <button
-                      type="button"
-                      id={`item-price-unit-${field.selection}`}
-                      tabIndex={0}
-                      data-navigable="true"
-                      onClick={() =>
-                        setActiveUnitSelection(field.selection as any)
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          setActiveUnitSelection(field.selection as any);
-                        } else if (
-                          e.key === "ArrowRight" ||
-                          e.key === "ArrowDown"
-                        ) {
-                          e.preventDefault();
-                          const nextInput = document.getElementById(
-                            field.nextInputId,
-                          );
-                          nextInput?.focus();
-                          if (nextInput && "select" in nextInput)
-                            (nextInput as any).select();
+                    {field.selection && (
+                      <button
+                        type="button"
+                        id={`item-price-unit-${field.selection}`}
+                        tabIndex={0}
+                        data-navigable="true"
+                        onClick={() =>
+                          setActiveUnitSelection(field.selection as any)
                         }
-                      }}
-                      className={cn(
-                        "w-full py-2.5 rounded-xl border border-transparent font-black uppercase text-[8px] tracking-widest transition-all cursor-pointer",
-                        "focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 focus:border-[var(--primary)] focus:scale-[1.02] focus:outline-none shadow-xs",
-                        field.color,
-                      )}
-                      title="Change unit (Enter or Space to select, Arrow to skip)"
-                    >
-                      / {(formData as any)[field.unitKey]}
-                    </button>
-                  )}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setActiveUnitSelection(field.selection as any);
+                          } else if (
+                            e.key === "ArrowRight" ||
+                            e.key === "ArrowDown"
+                          ) {
+                            e.preventDefault();
+                            const nextInput = document.getElementById(
+                              field.nextInputId,
+                            );
+                            nextInput?.focus();
+                            if (nextInput && "select" in nextInput)
+                              (nextInput as any).select();
+                          }
+                        }}
+                        className="h-full px-3 sm:px-3.5 border-l border-[var(--border)] bg-[var(--card)] hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white font-black uppercase text-[11px] sm:text-xs tracking-wider flex items-center gap-1.5 transition-all cursor-pointer select-none shrink-0 active:scale-95 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--primary)]"
+                        title="Change unit (click or press Enter to select)"
+                      >
+                        <span className="truncate max-w-[65px] sm:max-w-[85px] text-black dark:text-white font-black">
+                          / {(formData as any)[field.unitKey]}
+                        </span>
+                        <ChevronDown size={11} className="text-black dark:text-white opacity-80 shrink-0 stroke-[2.5]" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

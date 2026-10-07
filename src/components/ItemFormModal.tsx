@@ -592,7 +592,7 @@ export function ItemFormModal({
                       }
                     }}
                     onBlur={handleNameBlur}
-                    placeholder="Item Name (सामान का नाम) (e.g. Rice, Oil)..."
+                    placeholder="(e.g. Rice, Oil, Milk)..."
                   />
                   {isTranslating && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1 pointer-events-none">

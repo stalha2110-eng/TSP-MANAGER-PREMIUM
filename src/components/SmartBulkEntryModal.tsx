@@ -6,8 +6,6 @@ import {
   ChevronDown, 
   ChevronRight,
   Sparkles, 
-  ArrowLeft, 
-  ArrowRight, 
   Save, 
   Plus, 
   Copy, 
@@ -438,61 +436,6 @@ export function SmartBulkEntryModal({
     }
   };
 
-  const getFocusableFields = () => {
-    const list: { id: string; rowIndex: number }[] = [];
-    rows.forEach((_, i) => {
-      list.push({ id: `qty-${i}`, rowIndex: i });
-      list.push({ id: `name-${i}`, rowIndex: i });
-      list.push({ id: `retail-${i}`, rowIndex: i });
-      list.push({ id: `retail-unit-${i}`, rowIndex: i });
-      list.push({ id: `wholesale-${i}`, rowIndex: i });
-      list.push({ id: `wholesale-unit-${i}`, rowIndex: i });
-      list.push({ id: `cost-${i}`, rowIndex: i });
-      list.push({ id: `cost-unit-${i}`, rowIndex: i });
-    });
-    return list;
-  };
-
-  const handleNavigate = (direction: 'backward' | 'forward') => {
-    const fields = getFocusableFields();
-    const activeEl = document.activeElement;
-    if (!activeEl) {
-      const firstEl = document.getElementById(fields[0]?.id);
-      firstEl?.focus();
-      return;
-    }
-
-    const currentIndex = fields.findIndex(f => f.id === activeEl.id);
-    if (currentIndex === -1) {
-      const firstEl = document.getElementById(fields[0]?.id);
-      firstEl?.focus();
-      return;
-    }
-
-    let targetIndex = currentIndex;
-    if (direction === 'forward') {
-      if (currentIndex < fields.length - 1) {
-        targetIndex = currentIndex + 1;
-      } else {
-        handleAddRow();
-        return;
-      }
-    } else {
-      if (currentIndex > 0) {
-        targetIndex = currentIndex - 1;
-      }
-    }
-
-    const targetEl = document.getElementById(fields[targetIndex].id);
-    if (targetEl) {
-      targetEl.focus();
-      if ('select' in targetEl) {
-        (targetEl as any).select();
-      }
-      targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  };
-
   // Quick parser engine
   const handleQuickParse = () => {
     setParseError(null);
@@ -880,16 +823,17 @@ export function SmartBulkEntryModal({
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
                     className={cn(
-                      "bg-[var(--card)] border rounded-xl p-2.5 px-3.5 relative space-y-2 shadow-sm hover:border-[var(--primary)] transition-all duration-200",
+                      "bg-[var(--card)] border rounded-xl p-2 sm:p-2.5 px-3 sm:px-3.5 relative space-y-1.5 shadow-sm hover:border-[var(--primary)] transition-all duration-200",
                       hasError 
                         ? "border-red-500 bg-red-500/[0.02] shadow-[0_0_12px_rgba(239,68,68,0.1)]" 
                         : "border-[var(--border)]"
                     )}
                   >
-                    {/* Row Header Actions */}
-                    <div className="flex items-center justify-between border-b border-[var(--border)]/40 pb-1.5 mb-1.5 gap-2">
-                      {/* Left: Row Numbering, Category Button (close to number), and Stock Widget (next after category) */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                    {/* Compact Top Bar: [1] [Category: NAME >] [Stock: 1] in single tight horizontal scroll/flex bar | Delete at far right */}
+                    <div className="flex items-center justify-between border-b border-[var(--border)]/40 pb-1 mb-1 gap-1.5">
+                      {/* Left/Center: Single tight horizontal scroll/flex bar */}
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar py-0.5">
+                        {/* Row badge [1] */}
                         <span className={cn(
                           "h-5 w-5 rounded-full text-[10px] font-black flex items-center justify-center border transition-colors shrink-0",
                           hasError 
@@ -899,7 +843,7 @@ export function SmartBulkEntryModal({
                           {index + 1}
                         </span>
 
-                        {/* Category button matching Full Entry - placed close to the number indexing */}
+                        {/* [Category: NAME >] */}
                         <button
                           type="button"
                           onClick={() => {
@@ -909,16 +853,14 @@ export function SmartBulkEntryModal({
                             setActiveCategoryRowIndex(index);
                             setShowCategoryModal(true);
                           }}
-                          className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 hover:bg-[var(--card)] transition-all cursor-pointer shadow-2xs active:scale-95 group shrink-0 min-w-0 max-w-[125px] xs:max-w-[165px] sm:max-w-[220px]"
+                          className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 hover:bg-[var(--card)] transition-all cursor-pointer shadow-2xs active:scale-95 group shrink-0 whitespace-nowrap"
                           title="Click to select or manage category"
                         >
-                          {/* Category SVG icon: Hidden when category is none, when name is short, or on tablet/desktop with enough screen space.
-                              Shown ONLY on narrow mobile screens (<sm) when a long category name requires saving space. */}
                           {!isCategoryNone && !isShortCategoryName && (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              width="13"
-                              height="13"
+                              width="12"
+                              height="12"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -933,20 +875,18 @@ export function SmartBulkEntryModal({
                             </svg>
                           )}
 
-                          {/* "category:" label: Always shown on desktop/tablet, and on mobile when category is none or name is short */}
                           <span
                             className={cn(
-                              "text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 shrink-0",
+                              "text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 shrink-0",
                               !isCategoryNone && !isShortCategoryName ? "hidden sm:inline" : "inline"
                             )}
                           >
                             category:
                           </span>
 
-                          {/* Category Name: always in capital letters, truncated cleanly on mobile so it never goes off-screen */}
                           <span
                             className={cn(
-                              "truncate max-w-[60px] xs:max-w-[90px] sm:max-w-[140px] font-black text-xs uppercase tracking-wide",
+                              "font-black text-[11px] sm:text-xs uppercase tracking-wide",
                               selectedCategory
                                 ? "text-[var(--primary)]"
                                 : "text-zinc-500 font-bold",
@@ -956,21 +896,21 @@ export function SmartBulkEntryModal({
                           </span>
 
                           <ChevronRight
-                            size={12}
+                            size={11}
                             className="text-zinc-400 group-hover:text-[var(--primary)] group-hover:translate-x-0.5 transition-all shrink-0 ml-0.5"
                           />
                         </button>
 
-                        {/* Stock Widget (replaces previous QTY widget, uses same SVG & styling as Full Entry) */}
+                        {/* [Stock: 1] */}
                         <div className={cn(
-                          "flex items-center gap-1 sm:gap-1.5 bg-[var(--background)] border px-2 py-0.5 sm:py-1 rounded-xl transition-all shrink-0 shadow-2xs",
+                          "flex items-center gap-1 bg-[var(--background)] border px-1.5 sm:px-2 py-0.5 rounded-lg transition-all shrink-0 shadow-2xs whitespace-nowrap",
                           showValidationErrors && errors.quantity 
                             ? "border-red-500 ring-1 ring-red-500/30" 
                             : "border-[var(--border)] hover:border-[var(--primary)]/40 focus-within:border-[var(--primary)] focus-within:ring-1 focus-within:ring-[var(--primary)]/20"
                         )}>
                           <div className="flex items-center gap-1 shrink-0 select-none">
                             <Layers size={11} className="text-teal-600 dark:text-teal-400 shrink-0" />
-                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-teal-800 dark:text-teal-300">
+                            <span className="text-[9px] sm:text-[9.5px] font-black uppercase tracking-wider text-teal-800 dark:text-teal-300">
                               Stock:
                             </span>
                           </div>
@@ -980,7 +920,7 @@ export function SmartBulkEntryModal({
                             min="0"
                             step="any"
                             placeholder="0"
-                            className="w-10 sm:w-12 bg-transparent text-right font-black font-mono text-[10.5px] sm:text-[11px] text-[var(--foreground)] focus:outline-none placeholder:opacity-30"
+                            className="w-9 sm:w-11 bg-transparent text-right font-black font-mono text-[10.5px] sm:text-[11px] text-[var(--foreground)] focus:outline-none placeholder:opacity-30"
                             value={row.quantity}
                             onChange={(e) => handleUpdateRow(index, { quantity: e.target.value })}
                             onBlur={() => handleMarkTouched(index, 'quantity')}
@@ -989,34 +929,30 @@ export function SmartBulkEntryModal({
                         </div>
                       </div>
 
-                      {/* Right: Validation warning indicator, Copy previous row button, Delete button */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 justify-end">
-                        {/* Validation warning indicator */}
+                      {/* Far Right: Delete trash icon (and Copy button if index > 0) */}
+                      <div className="flex items-center gap-1 shrink-0 ml-auto pl-1 justify-end">
                         {hasError && (
-                          <span className="text-[9px] text-red-500 font-bold flex items-center gap-0.5 animate-pulse shrink-0 hidden md:inline-flex">
+                          <span className="text-[9px] text-red-500 font-bold items-center gap-0.5 animate-pulse shrink-0 hidden lg:inline-flex">
                             <AlertCircle size={10} />
-                            Missing Fields
                           </span>
                         )}
 
-                        {/* Quick Spec Copy Button (from previous row) */}
                         {index > 0 && (
                           <button
                             type="button"
                             onClick={() => handleCopyPrevRow(index)}
                             title="Copy Category & Units from row above"
-                            className="px-1.5 py-1 rounded-lg bg-[var(--background)] border border-[var(--border)] text-zinc-500 hover:text-[var(--foreground)] hover:border-zinc-500 transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-2xs"
+                            className="p-1 rounded-md text-zinc-400 hover:text-[var(--foreground)] hover:bg-[var(--foreground)]/5 transition-colors cursor-pointer shrink-0"
                           >
-                            <Copy size={11} />
-                            <span className="text-[9px] font-black uppercase tracking-wider hidden sm:inline text-zinc-400">Copy</span>
+                            <Copy size={12} />
                           </button>
                         )}
 
-                        {/* Mobile Delete Row Button */}
+                        {/* Delete trash icon at the far right */}
                         <button
                           type="button"
                           onClick={() => handleDeleteRow(index)}
-                          className="p-1 sm:p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
+                          className="p-1 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
                           title="Delete Row"
                         >
                           <Trash2 size={13} />
@@ -1235,52 +1171,39 @@ export function SmartBulkEntryModal({
             </AnimatePresence>
           </div>
 
-          {/* Add Multiple Item Row Button */}
-          <div className="pt-2 flex justify-center">
-            <button
-              onClick={handleAddRow}
-              className="px-6 py-4 rounded-2xl border-2 border-dashed border-[var(--border)] hover:border-[var(--primary)] bg-[var(--card)] text-xs font-black tracking-widest uppercase text-zinc-400 hover:text-[var(--primary)] transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.01] active:scale-95"
-            >
-              <Plus size={16} />
-              ADD MULTIPLE ITEM ROW
-            </button>
-          </div>
-
+          {/* Subtle bottom spacing */}
+          <div className="h-4" />
         </div>
 
-        {/* Bottom Actions Area */}
-        <div className="p-5 border-t border-[var(--border)] shrink-0 bg-[var(--card)]/95 backdrop-blur-md flex flex-col md:flex-row gap-4 items-center justify-between">
-          
-          {/* Navigation Controls */}
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <button
-              onClick={() => handleNavigate('backward')}
-              className="flex-1 md:flex-none px-4 py-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)] text-[10px] font-black tracking-widest uppercase text-zinc-400 hover:text-[var(--foreground)] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-            >
-              <ArrowLeft size={14} />
-              BACKWARD
-            </button>
-            <button
-              onClick={() => handleNavigate('forward')}
-              className="flex-1 md:flex-none px-4 py-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)] text-[10px] font-black tracking-widest uppercase text-zinc-400 hover:text-[var(--foreground)] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-            >
-              FORWARD
-              <ArrowRight size={14} />
-            </button>
-          </div>
-
-          {/* Save Action */}
+        {/* Sticky Floating Bottom Bar - Pinned at the bottom */}
+        <div className="p-3 sm:p-4 px-4 sm:px-6 border-t border-[var(--border)] shrink-0 bg-[var(--card)]/95 backdrop-blur-md shadow-2xl z-20 flex items-center justify-between gap-2.5 sm:gap-4">
+          {/* + ADD MULTIPLE ITEM ROW button */}
           <button
+            type="button"
+            onClick={handleAddRow}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-6 py-3.5 rounded-xl border-2 border-dashed border-[var(--border)] hover:border-[var(--primary)] bg-[var(--background)] hover:bg-[var(--card)] text-xs font-black tracking-wider uppercase text-[var(--foreground)] hover:text-[var(--primary)] transition-all cursor-pointer shadow-2xs hover:scale-[1.01] active:scale-95"
+            title="Add a new row to entry list"
+          >
+            <Plus size={16} className="text-[var(--primary)] shrink-0" />
+            <span className="truncate">
+              <span className="sm:hidden">ADD ROW</span>
+              <span className="hidden sm:inline">+ ADD MULTIPLE ITEM ROW</span>
+            </span>
+          </button>
+
+          {/* BATCH SAVE ASSETS action button */}
+          <button
+            type="button"
             onClick={handleSaveAll}
             disabled={isSaving}
-            className="w-full md:w-auto px-10 py-4.5 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-600 shadow-lg shadow-amber-500/20 text-xs font-black tracking-widest uppercase text-neutral-950 hover:from-amber-400 hover:to-amber-500 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className="flex-1 sm:flex-initial sm:min-w-[240px] px-6 sm:px-8 py-3.5 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-600 shadow-lg shadow-amber-500/20 text-xs font-black tracking-widest uppercase text-neutral-950 hover:from-amber-400 hover:to-amber-500 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {isSaving ? (
-              <span className="h-4 w-4 rounded-full border-2 border-neutral-950 border-t-transparent animate-spin" />
+              <span className="h-4 w-4 rounded-full border-2 border-neutral-950 border-t-transparent animate-spin shrink-0" />
             ) : (
-              <Save size={16} />
+              <Save size={16} className="shrink-0" />
             )}
-            BATCH SAVE ASSETS
+            <span className="truncate"> SAVE </span>
           </button>
         </div>
 

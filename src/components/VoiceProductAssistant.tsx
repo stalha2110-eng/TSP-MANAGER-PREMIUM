@@ -1829,19 +1829,6 @@ export function VoiceProductAssistant({
                   </div>
                 </div>
               )}
-
-              {/* EMPTY STATE FALLBACK GO BACK BUTTON */}
-              {draftProducts.length === 0 && (
-                <div className="pt-4 border-t border-[var(--border)]/50 flex justify-center w-full">
-                  <Button 
-                    variant="outline" 
-                    onClick={onClose}
-                    className="border border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--foreground)]/[0.05] font-black uppercase tracking-widest text-[11px] rounded-2xl py-3 px-6 flex items-center justify-center gap-2"
-                  >
-                    <Undo size={14} /> Close & Back to Catalog
-                  </Button>
-                </div>
-              )}
             </div>
           )}
 

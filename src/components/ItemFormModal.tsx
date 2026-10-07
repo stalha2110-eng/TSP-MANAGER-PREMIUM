@@ -17,6 +17,10 @@ import {
   Loader2,
   Settings2,
   Search,
+  FileText,
+  PenLine,
+  Layers,
+  Tag,
 } from "lucide-react";
 import { Button } from "./ui/Button";
 import { UnitSelectorModal } from "./ui/UnitSelectorModal";
@@ -482,21 +486,19 @@ export function ItemFormModal({
             ref={section1Ref}
             className="space-y-4 pt-1"
           >
-            {/* Header row: 01 Name with distinct bordered category box next to it */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap px-0.5">
+            {/* Header row: 01 Name on left, Category badge on right (no wrapping, fits on all iPhones & mobile devices) */}
+            <div className="flex items-center justify-between gap-1.5 sm:gap-3 px-0.5 min-w-0">
               <label
                 htmlFor="item-name-input"
-                className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--primary)] shrink-0 cursor-pointer"
+                className="flex items-center gap-1.5 sm:gap-2 text-xs font-black uppercase tracking-wider text-[var(--primary)] shrink-0 cursor-pointer min-w-0"
               >
                 <span className="w-5 h-5 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-[10px] font-black shadow-xs shrink-0">
                   01
                 </span>{" "}
-                <span>Name(सामान का नाम)</span>
+                <span className="truncate">Name(सामान का नाम)</span>
               </label>
 
-              <span className="h-3.5 w-px bg-[var(--border)] shrink-0 hidden sm:inline-block" />
-
-              {/* Category in a dedicated border box so it stands out distinctly as a separate UI element */}
+              {/* Category in a dedicated responsive border box: shows Tag icon on mobile, category text on desktop */}
               <button
                 type="button"
                 onClick={() => {
@@ -505,25 +507,35 @@ export function ItemFormModal({
                   setIsEditCategoryMode(false);
                   setShowCategoryModal(true);
                 }}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 hover:bg-[var(--card)] transition-all cursor-pointer shadow-2xs active:scale-95 group shrink-0"
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/50 hover:bg-[var(--card)] transition-all cursor-pointer shadow-2xs active:scale-95 group shrink-0 min-w-0 max-w-[50%]"
                 title="Click to select or manage category"
               >
-                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 shrink-0">
+                {/* Category Icon: always visible so purpose is immediately clear even on smaller devices */}
+                <Tag
+                  size={11}
+                  className="text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--primary)] transition-colors shrink-0"
+                />
+
+                {/* "category:" label: hidden on small screens to save space, visible on tablet/desktop */}
+                <span className="hidden sm:inline text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 shrink-0">
                   category:
                 </span>
+
+                {/* Category Name: always in capital letters, truncated cleanly on mobile so it never goes off-screen */}
                 <span
                   className={cn(
-                    "truncate max-w-[130px] sm:max-w-[180px] font-black text-xs",
+                    "truncate max-w-[80px] xs:max-w-[110px] sm:max-w-[170px] font-black text-xs uppercase tracking-wide",
                     selectedCategory
                       ? "text-[var(--primary)]"
                       : "text-zinc-500 font-bold",
                   )}
                 >
-                  {selectedCategory ? selectedCategory.name : "Select Category"}
+                  {selectedCategory ? selectedCategory.name.toUpperCase() : "SELECT"}
                 </span>
+
                 <ChevronRight
                   size={12}
-                  className="text-zinc-400 group-hover:text-[var(--primary)] group-hover:translate-x-0.5 transition-all shrink-0"
+                  className="text-zinc-400 group-hover:text-[var(--primary)] group-hover:translate-x-0.5 transition-all shrink-0 ml-0.5"
                 />
               </button>
             </div>
@@ -542,7 +554,9 @@ export function ItemFormModal({
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
-                        const next = document.getElementById("item-qty-input");
+                        const next =
+                          document.getElementById("item-notes-textarea") ||
+                          document.getElementById("item-qty-input");
                         next?.focus();
                         if (next && "select" in next) (next as any).select();
                       }
@@ -780,172 +794,169 @@ export function ItemFormModal({
             className="space-y-4 border-t border-[var(--border)] pt-6"
           >
            
-            <div className="space-y-0">
-              {/* 1-Line Responsive Grid for Stock Quantity & Low Stock Alert */}
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-4 items-start">
-                {/* 1. Stock Quantity Field */}
-                <div className="space-y-1.5 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-teal-500/10 dark:bg-teal-500/20 text-teal-800 dark:text-teal-300 border border-teal-500/25 text-[10.5px] font-black uppercase tracking-wider truncate">
-                      <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" />
-                      Stock Qty(स्टॉक संख्या)
-                    </p>
-                  </div>
-
-                  <div className="flex items-center h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] focus-within:border-[var(--primary)] focus-within:ring-1 focus-within:ring-[var(--primary)]/20 transition-all overflow-hidden shadow-2xs">
-                    <input
-                      type="number"
-                      step="any"
-                      id="item-qty-input"
-                      placeholder="0"
-                      className="flex-1 min-w-0 h-full bg-transparent px-2.5 sm:px-3 font-black text-sm sm:text-base text-[var(--foreground)] focus:outline-none placeholder:opacity-25"
-                      value={
-                        formData.quantity === 0 || formData.quantity === ""
-                          ? ""
-                          : formData.quantity
-                      }
-                      onFocus={(e) => e.target.select()}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          const unitBtn = document.getElementById("item-unit-btn");
-                          unitBtn?.focus();
-                        }
-                      }}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setFormData((prev) => ({
-                          ...prev,
-                          quantity:
-                            val === ""
-                              ? ""
-                              : val.startsWith("0") &&
-                                  val.length > 1 &&
-                                  !val.startsWith("0.")
-                                ? parseFloat(val)
-                                : val,
-                        }));
-                      }}
-                    />
-                    <button
-                      type="button"
-                      id="item-unit-btn"
-                      tabIndex={0}
-                      data-navigable="true"
-                      onClick={() => setActiveUnitSelection("base")}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          setActiveUnitSelection("base");
-                        } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                          e.preventDefault();
-                          const next = document.getElementById("item-min-stock-input");
-                          next?.focus();
-                          if (next && "select" in next) (next as any).select();
-                        }
-                      }}
-                      className="h-full px-2 sm:px-3 bg-[var(--card)] hover:bg-[var(--foreground)]/5 border-l border-[var(--border)] text-[10px] sm:text-xs font-black uppercase text-[var(--foreground)] flex items-center gap-1 cursor-pointer shrink-0 transition-colors focus:ring-2 focus:ring-[var(--primary)] focus:outline-none"
-                      title="Change unit (Enter or Space to select, Arrow to skip)"
-                    >
-                      <span className="truncate max-w-[50px] sm:max-w-none">
-                        {formData.unit}
-                      </span>
-                      <ChevronDown
-                        size={11}
-                        className="text-[var(--foreground)]/70 shrink-0"
-                      />
-                    </button>
-                  </div>
-                </div>
-
-                {/* 2. Low Stock Alert Field */}
-                <div className="space-y-1.5 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/25 text-[10.5px] font-black uppercase tracking-wider truncate">
-                      <Bell
-                        size={11}
-                        className="text-amber-500 shrink-0 fill-amber-500/30"
-                      />{" "}
-                      Alert(स्टॉक चेतावनी)
-                    </p>
-                  </div>
-
-                  <div className="flex items-center h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500/20 transition-all overflow-hidden shadow-2xs">
-                    <input
-                      type="number"
-                      step="any"
-                      id="item-min-stock-input"
-                      placeholder="10"
-                      className="flex-1 min-w-0 h-full bg-transparent px-2.5 sm:px-3 font-black text-sm sm:text-base text-[var(--foreground)] focus:outline-none placeholder:opacity-25"
-                      value={
-                        formData.minStockLevel === 0 ||
-                        formData.minStockLevel === ""
-                          ? ""
-                          : (formData.minStockLevel ?? 10)
-                      }
-                      onFocus={(e) => e.target.select()}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          const next = document.getElementById("item-price-retailPrice");
-                          next?.focus();
-                          if (next && "select" in next) (next as any).select();
-                        }
-                      }}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setFormData((prev) => ({
-                          ...prev,
-                          minStockLevel:
-                            val === ""
-                              ? ""
-                              : val.startsWith("0") &&
-                                  val.length > 1 &&
-                                  !val.startsWith("0.")
-                                ? parseFloat(val)
-                                : val,
-                        }));
-                      }}
-                    />
-                    <span className="h-full px-2 sm:px-2.5 bg-[var(--card)] border-l border-[var(--border)] text-[9px] sm:text-[10px] font-black uppercase text-[var(--foreground)] flex items-center shrink-0">
-                      Min
+            <div className="space-y-3">
+              {/* 1. Distinct Notes & Remarks Notepad Card (FIRST) */}
+              <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 dark:bg-purple-500/10 p-2.5 sm:p-3 space-y-2 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md bg-purple-500/20 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
+                      <FileText size={12} strokeWidth={2.5} />
+                    </span>
+                    <span className="text-[11px] font-black uppercase tracking-wider text-purple-900 dark:text-purple-200">
+                      Extra Info (optional)
                     </span>
                   </div>
+                  <span className="text-[10px] text-zinc-400 font-medium italic hidden sm:inline-block">
+                    Supplier, rack, or batch details
+                  </span>
+                </div>
+
+                <div className="relative flex items-center">
+                  <PenLine
+                    size={13}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-500/70 pointer-events-none"
+                  />
+                  <input
+                    type="text"
+                    id="item-notes-textarea"
+                    placeholder="Supplier name, rack location, batch number, or memo..."
+                    value={formData.notes || ""}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, notes: e.target.value }))
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const next = document.getElementById("item-qty-input");
+                        next?.focus();
+                        if (next && "select" in next) (next as any).select();
+                      }
+                    }}
+                    className="w-full h-9 pl-8.5 pr-3 rounded-lg border border-purple-500/25 bg-[var(--background)] font-medium text-xs text-[var(--foreground)] placeholder:text-zinc-400 focus:border-purple-500 focus:outline-none transition-all shadow-inner"
+                  />
                 </div>
               </div>
 
-              {/* Notes Field: Sleek, compact 1-line row underneath */}
-              <div className="pt-1">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-purple-500/10 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-500/25 text-[10.5px] font-black uppercase tracking-wider">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
-                    Notes/Remarks (जानकारी)
-                  </span>
+              {/* 2. Unified 3-Part Single Horizontal Strip: Stock Qty | Unit | Low Stock Alert */}
+              <div className="flex items-center h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] focus-within:border-[var(--primary)] focus-within:ring-1 focus-within:ring-[var(--primary)]/20 transition-all overflow-hidden shadow-2xs">
+                {/* Part 1: Stock Quantity */}
+                <div className="flex-1 min-w-0 flex items-center h-full pl-2.5 sm:pl-3">
+                  <div className="flex items-center gap-1 shrink-0 select-none">
+                    <Layers size={12} className="text-teal-600 dark:text-teal-400 shrink-0" />
+                    <span className="text-[10px] sm:text-[10.5px] font-black uppercase tracking-wider text-teal-800 dark:text-teal-300">
+                      Stock:
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    step="any"
+                    id="item-qty-input"
+                    placeholder="0"
+                    className="flex-1 min-w-0 h-full bg-transparent px-2 font-black text-sm text-[var(--foreground)] focus:outline-none placeholder:opacity-25"
+                    value={
+                      formData.quantity === 0 || formData.quantity === ""
+                        ? ""
+                        : formData.quantity
+                    }
+                    onFocus={(e) => e.target.select()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const unitBtn = document.getElementById("item-unit-btn");
+                        unitBtn?.focus();
+                      }
+                    }}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        quantity:
+                          val === ""
+                            ? ""
+                            : val.startsWith("0") &&
+                                val.length > 1 &&
+                                !val.startsWith("0.")
+                              ? parseFloat(val)
+                              : val,
+                      }));
+                    }}
+                  />
                 </div>
-                <input
-                  type="text"
-                  id="item-notes-textarea"
-                  style={{
-                    height: "48.5px",
-                    width: "290px",
-                    marginTop: "3px",
-                    paddingTop: "-7px",
-                    paddingBottom: "16px",
-                  }}
-                  className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 font-medium text-xs text-[var(--foreground)] placeholder:text-zinc-500 focus:border-[var(--primary)] focus:outline-none transition-all shadow-inner"
-                  placeholder="Supplier name, batch or rack location details..."
-                  value={formData.notes || ""}
+
+                {/* Part 2: Unit Selector Button (Center Divider) */}
+                <button
+                  type="button"
+                  id="item-unit-btn"
+                  tabIndex={0}
+                  onClick={() => setActiveUnitSelection("base")}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
+                    if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      const saveBtn = document.getElementById("item-save-btn");
-                      saveBtn?.focus();
+                      setActiveUnitSelection("base");
+                    } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                      e.preventDefault();
+                      const next = document.getElementById("item-min-stock-input");
+                      next?.focus();
+                      if (next && "select" in next) (next as any).select();
                     }
                   }}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, notes: e.target.value }))
-                  }
-                />
+                  className="h-full px-2.5 sm:px-3 bg-[var(--card)] hover:bg-[var(--foreground)]/5 border-x border-[var(--border)] text-[10.5px] sm:text-xs font-black uppercase text-[var(--foreground)] flex items-center gap-1 cursor-pointer shrink-0 transition-colors focus:ring-1 focus:ring-[var(--primary)] focus:outline-none select-none"
+                  title="Change unit (click to select)"
+                >
+                  <span className="truncate max-w-[48px] sm:max-w-none">
+                    {formData.unit}
+                  </span>
+                  <ChevronDown
+                    size={10}
+                    className="text-[var(--foreground)]/70 shrink-0"
+                  />
+                </button>
+
+                {/* Part 3: Low Stock Alert */}
+                <div className="flex-1 min-w-0 flex items-center h-full pl-2 sm:pl-2.5 pr-2">
+                  <div className="flex items-center gap-1 shrink-0 select-none">
+                    <Bell size={12} className="text-amber-500 fill-amber-500/30 shrink-0" />
+                    <span className="text-[10px] sm:text-[10.5px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                      Alert:
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    step="any"
+                    id="item-min-stock-input"
+                    placeholder="10"
+                    className="flex-1 min-w-0 h-full bg-transparent px-2 font-black text-sm text-[var(--foreground)] focus:outline-none placeholder:opacity-25"
+                    value={
+                      formData.minStockLevel === 0 ||
+                      formData.minStockLevel === ""
+                        ? ""
+                        : (formData.minStockLevel ?? 10)
+                    }
+                    onFocus={(e) => e.target.select()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const next = document.getElementById("item-price-retailPrice");
+                        next?.focus();
+                        if (next && "select" in next) (next as any).select();
+                      }
+                    }}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        minStockLevel:
+                          val === ""
+                            ? ""
+                            : val.startsWith("0") &&
+                                val.length > 1 &&
+                                !val.startsWith("0.")
+                              ? parseFloat(val)
+                              : val,
+                      }));
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </motion.div>
@@ -1387,13 +1398,13 @@ export function ItemFormModal({
                     type="button"
                     onClick={() => handleSelectCategory("")}
                     className={cn(
-                      "h-8 px-3 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95",
+                      "h-8 px-3 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95 uppercase tracking-wide",
                       !formData.categoryId
                         ? "bg-[var(--primary)] text-white font-black shadow-xs"
                         : "bg-[var(--background)] hover:bg-[var(--card)] text-zinc-500 border border-[var(--border)]",
                     )}
                   >
-                    <span>None</span>
+                    <span>NONE</span>
                     {!formData.categoryId && <Check size={12} strokeWidth={2.5} className="shrink-0" />}
                   </button>
 
@@ -1422,7 +1433,9 @@ export function ItemFormModal({
                             isSelected && "font-black",
                           )}
                         >
-                          <span className="truncate max-w-[140px]">{cat.name}</span>
+                          <span className="truncate max-w-[140px] uppercase font-bold tracking-wide">
+                            {cat.name.toUpperCase()}
+                          </span>
                           {isSelected && !isEditCategoryMode && (
                             <Check size={12} strokeWidth={2.5} className="text-white shrink-0" />
                           )}
@@ -1447,20 +1460,20 @@ export function ItemFormModal({
 
                   {filteredCategories.length === 0 && (
                     <div className="w-full py-6 text-center text-xs text-zinc-400 space-y-2.5">
-                      <p>No category matching "{categorySearch.trim()}"</p>
+                      <p>No category matching "{categorySearch.trim().toUpperCase()}"</p>
                       {categorySearch.trim() && (
                         <button
                           type="button"
                           onClick={handleAddCategoryFromSearch}
                           disabled={isSubmittingCategory}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[var(--primary)] text-white text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-xs active:scale-95"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[var(--primary)] text-white text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-xs active:scale-95 uppercase tracking-wide"
                         >
                           {isSubmittingCategory ? (
                             <Loader2 size={12} className="animate-spin" />
                           ) : (
                             <Plus size={12} strokeWidth={2.5} />
                           )}
-                          <span>Add "{categorySearch.trim()}"</span>
+                          <span>Add "{categorySearch.trim().toUpperCase()}"</span>
                         </button>
                       )}
                     </div>

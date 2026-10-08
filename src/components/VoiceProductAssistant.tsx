@@ -1233,7 +1233,7 @@ export function VoiceProductAssistant({
             </div>
           </div>
 
-          {/* Row 2: [ 🎙️ Voice ]  [ 📜 History ]  [ 🌐 Language ▾ ] */}
+          {/* Row 2: [ 🎙️ Voice ]  [ 📜 History ]  [ 🌐 LanguageName ▾ ] */}
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -1260,7 +1260,7 @@ export function VoiceProductAssistant({
               <span>History</span>
             </button>
 
-            {/* Language Dropdown in Settings' previous place */}
+            {/* Language Dropdown: format [ languageIcon LanguageName downwordarrow ] */}
             <div className="relative" ref={langDropdownRef}>
               <button
                 type="button"
@@ -1276,15 +1276,8 @@ export function VoiceProductAssistant({
                 title="Select Language"
                 aria-expanded={isLangMenuOpen}
               >
-                <Globe size={13} className="shrink-0" />
-                <span>Language</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold transition-colors ${
-                  isLangMenuOpen 
-                    ? 'bg-black/20 text-white' 
-                    : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                }`}>
-                  {micLocale === 'hi-IN' ? 'हिन्दी' : micLocale === 'mr-IN' ? 'मराठी' : 'Hinglish'}
-                </span>
+                <Globe size={13.5} className="shrink-0" />
+                <span>{micLocale === 'hi-IN' ? 'हिन्दी' : micLocale === 'mr-IN' ? 'मराठी' : 'Hinglish'}</span>
                 <ChevronDown 
                   size={12} 
                   className={`transition-transform duration-200 shrink-0 ${isLangMenuOpen ? 'rotate-180' : ''}`} 

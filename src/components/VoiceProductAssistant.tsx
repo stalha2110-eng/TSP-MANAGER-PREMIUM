@@ -4,7 +4,7 @@ import {
   X, Mic, MicOff, Settings, Trash2, Edit2, Check, CheckCircle2, 
   AlertTriangle, Volume2, Sparkles, Sliders, FileText, 
   CornerDownRight, RefreshCw, Undo, Save, Info, PlusCircle, CheckCircle,
-  Globe, ChevronRight
+  Globe, ChevronRight, Shuffle
 } from "lucide-react";
 import { Item, Category } from "../types";
 import { 
@@ -288,13 +288,6 @@ export function VoiceProductAssistant({
   });
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [hintIndex, setHintIndex] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setHintIndex((prev) => (prev + 1) % EXAMPLE_HINTS.length);
-    }, 4500);
-    return () => clearInterval(timer);
-  }, []);
 
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [aiDetectedLanguage, setAiDetectedLanguage] = useState("");
@@ -2120,21 +2113,37 @@ export function VoiceProductAssistant({
         {/* Sticky Example Hint Footer: 💡 Try: "Badam 900 retail, 800 wholesale" */}
         {activeTab === 'assistant' && (
           <div className="border-t border-[var(--border)] bg-[var(--card)] px-4 py-2.5 sm:px-5 sm:py-3 shrink-0 flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => {
-                setFinalTranscript(EXAMPLE_HINTS[hintIndex]);
-                triggerSound('notification');
-              }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 text-xs text-[var(--foreground)] transition-all cursor-pointer shadow-2xs hover:scale-[1.01] active:scale-[0.99]"
-              title="Tap to try this example prompt"
-            >
-              <span className="text-sm">💡</span>
-              <span className="font-bold text-[11px] text-[var(--foreground)]/70">Try:</span>
-              <span className="font-bold text-amber-600 dark:text-amber-300">
-                "{EXAMPLE_HINTS[hintIndex]}"
-              </span>
-            </button>
+            <div className="inline-flex items-center gap-1 p-0.5 rounded-full bg-amber-500/10 border border-amber-500/25 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setFinalTranscript(EXAMPLE_HINTS[hintIndex]);
+                  triggerSound('notification');
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full hover:bg-amber-500/15 text-xs text-[var(--foreground)] transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                title="Tap to try this example prompt"
+              >
+                <span className="text-sm">💡</span>
+                <span className="font-bold text-[11px] text-[var(--foreground)]/70">Try:</span>
+                <span className="font-bold text-amber-600 dark:text-amber-300">
+                  "{EXAMPLE_HINTS[hintIndex]}"
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setHintIndex((prev) => (prev + 1) % EXAMPLE_HINTS.length);
+                  triggerSound('notification');
+                }}
+                className="p-1 rounded-full text-[var(--foreground)]/60 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer mr-0.5 active:scale-90"
+                title="Shuffle to another example tip"
+                aria-label="Shuffle tip"
+              >
+                <Shuffle size={12} className="transition-transform active:rotate-180" />
+              </button>
+            </div>
           </div>
         )}
 

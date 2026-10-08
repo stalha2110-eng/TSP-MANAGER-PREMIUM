@@ -4,7 +4,7 @@ import {
   X, Mic, MicOff, Settings, Trash2, Edit2, Check, CheckCircle2, 
   AlertTriangle, Volume2, Sparkles, Sliders, FileText, 
   CornerDownRight, RefreshCw, Undo, Save, Info, PlusCircle, CheckCircle,
-  Globe, ChevronRight
+  Globe, ChevronRight, ChevronDown
 } from "lucide-react";
 import { Item, Category } from "../types";
 import { 
@@ -287,6 +287,19 @@ export function VoiceProductAssistant({
     return vSettings.defaultMicLocale || "en-IN";
   });
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isLangMenuOpen) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (langDropdownRef.current && !langDropdownRef.current.contains(e.target as Node)) {
+        setIsLangMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [isLangMenuOpen]);
+
   const [hintIndex, setHintIndex] = useState(0);
 
   const [isAiProcessing, setIsAiProcessing] = useState(false);
@@ -1180,7 +1193,7 @@ export function VoiceProductAssistant({
       >
         {/* Top Header Card */}
         <div className="px-4 py-3 sm:px-5 sm:py-3.5 bg-[var(--card)] border-b border-[var(--border)] shrink-0 space-y-2.5">
-          {/* Row 1: Title [v3.0] and Close */}
+          {/* Row 1: Title [v3.0] and Header Actions (Settings icon, Close) */}
           <div className="flex items-center justify-between">
             <h2 className="text-sm sm:text-base font-black tracking-tight text-[var(--foreground)] flex items-center gap-2">
               <span className="text-base sm:text-lg select-none">🎙️</span>
@@ -1190,21 +1203,42 @@ export function VoiceProductAssistant({
               </span>
             </h2>
 
-            <button 
-              onClick={onClose}
-              className="p-1.5 rounded-xl bg-[var(--background)] hover:bg-[var(--primary)]/10 text-[var(--foreground)]/80 hover:text-[var(--foreground)] transition-all border border-[var(--border)] shadow-xs cursor-pointer"
-              title="Close Panel"
-              id="voice-header-close-btn"
-            >
-              <X size={17} />
-            </button>
+            <div className="flex items-center gap-1.5">
+              {/* Settings icon-only button */}
+              <button
+                type="button"
+                onClick={() => setActiveTab(activeTab === 'settings' ? 'assistant' : 'settings')}
+                className={`h-8 w-8 rounded-xl transition-all border cursor-pointer flex items-center justify-center shrink-0 ${
+                  activeTab === 'settings'
+                    ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                    : 'bg-[var(--background)] hover:bg-[var(--primary)]/10 text-[var(--foreground)]/80 hover:text-[var(--foreground)] border-[var(--border)] shadow-xs'
+                }`}
+                title="Settings"
+                aria-label="Settings"
+              >
+                <Settings size={15} className={`transition-transform duration-300 ${activeTab === 'settings' ? 'rotate-90' : 'hover:rotate-45'}`} />
+              </button>
+
+              {/* Close Button */}
+              <button 
+                type="button"
+                onClick={onClose}
+                className="h-8 w-8 rounded-xl bg-[var(--background)] hover:bg-[var(--primary)]/10 text-[var(--foreground)]/80 hover:text-[var(--foreground)] transition-all border border-[var(--border)] shadow-xs cursor-pointer flex items-center justify-center shrink-0"
+                title="Close Panel"
+                id="voice-header-close-btn"
+                aria-label="Close"
+              >
+                <X size={15} />
+              </button>
+            </div>
           </div>
 
-          {/* Row 2: [ 🎙️ Voice ]  [ 📜 History ]  [ ⚙️ Settings ] */}
+          {/* Row 2: [ 🎙️ Voice ]  [ 📜 History ]  [ 🌐 Language ▾ ] */}
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => setActiveTab('assistant')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+              className={`h-8 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
                 activeTab === 'assistant' 
                   ? 'bg-amber-500 text-white border-amber-600 shadow-xs font-black' 
                   : 'bg-[var(--background)] text-[var(--foreground)]/70 border-[var(--border)] hover:bg-[var(--primary)]/5 hover:text-[var(--foreground)]'
@@ -1214,8 +1248,9 @@ export function VoiceProductAssistant({
               <span>Voice</span>
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('history')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+              className={`h-8 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
                 activeTab === 'history' 
                   ? 'bg-amber-500 text-white border-amber-600 shadow-xs font-black' 
                   : 'bg-[var(--background)] text-[var(--foreground)]/70 border-[var(--border)] hover:bg-[var(--primary)]/5 hover:text-[var(--foreground)]'
@@ -1224,101 +1259,88 @@ export function VoiceProductAssistant({
               <span>📜</span>
               <span>History</span>
             </button>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
-                activeTab === 'settings' 
-                  ? 'bg-amber-500 text-white border-amber-600 shadow-xs font-black' 
-                  : 'bg-[var(--background)] text-[var(--foreground)]/70 border-[var(--border)] hover:bg-[var(--primary)]/5 hover:text-[var(--foreground)]'
-              }`}
-            >
-              <span>⚙️</span>
-              <span>Settings</span>
-            </button>
-          </div>
-        </div>
 
-        {/* Compact Sliding Language Bar */}
-        {activeTab === 'assistant' && (
-          <div className="flex items-center justify-center px-4 py-2 bg-[var(--background)]/40 border-b border-[var(--border)] shrink-0 overflow-x-auto no-scrollbar">
-            <div 
-              className="inline-flex items-center gap-1.5 p-1 rounded-full bg-[var(--card)] border border-[var(--border)] shadow-xs transition-all"
-              style={{
-                paddingLeft: '-18.5px',
-                paddingRight: '-0.5px',
-                marginLeft: '-129px',
-                marginRight: '30px'
-              }}
-            >
-              {/* Single "Language" button */}
+            {/* Language Dropdown in Settings' previous place */}
+            <div className="relative" ref={langDropdownRef}>
               <button
+                type="button"
                 onClick={() => {
                   setIsLangMenuOpen(prev => !prev);
                   triggerSound('notification');
                 }}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                className={`h-8 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
                   isLangMenuOpen 
-                    ? "bg-amber-500 text-white shadow-xs font-extrabold" 
-                    : "text-[var(--foreground)]/80 hover:bg-[var(--primary)]/5 hover:text-[var(--foreground)]"
+                    ? 'bg-amber-500 text-white border-amber-600 shadow-xs font-black' 
+                    : 'bg-[var(--background)] text-[var(--foreground)]/70 border-[var(--border)] hover:bg-[var(--primary)]/5 hover:text-[var(--foreground)]'
                 }`}
-                title="Click to select language"
+                title="Select Language"
+                aria-expanded={isLangMenuOpen}
               >
                 <Globe size={13} className="shrink-0" />
                 <span>Language</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold transition-colors ${
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold transition-colors ${
                   isLangMenuOpen 
-                    ? "bg-black/20 text-white" 
-                    : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                    ? 'bg-black/20 text-white' 
+                    : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
                 }`}>
                   {micLocale === 'hi-IN' ? 'हिन्दी' : micLocale === 'mr-IN' ? 'मराठी' : 'Hinglish'}
                 </span>
-                <ChevronRight 
-                  size={13} 
-                  className={`transition-transform duration-200 shrink-0 ${isLangMenuOpen ? "rotate-90" : ""}`} 
+                <ChevronDown 
+                  size={12} 
+                  className={`transition-transform duration-200 shrink-0 ${isLangMenuOpen ? 'rotate-180' : ''}`} 
                 />
               </button>
 
-              {/* Sliding tray to the right displaying options */}
+              {/* Dropdown Menu */}
               <AnimatePresence>
                 {isLangMenuOpen && (
                   <motion.div
-                    initial={{ opacity: 0, width: 0, x: -12 }}
-                    animate={{ opacity: 1, width: "auto", x: 0 }}
-                    exit={{ opacity: 0, width: 0, x: -12 }}
-                    transition={{ type: "spring", stiffness: 380, damping: 28 }}
-                    className="flex items-center gap-1 overflow-hidden shrink-0 pr-0.5"
+                    initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute left-0 mt-1.5 w-48 rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-xl p-1.5 z-50 flex flex-col gap-1 backdrop-blur-md"
                   >
                     {[
-                      { id: "hi-IN", label: "🇮🇳 हिन्दी", code: "hi" },
-                      { id: "mr-IN", label: "🇮🇳 मराठी", code: "mr" },
-                      { id: "en-IN", label: "🇮🇳 Hinglish / Eng", code: "en-in" }
-                    ].map(loc => (
-                      <motion.button
-                        key={loc.id}
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -8 }}
-                        transition={{ duration: 0.15 }}
-                        onClick={() => {
-                          setMicLocale(loc.id);
-                          triggerSound('product_added');
-                          setIsLangMenuOpen(false);
-                        }}
-                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all flex items-center gap-1 border whitespace-nowrap cursor-pointer shrink-0 ${
-                          micLocale === loc.id
-                            ? "bg-amber-500/20 text-amber-500 border-amber-500/40 font-black shadow-xs scale-[1.02]"
-                            : "bg-[var(--background)] text-[var(--foreground)]/70 border-[var(--border)] hover:bg-[var(--primary)]/10 hover:text-[var(--foreground)]"
-                        }`}
-                      >
-                        {loc.label}
-                      </motion.button>
-                    ))}
+                      { id: "hi-IN", label: "हिन्दी", flag: "🇮🇳", sub: "Hindi" },
+                      { id: "mr-IN", label: "मराठी", flag: "🇮🇳", sub: "Marathi" },
+                      { id: "en-IN", label: "Hinglish / Eng", flag: "🇮🇳", sub: "Mixed / English" }
+                    ].map(loc => {
+                      const isSelected = micLocale === loc.id;
+                      return (
+                        <button
+                          key={loc.id}
+                          type="button"
+                          onClick={() => {
+                            setMicLocale(loc.id);
+                            triggerSound('product_added');
+                            setIsLangMenuOpen(false);
+                          }}
+                          className={`w-full px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                            isSelected
+                              ? 'bg-amber-500 text-white shadow-xs font-black'
+                              : 'text-[var(--foreground)] hover:bg-[var(--primary)]/10 hover:text-[var(--foreground)]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs">{loc.flag}</span>
+                            <div className="flex flex-col text-left">
+                              <span className="leading-tight">{loc.label}</span>
+                              <span className={`text-[9px] ${isSelected ? 'text-white/80' : 'text-[var(--muted-foreground)]'}`}>
+                                {loc.sub}
+                              </span>
+                            </div>
+                          </div>
+                          {isSelected && <Check size={13} className="shrink-0 stroke-[2.5]" />}
+                        </button>
+                      );
+                    })}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Scrollable Body Canvas */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-[var(--background)]/30">
@@ -2110,26 +2132,11 @@ export function VoiceProductAssistant({
 
         </div>
 
-        {/* Sticky Example Hint Footer: 💡 Try: "Badam 900 retail, 800 wholesale" */}
+        {/* Floating Example Hint / Try Card */}
         {activeTab === 'assistant' && (
-          <div className="border-t border-[var(--border)] bg-[var(--card)] px-4 py-2.5 sm:px-5 sm:py-3 shrink-0 flex items-center justify-center">
-            <div className="inline-flex items-center gap-1 p-0.5 rounded-full bg-amber-500/10 border border-amber-500/25 shadow-2xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setFinalTranscript(EXAMPLE_HINTS[hintIndex]);
-                  triggerSound('notification');
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full hover:bg-amber-500/15 text-xs text-[var(--foreground)] transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
-                title="Tap to try this example prompt"
-              >
-                <span className="text-sm">💡</span>
-                <span className="font-bold text-[11px] text-[var(--foreground)]/70">Try:</span>
-                <span className="font-bold text-amber-600 dark:text-amber-300">
-                  "{EXAMPLE_HINTS[hintIndex]}"
-                </span>
-              </button>
-
+          <div className="shrink-0 px-4 py-3 sm:px-6 sm:py-3.5 flex items-center justify-center">
+            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-amber-50/80 dark:bg-amber-950/40 backdrop-blur-md border border-amber-200/60 dark:border-amber-800/60 shadow-sm max-w-full">
+              {/* Shuffle button on left with face directed to the left side */}
               <button
                 type="button"
                 onClick={(e) => {
@@ -2137,8 +2144,8 @@ export function VoiceProductAssistant({
                   setHintIndex((prev) => (prev + 1) % EXAMPLE_HINTS.length);
                   triggerSound('notification');
                 }}
-                className="group flex items-center justify-center p-1.5 rounded-full text-[var(--foreground)]/60 hover:text-amber-500 hover:bg-amber-500/20 transition-all cursor-pointer mr-0.5 active:scale-90"
-                title="Shuffle to another example tip"
+                className="group flex items-center justify-center p-1.5 rounded-full text-amber-700/80 dark:text-amber-300/80 hover:text-amber-900 dark:hover:text-amber-100 hover:bg-amber-200/50 dark:hover:bg-amber-800/50 transition-all cursor-pointer active:scale-90 shrink-0"
+                title="Shuffle next tip"
                 aria-label="Shuffle tip"
               >
                 <svg
@@ -2147,7 +2154,7 @@ export function VoiceProductAssistant({
                   viewBox="0 0 20 20"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
-                  className="transition-transform duration-300 group-hover:rotate-45 group-active:rotate-180"
+                  className="scale-x-[-1] transition-transform duration-300 group-hover:-rotate-45 group-active:-rotate-180"
                 >
                   {/* Top-to-bottom curved track */}
                   <path
@@ -2186,6 +2193,26 @@ export function VoiceProductAssistant({
                     strokeLinejoin="round"
                   />
                 </svg>
+              </button>
+
+              {/* Micro-divider line */}
+              <div className="w-px h-3.5 bg-amber-300/70 dark:bg-amber-700/60 shrink-0" />
+
+              {/* Tip / Try Prompt button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setFinalTranscript(EXAMPLE_HINTS[hintIndex]);
+                  triggerSound('notification');
+                }}
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full hover:bg-amber-200/40 dark:hover:bg-amber-800/40 text-xs text-[var(--foreground)] transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] min-w-0"
+                title="Tap to try this example prompt"
+              >
+                <span className="text-sm shrink-0">💡</span>
+                <span className="font-bold text-[11px] text-amber-900/70 dark:text-amber-200/70 shrink-0">Try:</span>
+                <span className="font-bold text-amber-700 dark:text-amber-300 truncate">
+                  "{EXAMPLE_HINTS[hintIndex]}"
+                </span>
               </button>
             </div>
           </div>

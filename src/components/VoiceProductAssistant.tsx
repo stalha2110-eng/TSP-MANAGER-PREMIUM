@@ -230,6 +230,13 @@ function checkStopCommands(text: string): { action: 'stop' | 'cancel' | 'none'; 
   return { action: 'none', cleanedText: text };
 }
 
+const EXAMPLE_HINTS = [
+  "Badam 900 retail, 800 wholesale",
+  "Maggi 14 retail, 12 kharidi, stock 50",
+  "Sugar 42rs per kg, 40 wholesale",
+  "Fortune Oil 1 liter 145 retail, 130 kharidi"
+];
+
 interface VoiceProductAssistantProps {
   onClose: () => void;
   onSaveAll: (drafts: { item: Omit<Item, 'id' | 'lastUpdated'>; mode: 'create' | 'update' | { duplicateId: string } }[]) => void;
@@ -278,6 +285,15 @@ export function VoiceProductAssistant({
   const [micLocale, setMicLocale] = useState<string>(() => {
     return vSettings.defaultMicLocale || "en-IN";
   });
+  const [hintIndex, setHintIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHintIndex((prev) => (prev + 1) % EXAMPLE_HINTS.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
+
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [aiDetectedLanguage, setAiDetectedLanguage] = useState("");
   const finalTranscriptRef = useRef("");
@@ -1167,65 +1183,91 @@ export function VoiceProductAssistant({
         exit={{ scale: 0.95, y: 15 }}
         className="w-full max-w-4xl h-[95vh] sm:h-[90vh] bg-[var(--card)] border border-[var(--border)] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden text-[var(--foreground)]"
       >
-        {/* Header Ribbon */}
-        <div className="flex items-center justify-between p-5 bg-gradient-to-r from-amber-500/10 via-[var(--background)] to-transparent border-b border-[var(--border)] shrink-0 animate-fadeIn">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-500 shadow-inner">
-              <Mic size={22} className={isListening ? "animate-pulse" : ""} />
-            </div>
-            <div>
-              <h2 className="text-lg font-black tracking-tight text-[var(--foreground)] flex items-center gap-2">
-                Voice Product Assistant <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30 font-black tracking-widest uppercase">NLP v3.0</span>
-              </h2>
-              <p className="text-[10px] font-bold opacity-50 uppercase tracking-widest text-[var(--foreground)]">Rapid Store Onboarding Mechanism</p>
-            </div>
-          </div>
- 
-          <div className="flex items-center gap-2">
+        {/* Top Header Card */}
+        <div className="px-4 py-3 sm:px-5 sm:py-3.5 bg-[var(--card)] border-b border-[var(--border)] shrink-0 space-y-2.5">
+          {/* Row 1: Title [v3.0] and Close */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm sm:text-base font-black tracking-tight text-[var(--foreground)] flex items-center gap-2">
+              <span className="text-base sm:text-lg select-none">🎙️</span>
+              <span>Voice Assistant</span>
+              <span className="text-[11px] font-black text-amber-500">
+                [v3.0]
+              </span>
+            </h2>
+
             <button 
               onClick={onClose}
-              className="p-1.5 rounded-xl bg-[var(--background)] hover:bg-[var(--primary)]/10 text-[var(--foreground)] hover:text-[var(--foreground)] transition-all border border-[var(--border)] shadow-sm"
+              className="p-1.5 rounded-xl bg-[var(--background)] hover:bg-[var(--primary)]/10 text-[var(--foreground)]/80 hover:text-[var(--foreground)] transition-all border border-[var(--border)] shadow-xs cursor-pointer"
               title="Close Panel"
               id="voice-header-close-btn"
             >
-              <X size={18} />
+              <X size={17} />
+            </button>
+          </div>
+
+          {/* Row 2: [ 🎙️ Voice ]  [ 📜 History ]  [ ⚙️ Settings ] */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('assistant')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                activeTab === 'assistant' 
+                  ? 'bg-amber-500 text-white border-amber-600 shadow-xs font-black' 
+                  : 'bg-[var(--background)] text-[var(--foreground)]/70 border-[var(--border)] hover:bg-[var(--primary)]/5 hover:text-[var(--foreground)]'
+              }`}
+            >
+              <span>🎙️</span>
+              <span>Voice</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                activeTab === 'history' 
+                  ? 'bg-amber-500 text-white border-amber-600 shadow-xs font-black' 
+                  : 'bg-[var(--background)] text-[var(--foreground)]/70 border-[var(--border)] hover:bg-[var(--primary)]/5 hover:text-[var(--foreground)]'
+              }`}
+            >
+              <span>📜</span>
+              <span>History</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                activeTab === 'settings' 
+                  ? 'bg-amber-500 text-white border-amber-600 shadow-xs font-black' 
+                  : 'bg-[var(--background)] text-[var(--foreground)]/70 border-[var(--border)] hover:bg-[var(--primary)]/5 hover:text-[var(--foreground)]'
+              }`}
+            >
+              <span>⚙️</span>
+              <span>Settings</span>
             </button>
           </div>
         </div>
 
-        {/* Tab Selection */}
-        <div className="flex border-b border-[var(--border)] bg-[var(--background)]/30 shrink-0">
-          <button
-            onClick={() => setActiveTab('assistant')}
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest border-b-2 flex items-center justify-center gap-2 transition-all ${
-              activeTab === 'assistant' 
-                ? 'border-amber-500 text-amber-500 bg-[var(--card)]/50' 
-                : 'border-transparent opacity-60 hover:opacity-100 text-[var(--foreground)]'
-            }`}
-          >
-            <Mic size={14} /> Voice Panel
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest border-b-2 flex items-center justify-center gap-2 transition-all ${
-              activeTab === 'history' 
-                ? 'border-amber-500 text-amber-500 bg-[var(--card)]/50' 
-                : 'border-transparent opacity-60 hover:opacity-100 text-[var(--foreground)]'
-            }`}
-          >
-            <FileText size={14} /> Creation History
-          </button>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest border-b-2 flex items-center justify-center gap-2 transition-all ${
-              activeTab === 'settings' 
-                ? 'border-amber-500 text-amber-500 bg-[var(--card)]/50' 
-                : 'border-transparent opacity-60 hover:opacity-100 text-[var(--foreground)]'
-            }`}
-          >
-            <Sliders size={14} /> Settings ({Object.values(vSettings).filter(Boolean).length})
-          </button>
-        </div>
+        {/* Compact Language Selector Bar: [ 🇮🇳 हिन्दी ]  [ 🇮🇳 मराठी ]  [ 🇮🇳 Hinglish / Eng ] */}
+        {activeTab === 'assistant' && (
+          <div className="flex items-center justify-start sm:justify-center gap-2 px-4 py-2.5 bg-[var(--background)]/40 border-b border-[var(--border)] shrink-0 overflow-x-auto no-scrollbar">
+            {[
+              { id: "hi-IN", label: "🇮🇳 हिन्दी", code: "hi" },
+              { id: "mr-IN", label: "🇮🇳 मराठी", code: "mr" },
+              { id: "en-IN", label: "🇮🇳 Hinglish / Eng", code: "en-in" }
+            ].map(loc => (
+              <button
+                key={loc.id}
+                onClick={() => {
+                  setMicLocale(loc.id);
+                  triggerSound('product_added');
+                }}
+                className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 border whitespace-nowrap shrink-0 cursor-pointer ${
+                  micLocale === loc.id
+                    ? "bg-amber-500/20 text-amber-500 border-amber-500/40 font-extrabold shadow-xs"
+                    : "bg-[var(--card)] text-[var(--foreground)]/70 border-[var(--border)] hover:bg-[var(--primary)]/5 hover:text-[var(--foreground)]"
+                }`}
+              >
+                {loc.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Scrollable Body Canvas */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-[var(--background)]/30">
@@ -1234,102 +1276,78 @@ export function VoiceProductAssistant({
             <div className="space-y-6">
               
               {/* MIC STATION PANEL */}
-              <div className="relative rounded-3xl bg-[var(--card)] border border-[var(--border)] p-6 overflow-hidden flex flex-col items-center justify-center text-center space-y-5 shadow-sm">
+              <div className="relative rounded-3xl bg-[var(--card)] border border-[var(--border)] p-4 sm:p-5 overflow-hidden flex flex-col items-center justify-center text-center space-y-3 sm:space-y-3.5 shadow-sm">
                 {/* Floating ambient glow */}
                 <div className={`absolute -top-32 -left-32 w-64 h-64 rounded-full filter blur-[100px] transition-all opacity-15 ${isListening ? "bg-amber-500 scale-150" : "bg-teal-500"}`} />
                 <div className={`absolute -bottom-32 -right-32 w-64 h-64 rounded-full filter blur-[100px] transition-all opacity-15 ${isListening ? "bg-amber-500 scale-150" : "bg-amber-500"}`} />
 
-                {/* Instant Quick Lang Selector */}
-                <div className="flex flex-wrap justify-center items-center gap-2 pt-2 pb-1 relative z-20">
-                  {[
-                    { id: "hi-IN", label: "🇮🇳 हिन्दी", code: "hi" },
-                    { id: "mr-IN", label: "🇮🇳 मराठी", code: "mr" },
-                    { id: "en-IN", label: "🇮🇳 Hinglish / Eng", code: "en-in" }
-                  ].map(loc => (
-                    <button
-                      key={loc.id}
-                      onClick={() => {
-                        setMicLocale(loc.id);
-                        triggerSound('product_added');
-                      }}
-                      className={`px-3 py-1.5 rounded-full text-[10px] font-black transition-all flex items-center gap-1 border ${
-                        micLocale === loc.id
-                          ? "bg-amber-500/20 text-amber-500 border-amber-500/40 font-extrabold shadow-md scale-105"
-                          : "bg-[var(--background)] text-[var(--foreground)]/60 border-[var(--border)] hover:bg-[var(--primary)]/5 hover:text-[var(--foreground)]"
-                      }`}
-                    >
-                      {loc.label}
-                    </button>
-                  ))}
-                </div>
-
                 {/* Main Interactive Mic Button Section */}
-                <div className="relative flex flex-col items-center justify-center py-2 my-2">
-                  <div className="relative flex items-center justify-center h-36 w-36 sm:h-40 sm:w-40">
-                    {/* Continuous Idle & Active Ripple Waves */}
+                <div className="relative flex flex-col items-center justify-center py-2">
+                  <div className="relative flex items-center justify-center h-28 w-28 sm:h-32 sm:w-32">
+                    {/* Continuous Idle & Active Ripple Waves in squircle shape */}
                     {isListening ? (
                       <>
                         <motion.div 
-                          initial={{ scale: 0.8, opacity: 0.8 }}
-                          animate={{ scale: [1, 2.4], opacity: [0.8, 0] }}
+                          initial={{ scale: 0.85, opacity: 0.8 }}
+                          animate={{ scale: [1, 2.1], opacity: [0.8, 0] }}
                           transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut" }}
-                          className="absolute inset-0 rounded-full border-2 border-rose-500/60 bg-rose-500/10 pointer-events-none"
+                          className="absolute inset-0 rounded-[28px] border-2 border-rose-500/60 bg-rose-500/10 pointer-events-none"
                         />
                         <motion.div 
-                          initial={{ scale: 0.8, opacity: 0.6 }}
-                          animate={{ scale: [1, 1.9], opacity: [0.6, 0] }}
+                          initial={{ scale: 0.85, opacity: 0.6 }}
+                          animate={{ scale: [1, 1.7], opacity: [0.6, 0] }}
                           transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut", delay: 0.4 }}
-                          className="absolute inset-0 rounded-full border-2 border-amber-500/50 bg-amber-500/10 pointer-events-none"
+                          className="absolute inset-0 rounded-[28px] border-2 border-amber-500/50 bg-amber-500/10 pointer-events-none"
                         />
                         <motion.div 
-                          initial={{ scale: 0.8, opacity: 0.4 }}
-                          animate={{ scale: [1, 1.5], opacity: [0.4, 0] }}
+                          initial={{ scale: 0.85, opacity: 0.4 }}
+                          animate={{ scale: [1, 1.35], opacity: [0.4, 0] }}
                           transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut", delay: 0.8 }}
-                          className="absolute inset-0 rounded-full border border-red-500/40 pointer-events-none"
+                          className="absolute inset-0 rounded-[28px] border border-red-500/40 pointer-events-none"
                         />
                       </>
                     ) : (
                       <>
                         {/* Inviting Idle Ripple Wave 1 */}
                         <motion.div 
-                          animate={{ scale: [1, 1.8], opacity: [0.55, 0] }}
+                          animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
                           transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut" }}
-                          className="absolute inset-0 rounded-full border-2 border-amber-500/50 bg-amber-500/5 pointer-events-none"
+                          className="absolute inset-0 rounded-[28px] border-2 border-amber-500/40 bg-amber-500/5 pointer-events-none"
                         />
                         {/* Inviting Idle Ripple Wave 2 */}
                         <motion.div 
-                          animate={{ scale: [1, 1.45], opacity: [0.4, 0] }}
+                          animate={{ scale: [1, 1.3], opacity: [0.35, 0] }}
                           transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut", delay: 1.2 }}
-                          className="absolute inset-0 rounded-full border border-amber-400/40 bg-amber-400/5 pointer-events-none"
+                          className="absolute inset-0 rounded-[28px] border border-amber-400/35 bg-amber-400/5 pointer-events-none"
                         />
                         {/* Rotating subtle conic glow aura */}
                         <motion.div 
                           animate={{ rotate: 360 }}
                           transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                          className="absolute -inset-3 rounded-full bg-gradient-to-tr from-amber-500/20 via-orange-500/10 to-amber-300/25 blur-md pointer-events-none"
+                          className="absolute -inset-2 rounded-[32px] bg-gradient-to-tr from-amber-500/20 via-orange-500/10 to-amber-300/25 blur-md pointer-events-none"
                         />
                       </>
                     )}
 
-                    {/* Hero Mic Button */}
+                    {/* Squircle Mic Button (╭──────────╮ │ 🎙️ │ ╰──────────╯) */}
                     <motion.button
                       id="voice-assistant-mic-record-btn"
                       onClick={toggleListening}
-                      whileHover={{ scale: 1.08 }}
-                      whileTap={{ scale: 0.92 }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       animate={isListening ? {
-                        scale: [1, 1.06, 1],
-                        boxShadow: [
-                          "0 15px 35px -5px rgba(239, 68, 68, 0.6), 0 0 0 4px rgba(239, 68, 68, 0.4)",
-                          "0 20px 45px -5px rgba(245, 158, 11, 0.8), 0 0 25px 15px rgba(239, 68, 68, 0.2)",
-                          "0 15px 35px -5px rgba(239, 68, 68, 0.6), 0 0 0 4px rgba(239, 68, 68, 0.4)"
-                        ]
-                      } : {
                         scale: [1, 1.04, 1],
                         boxShadow: [
-                          "0 12px 30px -4px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.3)",
-                          "0 18px 45px 0px rgba(245, 158, 11, 0.75), 0 0 20px 8px rgba(245, 158, 11, 0.25)",
-                          "0 12px 30px -4px rgba(245, 158, 11, 0.5), 0 0 0 4px rgba(245, 158, 11, 0.3)"
+                          "0 10px 25px -4px rgba(239, 68, 68, 0.6), 0 0 0 3px rgba(239, 68, 68, 0.4)",
+                          "0 15px 35px -4px rgba(245, 158, 11, 0.8), 0 0 20px 8px rgba(239, 68, 68, 0.2)",
+                          "0 10px 25px -4px rgba(239, 68, 68, 0.6), 0 0 0 3px rgba(239, 68, 68, 0.4)"
+                        ]
+                      } : {
+                        scale: [1, 1.02, 1],
+                        boxShadow: [
+                          "0 8px 20px -4px rgba(245, 158, 11, 0.4), 0 0 0 2px rgba(245, 158, 11, 0.2)",
+                          "0 12px 28px 0px rgba(245, 158, 11, 0.6), 0 0 14px 4px rgba(245, 158, 11, 0.15)",
+                          "0 8px 20px -4px rgba(245, 158, 11, 0.4), 0 0 0 2px rgba(245, 158, 11, 0.2)"
                         ]
                       }}
                       transition={{
@@ -1344,111 +1362,71 @@ export function VoiceProductAssistant({
                           ease: "easeInOut"
                         }
                       }}
-                      className={`relative z-10 flex items-center justify-center h-28 w-28 sm:h-32 sm:w-32 rounded-full cursor-pointer select-none outline-none focus:outline-none focus:ring-4 focus:ring-amber-400/50 transition-colors border-4 ${
+                      className={`relative z-10 flex items-center justify-center h-22 w-22 sm:h-24 sm:w-24 rounded-[26px] cursor-pointer select-none outline-none focus:outline-none focus:ring-4 focus:ring-amber-400/50 transition-colors border-3 sm:border-4 ${
                         isListening 
-                          ? 'bg-gradient-to-tr from-rose-600 via-red-500 to-amber-500 border-rose-300/80 text-white shadow-2xl' 
-                          : 'bg-gradient-to-tr from-amber-500 via-amber-600 to-orange-500 border-amber-300/80 text-white shadow-2xl'
+                          ? 'bg-gradient-to-tr from-rose-600 via-red-500 to-amber-500 border-rose-300/80 text-white shadow-xl' 
+                          : 'bg-gradient-to-tr from-amber-500 via-amber-600 to-orange-500 border-amber-300/80 text-white shadow-xl'
                       }`}
                       title={isListening ? "Click to Stop Listening" : "Click to Speak Products"}
                     >
                       {/* Inner highlight rim */}
-                      <div className="absolute inset-1.5 rounded-full border border-white/30 pointer-events-none" />
+                      <div className="absolute inset-1 rounded-[22px] border border-white/30 pointer-events-none" />
 
                       <AnimatePresence mode="wait">
                         <motion.div
                           key={isListening ? "mic-off" : "mic-on"}
-                          initial={{ scale: 0.6, rotate: -25, opacity: 0 }}
+                          initial={{ scale: 0.6, rotate: -20, opacity: 0 }}
                           animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                          exit={{ scale: 0.6, rotate: 25, opacity: 0 }}
+                          exit={{ scale: 0.6, rotate: 20, opacity: 0 }}
                           transition={{ type: "spring", stiffness: 400, damping: 18 }}
                           className="flex flex-col items-center justify-center"
                         >
                           {isListening ? (
-                            <MicOff size={44} className="text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] animate-pulse stroke-[2.5]" />
+                            <MicOff size={36} className="text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)] animate-pulse stroke-[2.5]" />
                           ) : (
-                            <Mic size={44} className="text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] stroke-[2.5]" />
+                            <Mic size={36} className="text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)] stroke-[2.5]" />
                           )}
                         </motion.div>
                       </AnimatePresence>
                     </motion.button>
                   </div>
 
-                  {/* Prominent Action Prompt Badge */}
-                  <motion.div 
+                  {/* Status Badge directly below Mic: ● Tap to Speak */}
+                  <motion.button 
                     onClick={toggleListening}
-                    whileHover={{ scale: 1.04 }}
-                    whileTap={{ scale: 0.96 }}
-                    className={`mt-4 px-4 py-1.5 rounded-full text-[11px] font-black tracking-wider uppercase flex items-center gap-2 cursor-pointer shadow-md transition-all ${
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className={`mt-3 px-3.5 py-1 rounded-full text-[11px] font-bold tracking-wide flex items-center gap-1.5 cursor-pointer shadow-xs transition-all ${
                       isListening
-                        ? 'bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/40'
-                        : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 hover:bg-amber-500/30'
+                        ? 'bg-rose-500/15 text-rose-500 dark:text-rose-400 border border-rose-500/30'
+                        : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/25'
                     }`}
                   >
-                    <span className={`w-2 h-2 rounded-full ${isListening ? 'bg-rose-500 animate-ping' : 'bg-amber-500 animate-ping'}`} />
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${isListening ? 'bg-rose-500 animate-ping' : 'bg-amber-500 animate-pulse'}`} />
                     <span>
                       {isListening 
-                        ? 'Listening... Tap to Stop (सुन रहा है... रोकने के लिए दबाएं)' 
-                        : 'Tap to Speak (बोलने के लिए दबाएं)'}
+                        ? 'Listening • Tap to Stop' 
+                        : '● Tap to Speak'}
                     </span>
-                  </motion.div>
+                  </motion.button>
                 </div>
 
-                {/* Step indicator pipeline */}
+                {/* 3-Step Progress Stepper Pipeline: 1. Listen • 2. Capture • 3. Extract */}
                 {vSettings.showSteps && (
-                  <div className="flex flex-wrap justify-center items-center gap-3 text-[10px] uppercase font-black tracking-wider text-[var(--foreground)]/50">
-                    <span 
-                      style={{
-                        marginRight: '-13px',
-                        paddingLeft: '2px',
-                        marginLeft: '15px',
-                        marginTop: '0px',
-                        borderColor: '#ffffff',
-                        borderStyle: 'none',
-                        borderWidth: '0px',
-                        borderRadius: '8.5px'
-                      }}
-                      className={`px-2 py-1 rounded border border-[var(--border)]/60 bg-[var(--background)] flex items-center gap-1.5 transition-colors ${processStep === 'listening' ? 'text-amber-500 border-amber-500/30 bg-amber-500/10' : ''}`}
-                    >
-                      🎤 1. Listening
+                  <div className="flex items-center justify-center gap-2 text-[11px] font-semibold text-[var(--foreground)]/60 bg-[var(--background)]/60 px-4 py-1.5 rounded-full border border-[var(--border)]/50">
+                    <span className={`flex items-center gap-1.5 transition-colors ${processStep === 'listening' ? 'text-amber-500 font-bold' : ''}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${processStep === 'listening' ? 'bg-amber-500 animate-pulse' : 'bg-current opacity-40'}`} />
+                      1. Listen
                     </span>
-                    <span className="opacity-20">→</span>
-                    <span 
-                      style={{
-                        marginRight: '-2px',
-                        marginLeft: '2px',
-                        borderWidth: '0px',
-                        borderStyle: 'none',
-                        borderRadius: '8.5px'
-                      }}
-                      className={`px-2 py-1 rounded border border-[var(--border)]/60 bg-[var(--background)] flex items-center gap-1.5 transition-colors ${processStep === 'captured' ? 'text-amber-500 border-amber-500/30 bg-amber-500/10' : ''}`}
-                    >
-                      📥 2. Captured
+                    <span className="opacity-30">•</span>
+                    <span className={`flex items-center gap-1.5 transition-colors ${processStep === 'captured' ? 'text-amber-500 font-bold' : ''}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${processStep === 'captured' ? 'bg-amber-500 animate-pulse' : 'bg-current opacity-40'}`} />
+                      2. Capture
                     </span>
-                    <span className="opacity-20">→</span>
-                    <span 
-                      style={{
-                        marginLeft: '-3px',
-                        paddingLeft: '-1px',
-                        paddingRight: '3px',
-                        borderColor: '#ffffff',
-                        borderStyle: 'none',
-                        borderRadius: '8.5px'
-                      }}
-                      className={`px-2 py-1 rounded border border-[var(--border)]/60 bg-[var(--background)] flex items-center gap-1.5 transition-colors ${processStep === 'analyzing' ? 'text-amber-500 border-amber-500/30 bg-amber-500/10' : ''}`}
-                    >
-                      ⚡ 3. Structuring
-                    </span>
-                    <span className="opacity-20">→</span>
-                    <span 
-                      style={{
-                        marginLeft: '-13px',
-                        borderColor: '#ffffff',
-                        borderStyle: 'none',
-                        borderRadius: '8.5px'
-                      }}
-                      className={`px-2 py-1 rounded border border-[var(--border)]/60 bg-[var(--background)] flex items-center gap-1.5 transition-colors ${processStep === 'done' ? 'text-teal-500 border-teal-500/30 bg-teal-500/10' : ''}`}
-                    >
-                      ✓ 4. Extracted
+                    <span className="opacity-30">•</span>
+                    <span className={`flex items-center gap-1.5 transition-colors ${processStep === 'analyzing' || processStep === 'done' ? 'text-amber-500 font-bold' : ''}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${processStep === 'analyzing' || processStep === 'done' ? 'bg-amber-500 animate-pulse' : 'bg-current opacity-40'}`} />
+                      3. Extract
                     </span>
                   </div>
                 )}
@@ -1500,7 +1478,7 @@ export function VoiceProductAssistant({
                             {interimTranscript ? (
                               <span className="text-amber-400 font-black border-b border-amber-400/30 pb-0.5 inline-block">{interimTranscript}</span>
                             ) : !finalTranscript ? (
-                              <span className="text-white/35 italic font-medium">Start speaking clearly now. Say items, prices, and units...</span>
+                              <span className="text-white/35 italic font-medium">Start speaking clearly now, e.g. "{EXAMPLE_HINTS[hintIndex]}"</span>
                             ) : null}
                           </p>
                         </div>
@@ -1519,7 +1497,7 @@ export function VoiceProductAssistant({
                           value={finalTranscript}
                           onChange={(e) => setFinalTranscript(e.target.value)}
                           className="w-full min-h-[5.5rem] px-4 py-3 rounded-2xl bg-[var(--background)] border border-[var(--border)] text-sm font-medium text-[var(--foreground)] focus:outline-none focus:border-amber-500/50 resize-y"
-                          placeholder="What you spoke or want to create will show up here..."
+                          placeholder={`What you spoke or want to create will show up here (e.g. "${EXAMPLE_HINTS[hintIndex]}")...`}
                         />
                         <div className="flex gap-2 justify-end">
                           <Button
@@ -1558,12 +1536,7 @@ export function VoiceProductAssistant({
                       </div>
                     ) : null}
                   </div>
-                ) : (
-                  <div className="opacity-60 space-y-1.5 text-[var(--foreground)] text-center max-w-xl px-4">
-                    <p className="text-xs font-semibold">Tap the mic to start listing.</p>
-                    <p className="text-[10px] font-mono opacity-90 text-amber-600 dark:text-amber-400">Example: "Badam retail 900rs, wholesale 850rs, kharidi 800rs"</p>
-                  </div>
-                )}
+                ) : null}
 
                 {recognitionError && (
                   <p className="text-xs bg-red-500/15 border border-red-500/30 text-red-500 px-4 py-2 rounded-xl flex items-center gap-2">
@@ -2085,6 +2058,27 @@ export function VoiceProductAssistant({
           )}
 
         </div>
+
+        {/* Sticky Example Hint Footer: 💡 Try: "Badam 900 retail, 800 wholesale" */}
+        {activeTab === 'assistant' && (
+          <div className="border-t border-[var(--border)] bg-[var(--card)] px-4 py-2.5 sm:px-5 sm:py-3 shrink-0 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => {
+                setFinalTranscript(EXAMPLE_HINTS[hintIndex]);
+                triggerSound('notification');
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 text-xs text-[var(--foreground)] transition-all cursor-pointer shadow-2xs hover:scale-[1.01] active:scale-[0.99]"
+              title="Tap to try this example prompt"
+            >
+              <span className="text-sm">💡</span>
+              <span className="font-bold text-[11px] text-[var(--foreground)]/70">Try:</span>
+              <span className="font-bold text-amber-600 dark:text-amber-300">
+                "{EXAMPLE_HINTS[hintIndex]}"
+              </span>
+            </button>
+          </div>
+        )}
 
         {/* 3. TEMPORARY 'VERIFICATION' OVERLAY */}
         <AnimatePresence>

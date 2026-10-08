@@ -1186,7 +1186,7 @@ export function SmartBulkEntryModal({
           >
             <Plus size={16} className="text-[var(--primary)] shrink-0" />
             <span className="truncate">
-              <span className="sm:hidden">ADD ROW</span>
+              <span className="sm:hidden">ADD</span>
               <span className="hidden sm:inline">+ ADD MULTIPLE ITEM ROW</span>
             </span>
           </button>

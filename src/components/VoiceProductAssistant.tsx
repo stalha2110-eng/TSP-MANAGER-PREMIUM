@@ -4,7 +4,7 @@ import {
   X, Mic, MicOff, Settings, Trash2, Edit2, Check, CheckCircle2, 
   AlertTriangle, Volume2, Sparkles, Sliders, FileText, 
   CornerDownRight, RefreshCw, Undo, Save, Info, PlusCircle, CheckCircle,
-  Globe, ChevronRight, Shuffle
+  Globe, ChevronRight
 } from "lucide-react";
 import { Item, Category } from "../types";
 import { 
@@ -2137,11 +2137,55 @@ export function VoiceProductAssistant({
                   setHintIndex((prev) => (prev + 1) % EXAMPLE_HINTS.length);
                   triggerSound('notification');
                 }}
-                className="p-1 rounded-full text-[var(--foreground)]/60 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer mr-0.5 active:scale-90"
+                className="group flex items-center justify-center p-1.5 rounded-full text-[var(--foreground)]/60 hover:text-amber-500 hover:bg-amber-500/20 transition-all cursor-pointer mr-0.5 active:scale-90"
                 title="Shuffle to another example tip"
                 aria-label="Shuffle tip"
               >
-                <Shuffle size={12} className="transition-transform active:rotate-180" />
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="transition-transform duration-300 group-hover:rotate-45 group-active:rotate-180"
+                >
+                  {/* Top-to-bottom curved track */}
+                  <path
+                    d="M3 5.5H6.5C9 5.5 10.5 14.5 13 14.5H16.5"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                  />
+                  {/* Bottom arrowhead */}
+                  <path
+                    d="M14 12L17 14.5L14 17"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  {/* Bottom-to-top track with clean weave crossover */}
+                  <path
+                    d="M3 14.5H6.5C7.9 14.5 8.9 12.3 9.7 10.5"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M10.8 8C11.5 6.7 12.3 5.5 13.5 5.5H16.5"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                  />
+                  {/* Top arrowhead */}
+                  <path
+                    d="M14 3L17 5.5L14 8"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </button>
             </div>
           </div>

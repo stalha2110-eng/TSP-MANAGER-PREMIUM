@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   X, Mic, MicOff, Settings, Trash2, Edit2, Check, CheckCircle2, 
   AlertTriangle, Volume2, Sparkles, Sliders, FileText, 
-  CornerDownRight, RefreshCw, Undo, Save, Info, PlusCircle, CheckCircle
+  CornerDownRight, RefreshCw, Undo, Save, Info, PlusCircle, CheckCircle,
+  Globe, ChevronRight
 } from "lucide-react";
 import { Item, Category } from "../types";
 import { 
@@ -285,6 +286,7 @@ export function VoiceProductAssistant({
   const [micLocale, setMicLocale] = useState<string>(() => {
     return vSettings.defaultMicLocale || "en-IN";
   });
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [hintIndex, setHintIndex] = useState(0);
 
   useEffect(() => {
@@ -1243,29 +1245,85 @@ export function VoiceProductAssistant({
           </div>
         </div>
 
-        {/* Compact Language Selector Bar: [ 🇮🇳 हिन्दी ]  [ 🇮🇳 मराठी ]  [ 🇮🇳 Hinglish / Eng ] */}
+        {/* Compact Sliding Language Bar */}
         {activeTab === 'assistant' && (
-          <div className="flex items-center justify-start sm:justify-center gap-2 px-4 py-2.5 bg-[var(--background)]/40 border-b border-[var(--border)] shrink-0 overflow-x-auto no-scrollbar">
-            {[
-              { id: "hi-IN", label: "🇮🇳 हिन्दी", code: "hi" },
-              { id: "mr-IN", label: "🇮🇳 मराठी", code: "mr" },
-              { id: "en-IN", label: "🇮🇳 Hinglish / Eng", code: "en-in" }
-            ].map(loc => (
+          <div className="flex items-center justify-center px-4 py-2 bg-[var(--background)]/40 border-b border-[var(--border)] shrink-0 overflow-x-auto no-scrollbar">
+            <div 
+              className="inline-flex items-center gap-1.5 p-1 rounded-full bg-[var(--card)] border border-[var(--border)] shadow-xs transition-all"
+              style={{
+                paddingLeft: '-18.5px',
+                paddingRight: '-0.5px',
+                marginLeft: '-129px',
+                marginRight: '30px'
+              }}
+            >
+              {/* Single "Language" button */}
               <button
-                key={loc.id}
                 onClick={() => {
-                  setMicLocale(loc.id);
-                  triggerSound('product_added');
+                  setIsLangMenuOpen(prev => !prev);
+                  triggerSound('notification');
                 }}
-                className={`px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 border whitespace-nowrap shrink-0 cursor-pointer ${
-                  micLocale === loc.id
-                    ? "bg-amber-500/20 text-amber-500 border-amber-500/40 font-extrabold shadow-xs"
-                    : "bg-[var(--card)] text-[var(--foreground)]/70 border-[var(--border)] hover:bg-[var(--primary)]/5 hover:text-[var(--foreground)]"
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                  isLangMenuOpen 
+                    ? "bg-amber-500 text-white shadow-xs font-extrabold" 
+                    : "text-[var(--foreground)]/80 hover:bg-[var(--primary)]/5 hover:text-[var(--foreground)]"
                 }`}
+                title="Click to select language"
               >
-                {loc.label}
+                <Globe size={13} className="shrink-0" />
+                <span>Language</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold transition-colors ${
+                  isLangMenuOpen 
+                    ? "bg-black/20 text-white" 
+                    : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                }`}>
+                  {micLocale === 'hi-IN' ? 'हिन्दी' : micLocale === 'mr-IN' ? 'मराठी' : 'Hinglish'}
+                </span>
+                <ChevronRight 
+                  size={13} 
+                  className={`transition-transform duration-200 shrink-0 ${isLangMenuOpen ? "rotate-90" : ""}`} 
+                />
               </button>
-            ))}
+
+              {/* Sliding tray to the right displaying options */}
+              <AnimatePresence>
+                {isLangMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, width: 0, x: -12 }}
+                    animate={{ opacity: 1, width: "auto", x: 0 }}
+                    exit={{ opacity: 0, width: 0, x: -12 }}
+                    transition={{ type: "spring", stiffness: 380, damping: 28 }}
+                    className="flex items-center gap-1 overflow-hidden shrink-0 pr-0.5"
+                  >
+                    {[
+                      { id: "hi-IN", label: "🇮🇳 हिन्दी", code: "hi" },
+                      { id: "mr-IN", label: "🇮🇳 मराठी", code: "mr" },
+                      { id: "en-IN", label: "🇮🇳 Hinglish / Eng", code: "en-in" }
+                    ].map(loc => (
+                      <motion.button
+                        key={loc.id}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -8 }}
+                        transition={{ duration: 0.15 }}
+                        onClick={() => {
+                          setMicLocale(loc.id);
+                          triggerSound('product_added');
+                          setIsLangMenuOpen(false);
+                        }}
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all flex items-center gap-1 border whitespace-nowrap cursor-pointer shrink-0 ${
+                          micLocale === loc.id
+                            ? "bg-amber-500/20 text-amber-500 border-amber-500/40 font-black shadow-xs scale-[1.02]"
+                            : "bg-[var(--background)] text-[var(--foreground)]/70 border-[var(--border)] hover:bg-[var(--primary)]/10 hover:text-[var(--foreground)]"
+                        }`}
+                      >
+                        {loc.label}
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         )}
 

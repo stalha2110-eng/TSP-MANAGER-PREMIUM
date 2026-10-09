@@ -2648,52 +2648,25 @@ export default function BillingScreen({
           <button
             onClick={handleCalculatorButtonAction}
             className={cn(
-              "py-2 px-1.5 sm:px-3.5 rounded-lg sm:rounded-xl flex flex-row items-center justify-center gap-1 sm:gap-2 transition-all cursor-pointer select-none border font-black text-[11px] sm:text-xs tracking-wide sm:tracking-wider uppercase relative overflow-hidden group",
+              "py-2 px-1.5 sm:px-3 rounded-lg sm:rounded-xl flex flex-row items-center justify-center transition-all cursor-pointer select-none border relative overflow-hidden group",
               billingSubTab === 'calculator'
-                ? "bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white border-amber-500/50 shadow-sm shadow-amber-500/25 scale-[1.01]"
+                ? "bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white border-amber-500/50 shadow-md shadow-amber-500/30 scale-[1.02]"
                 : "bg-transparent border-transparent text-[var(--foreground)]/80 hover:bg-[var(--foreground)]/5 hover:text-[var(--foreground)]",
-              calcDoubleTapPulse && "ring-2 ring-amber-400 scale-95 transition-transform"
+              calcDoubleTapPulse && "ring-4 ring-amber-400 scale-95 transition-transform duration-150"
             )}
             title="Calculator (1-Tap: Universal Calculator | 2-Tap: Pro POS Business Engine)"
+            aria-label="Calculator (Tap once for Store Calculator, double tap for POS Engine)"
           >
-            {/* Live Dual-Action ambient micro-glow when inactive */}
-            {billingSubTab !== 'calculator' && (
-              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400/70 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-              </span>
-            )}
-
-            <div className="relative flex items-center justify-center">
-              <AnimatedCalculatorIcon active={billingSubTab === 'calculator'} size={18} className={billingSubTab === 'calculator' ? "text-white" : "text-amber-500 dark:text-amber-400"} />
-              {/* Dual-action indicator dot badge */}
-              <span 
-                title="Dual Functionality: 1 Tap = Universal Calculator, 2 Taps = Pro POS Assistant"
-                className={cn(
-                  "absolute -bottom-1 -right-1 text-[7px] font-black px-0.5 rounded leading-none flex items-center justify-center",
-                  billingSubTab === 'calculator'
-                    ? "bg-white text-amber-600 shadow-xs"
-                    : "bg-amber-500 text-white shadow-xs"
-                )}
-              >
-                2x
-              </span>
-            </div>
-
-            <div className="flex flex-col items-start text-left leading-none">
-              <div className="flex items-center gap-1">
-                <span className="whitespace-nowrap font-black tracking-wide sm:tracking-wider text-[11px] sm:text-xs drop-shadow-2xs">Calculator</span>
-              </div>
-              <span className={cn(
-                "hidden sm:inline-block text-[7px] font-bold tracking-tight lowercase opacity-70 mt-0.5",
-                billingSubTab === 'calculator' ? "text-white" : "text-amber-600 dark:text-amber-400"
-              )}>
-                tap: store • 2x: pos
-              </span>
+            <div className="relative flex items-center justify-center p-0.5">
+              <AnimatedCalculatorIcon 
+                active={billingSubTab === 'calculator'} 
+                size={21} 
+                className={billingSubTab === 'calculator' ? "text-white" : "text-amber-500 dark:text-amber-400"} 
+              />
             </div>
 
             {billingSubTab === 'calculator' && (
-              <span className="relative flex h-2 w-2 shrink-0 ml-0.5">
+              <span className="relative flex h-2 w-2 shrink-0 ml-1 sm:ml-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-200 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
               </span>

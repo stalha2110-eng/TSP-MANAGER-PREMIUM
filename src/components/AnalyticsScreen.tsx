@@ -667,7 +667,7 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
         </div>
       </div>
 
-      {/* Sub-Tabs Switcher for Core Reports / Business Milestones with beautifully animated right-aligned small theme options list */}
+      {/* Sub-Tabs Switcher for Core Reports / Business Milestones */}
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-[var(--border)] pb-2 gap-4 mb-3 overflow-visible">
         <div className="flex gap-6 overflow-x-auto whitespace-nowrap scrollbar-none">
           <button
@@ -720,49 +720,6 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
             )}
           </button>
         </div>
-
-        {/* Small, beautifully animated & interactive theme options selector */}
-        {onUpdateSettings && (
-          <div className="flex items-center gap-1 self-end md:self-auto pb-1 md:pb-0 select-none z-10 bg-[var(--card-solid,#111a2e)] theme-card-solid px-2 py-0.5 rounded-full border border-[var(--border)] shadow-xs h-8">
-            <span className="text-[8px] font-black uppercase tracking-wider text-[var(--foreground)]/60 mr-1 pl-1">Themes:</span>
-            {[
-              { id: 'midnight_blue', emoji: '🌑', label: 'Midnight Pro', glow: 'bg-blue-500/10 shadow-[0_0_8px_rgba(59,130,246,0.3)]' },
-              { id: 'cyberpunk', emoji: '⚡', label: 'Cyberpunk Neon', glow: 'bg-pink-500/10 shadow-[0_0_8px_rgba(236,72,153,0.3)]' },
-              { id: 'glass_modern', emoji: '✨', label: 'Glass Morphic', glow: 'bg-purple-500/10 shadow-[0_0_8px_rgba(168,85,247,0.3)]' },
-              { id: 'luxury_gold', emoji: '👑', label: 'Luxury Gold', glow: 'bg-amber-500/10 shadow-[0_0_8px_rgba(245,158,11,0.3)]' },
-              { id: 'emerald_matrix', emoji: '📟', label: 'Technical Green', glow: 'bg-emerald-500/10 shadow-[0_0_8px_rgba(16,185,129,0.3)]' },
-              { id: 'retro-blue', emoji: '🌌', label: 'Cosmic Retro', glow: 'bg-indigo-500/10 shadow-[0_0_8px_rgba(99,102,241,0.3)]' },
-              { id: 'emerald-gold', emoji: '🌿', label: 'Emerald Forest', glow: 'bg-emerald-600/10 shadow-[0_0_8px_rgba(16,185,129,0.3)]' },
-              { id: 'minimalist-ivory', emoji: '🍦', label: 'Classic Ivory', glow: 'bg-stone-400/10 shadow-[0_0_8px_rgba(120,113,108,0.2)]' },
-              { id: 'neo_brutalist', emoji: '🎛️', label: 'Neo-Brutalist', glow: 'bg-zinc-800/10 shadow-[0_0_8px_rgba(0,0,0,0.3)]' }
-            ].map((themeOpt) => {
-              const isActive = state.settings.theme === themeOpt.id;
-              return (
-                <motion.button
-                  key={themeOpt.id}
-                  onClick={() => onUpdateSettings({ theme: themeOpt.id as any })}
-                  title={themeOpt.label}
-                  whileHover={{ scale: 1.3, rotate: 10 }}
-                  whileTap={{ scale: 0.85 }}
-                  className={`relative w-5.5 h-5.5 rounded-full flex items-center justify-center text-[10px] cursor-pointer transition-all ${
-                    isActive 
-                      ? `${themeOpt.glow} ring-1.5 ring-[var(--primary)] text-scale-110 font-bold z-20`
-                      : 'hover:bg-[var(--foreground)]/5 text-[var(--foreground)]/60 hover:text-[var(--foreground)]'
-                  }`}
-                >
-                  <span>{themeOpt.emoji}</span>
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeThemeBubbleGlow"
-                      className="absolute -inset-1 rounded-full border border-[var(--primary)] opacity-50"
-                      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    />
-                  )}
-                </motion.button>
-              );
-            })}
-          </div>
-        )}
       </div>
 
       {activeSubTab === 'milestones' ? (

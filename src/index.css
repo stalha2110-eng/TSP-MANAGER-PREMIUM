@@ -48,10 +48,10 @@ html {
   --accent: var(--primary);
   --background: #020617;
   --foreground: #cbd5e1;
-  --card: rgba(15, 23, 42, 0.4);
-  --card-solid: #0b1329;
+  --card: #0f172a;
+  --card-solid: #0f172a;
   --card-foreground: #f1f5f9;
-  --border: rgba(255, 255, 255, 0.05);
+  --border: rgba(255, 255, 255, 0.08);
   --shadow: 0 0 30px rgba(30, 64, 175, 0.3);
   --radius: 1.25rem;
 }
@@ -81,7 +81,7 @@ html {
   --background: #0f172a;
   --foreground: #f8fafc;
   --card: rgba(255, 255, 255, 0.05);
-  --card-solid: #111a2e;
+  --card-solid: #0f172a;
   --card-foreground: #f8fafc;
   --border: rgba(255, 255, 255, 0.1);
   --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
@@ -96,7 +96,7 @@ html {
   --accent: #fbbf24;
   --background: #0c0a09;
   --foreground: #fef3c7;
-  --card: rgba(69, 26, 3, 0.3);
+  --card: #18120c;
   --card-solid: #18120c;
   --card-foreground: #fffbeb;
   --border: #795f00;
@@ -128,7 +128,7 @@ html {
   --accent: #f43f5e;
   --background: #030008;
   --foreground: #22d3ee;
-  --card: rgba(14, 116, 144, 0.12);
+  --card: #0e0a1c;
   --card-solid: #0e0a1c;
   --card-foreground: #ffffff;
   --border: rgba(6, 182, 212, 0.35);
@@ -144,7 +144,7 @@ html {
   --accent: #ec4899;
   --background: #03001a;
   --foreground: #e0e7ff;
-  --card: rgba(15, 23, 42, 0.5);
+  --card: #0c0a28;
   --card-solid: #0c0a28;
   --card-foreground: #ffffff;
   --border: rgba(99, 102, 241, 0.25);
@@ -160,7 +160,7 @@ html {
   --accent: #fbbf24;
   --background: #01140f;
   --foreground: #d1fae5;
-  --card: rgba(2, 44, 34, 0.4);
+  --card: #052119;
   --card-solid: #052119;
   --card-foreground: #f0fdf4;
   --border: rgba(16, 185, 129, 0.2);
@@ -184,10 +184,12 @@ html {
   --radius: 0.75rem;
 }
 
-/* Opaque Solid Theme Cards: Guarantee zero glassmorphic transparency during theme selection */
+/* Opaque Solid Theme Cards & Modals: Guarantee zero glassmorphic transparency */
 .theme-menu-card,
-.theme-card-solid {
-  background-color: var(--card-solid, #111a2e) !important;
+.theme-card-solid,
+.modal-solid,
+.modal-opaque {
+  background-color: var(--card-solid, var(--background)) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   opacity: 1 !important;

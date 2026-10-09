@@ -440,7 +440,7 @@ export function ItemFormModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col bg-[var(--card)]"
+      className="fixed inset-0 z-50 flex flex-col bg-[var(--card-solid,#0f172a)] modal-opaque text-[var(--foreground)]"
     >
       <motion.div
         role="dialog"
@@ -449,11 +449,11 @@ export function ItemFormModal({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 15 }}
         transition={{ duration: 0.2 }}
-        className="h-full w-full overflow-hidden bg-[var(--card)] flex flex-col"
+        className="h-full w-full overflow-hidden bg-[var(--card-solid,#0f172a)] modal-opaque flex flex-col"
       >
         {/* Header */}
         <div 
-          className="w-full border-b border-[var(--border)] shrink-0 bg-[var(--card)]/90 backdrop-blur-md z-20"
+          className="w-full border-b border-[var(--border)] shrink-0 bg-[var(--card-solid,#0f172a)] z-20"
           style={{ paddingTop: 'max(0px, env(safe-area-inset-top))' }}
         >
           <div className="flex items-center justify-between px-4 py-3.5 sm:px-6 sm:py-4 max-w-3xl mx-auto">
@@ -1197,7 +1197,7 @@ export function ItemFormModal({
 
         {/* Action Bar */}
         <div 
-          className="fixed bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-[var(--card)] via-[var(--card)]/95 to-transparent z-20 pointer-events-none"
+          className="fixed bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-[var(--card-solid,#0f172a)] via-[var(--card-solid,#0f172a)] to-transparent z-20 pointer-events-none"
           style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
         >
           <div className="flex gap-4 pointer-events-auto max-w-3xl mx-auto">
@@ -1246,7 +1246,7 @@ export function ItemFormModal({
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 transition={{ type: "spring", duration: 0.25, bounce: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-[310px] overflow-hidden rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-xl p-5 space-y-4"
+                className="w-full max-w-[310px] overflow-hidden rounded-2xl bg-[var(--card-solid,#0f172a)] modal-opaque border border-[var(--border)] shadow-2xl p-5 space-y-4"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between pb-1 border-b border-[var(--border)]/50">
@@ -1363,7 +1363,7 @@ export function ItemFormModal({
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 transition={{ type: "spring", duration: 0.25, bounce: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-[340px] rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+                className="w-full max-w-[340px] rounded-2xl bg-[var(--card-solid,#0f172a)] modal-opaque border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between gap-2 p-3.5 pb-2.5 border-b border-[var(--border)] shrink-0">

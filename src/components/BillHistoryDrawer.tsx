@@ -916,7 +916,7 @@ Do you want to permanently delete these ${group.bills.length} bills from history
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-            className="relative w-full max-w-sm sm:max-w-md bg-[var(--card)] shadow-2xl border-r border-[var(--border)] flex flex-col h-full z-50 text-left overflow-hidden overscroll-contain"
+            className="relative w-full max-w-sm sm:max-w-md bg-[var(--card-solid,#0f172a)] modal-opaque text-[var(--foreground)] shadow-2xl border-r border-[var(--border)] flex flex-col h-full z-50 text-left overflow-hidden overscroll-contain"
           >
             {/* Drawer Header */}
             <div className="flex items-center justify-between p-4 border-b border-[var(--border)] shrink-0 bg-slate-50/50 dark:bg-slate-950/20">
@@ -1575,7 +1575,7 @@ Do you want to permanently delete these ${group.bills.length} bills from history
                   exit={{ scale: 0.9, y: 15, opacity: 0 }}
                   transition={{ type: "spring", stiffness: 400, damping: 28 }}
                   className={cn(
-                    "relative w-full max-w-sm bg-[var(--card)] border rounded-[2rem] p-6 shadow-2xl overflow-hidden text-[var(--foreground)] z-[2010] transition-all duration-300",
+                    "relative w-full max-w-sm bg-[var(--card-solid,#0f172a)] modal-opaque border rounded-[2rem] p-6 shadow-2xl overflow-hidden text-[var(--foreground)] z-[2010] transition-all duration-300",
                     customConfirm.isDestructive ? "border-red-500/30 font-bold" : "border-[var(--border)]"
                   )}
                 >

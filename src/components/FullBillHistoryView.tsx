@@ -673,7 +673,7 @@ export default function FullBillHistoryView({ state, onUpdateState }: FullBillHi
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[var(--card)] border border-[var(--border)] p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-4 text-left"
+              className="bg-[var(--card-solid,#0f172a)] modal-opaque border border-[var(--border)] p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-4 text-left"
             >
               <h3 className="text-base font-black uppercase text-[var(--foreground)]">{customConfirm.title}</h3>
               <p className="text-xs text-[var(--foreground)]/70 whitespace-pre-line leading-relaxed">{customConfirm.message}</p>
@@ -976,7 +976,7 @@ export default function FullBillHistoryView({ state, onUpdateState }: FullBillHi
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[var(--card)] border border-[var(--border)] rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden text-left"
+              className="bg-[var(--card-solid,#0f172a)] modal-opaque border border-[var(--border)] rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden text-left"
             >
               {/* Modal Header */}
               <div className="p-5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--foreground)]/[0.02]">

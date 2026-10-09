@@ -664,7 +664,7 @@ export function SmartBulkEntryModal({
         <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 via-[var(--primary)] to-amber-500 opacity-80 shrink-0" />
 
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-[var(--border)] shrink-0 bg-[var(--card)] backdrop-blur-md">
+        <div className="flex items-center justify-between p-5 border-b border-[var(--border)] shrink-0 bg-[var(--card-solid,#0f172a)] modal-opaque">
           <div className="flex items-center gap-3.5">
             <div 
               style={{
@@ -1281,7 +1281,7 @@ export function SmartBulkEntryModal({
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 transition={{ type: "spring", duration: 0.25, bounce: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-[340px] rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+                className="w-full max-w-[340px] rounded-2xl bg-[var(--card-solid,#0f172a)] modal-opaque border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between gap-2 p-3.5 pb-2.5 border-b border-[var(--border)] shrink-0">

@@ -3021,7 +3021,7 @@ export default function BillingScreen({
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: '100%', opacity: 0.95 }}
               transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-              className="relative w-full max-w-md bg-[var(--card)] border-l border-[var(--border)] h-full shadow-2xl flex flex-col focus:outline-none text-[var(--foreground)] z-10"
+              className="relative w-full max-w-md bg-[var(--card-solid,#0f172a)] modal-opaque border-l border-[var(--border)] h-full shadow-2xl flex flex-col focus:outline-none text-[var(--foreground)] z-10"
             >
               {/* Header */}
               <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
@@ -5540,7 +5540,7 @@ export default function BillingScreen({
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 220 }}
               className={cn(
-                "relative z-10 w-full bg-[var(--card)] border-t-2 sm:border-2 border-[var(--primary)] shadow-2xl flex flex-col justify-between text-left transition-all duration-300 overflow-hidden",
+                "relative z-10 w-full bg-[var(--card-solid,#0f172a)] modal-opaque border-t-2 sm:border-2 border-[var(--primary)] shadow-2xl flex flex-col justify-between text-left transition-all duration-300 overflow-hidden",
                 isLivePreviewFullScreen
                   ? "h-[100dvh] max-h-[100dvh] max-w-3xl rounded-none sm:rounded-3xl p-3 sm:p-5"
                   : "h-[82vh] max-h-[86vh] max-w-lg rounded-t-[2.5rem] p-4"
@@ -5857,7 +5857,7 @@ export default function BillingScreen({
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative z-10 w-full max-w-sm rounded-2xl bg-[var(--card)] p-4 border border-[var(--border)] shadow-2xl space-y-3"
+              className="relative z-10 w-full max-w-sm rounded-2xl bg-[var(--card-solid,#0f172a)] modal-opaque p-4 border border-[var(--border)] shadow-2xl space-y-3"
             >
               <div className="flex items-center justify-between border-b border-[var(--border)] pb-2">
                 <h3 className="font-black uppercase text-xs text-[var(--primary)] flex items-center gap-1">
@@ -6241,7 +6241,7 @@ export default function BillingScreen({
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="bg-[var(--card)] border border-amber-500/30 rounded-2xl p-5 shadow-2xl max-w-sm w-full space-y-4 text-left relative z-55"
+              className="bg-[var(--card-solid,#0f172a)] modal-opaque border border-amber-500/30 rounded-2xl p-5 shadow-2xl max-w-sm w-full space-y-4 text-left relative z-55"
             >
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 shrink-0">

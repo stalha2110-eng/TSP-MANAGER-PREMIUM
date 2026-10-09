@@ -140,7 +140,7 @@ export function UnitSelectorModal({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.12 }}
       onClick={onClose}
-      className="fixed inset-0 z-[250] flex items-center justify-center bg-black/65 backdrop-blur-xs p-3 font-sans"
+      className="fixed inset-0 z-[250] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 font-sans"
     >
       <motion.div
         initial={{ scale: 0.96, opacity: 0, y: 6 }}
@@ -148,7 +148,7 @@ export function UnitSelectorModal({
         exit={{ scale: 0.96, opacity: 0, y: 6 }}
         transition={{ duration: 0.15, ease: "easeOut" }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[360px] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-[360px] bg-[var(--card-solid,#0f172a)] modal-opaque border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
       >
         {/* Compact Header */}
         <div className="px-3.5 py-2.5 border-b border-[var(--border)] flex items-center justify-between">

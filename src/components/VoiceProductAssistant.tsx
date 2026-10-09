@@ -1189,10 +1189,10 @@ export function VoiceProductAssistant({
         initial={{ scale: 0.95, y: 15 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 15 }}
-        className="w-full max-w-4xl h-[95vh] sm:h-[90vh] bg-[var(--card)] border border-[var(--border)] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden text-[var(--foreground)]"
+        className="w-full max-w-4xl h-[95vh] sm:h-[90vh] bg-[var(--card-solid,#0f172a)] modal-opaque border border-[var(--border)] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden text-[var(--foreground)]"
       >
         {/* Top Header Card */}
-        <div className="px-4 py-3 sm:px-5 sm:py-3.5 bg-[var(--card)] border-b border-[var(--border)] shrink-0 space-y-2.5">
+        <div className="px-4 py-3 sm:px-5 sm:py-3.5 bg-[var(--card-solid,#0f172a)] border-b border-[var(--border)] shrink-0 space-y-2.5">
           {/* Row 1: Title [v3.0] and Header Actions (Settings icon, Close) */}
           <div className="flex items-center justify-between">
             <h2 className="text-sm sm:text-base font-black tracking-tight text-[var(--foreground)] flex items-center gap-2">

@@ -841,6 +841,44 @@ export default function BillingScreen({
   const [livePreviewDragStartY, setLivePreviewDragStartY] = useState<number | null>(null);
   const [livePreviewTheme, setLivePreviewTheme] = useState<'laser' | 'thermal'>('thermal');
 
+  // Dual-functionality handler for the sub-tab Calculator button:
+  // Single click/tap -> Universal Store Calculator sub-tab
+  // Double click/tap -> Pro POS Business Engine (Offline Store Assistant) via 'tsm-open-calculator'
+  const calcClickTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const calcLastClickTimeRef = useRef<number>(0);
+  const [calcDoubleTapPulse, setCalcDoubleTapPulse] = useState(false);
+
+  const handleCalculatorButtonAction = () => {
+    const now = Date.now();
+    const timeSinceLastClick = now - calcLastClickTimeRef.current;
+
+    if (timeSinceLastClick > 0 && timeSinceLastClick < 320) {
+      // Double-click/double-tap detected!
+      if (calcClickTimerRef.current) {
+        clearTimeout(calcClickTimerRef.current);
+        calcClickTimerRef.current = null;
+      }
+      calcLastClickTimeRef.current = 0;
+      playFeedbackEvent('success', state.settings);
+      setCalcDoubleTapPulse(true);
+      setTimeout(() => setCalcDoubleTapPulse(false), 800);
+      window.dispatchEvent(new CustomEvent('tsm-open-calculator'));
+      addToast("Pro POS Business Engine (Store Assistant) Opened", "success");
+    } else {
+      // First click/tap: wait to see if second click arrives
+      calcLastClickTimeRef.current = now;
+      if (calcClickTimerRef.current) {
+        clearTimeout(calcClickTimerRef.current);
+      }
+      calcClickTimerRef.current = setTimeout(() => {
+        playFeedbackEvent('notification', state.settings);
+        setBillingSubTab('calculator');
+        calcClickTimerRef.current = null;
+        calcLastClickTimeRef.current = 0;
+      }, 300);
+    }
+  };
+
   // Mobile preview capsule gesture handlers (swipe/drag up anywhere or tap)
   const capsuleTouchStartY = useRef<number | null>(null);
   const capsuleDraggedUpRef = useRef<boolean>(false);
@@ -2608,21 +2646,54 @@ export default function BillingScreen({
           </button>
 
           <button
-            onClick={() => {
-              playFeedbackEvent('notification', state.settings);
-              setBillingSubTab('calculator');
-            }}
+            onClick={handleCalculatorButtonAction}
             className={cn(
-              "py-2 px-1.5 sm:px-3.5 rounded-lg sm:rounded-xl flex flex-row items-center justify-center gap-1 sm:gap-2 transition-all cursor-pointer select-none border font-black text-[11px] sm:text-xs tracking-wide sm:tracking-wider uppercase relative overflow-hidden",
+              "py-2 px-1.5 sm:px-3.5 rounded-lg sm:rounded-xl flex flex-row items-center justify-center gap-1 sm:gap-2 transition-all cursor-pointer select-none border font-black text-[11px] sm:text-xs tracking-wide sm:tracking-wider uppercase relative overflow-hidden group",
               billingSubTab === 'calculator'
                 ? "bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white border-amber-500/50 shadow-sm shadow-amber-500/25 scale-[1.01]"
-                : "bg-transparent border-transparent text-[var(--foreground)]/80 hover:bg-[var(--foreground)]/5 hover:text-[var(--foreground)]"
+                : "bg-transparent border-transparent text-[var(--foreground)]/80 hover:bg-[var(--foreground)]/5 hover:text-[var(--foreground)]",
+              calcDoubleTapPulse && "ring-2 ring-amber-400 scale-95 transition-transform"
             )}
+            title="Calculator (1-Tap: Universal Calculator | 2-Tap: Pro POS Business Engine)"
           >
-            <AnimatedCalculatorIcon active={billingSubTab === 'calculator'} size={18} className={billingSubTab === 'calculator' ? "text-white" : "text-amber-500 dark:text-amber-400"} />
-            <span className="whitespace-nowrap font-black tracking-wide sm:tracking-wider text-[11px] sm:text-xs drop-shadow-2xs">Calculator</span>
+            {/* Live Dual-Action ambient micro-glow when inactive */}
+            {billingSubTab !== 'calculator' && (
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400/70 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+            )}
+
+            <div className="relative flex items-center justify-center">
+              <AnimatedCalculatorIcon active={billingSubTab === 'calculator'} size={18} className={billingSubTab === 'calculator' ? "text-white" : "text-amber-500 dark:text-amber-400"} />
+              {/* Dual-action indicator dot badge */}
+              <span 
+                title="Dual Functionality: 1 Tap = Universal Calculator, 2 Taps = Pro POS Assistant"
+                className={cn(
+                  "absolute -bottom-1 -right-1 text-[7px] font-black px-0.5 rounded leading-none flex items-center justify-center",
+                  billingSubTab === 'calculator'
+                    ? "bg-white text-amber-600 shadow-xs"
+                    : "bg-amber-500 text-white shadow-xs"
+                )}
+              >
+                2x
+              </span>
+            </div>
+
+            <div className="flex flex-col items-start text-left leading-none">
+              <div className="flex items-center gap-1">
+                <span className="whitespace-nowrap font-black tracking-wide sm:tracking-wider text-[11px] sm:text-xs drop-shadow-2xs">Calculator</span>
+              </div>
+              <span className={cn(
+                "hidden sm:inline-block text-[7px] font-bold tracking-tight lowercase opacity-70 mt-0.5",
+                billingSubTab === 'calculator' ? "text-white" : "text-amber-600 dark:text-amber-400"
+              )}>
+                tap: store • 2x: pos
+              </span>
+            </div>
+
             {billingSubTab === 'calculator' && (
-              <span className="relative flex h-2 w-2 shrink-0">
+              <span className="relative flex h-2 w-2 shrink-0 ml-0.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-200 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
               </span>
@@ -2648,92 +2719,9 @@ export default function BillingScreen({
       {/* MAIN BILLING DASHBOARD SUB-TAB VIEW */}
       {billingSubTab === 'billing' && (
         <>
-          {/* 📋 BILLING DESK & MODE CONTROLS BAR */}
-          <div 
-            style={{ marginTop: '-5px' }}
-            className="bg-[var(--card)] border border-[var(--border)] p-3.5 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-          >
-            {/* "Billing Desk" title */}
-            <div className="flex items-center justify-between w-full sm:w-auto">
-              <div className="flex items-center gap-2">
-                <div className="h-8.5 w-8.5 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center">
-                  <ShoppingCart size={18} />
-                </div>
-                <h2 className="text-sm font-black tracking-tight uppercase leading-none">
-                  {getTranslation('posHeading')}
-                </h2>
-              </div>
-            </div>
-
-            {/* Live Preview, Printer Status & Far Right Circular Calc Business button */}
-            <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto">
-              <div className="flex items-center gap-2">
-                {/* Real-time Bill Preview Toggle - Square Shape */}
-                <button
-                  onClick={() => {
-                    setShowLivePreview(!showLivePreview);
-                    if (window.innerWidth < 1024) {
-                      setMobilePreviewOpen(!mobilePreviewOpen);
-                    }
-                  }}
-                  style={{
-                    width: '60px',
-                    height: '38px',
-                    backgroundColor: '#ff2a2a',
-                    borderStyle: 'groove',
-                    borderWidth: '0.55px',
-                    borderColor: '#4b0d0d'
-                  }}
-                  className={cn(
-                    "rounded-xl border transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer select-none active:scale-95 shadow-xs text-white",
-                    showLivePreview
-                      ? "shadow-sm shadow-emerald-500/20"
-                      : "hover:opacity-90"
-                  )}
-                  title="Toggle Live Invoice Preview"
-                >
-                  <Eye size={14} />
-                  <span className="text-[7px] font-black uppercase tracking-tight leading-none">Live</span>
-                </button>
-
-                {/* Silent Printer Connection Indicator */}
-                <div 
-                  title="Printer Health Status Monitor"
-                  className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl border border-[var(--border)] bg-[var(--card)]/80 text-[8px] font-black tracking-wider uppercase select-none shadow-xs"
-                >
-                  <span className={cn(
-                    "h-1.5 w-1.5 rounded-full inline-block animate-pulse",
-                    printerStatus === 'connected' ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.8)]' :
-                    printerStatus === 'connecting' ? 'bg-amber-500' :
-                    'bg-neutral-400'
-                  )}></span>
-                  <span className={cn(
-                    printerStatus === 'connected' ? 'text-emerald-500 font-bold' :
-                    printerStatus === 'connecting' ? 'text-amber-500 animate-pulse' :
-                    'text-neutral-500'
-                  )}>
-                    {printerStatus === 'connected' ? 'Prn: Online' :
-                     printerStatus === 'connecting' ? 'Prn: Conn...' :
-                     'Prn: Off'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Circular Calc Business Toggle - Positioned on the far right corner */}
-              <button
-                onClick={() => window.dispatchEvent(new CustomEvent('tsm-open-calculator'))}
-                style={{ width: '45px', height: '42px' }}
-                className="rounded-full bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white border border-amber-400/30 flex items-center justify-center transition-all cursor-pointer select-none active:scale-95 shadow-md shadow-amber-500/25 ring-2 ring-amber-500/20 hover:ring-amber-500/40 shrink-0 ml-auto sm:ml-0"
-                title="Calc Business"
-              >
-                <Calculator size={18} className="drop-shadow-xs" />
-              </button>
-            </div>
-          </div>
-
           {/* 📁 MULTI-WINDOW POS DRAFT BILLING TABS & SMART REGISTER DECK */}
           <div 
-            style={{ marginTop: '-6px', marginBottom: '12px' }}
+            style={{ marginBottom: '12px' }}
             className="w-full bg-[var(--card)]/80 backdrop-blur-md rounded-2xl border border-[var(--border)] p-3.5 space-y-2.5 shadow-lg relative overflow-hidden group"
           >
         <div className="absolute top-0 right-0 h-32 w-32 bg-[var(--primary)]/5 rounded-full blur-2xl pointer-events-none" />

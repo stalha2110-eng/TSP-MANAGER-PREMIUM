@@ -14,6 +14,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
+  --color-card-solid: var(--card-solid);
   --color-card-foreground: var(--card-foreground);
   --color-border: var(--border);
 }
@@ -28,6 +29,7 @@
   --background: #f8fafc;
   --foreground: #0f172a;
   --card: #ffffff;
+  --card-solid: #ffffff;
   --card-foreground: #1e293b;
   --border: #e2e8f0;
   --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -47,6 +49,7 @@ html {
   --background: #020617;
   --foreground: #cbd5e1;
   --card: rgba(15, 23, 42, 0.4);
+  --card-solid: #0b1329;
   --card-foreground: #f1f5f9;
   --border: rgba(255, 255, 255, 0.05);
   --shadow: 0 0 30px rgba(30, 64, 175, 0.3);
@@ -62,6 +65,7 @@ html {
   --background: #ffffff;
   --foreground: #000000;
   --card: #ffffff;
+  --card-solid: #ffffff;
   --card-foreground: #000000;
   --border: #000000;
   --shadow: 8px 8px 0px #000000;
@@ -77,6 +81,7 @@ html {
   --background: #0f172a;
   --foreground: #f8fafc;
   --card: rgba(255, 255, 255, 0.05);
+  --card-solid: #111a2e;
   --card-foreground: #f8fafc;
   --border: rgba(255, 255, 255, 0.1);
   --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
@@ -92,6 +97,7 @@ html {
   --background: #0c0a09;
   --foreground: #fef3c7;
   --card: rgba(69, 26, 3, 0.3);
+  --card-solid: #18120c;
   --card-foreground: #fffbeb;
   --border: #795f00;
   --shadow: 0 0 20px rgba(121, 95, 0, 0.3);
@@ -107,6 +113,7 @@ html {
   --background: #000000;
   --foreground: #d1fae5;
   --card: #050505;
+  --card-solid: #080c0a;
   --card-foreground: #10b981;
   --border: #10b981;
   --shadow: 0 0 10px rgba(16, 185, 129, 0.2);
@@ -122,6 +129,7 @@ html {
   --background: #030008;
   --foreground: #22d3ee;
   --card: rgba(14, 116, 144, 0.12);
+  --card-solid: #0e0a1c;
   --card-foreground: #ffffff;
   --border: rgba(6, 182, 212, 0.35);
   --shadow: 0 0 25px rgba(236, 72, 153, 0.4);
@@ -137,6 +145,7 @@ html {
   --background: #03001a;
   --foreground: #e0e7ff;
   --card: rgba(15, 23, 42, 0.5);
+  --card-solid: #0c0a28;
   --card-foreground: #ffffff;
   --border: rgba(99, 102, 241, 0.25);
   --shadow: 0 0 20px rgba(79, 70, 229, 0.3);
@@ -152,6 +161,7 @@ html {
   --background: #01140f;
   --foreground: #d1fae5;
   --card: rgba(2, 44, 34, 0.4);
+  --card-solid: #052119;
   --card-foreground: #f0fdf4;
   --border: rgba(16, 185, 129, 0.2);
   --shadow: 0 0 20px rgba(16, 185, 129, 0.25);
@@ -167,10 +177,20 @@ html {
   --background: #fdfcf7;
   --foreground: #1c2e24;
   --card: #f8f6f0;
+  --card-solid: #fcfbf7;
   --card-foreground: #1c2e24;
   --border: #dcd9cd;
   --shadow: 0 4px 12px rgba(45, 90, 78, 0.08);
   --radius: 0.75rem;
+}
+
+/* Opaque Solid Theme Cards: Guarantee zero glassmorphic transparency during theme selection */
+.theme-menu-card,
+.theme-card-solid {
+  background-color: var(--card-solid, #111a2e) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
 }
 
 @keyframes gradient-flow {

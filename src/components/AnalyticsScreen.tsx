@@ -723,7 +723,7 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
 
         {/* Small, beautifully animated & interactive theme options selector */}
         {onUpdateSettings && (
-          <div className="flex items-center gap-1 self-end md:self-auto pb-1 md:pb-0 select-none z-10 bg-[var(--background)]/40 px-2 py-0.5 rounded-full border border-[var(--border)]/[0.25] backdrop-blur-md shadow-xs h-8">
+          <div className="flex items-center gap-1 self-end md:self-auto pb-1 md:pb-0 select-none z-10 bg-[var(--card-solid,#111a2e)] theme-card-solid px-2 py-0.5 rounded-full border border-[var(--border)] shadow-xs h-8">
             <span className="text-[8px] font-black uppercase tracking-wider text-[var(--foreground)]/60 mr-1 pl-1">Themes:</span>
             {[
               { id: 'midnight_blue', emoji: '🌑', label: 'Midnight Pro', glow: 'bg-blue-500/10 shadow-[0_0_8px_rgba(59,130,246,0.3)]' },

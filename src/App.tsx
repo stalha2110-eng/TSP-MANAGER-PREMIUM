@@ -4300,7 +4300,7 @@ export default function App() {
                       exit={{ opacity: 0, scale: 0.94, y: -6 }}
                       transition={{ type: "spring", stiffness: 480, damping: 26 }}
                       className={cn(
-                        "absolute right-0 top-full mt-2 rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-2xl z-[120] overflow-hidden text-[var(--foreground)]",
+                        "absolute right-0 top-full mt-2 rounded-2xl border border-[var(--border)] shadow-2xl z-[120] overflow-hidden text-[var(--foreground)] theme-menu-card bg-[var(--card-solid,#111a2e)]",
                         moreMenuView === 'themes' ? "w-64 sm:w-72 max-w-[90vw]" : "w-48 py-1.5"
                       )}
                       onClick={(e) => e.stopPropagation()}
@@ -4373,8 +4373,8 @@ export default function App() {
                         </>
                       ) : (
                         /* Themes View inside the Popup */
-                        <div className="flex flex-col">
-                          <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--border)] bg-[var(--foreground)]/[0.03]">
+                        <div className="flex flex-col bg-[var(--card-solid,#111a2e)]">
+                          <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--border)] bg-[var(--card-solid,#111a2e)]">
                             <button
                               type="button"
                               onClick={() => setMoreMenuView('main')}
@@ -4400,7 +4400,7 @@ export default function App() {
                             </button>
                           </div>
 
-                          <div className="max-h-[320px] overflow-y-auto p-1.5 space-y-1 overscroll-contain">
+                          <div className="max-h-[320px] overflow-y-auto p-1.5 space-y-1 overscroll-contain bg-[var(--card-solid,#111a2e)]">
                             {THEMES.map((th) => {
                               const isSelected = state.settings.theme === th.id;
                               return (
@@ -4416,8 +4416,8 @@ export default function App() {
                                   className={cn(
                                     "w-full flex items-center justify-between p-2 rounded-xl text-left transition-all cursor-pointer group border",
                                     isSelected
-                                      ? "bg-[var(--primary)]/10 border-[var(--primary)]/30 text-[var(--foreground)] shadow-xs"
-                                      : "border-transparent hover:bg-[var(--foreground)]/5 text-[var(--foreground)]/80 hover:text-[var(--foreground)]"
+                                      ? "bg-[var(--primary)]/15 border-[var(--primary)]/40 text-[var(--foreground)] shadow-xs font-bold"
+                                      : "border-transparent bg-[var(--card-solid,#111a2e)] hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/80 hover:text-[var(--foreground)]"
                                   )}
                                 >
                                   <div className="flex items-center gap-2.5 min-w-0">
@@ -4431,7 +4431,7 @@ export default function App() {
                                       )}>
                                         {th.name}
                                       </p>
-                                      <p className="text-[10px] opacity-60 font-medium truncate">
+                                      <p className="text-[10px] opacity-70 font-medium truncate">
                                         {th.description}
                                       </p>
                                     </div>
@@ -6082,7 +6082,7 @@ export default function App() {
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md h-full bg-[var(--card)] border-l border-[var(--border)] p-6 shadow-2xl overflow-y-auto flex flex-col justify-between text-[var(--foreground)]"
+              className="w-full max-w-md h-full bg-[var(--card-solid,#111a2e)] theme-card-solid border-l border-[var(--border)] p-6 shadow-2xl overflow-y-auto flex flex-col justify-between text-[var(--foreground)]"
             >
               <div className="space-y-6">
                 <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">

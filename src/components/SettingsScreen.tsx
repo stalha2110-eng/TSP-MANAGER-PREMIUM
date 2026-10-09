@@ -439,7 +439,7 @@ export default function SettingsScreen({
                     <button
                       type="button"
                       onClick={() => setInterfacePage('themes')}
-                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-violet-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card-solid,#111a2e)] theme-card-solid hover:border-violet-500/50 hover:bg-[var(--foreground)]/[0.04] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
                     >
                       <div className="flex items-center gap-3.5">
                         <div className="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-500 border border-violet-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -733,35 +733,38 @@ export default function SettingsScreen({
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {THEMES.map(theme => (
-                        <button
-                          key={theme.id}
-                          onClick={() => onUpdate({ theme: theme.id })}
-                          className={cn(
-                            "relative flex items-center gap-5 rounded-[2.5rem] border p-6 text-left transition-all overflow-hidden group cursor-pointer",
-                            state.settings.theme === theme.id 
-                              ? "border-[var(--primary)] bg-[var(--primary)]/20 shadow-2xl scale-[1.02]" 
-                              : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)]/40"
-                          )}
-                        >
-                          <div className={cn(
-                            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl transition-transform group-hover:rotate-6",
-                            state.settings.theme === theme.id ? "bg-[var(--primary)] text-white shadow-lg" : "bg-[var(--background)] shadow-inner"
-                          )}>
-                            {theme.emoji}
-                          </div>
-                          <div className="relative z-10">
-                            <p className="font-black uppercase tracking-tighter text-xs">{theme.name}</p>
-                            <p className={cn(
-                              "text-[9px] font-bold leading-tight mt-1 uppercase opacity-40",
-                              state.settings.theme === theme.id && "opacity-80"
+                      {THEMES.map(theme => {
+                        const isSelected = state.settings.theme === theme.id;
+                        return (
+                          <button
+                            key={theme.id}
+                            onClick={() => onUpdate({ theme: theme.id })}
+                            className={cn(
+                              "relative flex items-center gap-5 rounded-[2.5rem] border p-6 text-left transition-all overflow-hidden group cursor-pointer theme-card-solid shadow-sm",
+                              isSelected 
+                                ? "border-[var(--primary)] bg-[var(--card-solid,#111a2e)] ring-2 ring-[var(--primary)]/40 shadow-xl scale-[1.02]" 
+                                : "border-[var(--border)] bg-[var(--card-solid,#111a2e)] hover:border-[var(--primary)]/40 hover:bg-[var(--card-solid,#111a2e)]"
+                            )}
+                          >
+                            <div className={cn(
+                              "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl transition-transform group-hover:rotate-6",
+                              isSelected ? "bg-[var(--primary)] text-white shadow-lg" : "bg-[var(--foreground)]/10 shadow-inner"
                             )}>
-                              {theme.description}
-                            </p>
-                          </div>
-                          {state.settings.theme === theme.id && <CheckCircle2 size={24} className="absolute top-1/2 -right-4 -translate-y-1/2 scale-[3] opacity-10 text-[var(--primary)]" />}
-                        </button>
-                      ))}
+                              {theme.emoji}
+                            </div>
+                            <div className="relative z-10 min-w-0">
+                              <p className="font-black uppercase tracking-tighter text-xs text-[var(--foreground)]">{theme.name}</p>
+                              <p className={cn(
+                                "text-[9px] font-bold leading-tight mt-1 uppercase",
+                                isSelected ? "text-[var(--foreground)] opacity-90" : "text-[var(--foreground)] opacity-60"
+                              )}>
+                                {theme.description}
+                              </p>
+                            </div>
+                            {isSelected && <CheckCircle2 size={24} className="absolute top-1/2 -right-4 -translate-y-1/2 scale-[3] opacity-15 text-[var(--primary)]" />}
+                          </button>
+                        );
+                      })}
                     </div>
                   </section>
                 </div>

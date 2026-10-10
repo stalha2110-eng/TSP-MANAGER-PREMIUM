@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   TrendingUp, ArrowUpRight, ArrowDownRight, DollarSign, Receipt, 
-  Percent, ShoppingCart, Info, Activity, Warehouse, Printer,
+  Percent, ShoppingCart, Info, Warehouse, Printer,
   Calendar, Layers, CheckCircle2, AlertTriangle, SlidersHorizontal, Package2, ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -625,23 +625,10 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
         )}
       </AnimatePresence>
 
-      {/* 1. TOP DYNAMIC HEADER & SEGMENTED controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-[var(--border)] pb-4 gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-[var(--primary)] animate-pulse" />
-            <span className="text-[10px] font-black tracking-[0.25em] uppercase opacity-40">TS PRICE MANAGER</span>
-          </div>
-          <h2 className="text-2xl font-black text-[var(--foreground)] tracking-tight uppercase flex items-center gap-2 mt-0.5">
-            <Activity className="text-[var(--primary)]" size={24} /> {t.storeAnalytics || "Store Analytics"}
-          </h2>
-          <p className="text-[10px] font-bold opacity-50 uppercase tracking-widest mt-1">
-            {t.analyticsSubText || "Professional Business Analytics & Inventory Performance reporting"}
-          </p>
-        </div>
-
+      {/* 1. TOP TIME-PERIOD FILTER CONTROLS */}
+      <div className="flex items-center justify-between pb-3 gap-4">
         {/* Professional Segmented buttons optimized for quick mobile touch selection */}
-        <div className="flex items-center bg-[var(--foreground)]/[0.03] p-1 rounded-2xl border border-[var(--border)] self-start md:self-auto w-full md:w-auto overflow-x-auto">
+        <div className="flex items-center bg-[var(--foreground)]/[0.03] p-1 rounded-2xl border border-[var(--border)] w-full overflow-x-auto">
           {([
             { id: 'today', name: t.today || 'Today' },
             { id: 'week', name: t.week || 'Week' },
@@ -654,7 +641,7 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
               <button
                 key={tab.id}
                 onClick={() => setTimePeriod(tab.id)}
-                className={`relative flex-1 md:flex-initial px-4 py-2.5 rounded-xl text-[11px] font-extrabold uppercase tracking-widest transition-all duration-200 cursor-pointer text-center min-w-[70px] ${
+                className={`relative flex-1 px-4 py-2.5 rounded-xl text-[11px] font-extrabold uppercase tracking-widest transition-all duration-200 cursor-pointer text-center min-w-[70px] ${
                   isSelected 
                     ? 'bg-[var(--primary)] text-white shadow-md' 
                     : 'text-[var(--foreground)]/50 hover:text-[var(--foreground)] bg-transparent'

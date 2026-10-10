@@ -318,6 +318,21 @@ const getThemeContainerStyle = (theme: string) => {
 export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, onUnlock }: AnalyticsScreenProps) {
   const [activeSubTab, setActiveSubTab] = useState<'reports' | 'milestones'>('reports');
 
+  const [isSystemHealthy, setIsSystemHealthy] = useState(() => {
+    return typeof navigator !== 'undefined' ? navigator.onLine : true;
+  });
+
+  useEffect(() => {
+    const handleOnline = () => setIsSystemHealthy(true);
+    const handleOffline = () => setIsSystemHealthy(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const unlockedCount = useMemo(() => {
     try {
       const { milestones } = getCalculatedAchievements(state);
@@ -654,6 +669,34 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
         </div>
       </div>
 
+      {/* Status Light Indicator directly above Profit Report button */}
+      <div className="flex items-center justify-start px-1 mb-2">
+        <div 
+          className="inline-flex items-center gap-1.5 text-[10.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70 select-none"
+          title={isSystemHealthy ? "Status: Online & Operational" : "Status: Offline / Attention Required"}
+        >
+          <span>Status</span>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--foreground)]/[0.04] border border-[var(--border)]">
+            (
+            <span className="relative flex h-2 w-2">
+              <span
+                className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                  isSystemHealthy ? 'bg-emerald-400' : 'bg-red-400'
+                }`}
+              />
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${
+                  isSystemHealthy
+                    ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)]'
+                    : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)]'
+                }`}
+              />
+            </span>
+            )
+          </span>
+        </div>
+      </div>
+
       {/* High-visibility Action Buttons: Profit Report vs Achievements */}
       <div className="flex items-center gap-2 sm:gap-3 mb-4 w-full">
         <motion.button
@@ -886,31 +929,6 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
           <p className="text-[8.5px] opacity-40 font-bold uppercase tracking-wider mt-1.5 truncate font-mono">
             {t.capCost || "Cap"}: ₹{warehouseMetrics.capitalTiedUp.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </p>
-        </div>
-      </div>
-
-      {/* Dynamic Command HUD Bar - Defines a specialized high-fidelity real-time telemetry vibe */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-3xl border border-[var(--border)] bg-zinc-150/50 dark:bg-zinc-950/20 backdrop-blur-2xl mb-8">
-        <div className="flex items-center gap-3 pl-2">
-          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-          <div className="text-left leading-none space-y-1">
-            <span className="text-[8.5px] font-black tracking-widest uppercase opacity-45 block font-mono">{t.systemStatus || "System Status"}</span>
-            <span className="text-[10px] font-extrabold text-[var(--foreground)] uppercase block">{t.telemetryActive || "Telemetry Stream: Active"}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 border-t md:border-t-0 md:border-x border-[var(--border)] pt-2.5 md:pt-0 md:px-4">
-          <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-          <div className="text-left leading-none space-y-1">
-            <span className="text-[8.5px] font-black tracking-widest uppercase opacity-45 block font-mono">{t.ledgerNode || "Ledger Node"}</span>
-            <span className="text-[10px] font-extrabold text-[var(--foreground)] uppercase block">{t.offlineSyncEnabled || "Offline Sync Channel Enabled"}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 border-t md:border-t-0 pt-2.5 md:pt-0 pl-2">
-          <div className="h-2 w-2 rounded-full bg-violet-500" />
-          <div className="text-left leading-none space-y-1">
-            <span className="text-[8.5px] font-black tracking-widest uppercase opacity-45 block font-mono">{t.statisticalEngine || "Statistical Engine"}</span>
-            <span className="text-[10px] font-extrabold text-[var(--foreground)] uppercase block">{t.highPrecisionAudit || "High Precision Audit Ready"}</span>
-          </div>
         </div>
       </div>
 

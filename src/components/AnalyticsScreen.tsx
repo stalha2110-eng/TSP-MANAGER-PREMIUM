@@ -641,7 +641,7 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
       </AnimatePresence>
 
       {/* 1. TOP TIME-PERIOD FILTER CONTROLS */}
-      <div className="flex items-center justify-between pb-3 gap-4">
+      <div className="flex items-center justify-between pb-1 gap-4">
         {/* Professional Segmented buttons optimized for quick mobile touch selection */}
         <div className="flex items-center bg-[var(--foreground)]/[0.03] p-1 rounded-2xl border border-[var(--border)] w-full overflow-x-auto">
           {([
@@ -669,30 +669,26 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
         </div>
       </div>
 
-      {/* Status Light Indicator directly above Profit Report button */}
-      <div className="flex items-center justify-start px-1 mb-2">
+      {/* Status Light Indicator directly above Profit Report button without brackets, tightly aligned */}
+      <div className="flex items-center justify-start px-1 pt-0.5 mb-1.5">
         <div 
-          className="inline-flex items-center gap-1.5 text-[10.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70 select-none"
+          className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[var(--foreground)]/70 select-none"
           title={isSystemHealthy ? "Status: Online & Operational" : "Status: Offline / Attention Required"}
         >
           <span>Status</span>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--foreground)]/[0.04] border border-[var(--border)]">
-            (
-            <span className="relative flex h-2 w-2">
-              <span
-                className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                  isSystemHealthy ? 'bg-emerald-400' : 'bg-red-400'
-                }`}
-              />
-              <span
-                className={`relative inline-flex rounded-full h-2 w-2 ${
-                  isSystemHealthy
-                    ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)]'
-                    : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)]'
-                }`}
-              />
-            </span>
-            )
+          <span className="relative flex h-2 w-2">
+            <span
+              className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                isSystemHealthy ? 'bg-emerald-400' : 'bg-red-400'
+              }`}
+            />
+            <span
+              className={`relative inline-flex rounded-full h-2 w-2 ${
+                isSystemHealthy
+                  ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)]'
+                  : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)]'
+              }`}
+            />
           </span>
         </div>
       </div>

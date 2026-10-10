@@ -99,8 +99,8 @@ interface BusinessSettingsScreenProps {
   t: any;
   onUpdateSettings: (updates: Partial<AppSettings>) => void;
   onUpdateState: (updates: Partial<AppState>, actionLabel?: string) => void;
-  activeSubTab?: 'overview' | 'journey' | 'profile' | 'features' | 'categories' | 'dashboard' | 'actions' | 'knowledge' | 'recovery';
-  onChangeSubTab?: (tab: 'overview' | 'journey' | 'profile' | 'features' | 'categories' | 'dashboard' | 'actions' | 'knowledge' | 'recovery') => void;
+  activeSubTab?: 'overview' | 'journey' | 'profile' | 'features' | 'categories' | 'dashboard' | 'knowledge' | 'recovery';
+  onChangeSubTab?: (tab: 'overview' | 'journey' | 'profile' | 'features' | 'categories' | 'dashboard' | 'knowledge' | 'recovery') => void;
 }
 
 export default function BusinessSettingsScreen({ 
@@ -123,7 +123,7 @@ export default function BusinessSettingsScreen({
   const [showCatForm, setShowCatForm] = useState(false);
 
   // Active sub-section under Business Settings Drawer
-  const [localActiveSubTab, setLocalActiveSubTab] = useState<'overview' | 'journey' | 'profile' | 'features' | 'categories' | 'dashboard' | 'actions' | 'knowledge' | 'recovery'>('overview');
+  const [localActiveSubTab, setLocalActiveSubTab] = useState<'overview' | 'journey' | 'profile' | 'features' | 'categories' | 'dashboard' | 'knowledge' | 'recovery'>('overview');
   const activeSubTab = externalActiveSubTab || localActiveSubTab;
   const setActiveSubTab = onChangeSubTab || setLocalActiveSubTab;
 
@@ -263,23 +263,6 @@ export default function BusinessSettingsScreen({
     }
   };
 
-  // Handle Quick Action Selection toggling (up to 6)
-  const handleToggleQuickAction = (actionId: string) => {
-    const currentActions = state.settings.quickActions || ['create_bill', 'add_product', 'update_stock', 'print_invoice', 'open_analytics', 'open_udhar'];
-    let updated: string[];
-
-    if (currentActions.includes(actionId)) {
-      updated = currentActions.filter(a => a !== actionId);
-    } else {
-      if (currentActions.length >= 6) {
-        alert("Maximum 6 Quick Actions permitted!");
-        return;
-      }
-      updated = [...currentActions, actionId];
-    }
-    onUpdateSettings({ quickActions: updated });
-  };
-
   // Handle Feature Toggle updating
   const handleToggleFeature = (featureKey: string) => {
     const defaults = state.settings.enabledFeatures || {
@@ -388,9 +371,9 @@ export default function BusinessSettingsScreen({
     });
   };
 
-  // --- Default Order & Reorder Handlers for the 8 Biz Hub Cards ---
+  // --- Default Order & Reorder Handlers for the Biz Hub Cards ---
   const DEFAULT_BIZ_HUB_ORDER = useMemo(() => [
-    'journey', 'profile', 'features', 'categories', 'dashboard', 'actions', 'knowledge', 'recovery'
+    'journey', 'profile', 'features', 'categories', 'dashboard', 'knowledge', 'recovery'
   ], []);
 
   const currentCardsOrder = useMemo(() => {
@@ -505,15 +488,6 @@ export default function BusinessSettingsScreen({
     setShowSwitchModal(false);
     setSelectedModeForPreview(null);
   };
-
-  const allAvailableQuickActions = [
-    { id: 'create_bill', label: 'Create Bill', icon: '🧾' },
-    { id: 'add_product', label: 'Add Product', icon: '📦' },
-    { id: 'update_stock', label: 'Update Stock', icon: '🔄' },
-    { id: 'print_invoice', label: 'Print Invoice', icon: '🖨️' },
-    { id: 'open_analytics', label: 'Open Analytics', icon: '📊' },
-    { id: 'open_udhar', label: 'Open Udhar Book', icon: '📕' }
-  ];
 
   const allPossibleDashboardCards = [
     { 
@@ -714,32 +688,6 @@ export default function BusinessSettingsScreen({
       badgeStyle: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400',
       searchTerms: 'dashboard cards home screen widgets charts summary'
     },
-    actions: {
-      id: 'actions',
-      title: 'Quick Actions',
-      emoji: '⚡',
-      badge: `${state.settings.quickActions?.length || 6} Shortcuts`,
-      subtab: 'actions' as const,
-      hoverBorder: 'hover:border-amber-500/60',
-      hoverBg: 'hover:bg-amber-500/[0.03]',
-      iconBg: 'bg-amber-500/10',
-      iconText: 'text-amber-500',
-      badgeStyle: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-      searchTerms: 'quick actions shortcuts cashier buttons fast actions'
-    },
-    knowledge: {
-      id: 'knowledge',
-      title: 'Knowledge Hub',
-      emoji: '🧠',
-      badge: 'Video Guides',
-      subtab: 'knowledge' as const,
-      hoverBorder: 'hover:border-indigo-500/60',
-      hoverBg: 'hover:bg-indigo-500/[0.03]',
-      iconBg: 'bg-indigo-500/10',
-      iconText: 'text-indigo-500',
-      badgeStyle: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
-      searchTerms: 'knowledge hub guides manuals documentation store directory'
-    },
     recovery: {
       id: 'recovery',
       title: 'Recovery Center',
@@ -753,7 +701,7 @@ export default function BusinessSettingsScreen({
       badgeStyle: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
       searchTerms: 'recovery center restore deleted trash undo backup'
     }
-  }), [readinessPercentage, currentMode.name, categoriesList.length, state.settings.quickActions]);
+  }), [readinessPercentage, currentMode.name, categoriesList.length]);
 
   const roadmapSteps = useMemo(() => {
     return [
@@ -1345,7 +1293,6 @@ export default function BusinessSettingsScreen({
               <span className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)] block">
                 {activeSubTab === 'categories' && '📦 Products & Categories'}
                 {activeSubTab === 'profile' && '🏪 Store Details & Stats'}
-                {activeSubTab === 'actions' && '⚡ Cashier Shortcuts'}
                 {activeSubTab === 'dashboard' && '📊 Home Screen Cards'}
                 {activeSubTab === 'journey' && '🌱 Setup Checklist & Growth'}
                 {activeSubTab === 'knowledge' && '🧠 Store Knowledge Hub'}
@@ -1377,15 +1324,6 @@ export default function BusinessSettingsScreen({
               )}
             >
               🏪 Profile
-            </button>
-            <button
-              onClick={() => setActiveSubTab('actions')}
-              className={cn(
-                "py-1.5 px-3 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer whitespace-nowrap",
-                activeSubTab === 'actions' ? "bg-[var(--primary)] text-white shadow-xs" : "opacity-60 hover:opacity-100"
-              )}
-            >
-              ⚡ Shortcuts
             </button>
             <button
               onClick={() => setActiveSubTab('dashboard')}
@@ -1504,7 +1442,7 @@ export default function BusinessSettingsScreen({
                 type="text"
                 value={hubSearchQuery}
                 onChange={(e) => setHubSearchQuery(e.target.value)}
-                placeholder="Search store settings (e.g. categories, shortcuts, UPI QR, backup, printer)..."
+                placeholder="Search store settings (e.g. categories, UPI QR, backup, printer)..."
                 className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl px-4 py-3 pl-11 text-xs font-semibold text-[var(--foreground)] placeholder:text-[var(--foreground)]/40 focus:outline-none focus:border-[var(--primary)] shadow-xs transition-all"
               />
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground)]/40 text-sm">🔍</span>
@@ -2795,6 +2733,14 @@ export default function BusinessSettingsScreen({
               );
             })}
           </div>
+
+          {/* CUSTOM WEIGHT & QUANTITY CHIPS MANAGEMENT */}
+          <div className="pt-4 border-t border-[var(--border)]">
+            <CustomWeightChipsSettings 
+              settings={state.settings} 
+              onUpdateSettings={onUpdateSettings} 
+            />
+          </div>
         </div>
       )}
 
@@ -2933,7 +2879,7 @@ export default function BusinessSettingsScreen({
                 <Briefcase size={18} className="text-[var(--primary)]" /> Custom Dashboard Card Deck
               </h3>
               <p className="text-[10px] opacity-60 uppercase font-bold tracking-wider mt-1">
-                Select cards to display on the main dashboard below Favorite Shortcuts. (By default, only Store Asset Valuation is shown).
+                Select cards to display on the main dashboard. (By default, only Store Asset Valuation is shown).
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -3034,59 +2980,7 @@ export default function BusinessSettingsScreen({
         </div>
       )}
 
-      {/* ==================== SUBTAB: QUIK ACTIONS CONFIGURATION ==================== */}
-      {activeSubTab === 'actions' && (
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-[2rem] p-6 space-y-6 shadow-sm">
-          <div>
-            <h3 className="text-base font-black uppercase tracking-tight flex items-center gap-2">
-              <Settings2 size={18} className="text-[var(--primary)]" /> Custom Quick Action Tray
-            </h3>
-            <p className="text-[9px] opacity-45 uppercase font-bold tracking-wider mt-1">
-              Select up to 6 custom actions to display as hotlinks in your main navigation panel.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {allAvailableQuickActions.map(act => {
-              const currentActions = state.settings.quickActions || ['create_bill', 'add_product', 'update_stock', 'print_invoice', 'open_analytics', 'open_udhar'];
-              const isSelected = currentActions.includes(act.id);
-
-              return (
-                <button
-                  key={act.id}
-                  onClick={() => handleToggleQuickAction(act.id)}
-                  className={cn(
-                    "p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between h-24 cursor-pointer",
-                    isSelected 
-                      ? "bg-[var(--primary)]/5 border-[var(--primary)] text-[var(--foreground)]" 
-                      : "bg-[var(--background)] border-[var(--border)] hover:border-[var(--primary)]/20"
-                  )}
-                >
-                  <div className="text-2xl">{act.icon}</div>
-                  
-                  <div className="flex items-center justify-between w-full">
-                    <span className="text-[10px] font-black uppercase tracking-wide leading-none">{act.label}</span>
-                    <span className={cn(
-                      "h-4 w-4 rounded-full border flex items-center justify-center text-[8px]",
-                      isSelected ? "bg-[var(--primary)] text-white border-transparent" : "border-[var(--border)]"
-                    )}>
-                      {isSelected ? <Check size={10} strokeWidth={4} /> : null}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* CUSTOM WEIGHT & QUANTITY CHIPS MANAGEMENT */}
-          <div className="pt-2">
-            <CustomWeightChipsSettings 
-              settings={state.settings} 
-              onUpdateSettings={onUpdateSettings} 
-            />
-          </div>
-        </div>
-      )}
 
       {/* ==================== SUBTAB: BUSINESS KNOWLEDGE HUB ==================== */}
       {activeSubTab === 'knowledge' && (

@@ -667,59 +667,69 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
         </div>
       </div>
 
-      {/* Sub-Tabs Switcher for Core Reports / Business Milestones */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-[var(--border)] pb-2 gap-4 mb-3 overflow-visible">
-        <div className="flex gap-6 overflow-x-auto whitespace-nowrap scrollbar-none">
-          <button
-            onClick={() => setActiveSubTab('reports')}
-            className={`pb-3 font-extrabold text-[11px] uppercase tracking-wider relative transition-colors cursor-pointer outline-none ${
-              activeSubTab === 'reports' ? 'text-[var(--primary)]' : 'text-[var(--foreground)]/50 hover:text-[var(--foreground)]'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <Activity size={13} /> {t.coreFinancials || "Core Financial Analytics"}
-            </span>
-            {activeSubTab === 'reports' && (
-              <motion.div layoutId="activeSubTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)]" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveSubTab('milestones')}
-            className={`pb-3 font-extrabold text-[11px] uppercase tracking-wider relative transition-all duration-300 cursor-pointer outline-none flex items-center gap-2 ${
-              activeSubTab === 'milestones' ? 'text-[var(--primary)] font-black' : 'text-[var(--foreground)]/50 hover:text-[var(--foreground)] hover:translate-y-[-1px]'
-            }`}
-          >
-            <span className="flex items-center gap-1.5">
-              <motion.div
-                animate={activeSubTab === 'milestones' ? {
-                  scale: [1, 1.25, 1],
-                  rotate: [0, -10, 10, -10, 10, 0],
-                } : {}}
-                transition={{
-                  duration: 1.6,
-                  repeat: activeSubTab === 'milestones' ? Infinity : 0,
-                  repeatDelay: 5,
-                  ease: "easeInOut"
-                }}
-                whileHover={{ rotate: 15, scale: 1.2 }}
-                className="inline-flex items-center justify-center"
-              >
-                <Trophy size={13} className="text-amber-500 drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]" />
-              </motion.div>
-              <span>{t.businessMilestones || "Business Milestones & Journey"}</span>
-            </span>
-            <span className={`px-1.5 py-0.5 text-[8.5px] font-black font-mono rounded-full flex items-center justify-center transition-all duration-300 ${
-              activeSubTab === 'milestones' 
-                ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.25)] scale-105' 
-                : 'bg-[var(--foreground)]/[0.05] text-[var(--foreground)]/50 border border-transparent'
-            }`}>
-              {unlockedCount}
-            </span>
-            {activeSubTab === 'milestones' && (
-              <motion.div layoutId="activeSubTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)]" />
-            )}
-          </button>
-        </div>
+      {/* High-visibility Action Buttons: Profit Report vs Achievements */}
+      <div className="flex items-center gap-2 sm:gap-3 mb-4 w-full">
+        <motion.button
+          type="button"
+          whileHover={{ y: -1.5, scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+              try { window.navigator.vibrate(10); } catch (e) {}
+            }
+            setActiveSubTab('reports');
+          }}
+          className={`relative flex-1 py-3 px-4 sm:px-6 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2.5 shadow-sm border ${
+            activeSubTab === 'reports'
+              ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white border-emerald-400/40 shadow-[0_6px_20px_-4px_rgba(16,185,129,0.35)] ring-2 ring-emerald-500/20'
+              : 'bg-[var(--card)] hover:bg-[var(--foreground)]/[0.04] text-[var(--foreground)]/70 hover:text-[var(--foreground)] border-[var(--border)] hover:border-emerald-500/30'
+          }`}
+        >
+          <div className={`p-1.5 rounded-xl transition-colors ${
+            activeSubTab === 'reports' 
+              ? 'bg-white/20 text-white' 
+              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+          }`}>
+            <TrendingUp size={16} className={activeSubTab === 'reports' ? 'animate-pulse' : ''} />
+          </div>
+          <span className="truncate">{t.coreFinancials || "Profit Report"}</span>
+          {activeSubTab === 'reports' && (
+            <span className="hidden sm:inline-flex h-2 w-2 rounded-full bg-emerald-200 animate-ping ml-0.5" />
+          )}
+        </motion.button>
+
+        <motion.button
+          type="button"
+          whileHover={{ y: -1.5, scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+              try { window.navigator.vibrate(10); } catch (e) {}
+            }
+            setActiveSubTab('milestones');
+          }}
+          className={`relative flex-1 py-3 px-4 sm:px-6 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all duration-300 cursor-pointer flex items-center justify-center gap-2.5 shadow-sm border ${
+            activeSubTab === 'milestones'
+              ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 text-white border-amber-300/40 shadow-[0_6px_20px_-4px_rgba(245,158,11,0.4)] ring-2 ring-amber-500/20'
+              : 'bg-[var(--card)] hover:bg-[var(--foreground)]/[0.04] text-[var(--foreground)]/70 hover:text-[var(--foreground)] border-[var(--border)] hover:border-amber-500/30'
+          }`}
+        >
+          <div className={`p-1.5 rounded-xl transition-colors ${
+            activeSubTab === 'milestones' 
+              ? 'bg-white/20 text-white' 
+              : 'bg-amber-500/10 text-amber-500'
+          }`}>
+            <Trophy size={16} className={activeSubTab === 'milestones' ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]' : ''} />
+          </div>
+          <span className="truncate">{t.businessMilestones || "Achievements"}</span>
+          <span className={`px-2 py-0.5 text-[10px] font-black font-mono rounded-full transition-all duration-300 ml-1 ${
+            activeSubTab === 'milestones' 
+              ? 'bg-white/20 text-white border border-white/30 shadow-xs' 
+              : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25'
+          }`}>
+            {unlockedCount}
+          </span>
+        </motion.button>
       </div>
 
       {activeSubTab === 'milestones' ? (

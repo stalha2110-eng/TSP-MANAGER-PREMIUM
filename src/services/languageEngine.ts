@@ -912,16 +912,16 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
     "hi-en": "Saal"
   },
   coreFinancials: {
-    en: "Core Financial Analytics",
-    hi: "कमाई और मुनाफा रिपोर्ट",
-    mr: "कमाई आणि नफा रिपोर्ट",
-    "hi-en": "Earnings & Profit Report"
+    en: "Profit Report",
+    hi: "मुनाफा रिपोर्ट",
+    mr: "नफा रिपोर्ट",
+    "hi-en": "Profit Report"
   },
   businessMilestones: {
-    en: "Business Milestones & Journey",
-    hi: "व्यापार के मुख्य पड़ाव और उपलब्धियां",
-    mr: "व्यवसायाचे टप्पे आणि यश",
-    "hi-en": "Business Milestones & Achievements"
+    en: "Achievements",
+    hi: "उपलब्धियां",
+    mr: "यश आणि सन्मान",
+    "hi-en": "Achievements"
   },
   noBillsDetected: {
     en: "No billing transactions detected",

@@ -28,6 +28,7 @@ import { parseSearchInput, calculateWeightFromAmount, isWeightBasedUnit, COMMON_
 import { Scale, IndianRupee } from 'lucide-react';
 import { useBackModal } from '../utils/backNavigationManager';
 import { previewImage } from './ImagePreviewModal';
+import { BillingDemoWorkbench } from './BillingDemoWorkbench';
 
 interface BillingScreenProps {
   state: AppState;
@@ -348,6 +349,7 @@ export default function BillingScreen({
   const { recentUnits } = useRecentUnits();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [showDemoWorkbench, setShowDemoWorkbench] = useState(false);
   const [billingSubTab, setBillingSubTab] = useState<'billing' | 'history' | 'calculator'>('billing');
   const [additionAnims, setAdditionAnims] = useState<{ id: string; name: string; price: number; x: number; y: number }[]>([]);
   const [activePredictionIndex, setActivePredictionIndex] = useState(-1);
@@ -859,7 +861,7 @@ export default function BillingScreen({
         calcClickTimerRef.current = null;
       }
       calcLastClickTimeRef.current = 0;
-      playFeedbackEvent('success', state.settings);
+      playFeedbackEvent('notification', state.settings);
       setCalcDoubleTapPulse(true);
       setTimeout(() => setCalcDoubleTapPulse(false), 800);
       window.dispatchEvent(new CustomEvent('tsm-open-calculator'));
@@ -3790,9 +3792,51 @@ export default function BillingScreen({
         </div>
       )}
 
+      {/* Fast Billing UX Demo Workbench Modal */}
+      <BillingDemoWorkbench
+        isOpen={showDemoWorkbench}
+        onClose={() => setShowDemoWorkbench(false)}
+        availableItems={state.items}
+        storeName={state.settings?.storeName}
+      />
+
       {/* Main Billing Grid */}
       <div className="grid grid-cols-12 gap-4 items-start">
         
+        {/* FAST BILLING UX DEMO ARTIFACT TRIGGER BANNER */}
+        <div className="col-span-12 shrink-0">
+          <div className="bg-gradient-to-r from-emerald-950/70 via-slate-900 to-indigo-950/70 border border-emerald-500/35 hover:border-emerald-500/60 rounded-2xl p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-3 shadow-lg transition-all">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 flex items-center justify-center font-black text-sm shrink-0 shadow-md shadow-emerald-500/20">
+                ⚡
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-white">
+                    Fast Billing UI Improvements Demo
+                  </h4>
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Split · Touch · Grid
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 truncate">
+                  Interactive side-by-side comparison: 70% tap reduction & one-tap mobile checkout
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowDemoWorkbench(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-[11px] uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-600/30 transition-all active:scale-95"
+              >
+                <span>Launch Interactive Demo ⚡</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* TOP SEARCH BAR & SHORTCUTS (WIDE FULL-WIDTH 12 COLS ACROSS BILLING DASHBOARD) */}
         <div className={cn("col-span-12 shrink-0 space-y-2 relative transition-all", isSearchFocused && searchQuery.trim().length > 0 ? "z-50" : "z-20")}>
           {/* Smart Typo-Tolerant Search Component with predictive real-time autocomplete */}
@@ -6298,11 +6342,63 @@ export default function BillingScreen({
                 </button>
               </div>
 
-              {/* Pulse checkmark banner */}
+              {/* Animated filling-to-yes checkmark banner */}
               <div className="space-y-2">
-                <div className="mx-auto h-14 w-14 bg-emerald-500/10 border-2 border-emerald-500 text-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                  <Check size={28} className="stroke-[3.5px]" />
-                </div>
+                <motion.div 
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 350, damping: 20 }}
+                  className="relative mx-auto h-16 w-16 flex items-center justify-center"
+                >
+                  {/* Expanding soft pulse aura */}
+                  <motion.span
+                    initial={{ scale: 0.8, opacity: 0.7 }}
+                    animate={{ scale: [1, 1.45, 1.6], opacity: [0.7, 0.25, 0] }}
+                    transition={{ duration: 1.4, ease: "easeOut", repeat: Infinity, repeatDelay: 1 }}
+                    className="absolute inset-0 rounded-full bg-emerald-500/25 pointer-events-none"
+                  />
+
+                  <svg
+                    viewBox="0 0 52 52"
+                    className="h-16 w-16 drop-shadow-[0_4px_16px_rgba(16,185,129,0.35)]"
+                  >
+                    {/* Circle border animating and drawing */}
+                    <motion.circle
+                      cx="26"
+                      cy="26"
+                      r="23"
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="3.5"
+                      strokeLinecap="round"
+                      initial={{ pathLength: 0, rotate: -90 }}
+                      animate={{ pathLength: 1, rotate: 0 }}
+                      transition={{ duration: 0.55, ease: "easeOut" }}
+                    />
+                    {/* Circle body expanding and filling to emerald tint */}
+                    <motion.circle
+                      cx="26"
+                      cy="26"
+                      r="21.5"
+                      initial={{ fill: "rgba(16, 185, 129, 0)", scale: 0.3 }}
+                      animate={{ fill: "rgba(16, 185, 129, 0.18)", scale: 1 }}
+                      transition={{ delay: 0.2, duration: 0.4, ease: "easeOut" }}
+                      style={{ originX: "26px", originY: "26px" }}
+                    />
+                    {/* Success Checkmark drawing in with stroke dash ("filling to yes") */}
+                    <motion.path
+                      d="M15 27.5 L22.5 35 L37 19"
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      animate={{ pathLength: 1, opacity: 1 }}
+                      transition={{ delay: 0.28, duration: 0.45, ease: "easeOut" }}
+                    />
+                  </svg>
+                </motion.div>
                 <h3 className="font-extrabold text-base uppercase tracking-tight text-emerald-400">Invoice Saved Successfully</h3>
                 <p className="text-[10px] uppercase font-bold tracking-widest opacity-50 font-mono">Invoice Reference #${completedBill.billNumber}</p>
               </div>
@@ -6363,33 +6459,6 @@ export default function BillingScreen({
 
               {/* Action buttons */}
               <div className="grid grid-cols-1 gap-2.5">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      if (navigator.vibrate) navigator.vibrate(15);
-                      const savedConfig = localStorage.getItem('price_manager_printer_config');
-                      let config = DEFAULT_PRINT_SETTINGS;
-                      if (savedConfig) {
-                        try {
-                          config = { ...DEFAULT_PRINT_SETTINGS, ...JSON.parse(savedConfig) };
-                        } catch(e){}
-                      }
-                      const copies = config.duplicateCopies || 1;
-                      for (let c = 0; c < copies; c++) {
-                        await printerService.printViaSystem(completedBill, config);
-                      }
-                      playFeedbackEvent('print_success', state.settings);
-                    } catch (e: any) {
-                      alert(`Spool Error: ${e.message}`);
-                    }
-                  }}
-                  className="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 font-extrabold text-white text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 hover:translate-y-[-1px] transition-all cursor-pointer"
-                >
-                  <Printer size={16} />
-                  Print Thermal Receipt / बिल निकालें
-                </button>
-
                 {/* Primary New Bill Button */}
                 <button
                   type="button"
@@ -6439,7 +6508,7 @@ export default function BillingScreen({
               <div className="flex items-center justify-between border-b border-[var(--border)] pb-2 gap-2">
                 <div className="flex items-center gap-1.5 font-black min-w-0">
                   <ReceiptText size={15} className="text-[var(--primary)] shrink-0" />
-                  <span className="text-xs font-black uppercase tracking-wider truncate">Checkout Bill Preview</span>
+                  <span className="text-xs font-black uppercase tracking-wider truncate">Bill Preview</span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
@@ -6491,15 +6560,16 @@ export default function BillingScreen({
                     className="py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 font-extrabold text-white text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-lg active:translate-y-[1px] cursor-pointer transition-all"
                   >
                     <Printer size={14} />
-                    Confirm & Print ✔
+                     Print 
                   </button>
 
                   <button
                     onClick={() => handleConfirmCheckout(false)}
-                    className="py-3 rounded-2xl bg-[var(--primary)] text-white font-extrabold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1 shadow-lg active:translate-y-[1px] cursor-pointer transition-all"
+                    style={{ backgroundColor: '#099d0c' }}
+                    className="py-3 rounded-2xl text-white font-extrabold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1 shadow-lg active:translate-y-[1px] cursor-pointer transition-all"
                   >
                     <Save size={14} />
-                    Save Only (नो-प्रिंट)
+                    Save Only
                   </button>
                 </div>
 

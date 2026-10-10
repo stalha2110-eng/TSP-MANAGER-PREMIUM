@@ -302,127 +302,6 @@ const getLogoBackplateClass = (theme: string) => {
 // PREMIUM DUAL-TONE SVG ANIMATED ICONS
 // ==========================================
 
-const ReceiptIcon = ({ isHovered, className }: { isHovered: boolean; className?: string }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M4 10h16v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8Z" className="stroke-current opacity-85" />
-    <path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4" className="stroke-current opacity-40" />
-    <path d="M8 7h8" className="stroke-current opacity-50" />
-    <motion.path 
-      d="M9 10v6l2-1 2 1 2-1v-5" 
-      fill="currentColor" 
-      fillOpacity="0.12"
-      animate={isHovered ? { y: [0, 2, 0], scaleY: [1, 1.08, 1] } : { y: 0, scaleY: 1 }}
-      transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-      className="stroke-current"
-    />
-    <path d="M12 13h2" className="stroke-current opacity-60" />
-  </svg>
-);
-
-const AddProductIcon = ({ isHovered, className }: { isHovered: boolean; className?: string }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M12 2L2 7l10 5 10-5-10-5Z" className="stroke-current opacity-40" />
-    <path d="M2 17l10 5 10-5" className="stroke-current opacity-80" />
-    <path d="M2 7v10" className="stroke-current opacity-80" />
-    <path d="M12 12v10" className="stroke-current opacity-80" />
-    <path d="M22 7v10" className="stroke-current opacity-80" />
-    <motion.path 
-      d="M12 5v4M10 7h4" 
-      className="stroke-current font-bold"
-      animate={isHovered ? { y: [0, -3, 0], scale: [1, 1.2, 1] } : { y: 0, scale: 1 }}
-      transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
-    />
-  </svg>
-);
-
-const UpdateStockIcon = ({ isHovered, className }: { isHovered: boolean; className?: string }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <motion.path 
-      d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" 
-      animate={isHovered ? { rotate: 360 } : { rotate: 0 }}
-      transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-      className="stroke-current opacity-80"
-      style={{ originX: '12px', originY: '12px' }}
-    />
-    <ellipse cx="12" cy="12" rx="4" ry="2" className="stroke-current fill-current fill-opacity-10" />
-    <path d="M8 12v3c0 1.1.9 2 4 2s4-.9 4-2v-3" className="stroke-current opacity-50" />
-  </svg>
-);
-
-const PrintInvoiceIcon = ({ isHovered, className }: { isHovered: boolean; className?: string }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" className="stroke-current opacity-80" />
-    <path d="M6 9V4h12v5" className="stroke-current opacity-40" />
-    <motion.rect 
-      x="8" 
-      y="14" 
-      width="8" 
-      height="8" 
-      rx="1" 
-      fill="currentColor"
-      fillOpacity="0.12"
-      animate={isHovered ? { y: [0, 2, 0], scaleY: [1, 1.15, 1] } : { y: 0, scaleY: 1 }}
-      transition={{ repeat: Infinity, duration: 1.3, ease: "easeInOut" }}
-      className="stroke-current"
-    />
-    <path d="M10 17h4M10 20h2" className="stroke-current opacity-60" />
-  </svg>
-);
-
-const OpenAnalyticsIcon = ({ isHovered, className }: { isHovered: boolean; className?: string }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <motion.rect 
-      x="3" 
-      y="14" 
-      width="3" 
-      height="6" 
-      rx="0.5" 
-      className="stroke-current fill-current fill-opacity-10"
-      animate={isHovered ? { height: [6, 9, 6], y: [0, -3, 0] } : { height: 6, y: 0 }}
-      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-    />
-    <motion.rect 
-      x="9" 
-      y="8" 
-      width="3" 
-      height="12" 
-      rx="0.5" 
-      className="stroke-current fill-current fill-opacity-10"
-      animate={isHovered ? { height: [12, 15, 12], y: [0, -3, 0] } : { height: 12, y: 0 }}
-      transition={{ duration: 1.2, delay: 0.15, repeat: Infinity, ease: "easeInOut" }}
-    />
-    <motion.rect 
-      x="15" 
-      y="11" 
-      width="3" 
-      height="9" 
-      rx="0.5" 
-      className="stroke-current fill-current fill-opacity-10"
-      animate={isHovered ? { height: [9, 13, 9], y: [0, -4, 0] } : { height: 9, y: 0 }}
-      transition={{ duration: 1.2, delay: 0.3, repeat: Infinity, ease: "easeInOut" }}
-    />
-    <motion.path 
-      d="M3 13l6-5 6 4 6-9" 
-      className="stroke-current"
-      animate={isHovered ? { pathLength: [1, 0.8, 1], y: [0, -0.5, 0] } : { pathLength: 1, y: 0 }}
-      transition={{ duration: 1.5, repeat: Infinity }}
-    />
-  </svg>
-);
-
-const OpenUdharIcon = ({ isHovered, className }: { isHovered: boolean; className?: string }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" className="stroke-current opacity-80" />
-    <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5V4.5z" className="stroke-current fill-current fill-opacity-10" />
-    <motion.path 
-      d="M6 6h10M6 10h10M6 14h6" 
-      className="stroke-current"
-      animate={isHovered ? { skewX: [0, 3, 0], opacity: [0.6, 0.9, 0.6] } : { skewX: 0, opacity: 0.6 }}
-      transition={{ duration: 1, repeat: Infinity }}
-    />
-  </svg>
-);
-
 // --- App Component ---
 export default function App() {
   const [state, setState] = useState<AppState>(INITIAL_STATE);
@@ -521,7 +400,7 @@ export default function App() {
   const [moreMenuView, setMoreMenuView] = useState<'main' | 'themes'>('main');
   const [menuTab, setMenuTab] = useState<'profile' | 'settings' | 'business_settings' | 'printer' | 'day_closing' | 'help'>('profile');
   const [settingsSubTab, setSettingsSubTab] = useState<'overview' | 'interface' | 'security' | 'sound' | 'data'>('overview');
-  const [businessSubTab, setBusinessSubTab] = useState<'overview' | 'journey' | 'profile' | 'features' | 'categories' | 'dashboard' | 'actions' | 'knowledge' | 'recovery'>('overview');
+  const [businessSubTab, setBusinessSubTab] = useState<'overview' | 'journey' | 'profile' | 'features' | 'categories' | 'dashboard' | 'knowledge' | 'recovery'>('overview');
   const [drawerSearchQuery, setDrawerSearchQuery] = useState('');
   const [drawerSearchHistory, setDrawerSearchHistory] = useState<string[]>(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('drawer_search_history') : null;
@@ -900,7 +779,6 @@ export default function App() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isTabLoading, setIsTabLoading] = useState(false);
-  const [hoveredAction, setHoveredAction] = useState<string | null>(null);
 
   const handleTabChange = useCallback((tab: 'home' | 'billing' | 'analytics' | 'udhar' | 'notes' | 'shift' | 'goals' | 'history') => {
     if (tab === activeTab) return;
@@ -4586,244 +4464,12 @@ export default function App() {
                </div>
             </div>
 
-            {/* ⚡ UNBILLED RUSH HOUR & MICRO-SALES QUICK LEDGER (POSITIONED DIRECTLY ABOVE FAVORITE SHORTCUTS) */}
+            {/* ⚡ UNBILLED RUSH HOUR & MICRO-SALES QUICK LEDGER */}
             <UnbilledQuickLedgerWidget
               state={state}
               addToast={addToast}
               activeShiftCashier={activeShift?.cashierName}
             />
-
-                 {/* ⚡ Quick Operational Actions Panel */}
-               <div 
-                  style={{ paddingTop: '18px', height: '579px' }}
-                  className="bg-[var(--card)] border border-[var(--border)] rounded-[2.5rem] p-6 md:p-8 space-y-6 shadow-xl relative overflow-hidden backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-500"
-               >
-                  {/* Decorative top illumination ambient light flare */}
-                  <div className="absolute top-0 left-1/4 -translate-y-1/2 w-1/2 h-16 bg-[var(--primary)]/15 blur-[40px] pointer-events-none" />
-
-                  <div className="flex items-center gap-3 relative z-10">
-                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)] flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-[var(--primary)] animate-pulse" />
-                        ALL BUTTONS
-                     </h3>
-                     <button 
-                        onClick={() => {
-                           if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-                              try { window.navigator.vibrate(10); } catch (err) {}
-                           }
-                           setBusinessSubTab('actions');
-                           setMenuTab('business_settings'); 
-                           setShowMenu(true); 
-                        }}
-                        style={{
-                           marginLeft: '59px',
-                           marginTop: '0px',
-                           marginRight: '0px',
-                           marginBottom: '1px',
-                           height: '29px',
-                           paddingLeft: '5px',
-                           borderRadius: '5.5px',
-                           fontFamily: 'Georgia',
-                           width: '111px',
-                           paddingRight: '13px'
-                        }}
-                        className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-[var(--foreground)]/[0.04] hover:bg-[var(--foreground)]/[0.08] border border-[var(--border)] transition-all duration-300 hover:border-[var(--primary)]/30 text-[var(--foreground)]/80 hover:text-[var(--foreground)] cursor-pointer"
-                     >
-                       <Settings2 size={12} className="text-[var(--primary)]" />
-                       Customize
-                     </button>
-                  </div>
-
-                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1 pt-2">
-                    {(state.settings.quickActions || ['create_bill', 'add_product', 'update_stock', 'print_invoice', 'open_analytics', 'open_udhar']).map((actionId, index) => {
-                       let title = '';
-                       let iconComponent: React.ReactNode = null;
-                       let onClickHandler = () => {};
-                       let colorClasses = '';
-                       let hoverGlow = '';
-                       let tintColor = '';
-                       let accentBg = '';
-                       let activeDotColor = '';
-                       let label = '';
-
-                       const isHovered = hoveredAction === actionId;
-
-                       switch (actionId) {
-                          case 'create_bill':
-                             title = 'Create Bill';
-                             label = 'FAST BILLING';
-                             iconComponent = <ReceiptIcon isHovered={isHovered} className="stroke-[2.2] text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform duration-300" />;
-                             colorClasses = "hover:border-emerald-500/40 hover:text-emerald-600 dark:hover:text-emerald-400";
-                             accentBg = "bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/10 dark:border-emerald-500/20 group-hover:bg-emerald-500/10 dark:group-hover:bg-emerald-500/20 group-hover:border-emerald-500/30";
-                             tintColor = "from-emerald-500/20 to-emerald-400/5";
-                             hoverGlow = "shadow-[0_12px_24px_-4px_rgba(16,185,129,0.18)] dark:shadow-[0_12px_24px_-4px_rgba(16,185,129,0.3)]";
-                             activeDotColor = "bg-emerald-500";
-                             onClickHandler = () => setActiveTab('billing');
-                             break;
-                          case 'add_product':
-                             title = 'Add Product';
-                             label = 'STOCK UP';
-                             iconComponent = <AddProductIcon isHovered={isHovered} className="stroke-[2.2] text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform duration-300" />;
-                             colorClasses = "hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-400";
-                             accentBg = "bg-indigo-500/5 dark:bg-indigo-500/10 border-indigo-500/10 dark:border-indigo-500/20 group-hover:bg-indigo-500/10 dark:group-hover:bg-indigo-500/20 group-hover:border-indigo-500/30";
-                             tintColor = "from-indigo-500/20 to-indigo-400/5";
-                             hoverGlow = "shadow-[0_12px_24px_-4px_rgba(99,102,241,0.18)] dark:shadow-[0_12px_24px_-4px_rgba(99,102,241,0.3)]";
-                             activeDotColor = "bg-indigo-500";
-                             onClickHandler = () => setShowAddItem(true);
-                             break;
-                          case 'update_stock':
-                             title = 'Update Stock';
-                             label = 'INVENTORY';
-                             iconComponent = <UpdateStockIcon isHovered={isHovered} className="stroke-[2.2] text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform duration-300" />;
-                             colorClasses = "hover:border-amber-500/40 hover:text-amber-600 dark:hover:text-amber-400";
-                             accentBg = "bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/10 dark:border-amber-500/20 group-hover:bg-amber-500/10 dark:group-hover:bg-amber-500/20 group-hover:border-amber-500/30";
-                             tintColor = "from-amber-500/20 to-amber-400/5";
-                             hoverGlow = "shadow-[0_12px_24px_-4px_rgba(245,158,11,0.18)] dark:shadow-[0_12px_24px_-4px_rgba(245,158,11,0.3)]";
-                             activeDotColor = "bg-amber-500";
-                             onClickHandler = () => {
-                                const catEl = document.getElementById('catalog-search-input') || document.getElementById('catalog-section');
-                                if (catEl) catEl.scrollIntoView({ behavior: 'smooth' });
-                                addToast("Heading down to your catalog database grid!", "info");
-                             };
-                             break;
-                          case 'print_invoice':
-                             title = 'Print Receipt';
-                             label = 'RECEIPT ROLL';
-                             iconComponent = <PrintInvoiceIcon isHovered={isHovered} className="stroke-[2.2] text-violet-600 dark:text-violet-400 group-hover:scale-110 transition-transform duration-300" />;
-                             colorClasses = "hover:border-violet-500/40 hover:text-violet-600 dark:hover:text-violet-400";
-                             accentBg = "bg-violet-500/5 dark:bg-violet-500/10 border-violet-500/10 dark:border-violet-500/20 group-hover:bg-violet-500/10 dark:group-hover:bg-violet-500/20 group-hover:border-violet-500/30";
-                             tintColor = "from-violet-500/20 to-violet-400/5";
-                             hoverGlow = "shadow-[0_12px_24px_-4px_rgba(139,92,246,0.18)] dark:shadow-[0_12px_24px_-4px_rgba(139,92,246,0.3)]";
-                             activeDotColor = "bg-violet-500";
-                             onClickHandler = () => setShowHistoryDrawer(true);
-                             break;
-                          case 'open_analytics':
-                             title = 'Analytics';
-                             label = 'REALTIME STATS';
-                             iconComponent = <OpenAnalyticsIcon isHovered={isHovered} className="stroke-[2.2] text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-300" />;
-                             colorClasses = "hover:border-cyan-500/40 hover:text-cyan-600 dark:hover:text-cyan-400";
-                             accentBg = "bg-cyan-500/5 dark:bg-cyan-500/10 border-cyan-500/10 dark:border-cyan-500/20 group-hover:bg-cyan-500/10 dark:group-hover:bg-cyan-500/20 group-hover:border-cyan-500/30";
-                             tintColor = "from-cyan-500/20 to-cyan-400/5";
-                             hoverGlow = "shadow-[0_12px_24px_-4px_rgba(6,182,212,0.18)] dark:shadow-[0_12px_24px_-4px_rgba(6,182,212,0.3)]";
-                             activeDotColor = "bg-cyan-500";
-                             onClickHandler = () => setActiveTab('analytics');
-                             break;
-                          case 'open_udhar':
-                             title = 'Udhar Book';
-                             label = 'CREDIT LEDGER';
-                             iconComponent = <OpenUdharIcon isHovered={isHovered} className="stroke-[2.2] text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform duration-300" />;
-                             colorClasses = "hover:border-rose-500/40 hover:text-rose-600 dark:hover:text-rose-400";
-                             accentBg = "bg-rose-500/5 dark:bg-rose-500/10 border-rose-500/10 dark:border-rose-500/20 group-hover:bg-rose-500/10 dark:group-hover:bg-rose-500/20 group-hover:border-rose-500/30";
-                             tintColor = "from-rose-500/20 to-rose-400/5";
-                             hoverGlow = "shadow-[0_12px_24px_-4px_rgba(244,63,94,0.18)] dark:shadow-[0_12px_24px_-4px_rgba(244,63,94,0.3)]";
-                             activeDotColor = "bg-rose-500";
-                             onClickHandler = () => setActiveTab('udhar');
-                             break;
-                          default:
-                             return null;
-                       }
-
-                       const triggerHaptic = () => {
-                          if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-                             try {
-                                window.navigator.vibrate(12);
-                             } catch (err) {}
-                          }
-                       };
-
-                       return (
-                          <motion.button
-                             key={actionId}
-                             whileHover={{ 
-                                y: -6, 
-                                scale: 1.04,
-                                transition: { type: "spring", stiffness: 400, damping: 15 }
-                             }}
-                             whileTap={{ scale: 0.96 }}
-                             initial={{ opacity: 0, y: 15 }}
-                             animate={{ opacity: 1, y: 0 }}
-                             transition={{ type: "spring", stiffness: 300, damping: 20, delay: index * 0.03 }}
-                             onClick={() => {
-                                triggerHaptic();
-                                onClickHandler();
-                             }}
-                             onMouseEnter={() => setHoveredAction(actionId)}
-                             onMouseLeave={() => setHoveredAction(null)}
-                             className={`p-5 h-36 rounded-3xl flex flex-col items-center justify-between text-center border group cursor-pointer transition-all duration-300 relative overflow-hidden backdrop-blur-md bg-[var(--card)] text-[var(--foreground)] border-[var(--border)] ${colorClasses} hover:${hoverGlow}`}
-                          >
-                             {/* Subtle top gloss flare */}
-                             <span className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--foreground)]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                             
-                             {/* Floating Ambient Light Pulse inside card */}
-                             <span className={`absolute -bottom-8 -right-8 h-16 w-16 rounded-full bg-gradient-to-br ${tintColor} opacity-0 group-hover:opacity-20 blur-xl transition-all duration-500`} />
-
-                             {/* Decorative colored badge dot in top-right */}
-                             <span className={`absolute top-3 right-3 h-1.5 w-1.5 rounded-full ${activeDotColor} opacity-60 group-hover:opacity-100 group-hover:scale-125 transition-all duration-300`} />
-
-                             <div className="text-[8px] font-black tracking-[0.18em] opacity-40 group-hover:opacity-90 transition-opacity uppercase font-sans mb-1 text-[var(--foreground)]">
-                                {label}
-                             </div>
-
-                             <div className={`p-3 rounded-2xl border transition-all duration-300 shadow-inner ${accentBg}`}>
-                                {iconComponent}
-                             </div>
-
-                             <span className="text-xs font-black tracking-tight text-[var(--foreground)]/90 leading-tight group-hover:text-[var(--primary)] transition-colors duration-300 mt-2">
-                                {title}
-                             </span>
-                          </motion.button>
-                       );
-                    })}
-                 </div>
-
-                 {/* Realtime Assistant Operational Bar */}
-                 <div className="border-t border-[var(--border)]/60 pt-4 flex items-center justify-between text-xs font-medium relative z-10">
-                    <div className="flex items-center gap-3">
-                       <div className="h-7 w-7 rounded-lg bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] animate-pulse shrink-0">
-                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)]" />
-                       </div>
-                       <div className="min-w-0">
-                          <AnimatePresence mode="wait">
-                             {hoveredAction ? (
-                                <motion.p
-                                   key={hoveredAction}
-                                   initial={{ opacity: 0, x: -5 }}
-                                   animate={{ opacity: 1, x: 0 }}
-                                   exit={{ opacity: 0, x: 5 }}
-                                   transition={{ duration: 0.15 }}
-                                   className="text-[var(--foreground)]/90 font-bold truncate text-left"
-                                >
-                                   {(() => {
-                                      switch (hoveredAction) {
-                                         case 'create_bill': return '🧾 Fast Billing: Launch checkout counters and issue new invoices instantly.';
-                                         case 'add_product': return '📦 Stock Up: Quick launcher to add a brand-new catalog item.';
-                                         case 'update_stock': return '🔄 Update Stock: Navigate directly down to catalog tables for easy entry updates.';
-                                         case 'print_invoice': return '🖨️ Sales Logs: Browse past digital receipt list & print instantly.';
-                                         case 'open_analytics': return '📊 Real-time Stats: Access premium sales chart streams & analytics matrices.';
-                                         case 'open_udhar': return '📕 Khata Udhar Book: Live client credit status & custom payment bookkeeping.';
-                                         default: return '';
-                                      }
-                                   })()}
-                                </motion.p>
-                             ) : (
-                                <motion.p
-                                   key="default-text"
-                                   initial={{ opacity: 0 }}
-                                   animate={{ opacity: 1 }}
-                                   exit={{ opacity: 0 }}
-                                   className="text-[var(--foreground)]/50 italic font-semibold text-left"
-                                >
-                                   Hover over any shortcut to view quick operations overview.
-                                </motion.p>
-                             )}
-                          </AnimatePresence>
-                       </div>
-                    </div>
-                    <span className="hidden lg:inline text-[9px] font-mono text-[var(--foreground)]/40 uppercase tracking-widest font-bold">
-                       Command HUD v3.4
-                    </span>
-                 </div>
-              </div>
 
              {/* Dynamic Operations Operational Widgets Container */}
              <DynamicStoreDashboard 
@@ -6375,18 +6021,7 @@ export default function App() {
                         addToast("Navigated to Dashboard Card Layouts", "success");
                       }
                     },
-                    {
-                      id: 'set-quick-actions',
-                      title: 'Configure Quick Action Shortcuts',
-                      category: 'Business Settings',
-                      description: 'Select up to 6 quick action buttons for instant billing, inventory, and analytics access',
-                      keywords: ['quick actions', 'shortcuts', 'quick bill', 'quick product', 'pos shortcuts', 'buttons'],
-                      onClick: () => {
-                        setMenuTab('business_settings');
-                        setBusinessSubTab('actions');
-                        addToast("Navigated to Quick Action Shortcuts", "success");
-                      }
-                    },
+
                     {
                       id: 'set-knowledge-hub',
                       title: '🧠 Business Knowledge Hub & Manuals',

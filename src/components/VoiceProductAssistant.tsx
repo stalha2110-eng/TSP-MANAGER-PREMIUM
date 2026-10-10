@@ -1472,7 +1472,7 @@ export function VoiceProductAssistant({
                     <span>
                       {isListening 
                         ? 'Listening • Tap to Stop' 
-                        : '● Tap to Speak'}
+                        : 'Tap to Speak'}
                     </span>
                   </motion.button>
                 </div>
@@ -1594,7 +1594,7 @@ export function VoiceProductAssistant({
                               </>
                             ) : (
                               <>
-                                <Sparkles size={12} className="text-amber-200" /> Structure with Gemini AI
+                                <Sparkles size={12} className="text-amber-200" /> Structure with AI
                               </>
                             )}
                           </Button>
@@ -2260,30 +2260,6 @@ export function VoiceProductAssistant({
                     />
                   </div>
 
-                  {/* Translations */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)]/50 mb-1.5 block">Hindi Translation (हिंदी)</label>
-                      <input
-                        type="text"
-                        value={draftProducts[0].translations?.hi || ""}
-                        onChange={(e) => updateDraftTranslation('hi', e.target.value)}
-                        className="w-full bg-[var(--card)] text-[var(--foreground)] px-4 py-2.5 rounded-xl text-xs font-bold border border-[var(--border)] focus:outline-none focus:border-amber-500/50"
-                        placeholder="e.g. अमूल बटर"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)]/50 mb-1.5 block">Marathi Translation (मराठी)</label>
-                      <input
-                        type="text"
-                        value={draftProducts[0].translations?.mr || ""}
-                        onChange={(e) => updateDraftTranslation('mr', e.target.value)}
-                        className="w-full bg-[var(--card)] text-[var(--foreground)] px-4 py-2.5 rounded-xl text-xs font-bold border border-[var(--border)] focus:outline-none focus:border-amber-500/50"
-                        placeholder="e.g. अमूल बटर"
-                      />
-                    </div>
-                  </div>
-
                   {/* Part 2: Category & Unit */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -2422,12 +2398,23 @@ export function VoiceProductAssistant({
                 <Button
                   variant="outline"
                   onClick={clearAllDrafts}
+                  style={{
+                    paddingLeft: '16px',
+                    paddingRight: '15.5px',
+                    marginLeft: '6px',
+                    marginRight: '7px'
+                  }}
                   className="border border-[var(--border)] text-[var(--foreground)]/80 hover:bg-red-500/5 hover:text-red-500 font-extrabold uppercase py-3.5 rounded-xl flex-1 flex items-center justify-center gap-2 text-xs cursor-pointer"
                 >
                   <Trash2 size={13} /> Discard & Abort
                 </Button>
                 <Button
                   onClick={handleSaveAll}
+                  style={{
+                    marginRight: '19px',
+                    marginLeft: '0px',
+                    paddingLeft: '9.5px'
+                  }}
                   className="flex-[2] bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase py-4 rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg ring-4 ring-emerald-500/10 border-none transition-all duration-300 cursor-pointer"
                 >
                   <CheckCircle size={18} /> Confirm & Save to Catalog

@@ -849,13 +849,13 @@ export default function BillingScreen({
   const [calcDoubleTapPulse, setCalcDoubleTapPulse] = useState(false);
   const [isProEngineOpen, setIsProEngineOpen] = useState(false);
   const [isAwaitingDoubleTap, setIsAwaitingDoubleTap] = useState(false);
-  const [calcBadgeCycle, setCalcBadgeCycle] = useState<0 | 1 | 2>(0);
+  const [calcBadgeCycle, setCalcBadgeCycle] = useState<0 | 1>(0);
 
-  // Cycle the micro-badge text periodically when idle so users discover the dual 1-Tap / 2-Tap functionality
+  // Cycle the micro-badge text periodically between "1 Tap" and "2 Tap ⚡"
   useEffect(() => {
     const interval = setInterval(() => {
-      setCalcBadgeCycle((prev) => (prev === 0 ? 1 : prev === 1 ? 2 : 0) as any);
-    }, 2200);
+      setCalcBadgeCycle((prev) => (prev === 0 ? 1 : 0));
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -2719,18 +2719,14 @@ export default function BillingScreen({
                     <span>1 Tap</span>
                   </>
                 ) : calcBadgeCycle === 0 ? (
-                  <>
-                    <span>1T</span>
-                    <span className="opacity-40">·</span>
-                    <span className="text-amber-500 dark:text-amber-400 flex items-center">2T<Zap size={6} className="fill-current ml-0.5" /></span>
-                  </>
+                  <span className="flex items-center gap-0.5">
+                    <span>1 Tap</span>
+                  </span>
                 ) : (
-                  <>
-                    <span className="text-amber-500 flex items-center gap-0.5">
-                      <span>{calcBadgeCycle === 1 ? '1 Tap' : '2 Tap'}</span>
-                      {calcBadgeCycle === 2 && <Zap size={6} className="fill-current" />}
-                    </span>
-                  </>
+                  <span className="text-amber-500 dark:text-amber-400 flex items-center gap-0.5">
+                    <span>2 Tap</span>
+                    <Zap size={6.5} className="fill-current text-amber-500 dark:text-amber-400" />
+                  </span>
                 )}
               </div>
             </div>

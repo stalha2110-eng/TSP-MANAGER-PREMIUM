@@ -4573,46 +4573,90 @@ export default function BillingScreen({
           <div className="space-y-4">
             {/* Cart Header */}
             <div className="flex items-center justify-between border-b border-[var(--border)] pb-2 gap-2 flex-wrap">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)] flex items-center gap-1.5 shrink-0">
-                  <CounterIcon size={13} className="shrink-0" />
-                  <span>BILLING COUNTER</span>
-                </span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)] flex items-center gap-1.5 shrink-0">
+                <CounterIcon size={14} className="shrink-0" />
+                <span>BILLING COUNTER:</span>
+              </span>
 
-                {/* Rate Pricing Mode Selector (Retail, Wholesale, Auto) */}
-                <div className="flex bg-[var(--foreground)]/5 p-0.5 rounded-lg border border-[var(--border)] gap-0.5 text-[8px] font-black uppercase shadow-2xs">
-                  {(['auto', 'retail', 'wholesale'] as const).map(mode => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setBillingMode(mode)}
-                      className={cn(
-                        "px-2 py-0.5 rounded-md transition-all cursor-pointer select-none leading-none",
-                        billingMode === mode 
-                          ? mode === 'wholesale'
-                            ? "bg-amber-500 text-white font-black shadow-xs"
-                            : mode === 'retail'
-                              ? "bg-sky-600 text-white font-black shadow-xs"
-                              : "bg-[var(--primary)] text-white font-black shadow-xs"
-                          : "text-[var(--foreground)]/50 hover:text-[var(--foreground)] hover:bg-[var(--foreground)]/10"
-                      )}
-                      title={`Switch mode to ${mode}`}
-                    >
-                      {mode === 'auto' ? "Auto" : mode}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {cart.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => { if (confirm("Clear current ticket?")) setCart([]); }}
-                  className="text-[8px] font-black text-red-500 uppercase hover:underline shrink-0 leading-none cursor-pointer"
+              {/* Controls on the Right: Differentiated Mode Selector & Empty Button */}
+              <div className="flex items-center gap-2 shrink-0 ml-auto">
+                {/* Rate Pricing Mode Selector (Auto, Retail, Wholesale) */}
+                <div 
+                  style={{ width: '185.453px', paddingTop: '-1.25px', marginTop: '-28px' }}
+                  className="flex items-center p-0.5 rounded-xl bg-[var(--foreground)]/[0.04] dark:bg-[var(--foreground)]/[0.06] border border-[var(--border)] shadow-2xs gap-0.5 select-none"
                 >
-                  Empty
-                </button>
-              )}
+                  {/* Distinctive Intelligent 'Auto' Button */}
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setBillingMode('auto')}
+                    className={cn(
+                      "relative px-2.5 py-1 rounded-lg text-[8.5px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 leading-none",
+                      billingMode === 'auto'
+                        ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white shadow-sm shadow-emerald-600/30 border border-emerald-400/40 font-black"
+                        : "text-emerald-600/85 dark:text-emerald-400/85 hover:text-emerald-600 hover:bg-emerald-500/10 border border-transparent font-extrabold"
+                    )}
+                    title="Auto Mode: Dynamically switches rates based on customer type"
+                  >
+                    <span className="relative flex h-1.5 w-1.5 shrink-0">
+                      <span className={cn(
+                        "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                        billingMode === 'auto' ? "bg-white" : "bg-emerald-400"
+                      )} />
+                      <span className={cn(
+                        "relative inline-flex rounded-full h-1.5 w-1.5 shadow-xs",
+                        billingMode === 'auto' ? "bg-white" : "bg-emerald-500"
+                      )} />
+                    </span>
+                    <span>Auto</span>
+                  </motion.button>
+
+                  {/* Clean Vertical Divider */}
+                  <div className="w-[1px] h-3.5 bg-[var(--border)] mx-0.5 opacity-60 self-center" />
+
+                  {/* Retail Manual Mode */}
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setBillingMode('retail')}
+                    className={cn(
+                      "relative px-2.5 py-1 rounded-lg text-[8.5px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer leading-none",
+                      billingMode === 'retail'
+                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-600/30 border border-blue-400/40"
+                        : "text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:bg-[var(--foreground)]/5 border border-transparent font-bold"
+                    )}
+                    title="Retail Mode: Standard consumer rates"
+                  >
+                    Retail
+                  </motion.button>
+
+                  {/* Wholesale Manual Mode */}
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setBillingMode('wholesale')}
+                    className={cn(
+                      "relative px-2.5 py-1 rounded-lg text-[8.5px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer leading-none",
+                      billingMode === 'wholesale'
+                        ? "bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white shadow-sm shadow-amber-500/30 border border-amber-300/40"
+                        : "text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:bg-[var(--foreground)]/5 border border-transparent font-bold"
+                    )}
+                    title="Wholesale Mode: Bulk / b2b discounted wholesale rates"
+                  >
+                    Wholesale
+                  </motion.button>
+                </div>
+
+                {cart.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { if (confirm("Clear current ticket?")) setCart([]); }}
+                    className="text-[8px] font-black text-red-500 uppercase hover:underline shrink-0 leading-none cursor-pointer px-1 py-0.5"
+                  >
+                    Empty
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Smart Optional Customer Panel */}

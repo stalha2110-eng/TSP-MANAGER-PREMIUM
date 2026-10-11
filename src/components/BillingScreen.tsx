@@ -4674,11 +4674,209 @@ export default function BillingScreen({
             {/* Cart list details */}
             <div className="space-y-1.5 max-h-[36vh] overflow-y-auto pr-1 custom-scrollbar">
               {cart.length === 0 ? (
-                <div className="py-12 px-4 border border-[var(--border)] border-dashed rounded-xl text-center opacity-30 space-y-2">
-                  <ShoppingCart className="mx-auto opacity-30" size={28} />
-                  <p className="text-[10px] font-medium max-w-xs mx-auto">
-                    {getTranslation('emptyCartText')}
-                  </p>
+                <div className="py-7 px-4 border border-[var(--border)] border-dashed rounded-2xl text-center space-y-2 bg-[var(--foreground)]/[0.015] hover:bg-[var(--foreground)]/[0.025] transition-colors relative overflow-hidden group">
+                  {/* Subtle ambient backlight aura */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-24 bg-[var(--primary)]/[0.04] rounded-full blur-2xl pointer-events-none" />
+
+                  {/* Professional Minimalist Empty Trolley SVG */}
+                  <motion.svg
+                    width="84"
+                    height="72"
+                    viewBox="0 0 110 90"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="mx-auto select-none overflow-visible"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    <defs>
+                      <linearGradient id="emptyFloorGrad" x1="20" y1="84" x2="90" y2="84" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stopColor="currentColor" stopOpacity="0" />
+                        <stop offset="50%" stopColor="currentColor" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+                      </linearGradient>
+                      <linearGradient id="emptyBasketGlow" x1="30" y1="42" x2="80" y2="64" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.08" />
+                        <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Floor ground guide line */}
+                    <path d="M22 84 H88" stroke="url(#emptyFloorGrad)" strokeWidth="1.2" strokeLinecap="round" />
+
+                    {/* Ambient Floor Shadow under trolley */}
+                    <motion.ellipse
+                      cx="54"
+                      cy="84"
+                      rx="30"
+                      ry="3"
+                      className="fill-[var(--foreground)]"
+                      animate={{
+                        scaleX: [1, 0.88, 1],
+                        opacity: [0.12, 0.05, 0.12],
+                      }}
+                      transition={{
+                        duration: 3.2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
+
+                    {/* Trolley Body with calm, professional ambient suspension breathing */}
+                    <motion.g
+                      animate={{
+                        y: [0, -3.5, 0],
+                      }}
+                      transition={{
+                        duration: 3.2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      {/* Handle Bar & Ergonomic Grip */}
+                      <path
+                        d="M15 28 H24 L29 42"
+                        stroke="currentColor"
+                        className="text-[var(--foreground)]/45"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <rect
+                        x="13"
+                        y="26"
+                        width="9"
+                        height="4"
+                        rx="2"
+                        className="fill-[var(--primary)]/75"
+                      />
+
+                      {/* Empty Basket Chassis Interior Fill */}
+                      <polygon
+                        points="29,42 81,42 73,64 36,64"
+                        fill="url(#emptyBasketGlow)"
+                      />
+
+                      {/* Basket Wireframe - Outline Frame */}
+                      <polygon
+                        points="29,42 81,42 73,64 36,64"
+                        stroke="currentColor"
+                        className="text-[var(--foreground)]/50"
+                        strokeWidth="2.2"
+                        strokeLinejoin="round"
+                      />
+
+                      {/* Basket Front Angled Lip */}
+                      <path
+                        d="M81 42 L84 36"
+                        stroke="currentColor"
+                        className="text-[var(--foreground)]/50"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                      />
+
+                      {/* Basket Precision Wire Grid (Vertical Slats) */}
+                      <path
+                        d="M40 42 L44 64 M51 42 L53 64 M62 42 L63 64 M72 42 L70 64"
+                        stroke="currentColor"
+                        className="text-[var(--foreground)]/25"
+                        strokeWidth="1.2"
+                        strokeLinecap="round"
+                      />
+
+                      {/* Basket Precision Wire Grid (Horizontal Slats) */}
+                      <path
+                        d="M31 49 H78 M33 56 H75"
+                        stroke="currentColor"
+                        className="text-[var(--foreground)]/25"
+                        strokeWidth="1.2"
+                        strokeLinecap="round"
+                      />
+
+                      {/* Empty State 'Waiting for Item' Dashed Placement Zone inside basket */}
+                      <motion.rect
+                        x="43"
+                        y="47"
+                        width="22"
+                        height="12"
+                        rx="2.5"
+                        stroke="currentColor"
+                        className="text-[var(--primary)]"
+                        strokeWidth="1.2"
+                        strokeDasharray="2.5 2"
+                        fill="none"
+                        animate={{
+                          opacity: [0.25, 0.7, 0.25],
+                        }}
+                        transition={{
+                          duration: 2.6,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      />
+
+                      {/* Centered '+' Icon inside the dashed empty zone inviting the first item */}
+                      <motion.path
+                        d="M54 50 V56 M51 53 H57"
+                        stroke="currentColor"
+                        className="text-[var(--primary)]"
+                        strokeWidth="1.3"
+                        strokeLinecap="round"
+                        animate={{
+                          opacity: [0.3, 0.85, 0.3],
+                          scale: [0.95, 1.05, 0.95],
+                        }}
+                        transition={{
+                          duration: 2.6,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      />
+
+                      {/* Lower Chassis Support Struts connecting to wheels */}
+                      <path
+                        d="M39 64 L36 74 H70 L68 64"
+                        stroke="currentColor"
+                        className="text-[var(--foreground)]/45"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+
+                      {/* Under-carriage bottom tray wire */}
+                      <line
+                        x1="43"
+                        y1="71"
+                        x2="65"
+                        y2="71"
+                        stroke="currentColor"
+                        className="text-[var(--foreground)]/30"
+                        strokeWidth="1.2"
+                        strokeLinecap="round"
+                      />
+
+                      {/* Rear Wheel assembly */}
+                      <g transform="translate(37, 76)">
+                        <circle cx="0" cy="0" r="5" stroke="currentColor" className="text-[var(--foreground)]/60" strokeWidth="1.6" fill="var(--card)" />
+                        <circle cx="0" cy="0" r="1.8" className="fill-[var(--primary)]/70" />
+                      </g>
+
+                      {/* Front Wheel assembly with castor mount */}
+                      <g transform="translate(68, 76)">
+                        <line x1="-1" y1="-3" x2="0" y2="0" stroke="currentColor" className="text-[var(--foreground)]/50" strokeWidth="1.4" />
+                        <circle cx="0" cy="0" r="5" stroke="currentColor" className="text-[var(--foreground)]/60" strokeWidth="1.6" fill="var(--card)" />
+                        <circle cx="0" cy="0" r="1.8" className="fill-[var(--primary)]/70" />
+                      </g>
+                    </motion.g>
+                  </motion.svg>
+
+                  <div className="space-y-1 relative z-10">
+                   
+                    <p className="text-[9px] font-medium text-[var(--foreground)]/45 max-w-xs mx-auto leading-relaxed">
+                      {getTranslation('emptyCartText') || "Tap products or scan barcode to add items to this invoice"}
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <AnimatePresence mode="popLayout">

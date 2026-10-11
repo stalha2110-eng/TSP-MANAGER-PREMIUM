@@ -1659,15 +1659,6 @@ Total MRP: ₹${gstCalc.totalAmount.toFixed(2)}`;
             Calculator
           </button>
           <button
-            onClick={() => setActiveTab('change')}
-            className={cn(
-              "px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer",
-              activeTab === 'change' ? "bg-white text-amber-600 shadow-md" : "text-white/80 hover:text-white"
-            )}
-          >
-            Cash Return
-          </button>
-          <button
             onClick={() => setActiveTab('history')}
             className={cn(
               "px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5",

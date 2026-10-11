@@ -945,6 +945,86 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
         />
       </div>
 
+      {/* Top 10 Selling Items Leaderboard (sabse zyada bikne wale item) - Directly after Sales & Profit Streams and upper of Monthly Sales Target */}
+      <div className={`p-6 rounded-3xl ${themeContainerStyle.cardBg} space-y-4 relative overflow-hidden mb-8 border border-[var(--border)]`}>
+        <ThemeVisualEffects theme={currentTheme} disableMovement={true} />
+        <div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-extrabold text-[var(--foreground)] text-sm uppercase flex items-center gap-1.5">
+                <TrendingUp size={16} className="text-[var(--primary)] animate-bounce" /> {t.topSellingItems || "Top 10 Selling Items"}
+              </h4>
+              <p className="text-[9.5px] opacity-40 font-bold uppercase tracking-wider mt-0.5">
+                {t.topSellingSub || "Highest velocity checkout items recorded across the interval"}
+              </p>
+            </div>
+            <span className="text-[8px] font-black bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-0.5 rounded-full uppercase leading-none">
+              Velocity Match
+            </span>
+          </div>
+
+          <div className="divide-y divide-[var(--border)] overflow-hidden mt-4">
+            {top10SellingItems.length === 0 ? (
+              <div className="py-20 text-center opacity-30 text-[10px] uppercase tracking-widest font-extrabold flex flex-col items-center justify-center gap-2">
+                <Package2 size={24} />
+                <span>{t.noProductSalesLogged || "No product sales logged under selected timeframe"}</span>
+              </div>
+            ) : (
+              top10SellingItems.map((p, idx) => {
+                const velocityRatio = (p.qty / peakLeaderQty) * 100;
+                return (
+                  <div key={p.id} className="flex gap-4 items-center py-3.5 first:pt-0 last:pb-0 font-medium">
+                    {/* Rank Indicator */}
+                    <span className="font-mono font-black text-[11px] h-6 w-6 rounded-lg bg-[var(--foreground)]/[0.04] border border-[var(--border)] text-[var(--foreground)]/70 flex items-center justify-center shrink-0">
+                      {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
+                    </span>
+                    
+                    {/* Product Name & quantity gauge bar */}
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-bold leading-none">
+                        <p className="text-[var(--foreground)] truncate max-w-[170px] sm:max-w-xs md:max-w-md uppercase tracking-tight">
+                          {p.name}
+                        </p>
+                        <span className="font-mono opacity-80 shrink-0 text-right">
+                          {p.qty} {p.unit}
+                        </span>
+                      </div>
+                      {/* High fidelity progressive tracking bar */}
+                      <div className="h-1.5 w-full bg-[var(--foreground)]/[0.04] rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${velocityRatio}%` }}
+                          className="h-full bg-[var(--primary)] rounded-full"
+                          style={{
+                            backgroundColor: idx === 0 ? 'var(--primary)' : idx === 1 ? '#10b981' : 'var(--primary)'
+                          }}
+                          transition={{ duration: 0.8, delay: idx * 0.05 }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Revenue values */}
+                    <div className="text-right font-mono text-xs shrink-0 pl-2">
+                      <p className="font-extrabold text-[var(--foreground)]">₹{Math.round(p.revenue).toLocaleString()}</p>
+                      <p className="text-[9px] font-black text-green-500 mt-0.5">
+                        +₹{Math.round(p.profit).toLocaleString()} {t.margin || "margin"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <div className="bg-[var(--foreground)]/[0.02] p-3 rounded-2xl border border-[var(--border)] text-[9px] opacity-60 leading-snug flex items-start gap-2.5 mt-4">
+          <Info size={13} className="text-amber-500 shrink-0 mt-0.5" />
+          <span>
+            {t.itemVelocitiesUpdate || "Item velocities update in real time according to local printer billing logs. Product valuations leverage static margins declared on active catalogs."}
+          </span>
+        </div>
+      </div>
+
       {/* Interactive Monthly Sales Goal Hub */}
       <MonthlySalesTargetPanel state={state} t={t} onUpdateSettings={onUpdateSettings} />
 
@@ -958,153 +1038,63 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
         t={t}
       />
 
-      {/* 4. LEADERBOARD LIST (TOP 10 SELLING ITEMS) & WAREHOUSE INTELLIGENCE REPORT */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Top 10 Selling Items Leaderboard */}
-        <div className={`lg:col-span-7 p-6 ${themeContainerStyle.cardBg} space-y-4 relative overflow-hidden`}>
-          <ThemeVisualEffects theme={currentTheme} disableMovement={true} />
-          <div>
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-extrabold text-[var(--foreground)] text-sm uppercase flex items-center gap-1.5">
-                  <TrendingUp size={16} className="text-[var(--primary)] animate-bounce" /> {t.topSellingItems || "Top 10 Selling Items"}
-                </h4>
-                <p className="text-[9.5px] opacity-40 font-bold uppercase tracking-wider mt-0.5">
-                  {t.topSellingSub || "Highest velocity checkout items recorded across the interval"}
-                </p>
-              </div>
-              <span className="text-[8px] font-black bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-0.5 rounded-full uppercase leading-none">
-                Velocity Match
+      {/* Warehouse Metrics, Valuation & Catalog framework */}
+      <div className={`p-6 rounded-3xl ${themeContainerStyle.cardBg} space-y-4 relative overflow-hidden border border-[var(--border)] mb-8`}>
+        <ThemeVisualEffects theme={currentTheme} disableMovement={true} />
+        <div>
+          <h4 className="font-extrabold text-[var(--foreground)] text-sm uppercase flex items-center gap-1.5">
+            <Warehouse size={16} className="text-teal-500" /> {t.warehouseReport || "Catalog Valuations"}
+          </h4>
+          <p className="text-[9.5px] opacity-40 font-bold uppercase tracking-wider mt-0.5">
+            {t.warehouseReportSub || "Physical value thresholds of overall active inventory stocks"}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-3.5 bg-[var(--foreground)]/[0.02] border border-[var(--border)] rounded-2xl flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[9px] font-black opacity-45 uppercase tracking-widest block leading-none">{t.capitalInvestment || "Catalog Investment Cost"}</span>
+              <span className="text-lg font-black text-rose-500 font-mono">₹{Math.round(warehouseMetrics.capitalTiedUp).toLocaleString()}</span>
+              <span className="text-[8px] opacity-40 block">{t.lockedCapitalInside || "Locked capital inside warehouses"}</span>
+            </div>
+            <div className="text-right">
+              <span className="px-2 py-1 rounded text-[8.5px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-600 border border-rose-500/20">
+                {t.storageCost || "Storage cost"}
               </span>
             </div>
-
-            <div className="divide-y divide-[var(--border)] overflow-hidden mt-4">
-              {top10SellingItems.length === 0 ? (
-                <div className="py-20 text-center opacity-30 text-[10px] uppercase tracking-widest font-extrabold flex flex-col items-center justify-center gap-2">
-                  <Package2 size={24} />
-                  <span>{t.noProductSalesLogged || "No product sales logged under selected timeframe"}</span>
-                </div>
-              ) : (
-                top10SellingItems.map((p, idx) => {
-                  const velocityRatio = (p.qty / peakLeaderQty) * 100;
-                  return (
-                    <div key={p.id} className="flex gap-4 items-center py-3.5 first:pt-0 last:pb-0 font-medium">
-                      {/* Rank Indicator */}
-                      <span className="font-mono font-black text-[11px] h-6 w-6 rounded-lg bg-[var(--foreground)]/[0.04] border border-[var(--border)] text-[var(--foreground)]/70 flex items-center justify-center shrink-0">
-                        {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
-                      </span>
-                      
-                      {/* Product Name & quantity gauge bar */}
-                      <div className="flex-1 min-w-0 space-y-1.5">
-                        <div className="flex items-center justify-between text-xs font-bold leading-none">
-                          <p className="text-[var(--foreground)] truncate max-w-[170px] sm:max-w-xs uppercase tracking-tight">
-                            {p.name}
-                          </p>
-                          <span className="font-mono opacity-80 shrink-0 text-right">
-                            {p.qty} {p.unit}
-                          </span>
-                        </div>
-                        {/* High fidelity progressive tracking bar */}
-                        <div className="h-1.5 w-full bg-[var(--foreground)]/[0.04] rounded-full overflow-hidden">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${velocityRatio}%` }}
-                            className="h-full bg-[var(--primary)] rounded-full"
-                            style={{
-                              backgroundColor: idx === 0 ? 'var(--primary)' : idx === 1 ? '#10b981' : 'var(--primary)'
-                            }}
-                            transition={{ duration: 0.8, delay: idx * 0.05 }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Revenue values */}
-                      <div className="text-right font-mono text-xs shrink-0 pl-2">
-                        <p className="font-extrabold text-[var(--foreground)]">₹{Math.round(p.revenue).toLocaleString()}</p>
-                        <p className="text-[9px] font-black text-green-500 mt-0.5">
-                          +₹{Math.round(p.profit).toLocaleString()} {t.margin || "margin"}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
           </div>
 
-          <div className="bg-[var(--foreground)]/[0.02] p-3 rounded-2xl border border-[var(--border)] text-[9px] opacity-60 leading-snug flex items-start gap-2.5 mt-4">
-            <Info size={13} className="text-amber-500 shrink-0 mt-0.5" />
-            <span>
-              {t.itemVelocitiesUpdate || "Item velocities update in real time according to local printer billing logs. Product valuations leverage static margins declared on active catalogs."}
-            </span>
+          <div className="p-3.5 bg-[var(--foreground)]/[0.02] border border-[var(--border)] rounded-2xl flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[9px] font-black opacity-45 uppercase tracking-widest block leading-none">{t.estimatedMargin || "Potential Revenue value"}</span>
+              <span className="text-lg font-black text-emerald-500 font-mono">₹{Math.round(warehouseMetrics.potentialRetailValue).toLocaleString()}</span>
+              <span className="text-[8px] opacity-40 block">{t.estimatedRetailLiquidity || "Estimated retail liquidity complete"}</span>
+            </div>
+            <div className="text-right">
+              <span className="px-2 py-1 rounded text-[8.5px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-mono">
+                +{warehouseMetrics.marginPercentage.toFixed(0)}% {t.profitMargin || "Margin"}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Warehouse Metrics, Valuation & Catalog framework */}
-        <div className="lg:col-span-5 space-y-6">
-          
-          {/* Warehouse Valuations */}
-          <div className={`p-6 ${themeContainerStyle.cardBg} space-y-4 relative overflow-hidden`}>
-            <ThemeVisualEffects theme={currentTheme} disableMovement={true} />
-            <div>
-              <h4 className="font-extrabold text-[var(--foreground)] text-sm uppercase flex items-center gap-1.5">
-                <Warehouse size={16} className="text-teal-500" /> {t.warehouseReport || "Catalog Valuations"}
-              </h4>
-              <p className="text-[9.5px] opacity-40 font-bold uppercase tracking-wider mt-0.5">
-                {t.warehouseReportSub || "Physical value thresholds of overall active inventory stocks"}
-              </p>
+        {warehouseMetrics.lowStockCount > 0 ? (
+          <div className="p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/15 flex items-start gap-2.5">
+            <ShieldAlert className="text-amber-500 shrink-0 mt-0.5" size={15} />
+            <div className="space-y-0.5 text-[10px] leading-tight text-left">
+              <p className="font-extrabold text-amber-600 uppercase tracking-wider">{t.replenishmentActionRequired || "Replenishment Action Required"}</p>
+              <p className="opacity-70 font-semibold">{warehouseMetrics.lowStockCount} {t.lowStockItems || "items"} {t.replenishmentActionDesc || "have reached or dropped below specified threshold levels. Visit inventory catalogs to order supplies."}</p>
             </div>
-
-            <div className="space-y-4">
-              <div className="p-3.5 bg-[var(--foreground)]/[0.02] border border-[var(--border)] rounded-2xl flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <span className="text-[9px] font-black opacity-45 uppercase tracking-widest block leading-none">{t.capitalInvestment || "Catalog Investment Cost"}</span>
-                  <span className="text-lg font-black text-rose-500 font-mono">₹{Math.round(warehouseMetrics.capitalTiedUp).toLocaleString()}</span>
-                  <span className="text-[8px] opacity-40 block">{t.lockedCapitalInside || "Locked capital inside warehouses"}</span>
-                </div>
-                <div className="text-right">
-                  <span className="px-2 py-1 rounded text-[8.5px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-600 border border-rose-500/20">
-                    {t.storageCost || "Storage cost"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-3.5 bg-[var(--foreground)]/[0.02] border border-[var(--border)] rounded-2xl flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <span className="text-[9px] font-black opacity-45 uppercase tracking-widest block leading-none">{t.estimatedMargin || "Potential Revenue value"}</span>
-                  <span className="text-lg font-black text-emerald-500 font-mono">₹{Math.round(warehouseMetrics.potentialRetailValue).toLocaleString()}</span>
-                  <span className="text-[8px] opacity-40 block">{t.estimatedRetailLiquidity || "Estimated retail liquidity complete"}</span>
-                </div>
-                <div className="text-right">
-                  <span className="px-2 py-1 rounded text-[8.5px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-mono">
-                    +{warehouseMetrics.marginPercentage.toFixed(0)}% {t.profitMargin || "Margin"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {warehouseMetrics.lowStockCount > 0 ? (
-              <div className="p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/15 flex items-start gap-2.5">
-                <ShieldAlert className="text-amber-500 shrink-0 mt-0.5" size={15} />
-                <div className="space-y-0.5 text-[10px] leading-tight text-left">
-                  <p className="font-extrabold text-amber-600 uppercase tracking-wider">{t.replenishmentActionRequired || "Replenishment Action Required"}</p>
-                  <p className="opacity-70 font-semibold">{warehouseMetrics.lowStockCount} {t.lowStockItems || "items"} {t.replenishmentActionDesc || "have reached or dropped below specified threshold levels. Visit inventory catalogs to order supplies."}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/15 flex items-start gap-2.5">
-                <CheckCircle2 className="text-emerald-500 shrink-0 mt-0.5" size={15} />
-                <div className="space-y-0.5 text-[10px] leading-tight text-left">
-                  <p className="font-extrabold text-emerald-600 uppercase tracking-wider">{t.inventoryHealthOptimal || "Inventory Health Optimal"}</p>
-                  <p className="opacity-70 font-semibold">{t.inventoryHealthOptimalDesc || "No critical stock warnings recorded. Catalog quantities exceed minimum threshold levels beautifully."}</p>
-                </div>
-              </div>
-            )}
           </div>
-
-        </div>
-
+        ) : (
+          <div className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/15 flex items-start gap-2.5">
+            <CheckCircle2 className="text-emerald-500 shrink-0 mt-0.5" size={15} />
+            <div className="space-y-0.5 text-[10px] leading-tight text-left">
+              <p className="font-extrabold text-emerald-600 uppercase tracking-wider">{t.inventoryHealthOptimal || "Inventory Health Optimal"}</p>
+              <p className="opacity-70 font-semibold">{t.inventoryHealthOptimalDesc || "No critical stock warnings recorded. Catalog quantities exceed minimum threshold levels beautifully."}</p>
+            </div>
+          </div>
+        )}
       </div>
       </>
       )}

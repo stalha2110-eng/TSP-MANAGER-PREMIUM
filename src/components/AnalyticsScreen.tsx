@@ -641,7 +641,10 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
       </AnimatePresence>
 
       {/* 1. TOP TIME-PERIOD FILTER CONTROLS */}
-      <div className="flex items-center justify-between pb-1 gap-4">
+      <div 
+        style={{ marginLeft: '-9px' }}
+        className="flex items-center justify-between pb-3 gap-4"
+      >
         {/* Professional Segmented buttons optimized for quick mobile touch selection */}
         <div className="flex items-center bg-[var(--foreground)]/[0.03] p-1 rounded-2xl border border-[var(--border)] w-full overflow-x-auto">
           {([
@@ -669,24 +672,27 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
         </div>
       </div>
 
-      {/* Status Light Indicator directly above Profit Report button without brackets, tightly aligned */}
-      <div className="flex items-center justify-start px-1 pt-0.5 mb-1.5">
+      {/* Status Light Indicator directly above Profit Report button */}
+      <div 
+        style={{ paddingBottom: '0px', marginTop: '-25px' }}
+        className="flex items-center justify-start px-1 mb-1 pb-0"
+      >
         <div 
-          className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[var(--foreground)]/70 select-none"
+          className="inline-flex items-center gap-1 text-[8.5px] font-bold uppercase tracking-wider text-[var(--foreground)]/60 select-none"
           title={isSystemHealthy ? "Status: Online & Operational" : "Status: Offline / Attention Required"}
         >
           <span>Status</span>
-          <span className="relative flex h-2 w-2">
+          <span className="relative flex h-1.5 w-1.5">
             <span
               className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
                 isSystemHealthy ? 'bg-emerald-400' : 'bg-red-400'
               }`}
             />
             <span
-              className={`relative inline-flex rounded-full h-2 w-2 ${
+              className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
                 isSystemHealthy
-                  ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)]'
-                  : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)]'
+                  ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.9)]'
+                  : 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.9)]'
               }`}
             />
           </span>

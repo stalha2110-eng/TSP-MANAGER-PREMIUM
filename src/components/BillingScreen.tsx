@@ -28,7 +28,6 @@ import { parseSearchInput, calculateWeightFromAmount, isWeightBasedUnit, COMMON_
 import { Scale, IndianRupee } from 'lucide-react';
 import { useBackModal } from '../utils/backNavigationManager';
 import { previewImage } from './ImagePreviewModal';
-import { BillingDemoWorkbench } from './BillingDemoWorkbench';
 
 interface BillingScreenProps {
   state: AppState;
@@ -349,7 +348,6 @@ export default function BillingScreen({
   const { recentUnits } = useRecentUnits();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [showDemoWorkbench, setShowDemoWorkbench] = useState(false);
   const [billingSubTab, setBillingSubTab] = useState<'billing' | 'history' | 'calculator'>('billing');
   const [additionAnims, setAdditionAnims] = useState<{ id: string; name: string; price: number; x: number; y: number }[]>([]);
   const [activePredictionIndex, setActivePredictionIndex] = useState(-1);
@@ -3792,50 +3790,8 @@ export default function BillingScreen({
         </div>
       )}
 
-      {/* Fast Billing UX Demo Workbench Modal */}
-      <BillingDemoWorkbench
-        isOpen={showDemoWorkbench}
-        onClose={() => setShowDemoWorkbench(false)}
-        availableItems={state.items}
-        storeName={state.settings?.storeName}
-      />
-
       {/* Main Billing Grid */}
       <div className="grid grid-cols-12 gap-4 items-start">
-        
-        {/* FAST BILLING UX DEMO ARTIFACT TRIGGER BANNER */}
-        <div className="col-span-12 shrink-0">
-          <div className="bg-gradient-to-r from-emerald-950/70 via-slate-900 to-indigo-950/70 border border-emerald-500/35 hover:border-emerald-500/60 rounded-2xl p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-3 shadow-lg transition-all">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 flex items-center justify-center font-black text-sm shrink-0 shadow-md shadow-emerald-500/20">
-                ⚡
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-white">
-                    Fast Billing UI Improvements Demo
-                  </h4>
-                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    Split · Touch · Grid
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400 truncate">
-                  Interactive side-by-side comparison: 70% tap reduction & one-tap mobile checkout
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowDemoWorkbench(true)}
-                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-[11px] uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-600/30 transition-all active:scale-95"
-              >
-                <span>Launch Interactive Demo ⚡</span>
-              </button>
-            </div>
-          </div>
-        </div>
 
         {/* TOP SEARCH BAR & SHORTCUTS (WIDE FULL-WIDTH 12 COLS ACROSS BILLING DASHBOARD) */}
         <div className={cn("col-span-12 shrink-0 space-y-2 relative transition-all", isSearchFocused && searchQuery.trim().length > 0 ? "z-50" : "z-20")}>
@@ -5879,7 +5835,7 @@ export default function BillingScreen({
 
               <div className="space-y-3">
                 <div className="space-y-0.5">
-                  <label className="text-[8px] font-black uppercase opacity-60">Product ID / Name *</label>
+                  <label className="text-[8px] font-black uppercase opacity-60">Product Name *</label>
                   <input
                     type="text"
                     value={manualName}

@@ -303,17 +303,17 @@ export function UnbilledAuditAnalyticsSection({
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
-              <Zap size={11} /> Micro-Sales Audit
+              <Zap size={11} /> Quik-Sales Audit
             </span>
             <span className="text-[10px] font-bold text-[var(--foreground)]/50 font-mono uppercase">
               {timePeriod.toUpperCase()} INTERVAL
             </span>
           </div>
           <h3 className="text-xl font-black uppercase tracking-tight text-[var(--foreground)] mt-1 flex items-center gap-2">
-            Unbilled Rush Hour & Micro-Sales Audit
+             Quick-Sales Records
           </h3>
           <p className="text-[11px] font-semibold opacity-60 text-[var(--foreground)]">
-            Real-time reconciliation audit trail for counter micro-sales, loose items & unbilled rush hour transactions
+            Chiller Small Sales
           </p>
         </div>
 
@@ -334,7 +334,7 @@ export function UnbilledAuditAnalyticsSection({
             title="Print or Export PDF Cash Drawer Reconciliation Audit"
           >
             <Printer size={14} />
-            <span>Reconciliation Report (PDF/Print)</span>
+            <span>Print or Export Reports (PDF/Print)</span>
           </button>
         </div>
       </div>

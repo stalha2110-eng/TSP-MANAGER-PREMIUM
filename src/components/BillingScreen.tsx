@@ -25,7 +25,7 @@ import { AnimatedBillHistoryIcon } from './AnimatedBillHistoryIcon';
 import { AnimatedCalculatorIcon } from './AnimatedCalculatorIcon';
 import { QuickWeightPresets, ItemHoldWeightModal } from './QuickWeightPresets';
 import { parseSearchInput, calculateWeightFromAmount, isWeightBasedUnit, COMMON_WEIGHT_PRESETS, WeightPreset, formatQtyWithUnit } from '../utils/weightHelpers';
-import { Scale, IndianRupee } from 'lucide-react';
+import { Scale, IndianRupee, Zap } from 'lucide-react';
 import { useBackModal } from '../utils/backNavigationManager';
 import { previewImage } from './ImagePreviewModal';
 
@@ -847,6 +847,30 @@ export default function BillingScreen({
   const calcClickTimerRef = useRef<NodeJS.Timeout | null>(null);
   const calcLastClickTimeRef = useRef<number>(0);
   const [calcDoubleTapPulse, setCalcDoubleTapPulse] = useState(false);
+  const [isProEngineOpen, setIsProEngineOpen] = useState(false);
+  const [isAwaitingDoubleTap, setIsAwaitingDoubleTap] = useState(false);
+  const [calcBadgeCycle, setCalcBadgeCycle] = useState<0 | 1 | 2>(0);
+
+  // Cycle the micro-badge text periodically when idle so users discover the dual 1-Tap / 2-Tap functionality
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCalcBadgeCycle((prev) => (prev === 0 ? 1 : prev === 1 ? 2 : 0) as any);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Synchronize Pro Engine open/closed state
+  useEffect(() => {
+    const handleCalcState = (e: any) => {
+      if (e.detail && typeof e.detail.isOpen === 'boolean') {
+        setIsProEngineOpen(e.detail.isOpen);
+      }
+    };
+    window.addEventListener('tsm-smart-calc-state', handleCalcState);
+    return () => {
+      window.removeEventListener('tsm-smart-calc-state', handleCalcState);
+    };
+  }, []);
 
   const handleCalculatorButtonAction = () => {
     const now = Date.now();
@@ -859,20 +883,24 @@ export default function BillingScreen({
         calcClickTimerRef.current = null;
       }
       calcLastClickTimeRef.current = 0;
+      setIsAwaitingDoubleTap(false);
       playFeedbackEvent('notification', state.settings);
       setCalcDoubleTapPulse(true);
       setTimeout(() => setCalcDoubleTapPulse(false), 800);
+      setIsProEngineOpen(true);
       window.dispatchEvent(new CustomEvent('tsm-open-calculator'));
       addToast("Pro POS Business Engine (Store Assistant) Opened", "success");
     } else {
       // First click/tap: wait to see if second click arrives
       calcLastClickTimeRef.current = now;
+      setIsAwaitingDoubleTap(true);
       if (calcClickTimerRef.current) {
         clearTimeout(calcClickTimerRef.current);
       }
       calcClickTimerRef.current = setTimeout(() => {
         playFeedbackEvent('notification', state.settings);
         setBillingSubTab('calculator');
+        setIsAwaitingDoubleTap(false);
         calcClickTimerRef.current = null;
         calcLastClickTimeRef.current = 0;
       }, 300);
@@ -2648,27 +2676,117 @@ export default function BillingScreen({
           <button
             onClick={handleCalculatorButtonAction}
             className={cn(
-              "py-2 px-1.5 sm:px-3 rounded-lg sm:rounded-xl flex flex-row items-center justify-center transition-all cursor-pointer select-none border relative overflow-hidden group",
-              billingSubTab === 'calculator'
-                ? "bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white border-amber-500/50 shadow-md shadow-amber-500/30 scale-[1.02]"
-                : "bg-transparent border-transparent text-[var(--foreground)]/80 hover:bg-[var(--foreground)]/5 hover:text-[var(--foreground)]",
-              calcDoubleTapPulse && "ring-4 ring-amber-400 scale-95 transition-transform duration-150"
+              "py-2 px-2.5 sm:px-3.5 rounded-lg sm:rounded-xl flex flex-row items-center justify-center transition-all duration-300 cursor-pointer select-none border relative overflow-visible group",
+              isProEngineOpen
+                ? "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-700 text-white border-violet-300 shadow-[0_0_22px_rgba(168,85,247,0.55)] ring-2 ring-violet-400/80 scale-[1.02]"
+                : billingSubTab === 'calculator'
+                  ? "bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white border-amber-400/80 shadow-md shadow-amber-500/35 ring-2 ring-amber-400/40 scale-[1.02]"
+                  : "bg-transparent border-transparent text-[var(--foreground)]/80 hover:bg-[var(--foreground)]/5 hover:text-[var(--foreground)] hover:border-amber-400/30",
+              calcDoubleTapPulse && "ring-4 ring-violet-400 scale-95 transition-transform duration-150"
             )}
-            title="Calculator (1-Tap: Universal Calculator | 2-Tap: Pro POS Business Engine)"
+            title="Calculator (1-Tap: Universal Store Calculator | 2-Tap: Pro POS Business Engine)"
             aria-label="Calculator (Tap once for Store Calculator, double tap for POS Engine)"
           >
-            <div className="relative flex items-center justify-center p-0.5">
-              <AnimatedCalculatorIcon 
-                active={billingSubTab === 'calculator'} 
-                size={21} 
-                className={billingSubTab === 'calculator' ? "text-white" : "text-amber-500 dark:text-amber-400"} 
-              />
+            {/* The 'Tap-Count' Micro-Badge */}
+            <div className="absolute -top-1.5 -right-1 sm:-top-2 sm:-right-1.5 z-20 pointer-events-none">
+              <div
+                className={cn(
+                  "px-1.5 py-0.2 rounded-full font-mono text-[7.5px] sm:text-[8px] font-black uppercase tracking-wider flex items-center gap-0.5 shadow-sm border transition-all duration-300",
+                  isAwaitingDoubleTap
+                    ? "bg-amber-400 text-slate-950 border-amber-200 shadow-[0_0_8px_rgba(251,191,36,0.9)] scale-110 animate-bounce"
+                    : isProEngineOpen
+                      ? "bg-gradient-to-r from-violet-500 to-indigo-500 text-white border-violet-200 shadow-[0_0_10px_rgba(168,85,247,0.85)] ring-1 ring-violet-300/60 scale-105"
+                      : billingSubTab === 'calculator'
+                        ? "bg-amber-400 text-slate-950 border-amber-200 shadow-xs scale-100"
+                        : "bg-[var(--card)]/90 backdrop-blur-md text-[var(--foreground)]/70 border-[var(--border)] group-hover:border-amber-400/50 group-hover:text-amber-500"
+                )}
+              >
+                {isAwaitingDoubleTap ? (
+                  <>
+                    <span className="relative flex h-1.5 w-1.5 mr-0.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-950 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-slate-950" />
+                    </span>
+                    <span>2-Tap?</span>
+                  </>
+                ) : isProEngineOpen ? (
+                  <>
+                    <Zap size={7} className="fill-current animate-pulse text-cyan-200" />
+                    <span>2 Tap PRO</span>
+                  </>
+                ) : billingSubTab === 'calculator' ? (
+                  <>
+                    <span>1 Tap</span>
+                  </>
+                ) : calcBadgeCycle === 0 ? (
+                  <>
+                    <span>1T</span>
+                    <span className="opacity-40">·</span>
+                    <span className="text-amber-500 dark:text-amber-400 flex items-center">2T<Zap size={6} className="fill-current ml-0.5" /></span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-amber-500 flex items-center gap-0.5">
+                      <span>{calcBadgeCycle === 1 ? '1 Tap' : '2 Tap'}</span>
+                      {calcBadgeCycle === 2 && <Zap size={6} className="fill-current" />}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
 
-            {billingSubTab === 'calculator' && (
+            {/* Split Iconography with Layered Elements */}
+            <div className="relative flex items-center justify-center p-0.5 w-6 h-6 sm:w-7 sm:h-7">
+              {/* Base Layer: Standard Calculator */}
+              <div className={cn(
+                "relative flex items-center justify-center transition-all duration-300",
+                isProEngineOpen ? "scale-90 opacity-80" : "scale-100 opacity-100"
+              )}>
+                <AnimatedCalculatorIcon 
+                  active={billingSubTab === 'calculator' || isProEngineOpen} 
+                  size={20} 
+                  className={
+                    isProEngineOpen 
+                      ? "text-violet-200 drop-shadow-[0_0_6px_rgba(196,181,253,0.8)]" 
+                      : billingSubTab === 'calculator' 
+                        ? "text-white" 
+                        : "text-amber-500 dark:text-amber-400"
+                  } 
+                />
+              </div>
+
+              {/* Layered Split Overlay Badge: Pro Engine Element */}
+              <div 
+                className={cn(
+                  "absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-sm px-0.5 py-0.2 text-[7px] font-black transition-all duration-300 shadow-xs border",
+                  isProEngineOpen
+                    ? "bg-violet-400 text-slate-950 border-white/60 shadow-[0_0_8px_rgba(168,85,247,0.9)] scale-110 rotate-[-4deg]"
+                    : billingSubTab === 'calculator'
+                      ? "bg-amber-400/30 text-amber-100 border-amber-300/40 backdrop-blur-xs scale-90"
+                      : "bg-black/20 dark:bg-white/10 text-amber-500 dark:text-amber-300 border-[var(--border)] scale-85 group-hover:scale-95"
+                )}
+              >
+                <Zap size={7} className={cn("fill-current", isProEngineOpen && "animate-pulse text-slate-950")} />
+                <span className="ml-0.5 text-[6.5px] font-mono tracking-tighter">PRO</span>
+              </div>
+
+              {/* Diagonal Split Reflection Seam */}
+              <div className="absolute inset-0 pointer-events-none rounded-md overflow-hidden opacity-25">
+                <div className="w-[140%] h-[1px] bg-gradient-to-r from-transparent via-white to-transparent transform rotate-[35deg] translate-y-3" />
+              </div>
+            </div>
+
+            {/* Active Indicator Pulse Dot */}
+            {(billingSubTab === 'calculator' || isProEngineOpen) && (
               <span className="relative flex h-2 w-2 shrink-0 ml-1 sm:ml-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-200 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                <span className={cn(
+                  "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                  isProEngineOpen ? "bg-cyan-300" : "bg-amber-200"
+                )}></span>
+                <span className={cn(
+                  "relative inline-flex rounded-full h-2 w-2 shadow-xs",
+                  isProEngineOpen ? "bg-cyan-200" : "bg-white"
+                )}></span>
               </span>
             )}
           </button>

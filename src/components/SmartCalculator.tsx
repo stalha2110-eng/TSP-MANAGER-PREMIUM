@@ -37,10 +37,11 @@ export default function SmartCalculator() {
     return saved ? JSON.parse(saved) : false;
   });
 
-  // Persists expansion and position configurations
+  // Persists expansion and position configurations & notifies listeners
   useEffect(() => {
     localStorage.setItem('tsm_calc_is_open', JSON.stringify(isOpen));
-  }, [isOpen]);
+    window.dispatchEvent(new CustomEvent('tsm-smart-calc-state', { detail: { isOpen: Boolean(isOpen && !isMinimized) } }));
+  }, [isOpen, isMinimized]);
 
   useEffect(() => {
     localStorage.setItem('tsm_calc_is_minimized', JSON.stringify(isMinimized));

@@ -29,6 +29,32 @@ import { Scale, IndianRupee, Zap } from 'lucide-react';
 import { useBackModal } from '../utils/backNavigationManager';
 import { previewImage } from './ImagePreviewModal';
 
+export function CounterIcon({ size = 14, className }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 512 512"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <path d="M0,0 L8,0 L15,13 L19,18 L28,24 L37,27 L53,27 L64,23 L73,16 L80,5 L82,0 L101,1 L161,7 L174,11 L185,17 L195,26 L204,40 L208,53 L209,59 L209,93 L186,116 L185,118 L184,186 L164,186 L163,101 L160,98 L155,99 L153,102 L152,186 L-62,186 L-63,101 L-66,98 L-72,99 L-73,101 L-74,186 L-119,186 L-119,63 L-117,49 L-112,37 L-106,28 L-100,21 L-90,14 L-79,9 L-63,6 Z M1,62 L-2,65 L-2,78 L-31,78 L-35,83 L-35,134 L-32,138 L-29,139 L37,139 L42,135 L42,82 L38,78 L10,78 L10,66 L6,62 Z" transform="translate(122,274)" />
+      <path d="M0,0 L506,0 L506,37 L0,37 Z" transform="translate(3,472)" />
+      <path d="M0,0 L11,7 L22,12 L34,15 L58,15 L76,11 L93,5 L103,0 L107,1 L124,18 L124,72 L121,87 L116,100 L108,112 L95,125 L82,133 L68,138 L55,140 L43,140 L27,137 L15,132 L5,126 L-5,117 L-13,108 L-21,93 L-25,78 L-26,70 L-26,19 L-10,7 Z" transform="translate(118,94)" />
+      <path d="M0,0 L22,1 L39,4 L54,9 L64,15 L74,24 L81,35 L85,48 L86,56 L86,70 L83,89 L81,96 L77,94 L62,79 L57,78 L41,86 L20,93 L8,95 L-10,95 L-23,92 L-33,87 L-45,78 L-50,79 L-71,95 L-78,100 L-84,99 L-94,93 L-99,89 L-105,79 L-106,70 L-103,61 L-99,55 L-90,47 L-80,42 L-68,39 L-58,39 L-49,41 L-40,46 L-33,52 L-26,63 L-25,64 L-18,63 L-17,57 L-24,46 L-33,37 L-43,31 L-56,27 L-70,27 L-68,23 L-61,16 L-47,8 L-30,3 L-18,1 Z" transform="translate(165,3)" />
+      <path d="M0,0 L126,0 L126,85 L0,85 Z" transform="translate(383,375)" />
+      <path d="M0,0 L126,0 L126,84 L85,84 L84,51 L80,46 L77,45 L49,45 L44,48 L42,51 L41,84 L0,84 Z" transform="translate(383,222)" />
+      <path d="M0,0 L32,0 L32,85 L-21,85 L-21,20 L-11,11 Z" transform="translate(339,375)" />
+      <path d="M0,0 L18,3 L34,3 L52,0 L52,29 L47,39 L40,45 L33,48 L19,48 L9,43 L3,36 L0,28 Z" transform="translate(141,242)" />
+      <path d="M0,0 L52,0 L52,36 L0,36 Z" transform="translate(100,364)" />
+      <path d="M0,0 L20,0 L20,85 L0,85 Z" transform="translate(436,278)" />
+      <path d="M0,0 L6,0 L10,2 L12,6 L12,14 L8,22 L3,26 L0,27 Z" transform="translate(254,125)" />
+      <path d="M0,0 L6,0 L6,27 L0,24 L-4,19 L-6,14 L-6,7 L-3,2 Z" transform="translate(74,125)" />
+    </svg>
+  );
+}
+
 interface BillingScreenProps {
   state: AppState;
   onUpdateState: (updates: Partial<AppState>, actionLabel?: string) => void;
@@ -4548,14 +4574,14 @@ export default function BillingScreen({
             {/* Cart Header */}
             <div className="flex items-center justify-between border-b border-[var(--border)] pb-2 gap-2 flex-wrap">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)] flex items-center gap-1 shrink-0">
-                  <ShoppingCart size={12} />
-                  <span>Ticket Receipt List</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)] flex items-center gap-1.5 shrink-0">
+                  <CounterIcon size={13} className="shrink-0" />
+                  <span>BILLING COUNTER</span>
                 </span>
 
                 {/* Rate Pricing Mode Selector (Retail, Wholesale, Auto) */}
                 <div className="flex bg-[var(--foreground)]/5 p-0.5 rounded-lg border border-[var(--border)] gap-0.5 text-[8px] font-black uppercase shadow-2xs">
-                  {(['retail', 'wholesale', 'auto'] as const).map(mode => (
+                  {(['auto', 'retail', 'wholesale'] as const).map(mode => (
                     <button
                       key={mode}
                       type="button"

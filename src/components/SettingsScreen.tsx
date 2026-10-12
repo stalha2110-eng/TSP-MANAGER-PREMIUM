@@ -32,7 +32,11 @@ import {
   ArrowLeft,
   ChevronRight,
   Palette,
-  Share2
+  Share2,
+  Bell,
+  Sliders,
+  ShieldCheck,
+  Smartphone
 } from 'lucide-react';
 import { AppState, AppSettings, ThemeType, LanguageType, CustomApiKeyItem } from '../types';
 import { 
@@ -237,6 +241,8 @@ export default function SettingsScreen({
 
   const [interfacePage, setInterfacePage] = useState<'main' | 'language' | 'themes'>('main');
   const [dataPage, setDataPage] = useState<'main' | 'share_items' | 'backup_import' | 'backup' | 'import'>('main');
+  const [securityPage, setSecurityPage] = useState<'main' | 'pin_security' | 'cloud_sync' | 'api_keys'>('main');
+  const [soundPage, setSoundPage] = useState<'main' | 'feedback_presets' | 'sound_themes' | 'volume_matrix'>('main');
 
   const currentLangObj = LANGUAGES.find(l => l.id === state.settings.language) || LANGUAGES[0];
   const currentThemeObj = THEMES.find(th => th.id === state.settings.theme) || THEMES[0];
@@ -312,7 +318,10 @@ export default function SettingsScreen({
             {/* 3. Security & Sync */}
             <button
               type="button"
-              onClick={() => setActiveSubTab('security')}
+              onClick={() => {
+                setActiveSubTab('security');
+                setSecurityPage('main');
+              }}
               className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-orange-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
             >
               <div className="flex items-center gap-3.5">
@@ -341,7 +350,10 @@ export default function SettingsScreen({
             {/* 4. Audio & Beeps */}
             <button
               type="button"
-              onClick={() => setActiveSubTab('sound')}
+              onClick={() => {
+                setActiveSubTab('sound');
+                setSoundPage('main');
+              }}
               className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-emerald-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
             >
               <div className="flex items-center gap-3.5">
@@ -368,7 +380,11 @@ export default function SettingsScreen({
       )}
 
       {/* Dedicated Section Page Header */}
-      {activeSubTab !== 'overview' && (activeSubTab !== 'interface' || interfacePage === 'main') && (activeSubTab !== 'data' || dataPage === 'main') && (
+      {activeSubTab !== 'overview' && 
+       (activeSubTab !== 'interface' || interfacePage === 'main') && 
+       (activeSubTab !== 'data' || dataPage === 'main') && 
+       (activeSubTab !== 'security' || securityPage === 'main') && 
+       (activeSubTab !== 'sound' || soundPage === 'main') && (
         <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
           <button
             type="button"
@@ -781,325 +797,519 @@ export default function SettingsScreen({
               transition={{ duration: 0.15 }}
               className="space-y-8"
             >
-              {/* Security & Access */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                   <div className="h-1 w-8 bg-orange-500 opacity-30 rounded-full" />
-                   <label className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500">{t.securityCloud}</label>
-                </div>
-                
-                <div className="card p-8 rounded-[3rem] border-[var(--border)] bg-[var(--card)] space-y-8 shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-[50px] rounded-full" />
-                  
-                  <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">{t.securityKey}</h4>
-                      <p className="text-[10px] opacity-40 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">{t.costProtection}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2 text-[var(--foreground)]">
-                      {state.settings.pin ? (
-                        <>
-                          <Button 
-                            variant="outline"
-                            onClick={onResetPIN}
-                            className="rounded-full px-6 h-12 text-[10px] uppercase font-black border-orange-500/30 hover:bg-orange-500/10 text-orange-500"
-                          >
-                            Update PIN
-                          </Button>
-                          <Button 
-                            variant="ghost"
-                            onClick={() => onUpdate({ pin: null })}
-                            className="rounded-full px-6 h-12 text-[10px] uppercase font-black opacity-40 hover:opacity-100"
-                          >
-                            Disable
-                          </Button>
-                        </>
-                      ) : (
-                        <Button 
-                          variant="primary"
-                          onClick={onResetPIN}
-                          className="rounded-full px-10 h-12 text-[10px] uppercase font-black shadow-xl"
-                        >
-                          Initialize PIN
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-8 border-t border-[var(--border)] overflow-hidden">
-                    <div>
-                      <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">{t.cloudSync}</h4>
-                      <p className="text-[10px] opacity-40 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">{t.firebaseSync}</p>
-                      {state.user?.uid === 'guest_user' && (
-                        <p className="text-[9px] text-amber-500 font-extrabold mt-1.5 uppercase tracking-wider">
-                          ⚠️ Guest Mode: Cloud Sync requires Google Login
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {isSyncing && (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="text-[var(--primary)]"
-                        >
-                          <RefreshCw size={16} />
-                        </motion.div>
-                      )}
-                      <button 
-                        disabled={isSyncing || state.user?.uid === 'guest_user'}
-                        onClick={() => onUpdate({ autoCloudSync: !state.settings.autoCloudSync })}
-                        className={cn(
-                          "h-8 w-16 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 shadow-inner disabled:opacity-50 cursor-pointer",
-                          state.settings.autoCloudSync && state.user?.uid !== 'guest_user' ? "bg-blue-500" : "bg-slate-800"
-                        )}
-                      >
-                        <div className={cn("absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all", state.settings.autoCloudSync && state.user?.uid !== 'guest_user' ? "translate-x-8" : "")} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-8 border-t border-[var(--border)]">
-                    <div>
-                      <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">{t.autoStealth}</h4>
-                      <p className="text-[10px] opacity-40 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">{t.stealthDesc}</p>
-                    </div>
-                    <button 
-                      onClick={() => onUpdate({ hideBuyingPriceByDefault: !state.settings.hideBuyingPriceByDefault })}
-                      className={cn(
-                        "h-8 w-16 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 shadow-inner cursor-pointer",
-                        state.settings.hideBuyingPriceByDefault ? "bg-emerald-500" : "bg-slate-800"
-                      )}
-                    >
-                      <div className={cn("absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all", state.settings.hideBuyingPriceByDefault ? "translate-x-8" : "")} />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-8 border-t border-[var(--border)]">
-                    <div>
-                      <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">Minimum Stock Level</h4>
-                      <p className="text-[10px] opacity-40 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">Alerts you when product stock reaches this count</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        onClick={() => onUpdate({ minStockLevel: Math.max(1, (state.settings.minStockLevel || 5) - 1) })}
-                        className="h-8 w-8 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center font-bold text-lg select-none p-0 text-[var(--foreground)] hover:bg-white/10"
-                        variant="ghost"
-                      >-</Button>
-                      <span className="font-mono text-xs font-black px-3 h-8 flex items-center bg-white/5 border border-white/10 rounded-lg min-w-[3rem] justify-center text-[var(--foreground)]">
-                        {state.settings.minStockLevel || 5}
-                      </span>
-                      <Button 
-                        onClick={() => onUpdate({ minStockLevel: (state.settings.minStockLevel || 5) + 1 })}
-                        className="h-8 w-8 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center font-bold text-lg select-none p-0 text-[var(--foreground)] hover:bg-white/10"
-                        variant="ghost"
-                      >+</Button>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* 🔑 Voice Assistant & Gemini API Keys Section */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="h-1 w-8 bg-amber-500 opacity-30 rounded-full" />
-                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500">
-                    Voice Assistant &amp; Gemini API Keys
-                  </label>
-                </div>
-
-                <div className="card p-8 rounded-[3rem] border-[var(--border)] bg-[var(--card)] space-y-8 shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-[50px] rounded-full" />
-                  
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Key className="text-amber-500" size={18} />
-                        <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">
-                          API Key Orchestrator
-                        </h4>
-                      </div>
-                      <p className="text-[10px] opacity-60 font-medium mt-1 leading-relaxed text-[var(--foreground)] max-w-xl">
-                        The app uses the default built-in system key. Add your custom Gemini API key(s) here for Voice Product Assistant and AI services to use your custom quotas or account limits.
-                      </p>
-                    </div>
-
-                    <Button
-                      onClick={() => {
-                        setAddKeyError(null);
-                        setShowAddKeyModal(true);
-                      }}
-                      className="rounded-full px-6 h-11 text-[11px] uppercase font-black bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 shadow-lg flex items-center gap-2 shrink-0"
-                    >
-                      <Plus size={16} /> Add Custom API Key
-                    </Button>
-                  </div>
-
-                  {/* Active Key Indicator Status Card */}
-                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-500 shrink-0">
-                        <Sparkles size={18} />
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-black tracking-widest text-amber-500 uppercase block">Active AI Engine Key</span>
-                        <p className="text-xs font-bold text-[var(--foreground)]">
-                          {activeKeyObj 
-                            ? `Custom Key: ${activeKeyObj.name} (${activeKeyObj.key.slice(0, 6)}...${activeKeyObj.key.slice(-4)})`
-                            : 'Default System Gemini Key (Built-in)'
-                          }
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-extrabold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider self-start sm:self-auto">
-                      ✓ Operational
+              {/* PAGE 1: Main Security Hub */}
+              {securityPage === 'main' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-1 w-6 bg-orange-500 opacity-40 rounded-full" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-orange-500">
+                      Security & Cloud Sync Hub
                     </span>
                   </div>
 
-                  {/* Available Keys List */}
-                  <div className="space-y-3 pt-2">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-[var(--foreground)] opacity-50 block">
-                      Configured Keys Hierarchy
-                    </label>
-
-                    {/* Default System Key Option */}
-                    <div className={cn(
-                      "p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3",
-                      isDefaultActive 
-                        ? "bg-indigo-500/10 border-indigo-500/40 ring-1 ring-indigo-500/30" 
-                        : "bg-[var(--card)] border-[var(--border)] opacity-80 hover:opacity-100"
-                    )}>
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400">
-                          <Cpu size={18} />
+                  <div className="flex flex-col gap-2.5">
+                    {/* 1. PIN Security */}
+                    <button
+                      type="button"
+                      onClick={() => setSecurityPage('pin_security')}
+                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-orange-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Lock size={19} className="stroke-[2.2]" />
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-xs text-[var(--foreground)]">Default System API Key</span>
-                            {isDefaultActive && (
-                              <span className="text-[9px] font-black bg-indigo-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                Active Default
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] opacity-50 font-mono block mt-0.5">Built-in Applet Gemini Key</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-[var(--foreground)]">
+                            PIN Security
+                          </span>
+                          <span className={cn(
+                            "text-[9px] font-bold px-2 py-0.5 rounded-full border",
+                            state.settings.pin 
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                              : "bg-orange-500/10 text-orange-500 border-orange-500/20"
+                          )}>
+                            {state.settings.pin ? "Protected" : "No PIN"}
+                          </span>
                         </div>
                       </div>
 
-                      {!isDefaultActive && (
-                        <Button
-                          variant="outline"
-                          onClick={() => handleSelectActiveKey('default')}
-                          className="h-8 rounded-xl text-[10px] uppercase font-black px-4 self-start sm:self-auto"
-                        >
-                          Use Default Key
-                        </Button>
-                      )}
-                    </div>
-
-                    {/* Custom Keys List */}
-                    {customKeysList.map((item, index) => {
-                      const isActive = activeKeyId === item.id || (!activeKeyId && customKeysList[0]?.id === item.id);
-                      const isRevealed = !!keyVisibilityMap[item.id];
-                      const testResult = keyTestResults[item.id];
-                      const isTesting = testingKeyId === item.id;
-
-                      return (
-                        <div key={`custom-key-${item.id || 'key'}-${index}`} className={cn(
-                          "p-4 rounded-2xl border transition-all space-y-3",
-                          isActive 
-                            ? "bg-amber-500/10 border-amber-500/40 ring-1 ring-amber-500/30" 
-                            : "bg-[var(--card)] border-[var(--border)]"
-                        )}>
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="flex items-start gap-3">
-                              <div className="p-2 rounded-xl bg-amber-500/20 text-amber-500 shrink-0 mt-0.5 sm:mt-0">
-                                <Key size={18} />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-xs text-[var(--foreground)]">{item.name}</span>
-                                  {isActive && (
-                                    <span className="text-[9px] font-black bg-amber-500 text-slate-950 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                      Active Key
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="font-mono text-[11px] opacity-70 bg-black/20 px-2 py-0.5 rounded border border-white/10">
-                                    {isRevealed 
-                                      ? item.key 
-                                      : `${item.key.slice(0, 6)}••••••••••••${item.key.slice(-4)}`
-                                    }
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => setKeyVisibilityMap(prev => ({ ...prev, [item.id]: !isRevealed }))}
-                                    className="text-xs opacity-50 hover:opacity-100 p-1"
-                                    title={isRevealed ? "Hide Key" : "Show Key"}
-                                  >
-                                    {isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-                              {!isActive && (
-                                <Button
-                                  variant="outline"
-                                  onClick={() => handleSelectActiveKey(item.id)}
-                                  className="h-8 rounded-xl text-[10px] uppercase font-black px-3 border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
-                                >
-                                  Activate
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                disabled={isTesting}
-                                onClick={() => handleTestKey(item.id, item.key)}
-                                className="h-8 rounded-xl text-[10px] uppercase font-extrabold px-3 bg-white/5 hover:bg-white/10 flex items-center gap-1.5"
-                              >
-                                {isTesting ? (
-                                  <>
-                                    <RefreshCw size={12} className="animate-spin text-amber-500" />
-                                    Testing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Zap size={12} className="text-amber-400" />
-                                    Test
-                                  </>
-                                )}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                onClick={() => handleDeleteKey(item.id)}
-                                className="h-8 rounded-xl text-[10px] uppercase font-bold px-2.5 text-rose-500 hover:bg-rose-500/10"
-                                title="Delete Key"
-                              >
-                                <Trash2 size={14} />
-                              </Button>
-                            </div>
-                          </div>
-
-                          {testResult && (
-                            <div className={cn(
-                              "text-[10px] font-bold px-3 py-1.5 rounded-xl border flex items-center gap-2",
-                              testResult.success 
-                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
-                                : "bg-rose-500/10 border-rose-500/30 text-rose-400"
-                            )}>
-                              {testResult.success ? <Check size={12} /> : <AlertTriangle size={12} />}
-                              <span>{testResult.message}</span>
-                            </div>
-                          )}
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-orange-500/10 group-hover:border-orange-500/30 group-hover:text-orange-500 transition-all">
+                          <ChevronRight size={15} />
                         </div>
-                      );
-                    })}
+                      </div>
+                    </button>
+
+                    {/* 2. Cloud Sync */}
+                    <button
+                      type="button"
+                      onClick={() => setSecurityPage('cloud_sync')}
+                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-blue-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Cloud size={19} className="stroke-[2.2]" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-[var(--foreground)]">
+                            Cloud Sync
+                          </span>
+                          <span className={cn(
+                            "text-[9px] font-bold px-2 py-0.5 rounded-full border",
+                            state.settings.autoCloudSync && state.user?.uid !== 'guest_user'
+                              ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                              : "bg-slate-500/10 text-slate-500 border-slate-500/20"
+                          )}>
+                            {state.settings.autoCloudSync && state.user?.uid !== 'guest_user' ? "Auto Sync" : "Offline"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-blue-500/10 group-hover:border-blue-500/30 group-hover:text-blue-500 transition-all">
+                          <ChevronRight size={15} />
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* 3. API Keys */}
+                    <button
+                      type="button"
+                      onClick={() => setSecurityPage('api_keys')}
+                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-amber-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Key size={19} className="stroke-[2.2]" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-[var(--foreground)]">
+                            API Keys
+                          </span>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            {isDefaultActive ? "System Key" : `${customKeysList.length} Custom Key${customKeysList.length > 1 ? 's' : ''}`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-amber-500/10 group-hover:border-amber-500/30 group-hover:text-amber-500 transition-all">
+                          <ChevronRight size={15} />
+                        </div>
+                      </div>
+                    </button>
                   </div>
                 </div>
-              </section>
+              )}
+
+              {/* PAGE 2: PIN Security & Privacy Sub-Page */}
+              {securityPage === 'pin_security' && (
+                <div className="space-y-6">
+                  {/* Back Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setSecurityPage('main')}
+                      className="flex items-center gap-2 text-xs font-bold text-orange-500 hover:underline cursor-pointer group"
+                    >
+                      <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                      <span>Back to Security & Sync</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+                      PIN Security
+                    </span>
+                  </div>
+
+                  {/* Master PIN Configuration Card */}
+                  <div className="card p-6 sm:p-8 rounded-3xl border border-[var(--border)] bg-[var(--card)] space-y-6 shadow-sm relative overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Lock className="text-orange-500" size={18} />
+                          <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">
+                            {t.securityKey}
+                          </h4>
+                          <span className={cn(
+                            "text-[9px] font-bold px-2 py-0.5 rounded-full border",
+                            state.settings.pin 
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                              : "bg-orange-500/10 text-orange-500 border-orange-500/20"
+                          )}>
+                            {state.settings.pin ? "PIN Initialized" : "Disabled"}
+                          </span>
+                        </div>
+                        <p className="text-[10px] opacity-50 font-medium mt-1 leading-relaxed text-[var(--foreground)] max-w-md">
+                          {t.costProtection}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-start sm:self-auto">
+                        {state.settings.pin ? (
+                          <>
+                            <Button 
+                              variant="outline"
+                              onClick={onResetPIN}
+                              className="rounded-full px-5 h-10 text-[10px] uppercase font-black border-orange-500/30 hover:bg-orange-500/10 text-orange-500"
+                            >
+                              Update PIN
+                            </Button>
+                            <Button 
+                              variant="ghost"
+                              onClick={() => onUpdate({ pin: null })}
+                              className="rounded-full px-4 h-10 text-[10px] uppercase font-black opacity-50 hover:opacity-100 text-rose-500 hover:bg-rose-500/10"
+                            >
+                              Disable
+                            </Button>
+                          </>
+                        ) : (
+                          <Button 
+                            variant="primary"
+                            onClick={onResetPIN}
+                            className="rounded-full px-6 h-10 text-[10px] uppercase font-black bg-orange-500 hover:bg-orange-600 text-white shadow-md"
+                          >
+                            Initialize Master PIN
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Auto Stealth Mode */}
+                    <div className="flex items-center justify-between pt-6 border-t border-[var(--border)]">
+                      <div>
+                        <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">
+                          {t.autoStealth}
+                        </h4>
+                        <p className="text-[10px] opacity-50 font-medium mt-1 leading-relaxed text-[var(--foreground)] max-w-md">
+                          {t.stealthDesc}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => onUpdate({ hideBuyingPriceByDefault: !state.settings.hideBuyingPriceByDefault })}
+                        className={cn(
+                          "h-8 w-16 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 shadow-inner cursor-pointer shrink-0 ml-4",
+                          state.settings.hideBuyingPriceByDefault ? "bg-emerald-500" : "bg-slate-800"
+                        )}
+                      >
+                        <div className={cn(
+                          "absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all", 
+                          state.settings.hideBuyingPriceByDefault ? "translate-x-8" : ""
+                        )} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PAGE 3: Cloud Sync & Store Rules Sub-Page */}
+              {securityPage === 'cloud_sync' && (
+                <div className="space-y-6">
+                  {/* Back Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setSecurityPage('main')}
+                      className="flex items-center gap-2 text-xs font-bold text-blue-500 hover:underline cursor-pointer group"
+                    >
+                      <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                      <span>Back to Security & Sync</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+                      Cloud Sync
+                    </span>
+                  </div>
+
+                  {/* Real-time Cloud Sync Card */}
+                  <div className="card p-6 sm:p-8 rounded-3xl border border-[var(--border)] bg-[var(--card)] space-y-6 shadow-sm relative overflow-hidden">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Cloud className="text-blue-500" size={18} />
+                          <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">
+                            {t.cloudSync}
+                          </h4>
+                          <span className={cn(
+                            "text-[9px] font-bold px-2 py-0.5 rounded-full border",
+                            state.settings.autoCloudSync && state.user?.uid !== 'guest_user'
+                              ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                              : "bg-slate-500/10 text-slate-500 border-slate-500/20"
+                          )}>
+                            {state.settings.autoCloudSync && state.user?.uid !== 'guest_user' ? "Active" : "Offline"}
+                          </span>
+                        </div>
+                        <p className="text-[10px] opacity-50 font-medium mt-1 leading-relaxed text-[var(--foreground)] max-w-md">
+                          {t.firebaseSync}
+                        </p>
+                        {state.user?.uid === 'guest_user' && (
+                          <p className="text-[9px] text-amber-500 font-extrabold mt-1.5 uppercase tracking-wider">
+                            ⚠️ Guest Mode: Cloud Sync requires Google Login
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0 ml-4">
+                        {isSyncing && (
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            className="text-blue-500"
+                          >
+                            <RefreshCw size={16} />
+                          </motion.div>
+                        )}
+                        <button 
+                          disabled={isSyncing || state.user?.uid === 'guest_user'}
+                          onClick={() => onUpdate({ autoCloudSync: !state.settings.autoCloudSync })}
+                          className={cn(
+                            "h-8 w-16 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 shadow-inner disabled:opacity-50 cursor-pointer",
+                            state.settings.autoCloudSync && state.user?.uid !== 'guest_user' ? "bg-blue-500" : "bg-slate-800"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all", 
+                            state.settings.autoCloudSync && state.user?.uid !== 'guest_user' ? "translate-x-8" : ""
+                          )} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Minimum Stock Level Stepper */}
+                    <div className="flex items-center justify-between pt-6 border-t border-[var(--border)]">
+                      <div>
+                        <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">
+                          Minimum Stock Level Threshold
+                        </h4>
+                        <p className="text-[10px] opacity-50 font-medium mt-1 leading-relaxed text-[var(--foreground)] max-w-md">
+                          Alerts you with warning flags when product stock counts reach or drop below this quantity
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-4">
+                        <Button 
+                          onClick={() => onUpdate({ minStockLevel: Math.max(1, (state.settings.minStockLevel || 5) - 1) })}
+                          className="h-8 w-8 rounded-lg border border-[var(--border)] bg-[var(--background)] flex items-center justify-center font-bold text-lg select-none p-0 text-[var(--foreground)] hover:bg-[var(--foreground)]/5"
+                          variant="ghost"
+                        >-</Button>
+                        <span className="font-mono text-xs font-black px-3 h-8 flex items-center bg-[var(--background)] border border-[var(--border)] rounded-lg min-w-[3rem] justify-center text-[var(--foreground)]">
+                          {state.settings.minStockLevel || 5}
+                        </span>
+                        <Button 
+                          onClick={() => onUpdate({ minStockLevel: (state.settings.minStockLevel || 5) + 1 })}
+                          className="h-8 w-8 rounded-lg border border-[var(--border)] bg-[var(--background)] flex items-center justify-center font-bold text-lg select-none p-0 text-[var(--foreground)] hover:bg-[var(--foreground)]/5"
+                          variant="ghost"
+                        >+</Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PAGE 4: Gemini API Keys Sub-Page */}
+              {securityPage === 'api_keys' && (
+                <div className="space-y-6">
+                  {/* Back Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setSecurityPage('main')}
+                      className="flex items-center gap-2 text-xs font-bold text-amber-500 hover:underline cursor-pointer group"
+                    >
+                      <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                      <span>Back to Security & Sync</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+                      API Keys
+                    </span>
+                  </div>
+
+                  <div className="card p-6 sm:p-8 rounded-3xl border border-[var(--border)] bg-[var(--card)] space-y-6 shadow-sm relative overflow-hidden">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Key className="text-amber-500" size={18} />
+                          <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">
+                            API Key Orchestrator
+                          </h4>
+                        </div>
+                        <p className="text-[10px] opacity-60 font-medium mt-1 leading-relaxed text-[var(--foreground)] max-w-xl">
+                          The app uses the default built-in system key. Add your custom Gemini API key(s) here for Voice Product Assistant and AI services to use your custom quotas or account limits.
+                        </p>
+                      </div>
+
+                      <Button
+                        onClick={() => {
+                          setAddKeyError(null);
+                          setShowAddKeyModal(true);
+                        }}
+                        className="rounded-full px-5 h-10 text-[10.5px] uppercase font-black bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 shadow-md flex items-center gap-2 shrink-0 cursor-pointer"
+                      >
+                        <Plus size={15} /> Add Custom API Key
+                      </Button>
+                    </div>
+
+                    {/* Active Key Indicator Status Card */}
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-500 shrink-0">
+                          <Sparkles size={18} />
+                        </div>
+                        <div>
+                          <span className="text-[9px] font-black tracking-widest text-amber-500 uppercase block">Active AI Engine Key</span>
+                          <p className="text-xs font-bold text-[var(--foreground)]">
+                            {activeKeyObj 
+                              ? `Custom Key: ${activeKeyObj.name} (${activeKeyObj.key.slice(0, 6)}...${activeKeyObj.key.slice(-4)})`
+                              : 'Default System Gemini Key (Built-in)'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-extrabold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider self-start sm:self-auto">
+                        ✓ Operational
+                      </span>
+                    </div>
+
+                    {/* Available Keys List */}
+                    <div className="space-y-3 pt-2">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-[var(--foreground)] opacity-50 block">
+                        Configured Keys Hierarchy
+                      </label>
+
+                      {/* Default System Key Option */}
+                      <div className={cn(
+                        "p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3",
+                        isDefaultActive 
+                          ? "bg-indigo-500/10 border-indigo-500/40 ring-1 ring-indigo-500/30" 
+                          : "bg-[var(--card)] border-[var(--border)] opacity-80 hover:opacity-100"
+                      )}>
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400">
+                            <Cpu size={18} />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-xs text-[var(--foreground)]">Default System API Key</span>
+                              {isDefaultActive && (
+                                <span className="text-[9px] font-black bg-indigo-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                  Active Default
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] opacity-50 font-mono block mt-0.5">Built-in Applet Gemini Key</span>
+                          </div>
+                        </div>
+
+                        {!isDefaultActive && (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleSelectActiveKey('default')}
+                            className="h-8 rounded-xl text-[10px] uppercase font-black px-4 self-start sm:self-auto"
+                          >
+                            Use Default Key
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Custom Keys List */}
+                      {customKeysList.map((item, index) => {
+                        const isActive = activeKeyId === item.id || (!activeKeyId && customKeysList[0]?.id === item.id);
+                        const isRevealed = !!keyVisibilityMap[item.id];
+                        const testResult = keyTestResults[item.id];
+                        const isTesting = testingKeyId === item.id;
+
+                        return (
+                          <div key={`custom-key-${item.id || 'key'}-${index}`} className={cn(
+                            "p-4 rounded-2xl border transition-all space-y-3",
+                            isActive 
+                              ? "bg-amber-500/10 border-amber-500/40 ring-1 ring-amber-500/30" 
+                              : "bg-[var(--card)] border-[var(--border)]"
+                          )}>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-500 shrink-0 mt-0.5 sm:mt-0">
+                                  <Key size={18} />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-xs text-[var(--foreground)]">{item.name}</span>
+                                    {isActive && (
+                                      <span className="text-[9px] font-black bg-amber-500 text-slate-950 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                        Active Key
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="font-mono text-[11px] opacity-70 bg-black/20 px-2 py-0.5 rounded border border-white/10">
+                                      {isRevealed 
+                                        ? item.key 
+                                        : `${item.key.slice(0, 6)}••••••••••••${item.key.slice(-4)}`
+                                      }
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setKeyVisibilityMap(prev => ({ ...prev, [item.id]: !isRevealed }))}
+                                      className="text-xs opacity-50 hover:opacity-100 p-1 cursor-pointer"
+                                      title={isRevealed ? "Hide Key" : "Show Key"}
+                                    >
+                                      {isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                                {!isActive && (
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => handleSelectActiveKey(item.id)}
+                                    className="h-8 rounded-xl text-[10px] uppercase font-black px-3 border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
+                                  >
+                                    Activate
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  disabled={isTesting}
+                                  onClick={() => handleTestKey(item.id, item.key)}
+                                  className="h-8 rounded-xl text-[10px] uppercase font-extrabold px-3 bg-white/5 hover:bg-white/10 flex items-center gap-1.5"
+                                >
+                                  {isTesting ? (
+                                    <>
+                                      <RefreshCw size={12} className="animate-spin text-amber-500" />
+                                      Testing...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Zap size={12} className="text-amber-400" />
+                                      Test
+                                    </>
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => handleDeleteKey(item.id)}
+                                  className="h-8 rounded-xl text-[10px] uppercase font-bold px-2.5 text-rose-500 hover:bg-rose-500/10"
+                                  title="Delete Key"
+                                >
+                                  <Trash2 size={14} />
+                                </Button>
+                              </div>
+                            </div>
+
+                            {testResult && (
+                              <div className={cn(
+                                "text-[10px] font-bold px-3 py-1.5 rounded-xl border flex items-center gap-2",
+                                testResult.success 
+                                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
+                                  : "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                              )}>
+                                {testResult.success ? <Check size={12} /> : <AlertTriangle size={12} />}
+                                <span>{testResult.message}</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -1112,154 +1322,243 @@ export default function SettingsScreen({
               transition={{ duration: 0.15 }}
               className="space-y-8"
             >
-              {/* Notification Settings Page */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                   <div className="h-1 w-8 bg-blue-500 opacity-30 rounded-full" />
-                   <label className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500">Notification Orchestrator</label>
-                </div>
+              {/* PAGE 1: Main Audio & Beeps Hub */}
+              {soundPage === 'main' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-1 w-6 bg-emerald-500 opacity-40 rounded-full" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-500">
+                      Audio, Beeps &amp; Feedback Hub
+                    </span>
+                  </div>
 
-                <div className="card p-8 rounded-[3rem] border-[var(--border)] bg-[var(--card)] space-y-8 shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-[50px] rounded-full" />
-
-                  {/* Master Notification Toggle */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">In-App Alerts</h4>
-                      <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">Show alerts center panel and real-time popups</p>
-                    </div>
-                    <button 
-                      onClick={() => onUpdate({ notificationsOn: state.settings.notificationsOn === false ? true : false })}
-                      className={cn(
-                        "h-8 w-16 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer",
-                        state.settings.notificationsOn !== false ? "bg-blue-500" : "bg-slate-800"
-                      )}
+                  <div className="flex flex-col gap-2.5">
+                    {/* 1. Sound Themes */}
+                    <button
+                      type="button"
+                      onClick={() => setSoundPage('sound_themes')}
+                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-amber-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
                     >
-                      <div className={cn("absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all", state.settings.notificationsOn !== false ? "translate-x-8" : "")} />
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Volume2 size={19} className="stroke-[2.2]" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-[var(--foreground)]">
+                            Sound Themes
+                          </span>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            {state.settings.soundStylePack === 'classic_pos' ? 'Classic POS' :
+                             state.settings.soundStylePack === 'professional' ? 'Executive' : 'Digital'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-amber-500/10 group-hover:border-amber-500/30 group-hover:text-amber-500 transition-all">
+                          <ChevronRight size={15} />
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* 2. Feedback Presets */}
+                    <button
+                      type="button"
+                      onClick={() => setSoundPage('feedback_presets')}
+                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-blue-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Bell size={19} className="stroke-[2.2]" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-[var(--foreground)]">
+                            Feedback Presets
+                          </span>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                            {state.settings.soundFeedbackMode === 'silent' ? 'Silent' :
+                             state.settings.soundFeedbackMode === 'vibrate_only' ? 'Tactile' : 'Sound + Tactile'}
+                          </span>
+                          <span className={cn(
+                            "text-[9px] font-bold px-2 py-0.5 rounded-full border",
+                            state.settings.notificationsOn !== false 
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                              : "bg-slate-500/10 text-slate-500 border-slate-500/20"
+                          )}>
+                            {state.settings.notificationsOn !== false ? 'Alerts ON' : 'Muted'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-blue-500/10 group-hover:border-blue-500/30 group-hover:text-blue-500 transition-all">
+                          <ChevronRight size={15} />
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* 3. Volume Matrix */}
+                    <button
+                      type="button"
+                      onClick={() => setSoundPage('volume_matrix')}
+                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-violet-500/50 hover:bg-[var(--foreground)]/[0.02] active:scale-[0.99] transition-all cursor-pointer group shadow-xs text-left"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-500 border border-violet-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Sliders size={19} className="stroke-[2.2]" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-extrabold text-[var(--foreground)]">
+                            Volume Matrix
+                          </span>
+                          <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-500 border border-violet-500/20">
+                            {state.settings.soundOverallVolume ?? 100}%
+                          </span>
+                          <span className={cn(
+                            "text-[9px] font-bold px-2 py-0.5 rounded-full border",
+                            state.settings.soundHindiVoiceEnabled !== false
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              : "bg-slate-500/10 text-slate-500 border-slate-500/20"
+                          )}>
+                            {state.settings.soundHindiVoiceEnabled !== false ? "Hindi Voice" : "Voice Off"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-[var(--border)] bg-[var(--background)] group-hover:bg-violet-500/10 group-hover:border-violet-500/30 group-hover:text-violet-500 transition-all">
+                          <ChevronRight size={15} />
+                        </div>
+                      </div>
                     </button>
                   </div>
 
-                  {/* Push Notifications Toggle */}
-                  <div className="flex items-center justify-between pt-8 border-t border-[var(--border)]">
-                    <div>
-                      <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">Push Notifications</h4>
-                      <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed font-semibold text-[var(--foreground)]">Receive instant status updates to all synced devices</p>
-                    </div>
-                    <button 
-                      onClick={async () => {
-                        const currentVal = state.settings.pushOn !== false;
-                        if (!currentVal) {
-                          const granted = await requestPushPermission();
-                          if (!granted) {
-                            alert("Please enable notification permissions in your browser settings to receive push updates!");
-                          }
-                        }
-                        onUpdate({ pushOn: !currentVal });
+                  {/* Quick Actions Console Bar on Hub */}
+                  <div className="pt-3 border-t border-[var(--border)] flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        onUpdate({
+                          soundFeedbackMode: 'vibrate_sound',
+                          soundBillingEnabled: true,
+                          soundProductAddedEnabled: true,
+                          soundPrintEnabled: true,
+                          soundNotificationEnabled: true,
+                          soundHindiVoiceEnabled: true,
+                        });
+                        playFeedbackEvent('product_added', { ...state.settings, soundFeedbackMode: 'vibrate_sound', soundProductAddedEnabled: true });
                       }}
-                      className={cn(
-                        "h-8 w-16 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer",
-                        state.settings.pushOn !== false ? "bg-blue-500" : "bg-slate-800"
-                      )}
+                      className="rounded-xl text-[9px] uppercase font-black px-3.5 py-1.5 border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-500"
                     >
-                      <div className={cn("absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all", state.settings.pushOn !== false ? "translate-x-8" : "")} />
+                      🔊 Enable All Beeps
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        onUpdate({
+                          soundFeedbackMode: 'vibrate_only',
+                          soundBillingEnabled: false,
+                          soundProductAddedEnabled: false,
+                          soundPrintEnabled: false,
+                          soundNotificationEnabled: false,
+                          soundHindiVoiceEnabled: false,
+                        });
+                        if (navigator.vibrate) navigator.vibrate(50);
+                      }}
+                      className="rounded-xl text-[9px] uppercase font-black px-3.5 py-1.5 border-[var(--border)] hover:bg-[var(--foreground)]/[0.05] text-[var(--foreground)] opacity-60"
+                    >
+                      📳 Disable All Beeps
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        playSynthesizedSound('product_added', { settings: state.settings, isTestPreview: true });
+                        setTimeout(() => {
+                          playSynthesizedSound('bill_saved', { settings: state.settings, isTestPreview: true });
+                          setTimeout(() => {
+                            playSynthesizedSound('print_success', { settings: state.settings, isTestPreview: true });
+                          }, 500);
+                        }, 300);
+                      }}
+                      className="rounded-xl text-[9px] uppercase font-black px-3.5 py-1.5 border-indigo-500/20 hover:bg-indigo-500/10 text-indigo-500"
+                    >
+                      ⚡ Preview Sound Sequence
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        onUpdate({
+                          soundFeedbackMode: 'vibrate_sound',
+                          soundStylePack: 'modern',
+                          soundOverallVolume: 100,
+                          soundBillingVolume: 80,
+                          soundPrintVolume: 75,
+                          soundNotificationVolume: 85,
+                          soundBillingEnabled: true,
+                          soundProductAddedEnabled: true,
+                          soundPrintEnabled: true,
+                          soundNotificationEnabled: true,
+                          soundHindiVoiceEnabled: true,
+                          vibrationStrength: 'medium',
+                          vibrationBillingEnabled: true,
+                          vibrationProductAddedEnabled: true,
+                          vibrationPrintEnabled: true,
+                          vibrationNotificationEnabled: true,
+                          smartBusinessFeedback: true,
+                          quietHoursEnabled: false,
+                          quietHoursStart: '22:00',
+                          quietHoursEnd: '07:00',
+                          quietHoursVibrateOnly: true,
+                        });
+                        const updatedSettings: AppSettings = {
+                          ...state.settings,
+                          soundFeedbackMode: 'vibrate_sound',
+                          soundStylePack: 'modern'
+                        };
+                        setTimeout(() => {
+                          playFeedbackEvent('product_added', updatedSettings);
+                        }, 100);
+                      }}
+                      className="rounded-xl text-[9px] uppercase font-black px-3.5 py-1.5 border-slate-500/20 hover:bg-slate-500/10 text-slate-400 select-none"
+                    >
+                      🔄 Restore Defaults
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* PAGE 2: Sound Theme Packs Sub-Page */}
+              {soundPage === 'sound_themes' && (
+                <div className="space-y-6">
+                  {/* Back Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setSoundPage('main')}
+                      className="flex items-center gap-2 text-xs font-bold text-amber-500 hover:underline cursor-pointer group"
+                    >
+                      <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                      <span>Back to Audio &amp; Beeps</span>
                     </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+                      Sound Themes
+                    </span>
                   </div>
 
-                  {/* Sound & Vibration control */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-[var(--border)]">
-                    <div className="flex items-center justify-between bg-[var(--foreground)]/[0.02] p-4 rounded-3xl border border-[var(--border)]">
-                      <div>
-                        <h4 className="font-black tracking-tight text-xs uppercase text-[var(--foreground)]">Sound Alerts</h4>
-                        <p className="text-[9px] opacity-45 uppercase tracking-widest mt-0.5 leading-none text-[var(--foreground)]">Play synthesized hitech chime</p>
-                      </div>
-                      <button 
-                        onClick={() => {
-                          const toVal = state.settings.soundOn === false ? true : false;
-                          onUpdate({ soundOn: toVal });
-                          if (toVal) { playNotificationChime('medium'); }
-                        }}
-                        className={cn(
-                          "h-6 w-12 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] cursor-pointer",
-                          state.settings.soundOn !== false ? "bg-indigo-500" : "bg-slate-800"
-                        )}
-                      >
-                        <div className={cn("absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-all", state.settings.soundOn !== false ? "translate-x-6" : "")} />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between bg-[var(--foreground)]/[0.02] p-4 rounded-3xl border border-[var(--border)]">
-                      <div>
-                        <h4 className="font-black tracking-tight text-xs uppercase text-[var(--foreground)]">Haptic Vibration</h4>
-                        <p className="text-[9px] opacity-45 uppercase tracking-widest mt-0.5 leading-none text-[var(--foreground)]">Vibrate mobile hand-device</p>
-                      </div>
-                      <button 
-                        onClick={() => {
-                          const toVal = state.settings.vibrationOn === false ? true : false;
-                          onUpdate({ vibrationOn: toVal });
-                          if (toVal) { triggerVibration('medium'); }
-                        }}
-                        className={cn(
-                          "h-6 w-12 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] cursor-pointer",
-                          state.settings.vibrationOn !== false ? "bg-indigo-500" : "bg-slate-800"
-                        )}
-                      >
-                        <div className={cn("absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-all", state.settings.vibrationOn !== false ? "translate-x-6" : "")} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Sound & Feedback Orchestrator */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-4">
-                   <div className="h-1 w-8 bg-amber-500 opacity-30 rounded-full" />
-                   <label className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500">Sound & Feedback Orchestrator</label>
-                </div>
-
-                <div className="card p-8 rounded-[3rem] border-[var(--border)] bg-[var(--card)] space-y-8 shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-[50px] rounded-full" />
-                  
-                  {/* Feedback Mode Presets */}
-                  <div className="space-y-4">
+                  <div className="card p-6 sm:p-8 rounded-3xl border border-[var(--border)] bg-[var(--card)] space-y-6 shadow-sm relative overflow-hidden">
                     <div>
-                      <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">General Feedback Mode</h4>
-                      <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">Choose how your app physically responds and Alerts</p>
+                      <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">
+                        Sound Theme Packs
+                      </h4>
+                      <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">
+                        Select synthesized sound aesthetics pack for checkout beeps &amp; registers
+                      </p>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { id: 'silent', label: 'Silent', desc: 'No sound or vibration', emoji: '🔇' },
-                        { id: 'vibrate_only', label: 'Tactile Only', desc: 'Haptic triggers only', emoji: '📳' },
-                        { id: 'vibrate_sound', label: 'Sound + Tactile', desc: 'Full active response', emoji: '🔊' }
-                      ].map((mode) => (
-                        <button
-                          key={mode.id}
-                          onClick={() => {
-                            onUpdate({ soundFeedbackMode: mode.id as any });
-                            if (mode.id !== 'silent') {
-                              navigator.vibrate?.(40);
-                            }
-                          }}
-                          className={cn(
-                            "flex flex-col items-center gap-2 rounded-2xl border p-4 text-center transition-all cursor-pointer",
-                            (state.settings.soundFeedbackMode || 'vibrate_sound') === mode.id
-                              ? "border-amber-500 bg-amber-500/10 shadow-lg text-[var(--foreground)]"
-                              : "border-[var(--border)] bg-[var(--background)] hover:border-amber-500/40 text-[var(--foreground)] opacity-70"
-                          )}
-                        >
-                          <span className="text-2xl">{mode.emoji}</span>
-                          <span className="text-[10px] font-black uppercase text-center">{mode.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
-                  {/* Sound Pack Selectors */}
-                  <div className="space-y-4 pt-8 border-t border-[var(--border)]">
-                    <div>
-                      <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">Sound Theme Packs</h4>
-                      <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">Select synthesized sound aesthetics pack for beeps</p>
-                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {[
                         { id: 'classic_pos', label: 'Classic POS', desc: '🏪 Retrotech scanner scans and high-frequency metal registers', emoji: '🏪' },
@@ -1312,396 +1611,475 @@ export default function SettingsScreen({
                       ))}
                     </div>
                   </div>
+                </div>
+              )}
 
-                  {/* Independent Volume Matrix */}
-                  <div className="space-y-4 pt-8 border-t border-[var(--border)]">
-                    <div>
-                      <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">Audio Volume Synthesizer Matrix</h4>
-                      <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">Fine-tune individual event synthesizer volumes independently</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[
-                        { key: 'soundOverallVolume', label: 'Overall Master Volume', icon: '🎧', def: 100, testEvent: 'product_added' },
-                        { key: 'soundBillingVolume', label: 'Billing Success chime', icon: '💰', def: 80, testEvent: 'bill_saved' },
-                        { key: 'soundPrintVolume', label: 'Invoice Printer Spool', icon: '🧾', def: 75, testEvent: 'print_success' },
-                        { key: 'soundNotificationVolume', label: 'System Alarm Alerts', icon: '🚨', def: 85, testEvent: 'notification' }
-                      ].map((vol) => {
-                        const val = (state.settings[vol.key as keyof AppSettings] ?? vol.def) as number;
-                        return (
-                          <div key={vol.key} className="bg-[var(--foreground)]/[0.015] p-4 rounded-2xl border border-[var(--border)] bg-[var(--background)]/10 flex flex-col justify-between gap-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-black uppercase tracking-wider text-[var(--foreground)] flex items-center gap-1.5">
-                                <span>{vol.icon}</span> {vol.label}
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-[10px] font-bold text-amber-500">{val}%</span>
-                                <button
-                                  onClick={() => {
-                                    playSynthesizedSound(vol.testEvent as any, { 
-                                      settings: { ...state.settings, [vol.key]: val }, 
-                                      isTestPreview: true 
-                                    });
-                                  }}
-                                  className="text-[9px] uppercase font-black tracking-widest text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-md hover:bg-amber-500/20 active:scale-95 transition-all outline-none"
-                                >
-                                  Demo
-                                </button>
-                              </div>
-                            </div>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={val as number}
-                              onChange={(e) => onUpdate({ [vol.key]: parseInt(e.target.value) })}
-                              className="w-full h-1 bg-[var(--foreground)]/10 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
+              {/* PAGE 3: Feedback Modes & Alerts Sub-Page */}
+              {soundPage === 'feedback_presets' && (
+                <div className="space-y-6">
+                  {/* Back Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setSoundPage('main')}
+                      className="flex items-center gap-2 text-xs font-bold text-blue-500 hover:underline cursor-pointer group"
+                    >
+                      <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                      <span>Back to Audio &amp; Beeps</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+                      Feedback Presets
+                    </span>
                   </div>
 
-                  {/* Event Specific Sub-routing Controls */}
-                  <div className="space-y-4 pt-8 border-t border-[var(--border)]">
+                  {/* Feedback Mode Presets */}
+                  <div className="card p-6 sm:p-8 rounded-3xl border border-[var(--border)] bg-[var(--card)] space-y-6 shadow-sm relative overflow-hidden">
                     <div>
-                      <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">Tactile & Audio Channel Router</h4>
-                      <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">Route audio/haptics to individual store actions</p>
+                      <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">
+                        General Feedback Mode
+                      </h4>
+                      <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">
+                        Choose how your app physically responds and Alerts
+                      </p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-3">
                       {[
-                        { label: 'Billing Complete (Invoice Saved)', soundKey: 'soundBillingEnabled', vibeKey: 'vibrationBillingEnabled', soundDef: true, vibeDef: true, testEvent: 'bill_saved', soundEmoji: '🔔', vibeEmoji: '⚡' },
-                        { label: 'Product Added (Cart Registration)', soundKey: 'soundProductAddedEnabled', vibeKey: 'vibrationProductAddedEnabled', soundDef: true, vibeDef: true, testEvent: 'product_added', soundEmoji: '🔊', vibeEmoji: '⚡' },
-                        { label: 'Print Success (Ticket Spooled)', soundKey: 'soundPrintEnabled', vibeKey: 'vibrationPrintEnabled', soundDef: true, vibeDef: true, testEvent: 'print_success', soundEmoji: '🔔', vibeEmoji: '⚡' },
-                        { label: 'System Alert & Broadcasts', soundKey: 'soundNotificationEnabled', vibeKey: 'vibrationNotificationEnabled', soundDef: true, vibeDef: true, testEvent: 'notification', soundEmoji: '🔊', vibeEmoji: '⚡' },
-                      ].map((evt) => {
-                        const sOn = state.settings[evt.soundKey as keyof AppSettings] !== false;
-                        const vOn = state.settings[evt.vibeKey as keyof AppSettings] !== false;
-                        return (
-                          <div key={evt.soundKey} className="p-4 rounded-3xl border border-[var(--border)] bg-[var(--foreground)]/[0.02] flex flex-col justify-between gap-3">
-                            <span className="text-[10.5px] font-black uppercase tracking-wider text-[var(--foreground)] opacity-85 leading-snug">{evt.label}</span>
-                            <div className="flex gap-2">
-                              {/* Audio channel toggle */}
-                              <button
-                                onClick={() => {
-                                  const newVol = !sOn;
-                                  onUpdate({ [evt.soundKey]: newVol });
-                                  if (newVol) {
-                                    playSynthesizedSound(evt.testEvent as any, { settings: { ...state.settings, [evt.soundKey]: true }, isTestPreview: true });
-                                  }
-                                }}
-                                className={cn(
-                                  "flex-1 flex items-center justify-between px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all cursor-pointer active:scale-95",
-                                  sOn 
-                                    ? "border-amber-500 bg-amber-500/10 text-amber-500" 
-                                    : "border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] opacity-60"
-                                )}
-                              >
-                                <span>{evt.soundEmoji} Synth Sound</span>
-                                <span className={cn("inline-block h-2 w-2 rounded-full", sOn ? "bg-amber-500 animate-pulse" : "bg-slate-500")} />
-                              </button>
-                              {/* Vibration channel toggle */}
-                              <button
-                                onClick={() => {
-                                  const newVib = !vOn;
-                                  onUpdate({ [evt.vibeKey]: newVib });
-                                  if (newVib && navigator.vibrate) {
-                                    navigator.vibrate(35);
-                                  }
-                                }}
-                                className={cn(
-                                  "flex-1 flex items-center justify-between px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all cursor-pointer active:scale-95",
-                                  vOn 
-                                    ? "border-indigo-500 bg-indigo-500/10 text-indigo-500" 
-                                    : "border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] opacity-60"
-                                )}
-                              >
-                                <span>{evt.vibeEmoji} Tactile Haptic</span>
-                                <span className={cn("inline-block h-2 w-2 rounded-full", vOn ? "bg-indigo-500" : "bg-slate-500")} />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Hindi Voice Audio Confirmations Section */}
-                  <div className="space-y-4 pt-8 border-t border-[var(--border)]">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)] flex items-center gap-2">
-                          <span>🗣️</span> <span>Hindi Voice Audio Feedback / हिंदी आवाज़ पुष्टि (TTS)</span>
-                        </h4>
-                        <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">
-                          Speaks Hindi vocal confirmations when items are added, bills are generated, or receipts are printed
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => onUpdate({ soundHindiVoiceEnabled: state.settings.soundHindiVoiceEnabled !== false ? false : true })}
-                        className={cn(
-                          "h-6 w-12 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer",
-                          state.settings.soundHindiVoiceEnabled !== false ? "bg-emerald-500" : "bg-slate-800"
-                        )}
-                      >
-                        <div className={cn("absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-all", state.settings.soundHindiVoiceEnabled !== false ? "translate-x-6" : "")} />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          playFeedbackEvent('product_added', { ...state.settings, soundHindiVoiceEnabled: true }, { itemName: 'काजू 500gm' });
-                        }}
-                        className="rounded-xl text-[9px] uppercase font-black px-3 py-2 border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-500 flex items-center justify-center gap-1.5"
-                      >
-                        <span>🔊</span> Test: 'सामान जोड़ा गया'
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          playFeedbackEvent('bill_saved', { ...state.settings, soundHindiVoiceEnabled: true }, { amount: 500 });
-                        }}
-                        className="rounded-xl text-[9px] uppercase font-black px-3 py-2 border-indigo-500/20 hover:bg-indigo-500/10 text-indigo-500 flex items-center justify-center gap-1.5"
-                      >
-                        <span>🧾</span> Test: '500 रुपये का बिल बन गया'
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          playFeedbackEvent('print_success', { ...state.settings, soundHindiVoiceEnabled: true });
-                        }}
-                        className="rounded-xl text-[9px] uppercase font-black px-3 py-2 border-amber-500/20 hover:bg-amber-500/10 text-amber-500 flex items-center justify-center gap-1.5"
-                      >
-                        <span>🖨️</span> Test: 'बिल प्रिंट हो गया'
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Custom Vibration Strengths */}
-                  <div className="space-y-4 pt-8 border-t border-[var(--border)]">
-                    <div>
-                      <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">Haptic Vibration Strength</h4>
-                      <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">Configure phone haptic motors response levels</p>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2.5">
-                      {[
-                        { id: 'light', label: 'Light Touch', strength: '15ms Tactile Tick' },
-                        { id: 'medium', label: 'Balanced POS', strength: '35ms Standard Poke' },
-                        { id: 'strong', label: 'Industrial Alert', strength: '120ms Strong Rumble' }
-                      ].map((vib) => (
+                        { id: 'silent', label: 'Silent', desc: 'No sound or vibration', emoji: '🔇' },
+                        { id: 'vibrate_only', label: 'Tactile Only', desc: 'Haptic triggers only', emoji: '📳' },
+                        { id: 'vibrate_sound', label: 'Sound + Tactile', desc: 'Full active response', emoji: '🔊' }
+                      ].map((mode) => (
                         <button
-                          key={vib.id}
+                          key={mode.id}
                           onClick={() => {
-                            onUpdate({ vibrationStrength: vib.id as any });
-                            if (navigator.vibrate) {
-                              const dur = vib.id === 'light' ? 15 : vib.id === 'medium' ? 45 : 120;
-                              navigator.vibrate(dur);
+                            onUpdate({ soundFeedbackMode: mode.id as any });
+                            if (mode.id !== 'silent') {
+                              navigator.vibrate?.(40);
                             }
                           }}
                           className={cn(
-                            "flex flex-col items-center gap-1.5 p-4 rounded-2xl border transition-all cursor-pointer active:scale-95 text-center",
-                            (state.settings.vibrationStrength || 'medium') === vib.id
-                              ? "border-amber-500 bg-amber-500/10 text-[var(--foreground)] shadow-sm"
-                              : "border-[var(--border)] bg-[var(--background)] opacity-70 hover:opacity-100 text-[var(--foreground)]"
+                            "flex flex-col items-center gap-2 rounded-2xl border p-4 text-center transition-all cursor-pointer",
+                            (state.settings.soundFeedbackMode || 'vibrate_sound') === mode.id
+                              ? "border-amber-500 bg-amber-500/10 shadow-lg text-[var(--foreground)]"
+                              : "border-[var(--border)] bg-[var(--background)] hover:border-amber-500/40 text-[var(--foreground)] opacity-70"
                           )}
                         >
-                          <span className="text-[10px] font-black uppercase tracking-wide leading-none">{vib.label}</span>
-                          <span className="text-[7.5px] opacity-45 uppercase font-mono mt-1 leading-none">{vib.strength}</span>
+                          <span className="text-2xl">{mode.emoji}</span>
+                          <span className="text-[10px] font-black uppercase text-center">{mode.label}</span>
                         </button>
                       ))}
                     </div>
-                  </div>
 
-                  {/* Smart Busy-Session Fatigue Dampener & Custom Quiet Hours */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-[var(--border)]">
-                    {/* Smart Fatigue */}
-                    <div className="space-y-3 bg-[var(--foreground)]/[0.015] p-5 rounded-3xl border border-[var(--border)] bg-[var(--background)]/10 flex flex-col justify-between">
-                      <div>
-                        <h4 className="text-xs font-black uppercase tracking-tight text-[var(--foreground)] flex items-center gap-1.5">
-                          <span>⚡</span> <span>Smart Scanning Dampener</span>
-                        </h4>
-                        <p className="text-[9.5px] opacity-45 font-black mt-2 uppercase tracking-wide leading-normal text-[var(--foreground)]">
-                          Automatically reduces volume & vibration duration during fast scanning sessions to prevent cashier ear-fatigue and hand strain.
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-between pt-4 border-t border-[var(--border)]/10 mt-3 w-full">
-                        <span className="text-[9px] uppercase font-black opacity-30 text-[var(--foreground)]">Fatigue Safeguard Status</span>
-                        <button
-                          onClick={() => onUpdate({ smartBusinessFeedback: state.settings.smartBusinessFeedback !== false ? false : true })}
+                    {/* Master Notification & Push Toggles */}
+                    <div className="pt-6 border-t border-[var(--border)] space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">In-App Alerts</h4>
+                          <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">Show alerts center panel and real-time popups</p>
+                        </div>
+                        <button 
+                          onClick={() => onUpdate({ notificationsOn: state.settings.notificationsOn === false ? true : false })}
                           className={cn(
-                            "h-6 w-12 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer",
-                            state.settings.smartBusinessFeedback !== false ? "bg-amber-500" : "bg-slate-800"
+                            "h-8 w-16 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer shrink-0 ml-4",
+                            state.settings.notificationsOn !== false ? "bg-blue-500" : "bg-slate-800"
                           )}
                         >
-                          <div className={cn("absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-all", state.settings.smartBusinessFeedback !== false ? "translate-x-6" : "")} />
+                          <div className={cn("absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all", state.settings.notificationsOn !== false ? "translate-x-8" : "")} />
                         </button>
                       </div>
-                    </div>
 
-                    {/* Quiet Hours */}
-                    <div className="space-y-4 bg-[var(--foreground)]/[0.015] p-5 rounded-3xl border border-[var(--border)] bg-[var(--background)]/10 flex flex-col justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-xs font-black uppercase tracking-tight text-[var(--foreground)] flex items-center gap-1.5">
-                            <span>🌙</span> <span>Store Quiet Hours</span>
-                          </h4>
-                          <button
-                            onClick={() => onUpdate({ quietHoursEnabled: !state.settings.quietHoursEnabled })}
-                            className={cn(
-                              "h-6 w-12 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer",
-                              state.settings.quietHoursEnabled ? "bg-indigo-500" : "bg-slate-800"
-                            )}
-                          >
-                            <div className={cn("absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-all", state.settings.quietHoursEnabled ? "translate-x-6" : "")} />
-                          </button>
+                      <div className="flex items-center justify-between pt-6 border-t border-[var(--border)]">
+                        <div>
+                          <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">Push Notifications</h4>
+                          <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed font-semibold text-[var(--foreground)]">Receive instant status updates to all synced devices</p>
                         </div>
-                        <p className="text-[9.5px] opacity-45 font-black uppercase tracking-wide leading-normal text-[var(--foreground)]">
-                          Automatically dampens or silences beep feedback after hours for peaceful operations.
-                        </p>
+                        <button 
+                          onClick={async () => {
+                            const currentVal = state.settings.pushOn !== false;
+                            if (!currentVal) {
+                              const granted = await requestPushPermission();
+                              if (!granted) {
+                                alert("Please enable notification permissions in your browser settings to receive push updates!");
+                              }
+                            }
+                            onUpdate({ pushOn: !currentVal });
+                          }}
+                          className={cn(
+                            "h-8 w-16 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer shrink-0 ml-4",
+                            state.settings.pushOn !== false ? "bg-blue-500" : "bg-slate-800"
+                          )}
+                        >
+                          <div className={cn("absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all", state.settings.pushOn !== false ? "translate-x-8" : "")} />
+                        </button>
                       </div>
 
-                      {state.settings.quietHoursEnabled && (
-                        <div className="space-y-3 pt-3 border-t border-[var(--border)]/10 mt-2 w-full">
-                          <div className="flex items-center gap-4">
-                            <div className="flex-1 flex flex-col gap-1">
-                              <span className="text-[8px] font-black uppercase tracking-widest text-[var(--foreground)]/50">Start Mute</span>
-                              <input
-                                type="time"
-                                value={state.settings.quietHoursStart || '22:00'}
-                                onChange={(e) => onUpdate({ quietHoursStart: e.target.value })}
-                                className="bg-[var(--background)] border border-[var(--border)] px-2.5 py-1.5 rounded-lg text-xs text-[var(--foreground)] font-mono outline-none cursor-pointer w-full"
-                              />
-                            </div>
-                            <div className="flex-1 flex flex-col gap-1">
-                              <span className="text-[8px] font-black uppercase tracking-widest text-[var(--foreground)]/50">End Mute</span>
-                              <input
-                                type="time"
-                                value={state.settings.quietHoursEnd || '07:00'}
-                                onChange={(e) => onUpdate({ quietHoursEnd: e.target.value })}
-                                className="bg-[var(--background)] border border-[var(--border)] px-2.5 py-1.5 rounded-lg text-xs text-[var(--foreground)] font-mono outline-none cursor-pointer w-full"
-                              />
-                            </div>
+                      {/* Sound & Vibration Master Toggles */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-[var(--border)]">
+                        <div className="flex items-center justify-between bg-[var(--foreground)]/[0.02] p-4 rounded-2xl border border-[var(--border)]">
+                          <div>
+                            <h4 className="font-black tracking-tight text-xs uppercase text-[var(--foreground)]">Sound Alerts</h4>
+                            <p className="text-[9px] opacity-45 uppercase tracking-widest mt-0.5 leading-none text-[var(--foreground)]">Play synthesized chime</p>
                           </div>
-                          {/* Quiet Hours Tactile Fallback */}
-                          <div className="flex items-center justify-between pt-1">
-                            <span className="text-[8px] uppercase font-black text-[var(--foreground)]/60 leading-none">Vibrate-only on quiet hours</span>
+                          <button 
+                            onClick={() => {
+                              const toVal = state.settings.soundOn === false ? true : false;
+                              onUpdate({ soundOn: toVal });
+                              if (toVal) { playNotificationChime('medium'); }
+                            }}
+                            className={cn(
+                              "h-6 w-12 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] cursor-pointer shrink-0 ml-3",
+                              state.settings.soundOn !== false ? "bg-indigo-500" : "bg-slate-800"
+                            )}
+                          >
+                            <div className={cn("absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-all", state.settings.soundOn !== false ? "translate-x-6" : "")} />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between bg-[var(--foreground)]/[0.02] p-4 rounded-2xl border border-[var(--border)]">
+                          <div>
+                            <h4 className="font-black tracking-tight text-xs uppercase text-[var(--foreground)]">Haptic Vibration</h4>
+                            <p className="text-[9px] opacity-45 uppercase tracking-widest mt-0.5 leading-none text-[var(--foreground)]">Vibrate mobile hand-device</p>
+                          </div>
+                          <button 
+                            onClick={() => {
+                              const toVal = state.settings.vibrationOn === false ? true : false;
+                              onUpdate({ vibrationOn: toVal });
+                              if (toVal) { triggerVibration('medium'); }
+                            }}
+                            className={cn(
+                              "h-6 w-12 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] cursor-pointer shrink-0 ml-3",
+                              state.settings.vibrationOn !== false ? "bg-indigo-500" : "bg-slate-800"
+                            )}
+                          >
+                            <div className={cn("absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-all", state.settings.vibrationOn !== false ? "translate-x-6" : "")} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Custom Vibration Strengths */}
+                    <div className="space-y-4 pt-6 border-t border-[var(--border)]">
+                      <div>
+                        <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">Haptic Vibration Strength</h4>
+                        <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">Configure phone haptic motors response levels</p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2.5">
+                        {[
+                          { id: 'light', label: 'Light Touch', strength: '15ms Tactile Tick' },
+                          { id: 'medium', label: 'Balanced POS', strength: '35ms Standard Poke' },
+                          { id: 'strong', label: 'Industrial Alert', strength: '120ms Strong Rumble' }
+                        ].map((vib) => (
+                          <button
+                            key={vib.id}
+                            onClick={() => {
+                              onUpdate({ vibrationStrength: vib.id as any });
+                              if (navigator.vibrate) {
+                                const dur = vib.id === 'light' ? 15 : vib.id === 'medium' ? 45 : 120;
+                                navigator.vibrate(dur);
+                              }
+                            }}
+                            className={cn(
+                              "flex flex-col items-center gap-1.5 p-4 rounded-2xl border transition-all cursor-pointer active:scale-95 text-center",
+                              (state.settings.vibrationStrength || 'medium') === vib.id
+                                ? "border-amber-500 bg-amber-500/10 text-[var(--foreground)] shadow-sm"
+                                : "border-[var(--border)] bg-[var(--background)] opacity-70 hover:opacity-100 text-[var(--foreground)]"
+                            )}
+                          >
+                            <span className="text-[10px] font-black uppercase tracking-wide leading-none">{vib.label}</span>
+                            <span className="text-[7.5px] opacity-45 uppercase font-mono mt-1 leading-none">{vib.strength}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Smart Busy-Session Fatigue Dampener & Store Quiet Hours */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-[var(--border)]">
+                      {/* Smart Fatigue */}
+                      <div className="space-y-3 bg-[var(--foreground)]/[0.015] p-5 rounded-2xl border border-[var(--border)] flex flex-col justify-between">
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-tight text-[var(--foreground)] flex items-center gap-1.5">
+                            <span>⚡</span> <span>Smart Scanning Dampener</span>
+                          </h4>
+                          <p className="text-[9.5px] opacity-45 font-black mt-2 uppercase tracking-wide leading-normal text-[var(--foreground)]">
+                            Automatically reduces volume &amp; vibration duration during fast scanning sessions to prevent cashier ear-fatigue and hand strain.
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-between pt-4 border-t border-[var(--border)]/10 mt-3 w-full">
+                          <span className="text-[9px] uppercase font-black opacity-30 text-[var(--foreground)]">Fatigue Safeguard Status</span>
+                          <button
+                            onClick={() => onUpdate({ smartBusinessFeedback: state.settings.smartBusinessFeedback !== false ? false : true })}
+                            className={cn(
+                              "h-6 w-12 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer",
+                              state.settings.smartBusinessFeedback !== false ? "bg-amber-500" : "bg-slate-800"
+                            )}
+                          >
+                            <div className={cn("absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-all", state.settings.smartBusinessFeedback !== false ? "translate-x-6" : "")} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Quiet Hours */}
+                      <div className="space-y-4 bg-[var(--foreground)]/[0.015] p-5 rounded-2xl border border-[var(--border)] flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-black uppercase tracking-tight text-[var(--foreground)] flex items-center gap-1.5">
+                              <span>🌙</span> <span>Store Quiet Hours</span>
+                            </h4>
                             <button
-                              onClick={() => onUpdate({ quietHoursVibrateOnly: state.settings.quietHoursVibrateOnly !== false ? false : true })}
+                              onClick={() => onUpdate({ quietHoursEnabled: !state.settings.quietHoursEnabled })}
                               className={cn(
-                                "h-5 w-10 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] cursor-pointer",
-                                state.settings.quietHoursVibrateOnly !== false ? "bg-indigo-500" : "bg-slate-800"
+                                "h-6 w-12 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer",
+                                state.settings.quietHoursEnabled ? "bg-indigo-500" : "bg-slate-800"
                               )}
                             >
-                              <div className={cn("absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-all", state.settings.quietHoursVibrateOnly !== false ? "translate-x-5" : "")} />
+                              <div className={cn("absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-all", state.settings.quietHoursEnabled ? "translate-x-6" : "")} />
                             </button>
                           </div>
+                          <p className="text-[9.5px] opacity-45 font-black uppercase tracking-wide leading-normal text-[var(--foreground)]">
+                            Automatically dampens or silences beep feedback after hours for peaceful operations.
+                          </p>
                         </div>
-                      )}
+
+                        {state.settings.quietHoursEnabled && (
+                          <div className="space-y-3 pt-3 border-t border-[var(--border)]/10 mt-2 w-full">
+                            <div className="flex items-center gap-4">
+                              <div className="flex-1 flex flex-col gap-1">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-[var(--foreground)]/50">Start Mute</span>
+                                <input
+                                  type="time"
+                                  value={state.settings.quietHoursStart || '22:00'}
+                                  onChange={(e) => onUpdate({ quietHoursStart: e.target.value })}
+                                  className="bg-[var(--background)] border border-[var(--border)] px-2.5 py-1.5 rounded-lg text-xs text-[var(--foreground)] font-mono outline-none cursor-pointer w-full"
+                                />
+                              </div>
+                              <div className="flex-1 flex flex-col gap-1">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-[var(--foreground)]/50">End Mute</span>
+                                <input
+                                  type="time"
+                                  value={state.settings.quietHoursEnd || '07:00'}
+                                  onChange={(e) => onUpdate({ quietHoursEnd: e.target.value })}
+                                  className="bg-[var(--background)] border border-[var(--border)] px-2.5 py-1.5 rounded-lg text-xs text-[var(--foreground)] font-mono outline-none cursor-pointer w-full"
+                                />
+                              </div>
+                            </div>
+                            {/* Quiet Hours Tactile Fallback */}
+                            <div className="flex items-center justify-between pt-1">
+                              <span className="text-[8px] uppercase font-black text-[var(--foreground)]/60 leading-none">Vibrate-only on quiet hours</span>
+                              <button
+                                onClick={() => onUpdate({ quietHoursVibrateOnly: state.settings.quietHoursVibrateOnly !== false ? false : true })}
+                                className={cn(
+                                  "h-5 w-10 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] cursor-pointer",
+                                  state.settings.quietHoursVibrateOnly !== false ? "bg-indigo-500" : "bg-slate-800"
+                                )}
+                              >
+                                <div className={cn("absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-all", state.settings.quietHoursVibrateOnly !== false ? "translate-x-5" : "")} />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
+                </div>
+              )}
 
-                  {/* Quick Actions Console */}
-                  <div className="pt-8 border-t border-[var(--border)] flex flex-wrap gap-2.5">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        onUpdate({
-                          soundFeedbackMode: 'vibrate_sound',
-                          soundBillingEnabled: true,
-                          soundProductAddedEnabled: true,
-                          soundPrintEnabled: true,
-                          soundNotificationEnabled: true,
-                          soundHindiVoiceEnabled: true,
-                        });
-                        playFeedbackEvent('product_added', { ...state.settings, soundFeedbackMode: 'vibrate_sound', soundProductAddedEnabled: true });
-                      }}
-                      className="rounded-xl text-[9px] uppercase font-black px-4 py-2 border-amber-500/20 hover:bg-amber-500/10 text-amber-500"
+              {/* PAGE 4: Volume Matrix & Voice Routing Sub-Page */}
+              {soundPage === 'volume_matrix' && (
+                <div className="space-y-6">
+                  {/* Back Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                    <button
+                      type="button"
+                      onClick={() => setSoundPage('main')}
+                      className="flex items-center gap-2 text-xs font-bold text-violet-500 hover:underline cursor-pointer group"
                     >
-                      🔊 Enable All Beeps
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        onUpdate({
-                          soundFeedbackMode: 'vibrate_only',
-                          soundBillingEnabled: false,
-                          soundProductAddedEnabled: false,
-                          soundPrintEnabled: false,
-                          soundNotificationEnabled: false,
-                          soundHindiVoiceEnabled: false,
-                        });
-                        if (navigator.vibrate) navigator.vibrate(50);
-                      }}
-                      className="rounded-xl text-[9px] uppercase font-black px-4 py-2 border-[var(--border)] hover:bg-[var(--foreground)]/[0.05] text-[var(--foreground)] opacity-60"
-                    >
-                      📳 Disable All Beeps
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        playSynthesizedSound('product_added', { settings: state.settings, isTestPreview: true });
-                        setTimeout(() => {
-                          playSynthesizedSound('bill_saved', { settings: state.settings, isTestPreview: true });
-                          setTimeout(() => {
-                            playSynthesizedSound('print_success', { settings: state.settings, isTestPreview: true });
-                          }, 500);
-                        }, 300);
-                      }}
-                      className="rounded-xl text-[9px] uppercase font-black px-4 py-2 border-indigo-500/20 hover:bg-indigo-500/10 text-indigo-500"
-                    >
-                      ⚡ Preview Sound Sequence
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        onUpdate({
-                          soundFeedbackMode: 'vibrate_sound',
-                          soundStylePack: 'modern',
-                          soundOverallVolume: 100,
-                          soundBillingVolume: 80,
-                          soundPrintVolume: 75,
-                          soundNotificationVolume: 85,
-                          soundBillingEnabled: true,
-                          soundProductAddedEnabled: true,
-                          soundPrintEnabled: true,
-                          soundNotificationEnabled: true,
-                          soundHindiVoiceEnabled: true,
-                          vibrationStrength: 'medium',
-                          vibrationBillingEnabled: true,
-                          vibrationProductAddedEnabled: true,
-                          vibrationPrintEnabled: true,
-                          vibrationNotificationEnabled: true,
-                          smartBusinessFeedback: true,
-                          quietHoursEnabled: false,
-                          quietHoursStart: '22:00',
-                          quietHoursEnd: '07:00',
-                          quietHoursVibrateOnly: true,
-                        });
-                        const updatedSettings: AppSettings = {
-                          ...state.settings,
-                          soundFeedbackMode: 'vibrate_sound',
-                          soundStylePack: 'modern'
-                        };
-                        setTimeout(() => {
-                          playFeedbackEvent('product_added', updatedSettings);
-                        }, 100);
-                      }}
-                      className="rounded-xl text-[9px] uppercase font-black px-4 py-2 border-slate-500/20 hover:bg-slate-500/10 text-slate-400 select-none"
-                    >
-                      🔄 Restore Defaults
-                    </Button>
+                      <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                      <span>Back to Audio &amp; Beeps</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+                      Volume Matrix
+                    </span>
+                  </div>
+
+                  <div className="card p-6 sm:p-8 rounded-3xl border border-[var(--border)] bg-[var(--card)] space-y-8 shadow-sm relative overflow-hidden">
+                    {/* Independent Volume Matrix */}
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">
+                          Audio Volume Synthesizer Matrix
+                        </h4>
+                        <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">
+                          Fine-tune individual event synthesizer volumes independently
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[
+                          { key: 'soundOverallVolume', label: 'Overall Master Volume', icon: '🎧', def: 100, testEvent: 'product_added' },
+                          { key: 'soundBillingVolume', label: 'Billing Success chime', icon: '💰', def: 80, testEvent: 'bill_saved' },
+                          { key: 'soundPrintVolume', label: 'Invoice Printer Spool', icon: '🧾', def: 75, testEvent: 'print_success' },
+                          { key: 'soundNotificationVolume', label: 'System Alarm Alerts', icon: '🚨', def: 85, testEvent: 'notification' }
+                        ].map((vol) => {
+                          const val = (state.settings[vol.key as keyof AppSettings] ?? vol.def) as number;
+                          return (
+                            <div key={vol.key} className="bg-[var(--foreground)]/[0.015] p-4 rounded-2xl border border-[var(--border)] bg-[var(--background)]/10 flex flex-col justify-between gap-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--foreground)] flex items-center gap-1.5">
+                                  <span>{vol.icon}</span> {vol.label}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-[10px] font-bold text-amber-500">{val}%</span>
+                                  <button
+                                    onClick={() => {
+                                      playSynthesizedSound(vol.testEvent as any, { 
+                                        settings: { ...state.settings, [vol.key]: val }, 
+                                        isTestPreview: true 
+                                      });
+                                    }}
+                                    className="text-[9px] uppercase font-black tracking-widest text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-md hover:bg-amber-500/20 active:scale-95 transition-all outline-none cursor-pointer"
+                                  >
+                                    Demo
+                                  </button>
+                                </div>
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={val as number}
+                                onChange={(e) => onUpdate({ [vol.key]: parseInt(e.target.value) })}
+                                className="w-full h-1 bg-[var(--foreground)]/10 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Hindi Voice Audio Confirmations Section */}
+                    <div className="space-y-4 pt-8 border-t border-[var(--border)]">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)] flex items-center gap-2">
+                            <span>🗣️</span> <span>Hindi Voice Audio Feedback / हिंदी आवाज़ पुष्टि (TTS)</span>
+                          </h4>
+                          <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">
+                            Speaks Hindi vocal confirmations when items are added, bills are generated, or receipts are printed
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => onUpdate({ soundHindiVoiceEnabled: state.settings.soundHindiVoiceEnabled !== false ? false : true })}
+                          className={cn(
+                            "h-6 w-12 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer shrink-0 ml-4",
+                            state.settings.soundHindiVoiceEnabled !== false ? "bg-emerald-500" : "bg-slate-800"
+                          )}
+                        >
+                          <div className={cn("absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-all", state.settings.soundHindiVoiceEnabled !== false ? "translate-x-6" : "")} />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            playFeedbackEvent('product_added', { ...state.settings, soundHindiVoiceEnabled: true }, { itemName: 'काजू 500gm' });
+                          }}
+                          className="rounded-xl text-[9px] uppercase font-black px-3 py-2 border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-500 flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <span>🔊</span> Test: 'सामान जोड़ा गया'
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            playFeedbackEvent('bill_saved', { ...state.settings, soundHindiVoiceEnabled: true }, { amount: 500 });
+                          }}
+                          className="rounded-xl text-[9px] uppercase font-black px-3 py-2 border-indigo-500/20 hover:bg-indigo-500/10 text-indigo-500 flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <span>🧾</span> Test: '500 रुपये का बिल बन गया'
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            playFeedbackEvent('print_success', { ...state.settings, soundHindiVoiceEnabled: true });
+                          }}
+                          className="rounded-xl text-[9px] uppercase font-black px-3 py-2 border-amber-500/20 hover:bg-amber-500/10 text-amber-500 flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <span>🖨️</span> Test: 'बिल प्रिंट हो गया'
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Event Specific Sub-routing Controls */}
+                    <div className="space-y-4 pt-8 border-t border-[var(--border)]">
+                      <div>
+                        <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">
+                          Tactile &amp; Audio Channel Router
+                        </h4>
+                        <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">
+                          Route audio/haptics to individual store actions
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[
+                          { label: 'Billing Complete (Invoice Saved)', soundKey: 'soundBillingEnabled', vibeKey: 'vibrationBillingEnabled', soundDef: true, vibeDef: true, testEvent: 'bill_saved', soundEmoji: '🔔', vibeEmoji: '⚡' },
+                          { label: 'Product Added (Cart Registration)', soundKey: 'soundProductAddedEnabled', vibeKey: 'vibrationProductAddedEnabled', soundDef: true, vibeDef: true, testEvent: 'product_added', soundEmoji: '🔊', vibeEmoji: '⚡' },
+                          { label: 'Print Success (Ticket Spooled)', soundKey: 'soundPrintEnabled', vibeKey: 'vibrationPrintEnabled', soundDef: true, vibeDef: true, testEvent: 'print_success', soundEmoji: '🔔', vibeEmoji: '⚡' },
+                          { label: 'System Alert & Broadcasts', soundKey: 'soundNotificationEnabled', vibeKey: 'vibrationNotificationEnabled', soundDef: true, vibeDef: true, testEvent: 'notification', soundEmoji: '🔊', vibeEmoji: '⚡' },
+                        ].map((evt) => {
+                          const sOn = state.settings[evt.soundKey as keyof AppSettings] !== false;
+                          const vOn = state.settings[evt.vibeKey as keyof AppSettings] !== false;
+                          return (
+                            <div key={evt.soundKey} className="p-4 rounded-3xl border border-[var(--border)] bg-[var(--foreground)]/[0.02] flex flex-col justify-between gap-3">
+                              <span className="text-[10.5px] font-black uppercase tracking-wider text-[var(--foreground)] opacity-85 leading-snug">{evt.label}</span>
+                              <div className="flex gap-2">
+                                {/* Audio channel toggle */}
+                                <button
+                                  onClick={() => {
+                                    const newVol = !sOn;
+                                    onUpdate({ [evt.soundKey]: newVol });
+                                    if (newVol) {
+                                      playSynthesizedSound(evt.testEvent as any, { settings: { ...state.settings, [evt.soundKey]: true }, isTestPreview: true });
+                                    }
+                                  }}
+                                  className={cn(
+                                    "flex-1 flex items-center justify-between px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all cursor-pointer active:scale-95",
+                                    sOn 
+                                      ? "border-amber-500 bg-amber-500/10 text-amber-500" 
+                                      : "border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] opacity-60"
+                                  )}
+                                >
+                                  <span>{evt.soundEmoji} Synth Sound</span>
+                                  <span className={cn("inline-block h-2 w-2 rounded-full", sOn ? "bg-amber-500 animate-pulse" : "bg-slate-500")} />
+                                </button>
+                                {/* Vibration channel toggle */}
+                                <button
+                                  onClick={() => {
+                                    const newVib = !vOn;
+                                    onUpdate({ [evt.vibeKey]: newVib });
+                                    if (newVib && navigator.vibrate) {
+                                      navigator.vibrate(35);
+                                    }
+                                  }}
+                                  className={cn(
+                                    "flex-1 flex items-center justify-between px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all cursor-pointer active:scale-95",
+                                    vOn 
+                                      ? "border-indigo-500 bg-indigo-500/10 text-indigo-500" 
+                                      : "border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] opacity-60"
+                                  )}
+                                >
+                                  <span>{evt.vibeEmoji} Tactile Haptic</span>
+                                  <span className={cn("inline-block h-2 w-2 rounded-full", vOn ? "bg-indigo-500" : "bg-slate-500")} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </section>
+              )}
             </motion.div>
           )}
 

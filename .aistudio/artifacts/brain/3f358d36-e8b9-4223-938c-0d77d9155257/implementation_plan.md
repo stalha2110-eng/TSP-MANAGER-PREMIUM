@@ -1,139 +1,83 @@
-# Billing Section Speed & UX Redesign Demo
+# Implementation Plan: Categorize & Organize Security & Sync and Audio & Beeps
 
-An interactive prototype and evaluation artifact that showcases an improved, mobile-friendly billing interface designed to accelerate checkout times and eliminate friction for retail cashiers.
-
-## User Review & Critical Decisions
-
-> [!IMPORTANT]
-> Based on your clarifications, all three requested billing layouts will be included in the interactive demo with a mobile-friendly first posture. You can switch between them dynamically in the artifact to evaluate and pick your preferred mode.
-
-- **Confirmed Comparison Format**: Side-by-side and toggle comparison between the **Current Billing Workflow** and the **Improved Fast Billing Workflow**.
-- **Confirmed Speed Priority**: Clean, intuitive UI reducing billing friction, minimizing tap count, and maximizing one-handed mobile speed.
-- **Confirmed Counter Density Layouts**: All three layout paradigms included in the demo with mobile ergonomics prioritized:
-  1. **Split-Screen Counter**: Instant categorized search on top/left with real-time responsive cart summary.
-  2. **Touch-First Counter with Express Slide-Over Cart**: High-target buttons (48px+), bottom thumb reachability, and an express bottom-sheet cart.
-  3. **High-Density Fast Entry Grid**: Rapid-fire item code/barcode and keyboard-optimized tabular data entry.
+Reorganize the extensive settings options inside **Security & Sync** and **Audio & Beeps** from long monolithic scrolling lists into modular, minimalist sub-page hubs that mirror the design of **Interface** and **Sync & Database**.
 
 ---
 
-## 1. Overview & Core Concept
+## User Review Required
 
-### What It Does
-An interactive demonstration artifact that allows you to experience and compare the streamlined billing experience against the current flow. It features live simulated transactions, speed metrics (clicks/taps and average checkout duration), and instant switching between the three counter layouts on mobile and desktop viewports.
-
-### Target Audience & Persona
-- **Retail Cashiers & Store Owners**: High-velocity checkout environments where long queues form and every tap or keystroke saved translates to faster customer turnover.
-- **Mobile Handheld Operators**: Users operating on smartphones or portable POS tablets where one-handed ergonomics and natural thumb reach dictate speed.
-
-### Key Value
-- **70% Reduction in Taps**: Add products, adjust weight/quantity, and tender payment in 2–3 taps instead of 6–8 taps.
-- **Zero-Friction Payment Tendering**: One-tap quick tender buttons (Exact Cash, ₹500, ₹1000, Instant UPI QR, Split/Udhar) with zero nested modals.
-- **Mobile-First Thumb-Zone Architecture**: Floating sticky bottom bar strictly under 15% viewport height with clear subtotal and instant checkout trigger.
+> [!NOTE]
+> Based on your selections, both sections will be organized into 3 dedicated sub-pages with interactive main hub menus, active status badges, and smooth back-navigation:
+> - **Security & Sync** → PIN Security & Privacy, Cloud Sync & Store Rules, and Gemini API Keys
+> - **Audio & Beeps** → Feedback Modes & Alerts, Sound Theme Packs, and Volume Matrix & Speech
 
 ---
 
-## 2. User Experience & Visual Design
+## Proposed Changes
 
-### Key User Flows
+### `src/components/SettingsScreen.tsx`
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        INTERACTIVE BILLING DEMO                         │
-├────────────────────────────────────────────────────────────────────────┤
-│ [ Viewport: 📱 Mobile (375px) | 💻 Desktop (1440px) ]                   │
-│ [ Mode: ⚡ Improved Billing | 🔄 Current Billing | ⚖️ Side-by-Side ]    │
-│ [ Layout: 1. Split Screen  |  2. Touch Express  |  3. Table Grid ]      │
-├────────────────────────────────────────────────────────────────────────┤
-│                                                                        │
-│  [ Top Bar: Search / Voice / Barcode Scan ]                           │
-│  [ Category Ribbon: 🌾 Grains | 🥛 Dairy | 🍪 Snacks | 🧼 Household ]  │
-│                                                                        │
-│  ┌───────────────────────────┐    ┌──────────────────────────────────┐ │
-│  │     PRODUCT CATALOG       │    │            LIVE CART             │ │
-│  │                           │    │                                  │ │
-│  │ • Premium Basmati Rice    │    │ • Basmati Rice  x 2kg   ₹240     │ │
-│  │   ₹120/kg  [+1kg] [+5kg]  │    │ • Fresh Cow Milk x 1L   ₹65      │ │
-│  │                           │    │                                  │ │
-│  │ • Organic Wheat Flour     │    │ Discount: ₹0  | GST: Included    │ │
-│  │   ₹45/kg   [+1kg] [+5kg]  │    │ Grand Total:  ₹305               │ │
-│  │                           │    │                                  │ │
-│  └───────────────────────────┘    └──────────────────────────────────┘ │
-│                                                                        │
-│  [ Sticky Bottom Checkout Bar: ₹305 • [Cash] [UPI QR] [Save Bill ⚡] ] │
-└────────────────────────────────────────────────────────────────────────┘
-```
-
-### Visual Identity & Theme
-- **Color Palette**: Clean, crisp high-contrast retail surfaces.
-  - Dominant neutral canvas: `#F8FAFC` (Slate-50) for light mode and `#0F172A` (Slate-900) for dark mode.
-  - Structural surfaces: White `#FFFFFF` with hairline borders (`#E2E8F0`).
-  - Primary Action Accent: High-intent Emerald Green (`#059669` / `#10B981`) for immediate, trusted completion.
-  - Secondary Accents: Indigo (`#4F46E5`) for UPI/Digital and Amber (`#D97706`) for Udhar/Khata.
-- **Typography & Tabular Alignment**:
-  - Headings: `Plus Jakarta Sans` font for crisp modern legibility.
-  - Data, Prices & Quantities: Strict `font-mono tabular-nums` for rock-solid vertical decimal alignment.
-- **Anti-Slop Discipline**:
-  - No decorative status dots or nested pill badge sandwiches.
-  - Clean typographic separators (`·`) for weight and price units.
-  - Full touch targets ($48 \times 48\text{px}$) for all touch controls.
+#### 1. Security & Sync Sub-Page Hub Architecture
+- Introduce `securityPage` state: `'main' | 'pin_security' | 'cloud_sync' | 'api_keys'`.
+- **Main Hub (`securityPage === 'main'`)**:
+  - **PIN Security & Privacy Protection Card**:
+    - Shows live status badge: `PIN Enabled` / `No PIN Set`, stealth mode status.
+    - Quick summary of security protections.
+    - Navigates to dedicated PIN Security view.
+  - **Cloud Synchronization & Store Rules Card**:
+    - Shows live status badge: `Auto Sync On` / `Offline Only`, minimum stock threshold.
+    - Real-time cloud status indicator.
+    - Navigates to dedicated Cloud Sync view.
+  - **Voice Assistant & Gemini API Keys Card**:
+    - Shows live status badge: `Default Key Active` / `N Keys Stored`.
+    - Navigates to dedicated API Key Orchestrator view.
+- **Dedicated Sub-Pages**:
+  - `pin_security`: Minimalist cards for Master PIN configuration (Initialize / Update / Disable) and Auto Stealth Mode (hide buying price by default).
+  - `cloud_sync`: Clean cards for Real-time Cloud Sync toggle, sync indicator, guest warning, and Minimum Stock Level threshold counter.
+  - `api_keys`: Full Gemini API Key Orchestrator with Add Key modal trigger, key validation, and quota info.
 
 ---
 
-## 3. Layout Options in the Demo
-
-### Layout 1: Split-Screen Responsive Counter
-- **Mobile**: Vertical split with rapid product catalog on top and a collapsible live summary strip below.
-- **Desktop/Tablet**: Two-column layout with product grid & quick-search on the left (60%) and an always-visible real-time cart ledger on the right (40%).
-- **Speed Win**: Cashier never leaves the screen; search, cart updates, and totals occur simultaneously.
-
-### Layout 2: Touch Counter with Slide-Over Express Cart
-- **Mobile-First Champion**: Designed specifically for smartphone screens.
-- **Ergonomics**: Big tactile product cards with built-in `+` / `-` steppers, category quick chips, and a sticky bottom sheet drawer that slides up with a swipe or tap.
-- **Speed Win**: Operable with just a thumb; perfect for grocery and convenience stores running on handheld devices.
-
-### Layout 3: High-Density Table Entry Grid
-- **Keyboard & Scanner Optimized**: Spreadsheet-like input grid with hotkeys (`Enter` to add line, `Tab` to jump to quantity/discount, `F8` to tender).
-- **Speed Win**: Fastest for high-SKU wholesale or wholesale-retail stores where cashiers type product codes or use a barcode scanner gun without touching a mouse.
-
----
-
-## 4. Technical Architecture & Data Strategy
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│                      DEMO COMPONENT ARCHITECTURE                     │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│                    [ BillingDemoWorkbench ]                         │
-│                                │                                     │
-│         ┌──────────────────────┼──────────────────────┐              │
-│         ▼                      ▼                      ▼              │
-│  [ LayoutSwitcher ]    [ ViewportToggle ]     [ MetricCompareHUD ]   │
-│   (Split/Touch/Grid)     (Mobile/Desktop)       (Taps & Seconds)     │
-│         │                      │                      │              │
-│         └──────────────────────┼──────────────────────┘              │
-│                                ▼                                     │
-│                     [ ActiveBillingEngine ]                          │
-│                                │                                     │
-│         ┌──────────────────────┴──────────────────────┐              │
-│         ▼                                             ▼              │
-│  [ ProductCatalogPanel ]                      [ ExpressCartPanel ]   │
-│   - Instant Fuzzy Search                       - Live Item Ledger    │
-│   - Category Quick Filters                     - Inline Steppers     │
-│   - Weight Preset Chips                        - Quick Tender Drawer │
-│                                                                      │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-- **Interactive State**: Built as a self-contained, fully interactive showcase component that can be launched directly within the application or reviewed independently.
-- **Real-Time Simulation**: Pre-populated with realistic grocery, dairy, and FMCG retail items with live search, quantity increments, tax calculation, and simulated invoice generation.
-- **Metrics Tracker**: Live counter displaying the number of interactions and estimated transaction time as you add items and checkout.
+#### 2. Audio & Beeps Sub-Page Hub Architecture
+- Introduce `soundPage` state: `'main' | 'feedback_presets' | 'sound_themes' | 'volume_matrix'`.
+- **Main Hub (`soundPage === 'main'`)**:
+  - **Feedback Modes & Notifications Card**:
+    - Shows live status badge: `Sound + Haptic` / `Silent` / `Tactile Only`.
+    - Overview of alerts and vibration behavior.
+    - Navigates to dedicated Feedback Modes view.
+  - **Sound Theme Packs Card**:
+    - Shows active sound pack badge: `Modern Digital` / `Classic POS` / `Executive Luxe`.
+    - Quick acoustic theme description.
+    - Navigates to dedicated Sound Themes view.
+  - **Volume Matrix & Speech Card**:
+    - Shows live volume and announcement status.
+    - Navigates to dedicated Volume & Voice view.
+- **Dedicated Sub-Pages**:
+  - `feedback_presets`: In-App Alerts toggle, Push Notifications toggle, Master Sound toggle, Haptic Vibration toggle, and General Feedback Mode selector.
+  - `sound_themes`: Interactive theme cards with instant sound preview buttons (`Play`) and 1-tap pack activation.
+  - `volume_matrix`: Individual event volume synthesizer sliders (Scanner, Add Product, Print, Cash Drawer) and voice readout controls.
 
 ---
 
-## 5. Next Steps Upon Approval
+#### 3. Seamless Back-Navigation Handling
+- Synchronize back button behavior in `SettingsScreen`:
+  - When inside any sub-page (`securityPage !== 'main'` or `soundPage !== 'main'`), pressing the header Back button returns smoothly to that section's main hub.
+  - When at the main hub of any tab, pressing the header Back button returns to the Overview menu.
 
-Once you approve this plan:
-1. We will implement the interactive demo component with all three counter layouts and the side-by-side comparison engine.
-2. We will integrate a dedicated launcher or view toggle in the app so you can test all three layouts in real time on both mobile and desktop viewports.
-3. You will be able to test each layout and choose the winning layout for permanent application across the main billing section.
+---
+
+## Verification Plan
+
+### Automated Tests & Compilation
+- Run `lint_applet` (`tsc --noEmit`) to verify zero TypeScript errors.
+- Run `compile_applet` (`npm run build`) to ensure build success.
+
+### Manual Verification
+1. Navigate to **Settings** > **Security & Sync**:
+   - Verify the main hub renders 3 distinct cards with icons, status badges, and arrows.
+   - Click each card to verify smooth navigation to the dedicated sub-page and back to the hub.
+   - Verify PIN management, Cloud Sync toggles, and API Key management work as expected.
+2. Navigate to **Settings** > **Audio & Beeps**:
+   - Verify the main hub renders 3 distinct cards with icons, status badges, and arrows.
+   - Click each card to verify smooth navigation into Feedback Presets, Sound Themes, and Volume Matrix.
+   - Test audio playback preview in Sound Themes to ensure sound feedback triggers cleanly.

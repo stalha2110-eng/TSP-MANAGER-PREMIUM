@@ -2702,11 +2702,11 @@ export default function BillingScreen({
           <button
             onClick={handleCalculatorButtonAction}
             className={cn(
-              "py-2 px-2.5 sm:px-3.5 rounded-lg sm:rounded-xl flex flex-row items-center justify-center transition-all duration-300 cursor-pointer select-none border relative overflow-visible group",
+              "py-2 px-1.5 sm:px-3.5 rounded-lg sm:rounded-xl flex flex-row items-center justify-center gap-1 sm:gap-2 transition-all duration-300 cursor-pointer select-none border font-black text-[11px] sm:text-xs tracking-wide sm:tracking-wider uppercase relative overflow-visible group",
               isProEngineOpen
-                ? "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-700 text-white border-violet-300 shadow-[0_0_22px_rgba(168,85,247,0.55)] ring-2 ring-violet-400/80 scale-[1.02]"
+                ? "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-700 text-white border-violet-300 shadow-[0_0_22px_rgba(168,85,247,0.55)] ring-2 ring-violet-400/80 scale-[1.01]"
                 : billingSubTab === 'calculator'
-                  ? "bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white border-amber-400/80 shadow-md shadow-amber-500/35 ring-2 ring-amber-400/40 scale-[1.02]"
+                  ? "bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white border-amber-400/80 shadow-md shadow-amber-500/35 ring-2 ring-amber-400/40 scale-[1.01]"
                   : "bg-transparent border-transparent text-[var(--foreground)]/80 hover:bg-[var(--foreground)]/5 hover:text-[var(--foreground)] hover:border-amber-400/30",
               calcDoubleTapPulse && "ring-4 ring-violet-400 scale-95 transition-transform duration-150"
             )}
@@ -2758,7 +2758,7 @@ export default function BillingScreen({
             </div>
 
             {/* Split Iconography with Layered Elements */}
-            <div className="relative flex items-center justify-center p-0.5 w-6 h-6 sm:w-7 sm:h-7">
+            <div className="relative flex items-center justify-center p-0.5 w-5 h-5 sm:w-6 sm:h-6 shrink-0">
               {/* Base Layer: Standard Calculator */}
               <div className={cn(
                 "relative flex items-center justify-center transition-all duration-300",
@@ -2766,7 +2766,7 @@ export default function BillingScreen({
               )}>
                 <AnimatedCalculatorIcon 
                   active={billingSubTab === 'calculator' || isProEngineOpen} 
-                  size={20} 
+                  size={18} 
                   className={
                     isProEngineOpen 
                       ? "text-violet-200 drop-shadow-[0_0_6px_rgba(196,181,253,0.8)]" 
@@ -2798,9 +2798,14 @@ export default function BillingScreen({
               </div>
             </div>
 
+            {/* Button Label matching POS & History */}
+            <span className="whitespace-nowrap font-black tracking-wide sm:tracking-wider text-[11px] sm:text-xs drop-shadow-2xs">
+              {isProEngineOpen ? "Calc Pro" : "Calc"}
+            </span>
+
             {/* Active Indicator Pulse Dot */}
             {(billingSubTab === 'calculator' || isProEngineOpen) && (
-              <span className="relative flex h-2 w-2 shrink-0 ml-1 sm:ml-1.5">
+              <span className="relative flex h-2 w-2 shrink-0">
                 <span className={cn(
                   "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
                   isProEngineOpen ? "bg-cyan-300" : "bg-amber-200"

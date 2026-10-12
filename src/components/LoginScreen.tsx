@@ -217,7 +217,7 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
     setTimeout(() => {
       onGuestLogin();
       setIsLoggingInGuest(false);
-    }, 800);
+    }, 100);
   };
 
   const benefits = [

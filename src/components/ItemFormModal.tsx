@@ -398,8 +398,24 @@ export function ItemFormModal({
     }, 100);
   };
 
+  const isFilledText = (val: string | undefined | null) => Boolean(val && val.trim().length > 0);
+  const isFilledRate = (val: any) => {
+    if (val === "" || val === undefined || val === null) return false;
+    const s = String(val).trim();
+    if (s === "") return false;
+    const n = Number(s);
+    return !isNaN(n) && n > 0;
+  };
+
+  const isFormValid = Boolean(
+    isFilledText(formData.name) &&
+    isFilledRate(formData.retailPrice) &&
+    isFilledRate(formData.wholesalePrice) &&
+    isFilledRate(formData.buyingPrice)
+  );
+
   const handleSave = () => {
-    if (!formData.name) return alert("Name is required");
+    if (!isFormValid) return;
     onSave({
       ...formData,
       quantity:
@@ -1204,7 +1220,14 @@ export function ItemFormModal({
             <Button
               id="item-save-btn"
               data-save="true"
-              className="w-full py-5 rounded-2xl font-black uppercase text-sm shadow-xl shadow-[var(--primary)]/20 cursor-pointer"
+              disabled={!isFormValid}
+              aria-disabled={!isFormValid}
+              className={cn(
+                "w-full py-5 rounded-2xl font-black uppercase text-sm transition-all duration-300 select-none",
+                isFormValid
+                  ? "shadow-xl shadow-[var(--primary)]/25 cursor-pointer opacity-100"
+                  : "opacity-35 cursor-not-allowed shadow-none grayscale-[25%] pointer-events-none"
+              )}
               onClick={handleSave}
             >
               {initialData ? "Save Changes / बदलाव सेव करें" : "SAVE"}

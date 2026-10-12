@@ -2018,38 +2018,16 @@ export default function App() {
         if (user.email && user.uid !== 'guest_user') {
           localStorage.setItem('ts_last_logged_in_email', user.email);
         }
-        setState(prev => {
-          const isGuestDefaults = prev.settings.storeName === 'Guest Store' && prev.settings.storeOwnerName === 'Guest Merchant';
-          const cleanSettings = isGuestDefaults ? {
-            ...prev.settings,
-            storeName: '',
-            storeOwnerName: '',
-            storePhone: '',
-            storeAddress: '',
-            autoCloudSync: true
-          } : prev.settings;
-          return { 
-            ...prev, 
-            user: { uid: user.uid, email: user.email },
-            settings: cleanSettings
-          };
-        });
+        setState(prev => ({ 
+          ...prev, 
+          user: { uid: user.uid, email: user.email } 
+        }));
       } else {
         const isGuest = localStorage.getItem('ts_guest_logged_in') === 'true';
         if (isGuest) {
           setState(prev => ({ 
             ...prev, 
-            user: { uid: 'guest_user', email: 'Guest Merchant' },
-            settings: {
-              ...prev.settings,
-              autoCloudSync: false,
-              storeName: prev.settings.storeName?.trim() || 'Guest Store',
-              storeOwnerName: prev.settings.storeOwnerName?.trim() || 'Guest Merchant',
-              storePhone: prev.settings.storePhone?.trim() || '9876543210',
-              storeAddress: prev.settings.storeAddress?.trim() || 'Local Counter / Shop',
-              storeOpeningTime: prev.settings.storeOpeningTime || '09:00',
-              storeClosingTime: prev.settings.storeClosingTime || '21:00',
-            }
+            user: { uid: 'guest_user', email: 'Guest Merchant' } 
           }));
         } else {
           setState(prev => ({ ...prev, user: null }));
@@ -2588,47 +2566,23 @@ export default function App() {
 
   // --- Handlers ---
   const handleLogout = useCallback(async () => {
-    const wasGuest = state.user?.uid === 'guest_user' || localStorage.getItem('ts_guest_logged_in') === 'true';
     localStorage.removeItem('ts_guest_logged_in');
     await auth.signOut();
-    setState(prev => {
-      const isGuestDefaults = prev.settings.storeName === 'Guest Store' && prev.settings.storeOwnerName === 'Guest Merchant';
-      const cleanSettings = wasGuest && isGuestDefaults ? {
-        ...prev.settings,
-        storeName: '',
-        storeOwnerName: '',
-        storePhone: '',
-        storeAddress: '',
-      } : prev.settings;
-      return { ...prev, user: null, settings: cleanSettings };
-    });
+    setState(prev => ({ ...prev, user: null }));
     addToast("Session terminated / लॉगआउट सफल!", "success");
-  }, [state.user, addToast]);
+  }, []);
 
   const handleGoogleLogin = useCallback(async () => {
     try {
-      localStorage.removeItem('ts_guest_logged_in');
       const user = await loginWithGoogle();
       if (user) {
         if (user.email) {
           localStorage.setItem('ts_last_logged_in_email', user.email);
         }
-        setState(prev => {
-          const isGuestDefaults = prev.settings.storeName === 'Guest Store' && prev.settings.storeOwnerName === 'Guest Merchant';
-          const cleanSettings = isGuestDefaults ? {
-            ...prev.settings,
-            storeName: '',
-            storeOwnerName: '',
-            storePhone: '',
-            storeAddress: '',
-            autoCloudSync: true
-          } : prev.settings;
-          return { 
-            ...prev, 
-            user: { uid: user.uid, email: user.email },
-            settings: cleanSettings
-          };
-        });
+        setState(prev => ({ 
+          ...prev, 
+          user: { uid: user.uid, email: user.email } 
+        }));
         addToast("Logged in with Google / गूगल लॉगिन सफल!", "success");
       }
     } catch (error: any) {
@@ -2640,29 +2594,17 @@ export default function App() {
         alert(`Sign-in failed: ${error?.message || error}`);
       }
     }
-  }, [addToast]);
+  }, []);
 
   const handleGuestLogin = useCallback(() => {
     localStorage.setItem('ts_guest_logged_in', 'true');
-    setState(prev => {
-      const guestSettings = {
-        ...prev.settings,
-        autoCloudSync: false,
-        storeName: prev.settings.storeName?.trim() || 'Guest Store',
-        storeOwnerName: prev.settings.storeOwnerName?.trim() || 'Guest Merchant',
-        storePhone: prev.settings.storePhone?.trim() || '9876543210',
-        storeAddress: prev.settings.storeAddress?.trim() || 'Local Counter / Shop',
-        storeOpeningTime: prev.settings.storeOpeningTime || '09:00',
-        storeClosingTime: prev.settings.storeClosingTime || '21:00',
-      };
-      return { 
-        ...prev, 
-        user: { uid: 'guest_user', email: 'Guest Merchant' },
-        settings: guestSettings
-      };
-    });
+    setState(prev => ({ 
+      ...prev, 
+      user: { uid: 'guest_user', email: 'Guest Merchant' },
+      settings: { ...prev.settings, autoCloudSync: false }
+    }));
     addToast("Logged in as guest / गेस्ट लॉगिन सफल!", "success");
-  }, [addToast]);
+  }, []);
 
   const handleUpdateSettings = useCallback(async (updates: Partial<AppSettings>) => {
     if (isSyncing) return;

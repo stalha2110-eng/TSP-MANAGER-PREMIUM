@@ -534,7 +534,7 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
                           ) : (
                             <User size={13} className="text-teal-600" />
                           )}
-                          <span>Access Local Guest Mode</span>
+                          <span>Guest Mode</span>
                         </button>
                       </div>
 

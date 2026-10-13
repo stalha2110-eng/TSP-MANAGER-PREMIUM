@@ -374,7 +374,7 @@ export default function FullBillHistoryView({ state, onUpdateState }: FullBillHi
       const rawRows = filteredBills.map((b, idx) => [
         idx + 1,
         b.billNumber,
-        b.customerName || 'Walk-In Customer',
+        b.customerName || 'Unknown',
         `${b.items.reduce((s, i) => s + i.quantity, 0)} Items`,
         b.paymentMethod,
         `INR ${b.total.toFixed(2)}`,
@@ -544,7 +544,7 @@ export default function FullBillHistoryView({ state, onUpdateState }: FullBillHi
       if (!customer) {
         customer = {
           id: `cust-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          name: editCustomerName.trim() || 'Credit Walk-In',
+          name: editCustomerName.trim() || 'Unknown',
           phone: editCustomerPhone.trim() || undefined,
           totalUdhar: 0,
           lastUpdated: new Date().toISOString()
@@ -570,7 +570,7 @@ export default function FullBillHistoryView({ state, onUpdateState }: FullBillHi
 
     const updatedInvoiceObj: Bill = {
       ...activeBillDetail,
-      customerName: editCustomerName.trim() || 'Walk-In Customer',
+      customerName: editCustomerName.trim() || 'Unknown',
       customerPhone: editCustomerPhone.trim() || undefined,
       items: updatedBillItems,
       discount: editDiscountPercent,
@@ -924,7 +924,7 @@ export default function FullBillHistoryView({ state, onUpdateState }: FullBillHi
                             #{bill.billNumber}
                           </span>
                           <h4 className="text-xs font-black uppercase text-[var(--foreground)] truncate max-w-[180px] mt-0.5">
-                            {bill.customerName || 'Walk-In Customer'}
+                            {bill.customerName || 'Unknown'}
                           </h4>
                           {bill.customerPhone && (
                             <p className="text-[10px] text-[var(--foreground)]/50 font-bold">📞 {bill.customerPhone}</p>
@@ -1043,7 +1043,7 @@ export default function FullBillHistoryView({ state, onUpdateState }: FullBillHi
                     <div className="grid grid-cols-2 gap-4 bg-[var(--foreground)]/[0.02] p-4 rounded-2xl border border-[var(--border)]">
                       <div>
                         <span className="text-[9px] font-black uppercase text-[var(--foreground)]/50 block">Customer Details</span>
-                        <p className="text-xs font-black uppercase text-[var(--foreground)]">{activeBillDetail.customerName || 'Walk-In Customer'}</p>
+                        <p className="text-xs font-black uppercase text-[var(--foreground)]">{activeBillDetail.customerName || 'Unknown'}</p>
                         {activeBillDetail.customerPhone && <p className="text-xs font-mono opacity-70">📞 {activeBillDetail.customerPhone}</p>}
                       </div>
 

@@ -512,7 +512,7 @@ export default function BillHistoryDrawer({ isOpen, onClose, state, onUpdateStat
         rawRows.push([
           indexCounter++,
           b.billNumber,
-          b.customerName || 'Walk-In Customer',
+          b.customerName || 'Unknown',
           `${totalItems} Products`,
           b.paymentMethod,
           `INR ${b.total.toFixed(2)}`,
@@ -752,7 +752,7 @@ Do you want to permanently delete these ${group.bills.length} bills from history
       if (!customer) {
         customer = {
           id: `cust-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          name: editCustomerName.trim() || 'Credit Walk-In',
+          name: editCustomerName.trim() || 'Unknown',
           phone: editCustomerPhone.trim() || undefined,
           totalUdhar: 0,
           lastUpdated: new Date().toISOString()
@@ -779,7 +779,7 @@ Do you want to permanently delete these ${group.bills.length} bills from history
 
     const updatedInvoiceObj: Bill = {
       ...activeBillDetail,
-      customerName: editCustomerName.trim() || 'Walk-In Customer',
+      customerName: editCustomerName.trim() || 'Unknown',
       customerPhone: editCustomerPhone.trim() || undefined,
       items: updatedBillItems,
       discount: editDiscountPercent,
@@ -1179,7 +1179,7 @@ Do you want to permanently delete these ${group.bills.length} bills from history
                               </div>
 
                               <div className="text-[11px] font-black text-[var(--foreground)] truncate uppercase mb-1">
-                                {bill.customerName || 'Walk-In Customer'}
+                                {bill.customerName || 'Unknown'}
                               </div>
 
                               {bill.customerPhone && (
@@ -1412,7 +1412,7 @@ Do you want to permanently delete these ${group.bills.length} bills from history
                         {/* Customer information profile card */}
                         <div className="p-3 border border-[var(--border)] bg-[var(--card)] rounded-xl space-y-2 select-text">
                           <div className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)] opacity-80">Buyer Information</div>
-                          <p className="text-[11px] font-black leading-none uppercase">{activeBillDetail.customerName || 'Standard Walk-In'}</p>
+                          <p className="text-[11px] font-black leading-none uppercase">{activeBillDetail.customerName || 'Unknown'}</p>
                           {activeBillDetail.customerPhone && (
                             <p className="text-[10px] text-[var(--foreground)] opacity-80 font-mono">Mobile Number: {activeBillDetail.customerPhone}</p>
                           )}

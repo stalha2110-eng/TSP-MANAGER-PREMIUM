@@ -198,12 +198,23 @@ export function speakHindiConfirmation(
       window.speechSynthesis.cancel();
 
       // Clean text of non-readable markdown or symbols
-      const cleanText = text
+      let cleanText = text
         .replace(/[#*`_~₹]/g, '')
         .replace(/\s+/g, ' ')
         .trim();
 
       if (!cleanText) return;
+
+      // 1. Remove any "joda gya" / "joda gaya" / "जोड़ा गया"
+      cleanText = cleanText
+        .replace(/(?:जोड़ा\s*गया|जोड़ा\s*गया|joda\s*g(?:y|ay)a(?:\s*hai)?)/gi, '')
+        .trim();
+
+      // 2. Normalize decimal kg expressions like "0.1 kilo grams", "0.1 kg", "0.1 kilogram" -> "100 gram"
+      cleanText = cleanText.replace(/\b0\.(\d+)\s*(?:kilo\s*grams?|kilograms?|kilos?|kgs?|किग्रा|किलो)\b/gi, (_, dec) => {
+        const grams = Math.round(parseFloat(`0.${dec}`) * 1000);
+        return `${grams} gram`;
+      });
 
       const isEnglish = settings?.language === 'en';
       const utterance = new SpeechSynthesisUtterance(cleanText);
@@ -236,7 +247,7 @@ export function speakHindiConfirmation(
 
 /**
  * Speaks confirmation when an item is added to the cart or catalog.
- * Mentions product name with added quantity (e.g. "Gravy Masala 1kg", "Chai Patti 500gm")
+ * Mentions product name with added quantity (e.g. "Gravy Masala 1kg", "Kesar 100 gram")
  * without saying "जोड़ा गया" ("joda gya").
  */
 export function speakItemAddedConfirmation(
@@ -253,18 +264,25 @@ export function speakItemAddedConfirmation(
   }
 
   // Clean item name (remove extra slashes or packaging notes)
-  const cleanName = itemName.split('/')[0].split('(')[0].trim();
+  let cleanName = itemName.split('/')[0].split('(')[0].trim();
   if (!cleanName) return;
+
+  // Normalize any decimal kg in item name itself (e.g. "Kesar 0.1 kilo grams" -> "Kesar 100 gram")
+  cleanName = cleanName.replace(/\b0\.(\d+)\s*(?:kilo\s*grams?|kilograms?|kilos?|kgs?|किग्रा|किलो)\b/gi, (_, dec) => {
+    const grams = Math.round(parseFloat(`0.${dec}`) * 1000);
+    return `${grams} gram`;
+  });
 
   // Format quantity & unit
   let qtyUnitText = '';
   if (quantity !== undefined && quantity !== null && !isNaN(quantity) && quantity > 0) {
-    const rawUnit = (unit || '').trim().toLowerCase();
+    const rawUnit = (unit || '').trim().toLowerCase().replace(/[-_]/g, ' ');
+    const normalizedUnit = rawUnit.replace(/\s+/g, ' ').trim();
     let formattedQty = '';
     let displayUnit = '';
 
-    const isKgUnit = rawUnit === 'kg' || rawUnit === 'kilo' || rawUnit === 'kilogram' || rawUnit === 'kilograms';
-    const isLtrUnit = rawUnit === 'ltr' || rawUnit === 'l' || rawUnit === 'litre' || rawUnit === 'liter' || rawUnit === 'litres';
+    const isKgUnit = ['kg', 'kgs', 'kilo', 'kilos', 'kilogram', 'kilograms', 'kilo gram', 'kilo grams', 'किग्रा', 'किलो'].includes(normalizedUnit) || normalizedUnit.startsWith('kg') || normalizedUnit.startsWith('kilo');
+    const isLtrUnit = ['ltr', 'l', 'litre', 'liter', 'litres', 'liters', 'लीटर'].includes(normalizedUnit) || normalizedUnit.startsWith('lit');
 
     if (isKgUnit) {
       if (quantity < 1) {
@@ -276,8 +294,11 @@ export function speakItemAddedConfirmation(
         // e.g. 1.5 kg -> 1 kilo 500 gram
         const wholeKg = Math.floor(quantity);
         const remGrams = Math.round((quantity - wholeKg) * 1000);
-        if (remGrams > 0) {
+        if (wholeKg > 0 && remGrams > 0) {
           formattedQty = `${wholeKg} kilo ${remGrams}`;
+          displayUnit = 'gram';
+        } else if (remGrams > 0) {
+          formattedQty = String(remGrams);
           displayUnit = 'gram';
         } else {
           formattedQty = String(wholeKg);
@@ -296,8 +317,11 @@ export function speakItemAddedConfirmation(
       } else if (quantity % 1 !== 0) {
         const wholeLtr = Math.floor(quantity);
         const remMl = Math.round((quantity - wholeLtr) * 1000);
-        if (remMl > 0) {
+        if (wholeLtr > 0 && remMl > 0) {
           formattedQty = `${wholeLtr} litre ${remMl}`;
+          displayUnit = 'ml';
+        } else if (remMl > 0) {
+          formattedQty = String(remMl);
           displayUnit = 'ml';
         } else {
           formattedQty = String(wholeLtr);
@@ -307,24 +331,24 @@ export function speakItemAddedConfirmation(
         formattedQty = String(quantity);
         displayUnit = 'litre';
       }
-    } else if (rawUnit === 'gm' || rawUnit === 'g' || rawUnit === 'gram' || rawUnit === 'grams') {
+    } else if (['gm', 'g', 'gram', 'grams', 'ग्राम'].includes(normalizedUnit)) {
       formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
       displayUnit = 'gram';
-    } else if (rawUnit === 'pkt' || rawUnit === 'packet' || rawUnit === 'pack') {
+    } else if (['pkt', 'packet', 'pack', 'packets', 'पैकेट'].includes(normalizedUnit)) {
       formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
       displayUnit = 'packet';
-    } else if (rawUnit === 'pcs' || rawUnit === 'pc' || rawUnit === 'piece' || rawUnit === 'pieces') {
+    } else if (['pcs', 'pc', 'piece', 'pieces', 'पीस', 'नग'].includes(normalizedUnit)) {
       formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
       displayUnit = 'piece';
-    } else if (rawUnit === 'box' || rawUnit === 'boxes') {
+    } else if (['box', 'boxes', 'बॉक्स'].includes(normalizedUnit)) {
       formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
       displayUnit = 'box';
-    } else if (rawUnit === 'dozen' || rawUnit === 'darjan') {
+    } else if (['dozen', 'darjan', 'दर्जन'].includes(normalizedUnit)) {
       formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
       displayUnit = 'dozen';
-    } else if (rawUnit) {
+    } else if (normalizedUnit) {
       formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
-      displayUnit = rawUnit;
+      displayUnit = normalizedUnit;
     } else {
       formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
       displayUnit = 'piece';
@@ -345,7 +369,7 @@ export function speakItemAddedConfirmation(
 
 /**
  * Speaks voice confirmation when a bill is generated / saved.
- * Says "आप का टोटल हुआ है [amount] रुपये" ("Your total is [amount] rupees").
+ * Says "आप का टोटल हुआ है [amount] रुपये" / "aap ka total hua hai [amount] rs".
  * Delayed by 960ms so the iconic 5-note Paytm payment jingle plays in full first.
  */
 export function speakBillGeneratedConfirmation(
@@ -354,13 +378,20 @@ export function speakBillGeneratedConfirmation(
 ): void {
   const isEnglish = settings?.language === 'en';
   const rounded = amount && amount > 0 ? Math.round(amount) : 0;
+  const hindiVoice = getBestHindiVoice();
+  const hasDedicatedHindiVoice = hindiVoice && (hindiVoice.lang.toLowerCase().startsWith('hi') || hindiVoice.name.toLowerCase().includes('hindi'));
+
   const text = isEnglish
     ? (rounded > 0 
         ? `Your total is ${rounded} rupees` 
         : 'Bill created successfully')
     : (rounded > 0 
-        ? `आप का टोटल हुआ है ${rounded} रुपये` 
-        : 'आप का बिल तैयार हो गया है');
+        ? (hasDedicatedHindiVoice 
+            ? `आप का टोटल हुआ है ${rounded} रुपये` 
+            : `Aap ka total hua hai ${rounded} rupaye`)
+        : (hasDedicatedHindiVoice 
+            ? 'आप का टोटल हुआ है 0 रुपये' 
+            : 'Aap ka total hua hai 0 rupaye'));
   speakHindiConfirmation(text, settings, { delay: 960 });
 }
 

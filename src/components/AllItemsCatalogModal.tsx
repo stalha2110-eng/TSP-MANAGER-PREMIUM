@@ -262,8 +262,8 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
     }
 
     const now = Date.now();
-    // Check if double-clicked within 320ms on the same item card
-    if (lastItemClickRef.current.id === item.id && (now - lastItemClickRef.current.time) < 320) {
+    // Check if double-clicked within 420ms on the same item card
+    if (lastItemClickRef.current.id === item.id && (now - lastItemClickRef.current.time) < 420) {
       if (singleClickTimeoutRef.current) {
         clearTimeout(singleClickTimeoutRef.current);
         singleClickTimeoutRef.current = null;
@@ -380,7 +380,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
       doc.setFont("helvetica", "bold");
       doc.text(settings?.storeName || "TS PRICE MANAGER", 20, 20);
       doc.setFontSize(10);
-      doc.text(`Customer: ${customerName || 'Walk-in Customer'}`, 20, 30);
+      doc.text(`Customer: ${customerName || 'Unknown'}`, 20, 30);
       doc.text(`Phone: ${customerPhone || 'N/A'}`, 20, 35);
       doc.text(`Payment: ${paymentMethod}`, 20, 40);
       doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 45);
@@ -1235,7 +1235,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                     {(customerName || customerPhone) && (
                       <div className="py-1 px-1.5 bg-zinc-50 border border-zinc-200 rounded-lg text-[7.5px] text-zinc-700 my-1">
                         <p className="font-extrabold text-[6.5px] uppercase opacity-50 tracking-wider text-zinc-600">Customer Details</p>
-                        <p className="font-black text-zinc-950">{customerName || 'Walk-in Customer'}</p>
+                        <p className="font-black text-zinc-950">{customerName || 'Unknown'}</p>
                         {customerPhone && <p className="font-semibold text-zinc-600 font-mono">{customerPhone}</p>}
                       </div>
                     )}
@@ -1514,7 +1514,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                       {(customerName || customerPhone) && (
                         <div className="py-1.5 bg-zinc-100 border border-zinc-200 p-2 rounded-lg text-[8px] text-zinc-700 my-2">
                           <p className="font-extrabold text-[7px] uppercase opacity-50 tracking-wider mb-0.5 text-zinc-600">Customer Details</p>
-                          <p className="font-black text-zinc-950">{customerName || 'Walk-in Customer'}</p>
+                          <p className="font-black text-zinc-950">{customerName || 'Unknown'}</p>
                           {customerPhone && <p className="font-semibold text-zinc-600 font-mono">{customerPhone}</p>}
                         </div>
                       )}

@@ -540,7 +540,7 @@ export default function BillingScreen({
     }
 
     const now = Date.now();
-    if (lastBillingItemClickRef.current.id === item.id && (now - lastBillingItemClickRef.current.time) < 320) {
+    if (lastBillingItemClickRef.current.id === item.id && (now - lastBillingItemClickRef.current.time) < 420) {
       if (singleBillingClickTimeoutRef.current) {
         clearTimeout(singleBillingClickTimeoutRef.current);
         singleBillingClickTimeoutRef.current = null;
@@ -1577,7 +1577,7 @@ export default function BillingScreen({
     if (cart.length === 0) return;
     
     const activeDraft = drafts.find(d => d.id === activeDraftId);
-    const tableName = activeDraft ? activeDraft.name : 'Counter Walk-In';
+    const tableName = activeDraft ? activeDraft.name : 'Counter Unknown';
     
     const nextTicketNo = kotTicketNo + 1;
     setKotTicketNo(nextTicketNo);
@@ -1973,7 +1973,7 @@ export default function BillingScreen({
       }
     }
 
-    const cName = customerName.trim() || 'Walk-in Customer';
+    const cName = customerName.trim() || 'Unknown';
     const cPhone = customerPhone.trim() || undefined;
 
     // Generate Serial Invoice ID starting from 1 (Guaranteed sequential and collision-free)
@@ -2635,7 +2635,7 @@ export default function BillingScreen({
 
     const updatedInvoiceObj: Bill = {
       ...activeBillDetail,
-      customerName: editCustomerName.trim() || 'Walk-in Customer',
+      customerName: editCustomerName.trim() || 'Unknown',
       customerPhone: editCustomerPhone.trim() || undefined,
       items: updatedBillItems,
       discount: editDiscountPercent,
@@ -3231,10 +3231,10 @@ export default function BillingScreen({
                                 {hd.isPinned && <Pin size={8} className="text-amber-500 fill-amber-500" />}
                               </div>
                               <p className="text-[9px] font-semibold text-[var(--foreground)]/60 mt-0.5">
-                                Phone: {hd.customerPhone || 'Walk-in Customer'}
+                                Phone: {hd.customerPhone || 'Unknown'}
                               </p>
                               <p className="text-[9px] font-black text-[var(--primary)] mt-1">
-                                {hd.customerName ? hd.customerName.toUpperCase() : 'WALK-IN CUSTOMER'}
+                                {hd.customerName ? hd.customerName.toUpperCase() : 'UNKNOWN'}
                               </p>
                             </div>
                             
@@ -3267,7 +3267,7 @@ export default function BillingScreen({
                                     type: 'bill',
                                     payload: {
                                       id: hd.id,
-                                      customerName: hd.customerName || 'Walk-in Customer',
+                                      customerName: hd.customerName || 'Unknown',
                                       customerPhone: hd.customerPhone,
                                       items: hd.cart.map(c => ({
                                         name: c.name,
@@ -3377,7 +3377,7 @@ export default function BillingScreen({
                               {ad.isPinned && <Pin size={8} className="text-amber-500 fill-amber-500" />}
                             </div>
                             <span className="text-[9px] font-semibold text-[var(--foreground)]/50 block mt-0.5">
-                              {ad.customerName ? ad.customerName.toUpperCase() : 'WALK-IN CUSTOMER'}
+                              {ad.customerName ? ad.customerName.toUpperCase() : 'UNKNOWN'}
                             </span>
                             <span className="text-[8px] font-bold text-[var(--foreground)]/40 block mt-1">
                               Modified: {getRelativeTime(ad.lastActiveAt)}
@@ -5609,7 +5609,7 @@ export default function BillingScreen({
                 doc.setFont("helvetica", "bold");
                 doc.text(state.settings.storeName || "TS PRICE MANAGER", 20, 20);
                 doc.setFontSize(10);
-                doc.text(`Customer: ${customerName || 'Walk-in Customer'}`, 20, 30);
+                doc.text(`Customer: ${customerName || 'Unknown'}`, 20, 30);
                 doc.text(`Phone: ${customerPhone || 'N/A'}`, 20, 35);
                 doc.text(`Payment: ${paymentMethod}`, 20, 40);
                 doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 45);
@@ -5712,7 +5712,7 @@ export default function BillingScreen({
                       {(customerName || customerPhone) && (
                         <div className="py-1.5 bg-zinc-50 border border-zinc-200 p-2 rounded-lg text-[8.5px] text-zinc-700 my-2">
                           <p className="font-extrabold text-[7.5px] uppercase opacity-45 tracking-wider mb-0.5 text-zinc-600">Customer details</p>
-                          <p className="font-black text-zinc-950">{customerName || 'Walk-in Customer'}</p>
+                          <p className="font-black text-zinc-950">{customerName || 'Unknown'}</p>
                           {customerPhone && <p className="font-semibold text-zinc-600">{customerPhone}</p>}
                           {paymentMethod === 'Credit' && (
                             <p className="text-rose-600 font-extrabold uppercase mt-1 text-[7.5px] animate-pulse">📅 DUE DATE: {udharDueDate}</p>
@@ -5951,7 +5951,7 @@ export default function BillingScreen({
                   doc.setFont("helvetica", "bold");
                   doc.text(state.settings.storeName || "TS PRICE MANAGER", 20, 20);
                   doc.setFontSize(10);
-                  doc.text(`Customer: ${customerName || 'Walk-in Customer'}`, 20, 30);
+                  doc.text(`Customer: ${customerName || 'Unknown'}`, 20, 30);
                   doc.text(`Phone: ${customerPhone || 'N/A'}`, 20, 35);
                   doc.text(`Payment: ${paymentMethod}`, 20, 40);
                   doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 45);
@@ -6051,12 +6051,12 @@ export default function BillingScreen({
                         </div>
                       </div>
 
-                      {/* Customer Credentials (if specified or walk-in) */}
+                      {/* Customer Credentials (if specified or unknown) */}
                       {(customerName || customerPhone) && (
                         <div className="my-2.5 p-2.5 bg-zinc-100/90 border border-zinc-300 rounded-xl text-xs text-zinc-800 space-y-0.5">
                           <p className="font-black text-[9.5px] uppercase opacity-60 tracking-wider text-zinc-600">Customer Details</p>
                           <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <span className="font-black text-zinc-950 text-xs sm:text-[13px]">{customerName || 'Walk-in Customer'}</span>
+                            <span className="font-black text-zinc-950 text-xs sm:text-[13px]">{customerName || 'Unknown'}</span>
                             {customerPhone && <span className="font-mono font-bold text-zinc-700 text-xs">{customerPhone}</span>}
                           </div>
                           {paymentMethod === 'Credit' && (
@@ -6500,7 +6500,7 @@ export default function BillingScreen({
                   <div className="p-3 bg-[var(--foreground)]/[0.02] border border-[var(--border)] rounded-2xl grid grid-cols-2 gap-2 text-xs font-sans">
                     <div>
                       <span className="text-[7.5px] font-black uppercase opacity-40">Invoice Client:</span>
-                      <p className="font-extrabold text-sm uppercase leading-tight mt-0.5">{activeBillDetail.customerName || 'Walk-In Customer'}</p>
+                      <p className="font-extrabold text-sm uppercase leading-tight mt-0.5">{activeBillDetail.customerName || 'Unknown'}</p>
                       {activeBillDetail.customerPhone && (
                         <p className="text-[9px] font-mono text-[var(--primary)] font-bold mt-1 flex items-center gap-1">
                           <Phone size={9} /> {activeBillDetail.customerPhone}
@@ -6784,7 +6784,7 @@ export default function BillingScreen({
               <div className="p-4 bg-[var(--foreground)]/[0.02] border border-[var(--border)] rounded-2xl text-left space-y-2.5 font-medium">
                 <div className="flex justify-between text-xs pb-2 border-b border-dashed border-[var(--border)]">
                   <span className="opacity-60 uppercase font-black text-[9px] tracking-wider">Client Name:</span>
-                  <span className="font-black">{completedBill.customerName || 'Walk-In Guest'}</span>
+                  <span className="font-black">{completedBill.customerName || 'Unknown'}</span>
                 </div>
                 {completedBill.customerPhone && (
                   <div className="flex justify-between text-xs pb-2 border-b border-dashed border-[var(--border)]">

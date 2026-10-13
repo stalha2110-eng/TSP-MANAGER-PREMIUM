@@ -313,24 +313,7 @@ export function playSynthesizedSound(
         }
         
         case 'bill_saved': {
-          // Beautiful Major 7th ascending arpeggio (C Major: C4 -> E4 -> G4 -> B4)
-          const notes = [261.63, 329.63, 392.00, 493.88];
-          notes.forEach((freq, idx) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, now + idx * 0.07);
-            
-            gain.gain.setValueAtTime(0, now + idx * 0.07);
-            gain.gain.linearRampToValueAtTime(targetVolume * 0.4, now + idx * 0.07 + 0.01);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.07 + 0.22);
-            
-            osc.start(now + idx * 0.07);
-            osc.stop(now + idx * 0.07 + 0.25);
-          });
+          playTransactionSound(settings, isTestPreview);
           break;
         }
         
@@ -550,6 +533,66 @@ export function playTootBeep(type: 'beep' | 'toot', settings: AppSettings) {
 }
 
 /**
+ * Synthesizes a dedicated, high-fidelity retail transaction success sound matching modern billing counters & payment registers.
+ * Plays a resonant, dual-stage ascending payment chime:
+ * 1. Warm register coin/tone ping (C6: 1046.5Hz & G6: 1567.98Hz harmonic)
+ * 2. Signature sparkling payment success bell chord (E6: 1318.51Hz & C7: 2093.00Hz + G7 shimmer) with rich harmonic overtones and smooth decay.
+ */
+export function playTransactionSound(settings: AppSettings, isTestPreview: boolean = false) {
+  const mode = settings.soundFeedbackMode || 'vibrate_sound';
+  if (!isTestPreview) {
+    if (mode === 'silent' || mode === 'vibrate_only') return;
+    if (settings.soundBillingEnabled === false) return;
+    if (isQuietHours(settings)) return;
+  }
+
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const overallVol = (settings.soundOverallVolume ?? 100) / 100;
+  const billingVol = (settings.soundBillingVolume ?? 80) / 100;
+  const targetVolume = overallVol * billingVol * 0.45;
+
+  try {
+    const playChimeNote = (
+      freq: number,
+      start: number,
+      duration: number,
+      volFactor: number,
+      type: OscillatorType = 'sine'
+    ) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, start);
+
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(targetVolume * volFactor, start + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+      osc.start(start);
+      osc.stop(start + duration + 0.04);
+    };
+
+    // Stage 1: Initial crisp register tone ping (C6 & G6 harmonic)
+    playChimeNote(1046.50, now, 0.22, 0.7, 'triangle');
+    playChimeNote(1567.98, now + 0.012, 0.24, 0.5, 'sine');
+
+    // Stage 2: Main resonant payment success chord (E6 + C7 + sparkling overtone shimmer)
+    const t2 = now + 0.11;
+    playChimeNote(1318.51, t2, 0.48, 0.85, 'triangle');
+    playChimeNote(2093.00, t2, 0.55, 0.95, 'sine');
+    playChimeNote(3135.96, t2 + 0.015, 0.38, 0.28, 'sine');
+  } catch (err) {
+    console.warn('Failed to play transaction sound:', err);
+  }
+}
+
+/**
  * Speaks the welcome announcement using the Web Speech Synthesis API.
  * Respects sound settings and quiet hours.
  */
@@ -612,7 +655,7 @@ export function playFeedbackEvent(
 ) {
   // Trigger Sound
   if (event === 'bill_saved') {
-    playTootBeep('beep', settings);
+    playTransactionSound(settings);
   } else if (event === 'print_success') {
     playTootBeep('toot', settings);
   } else {

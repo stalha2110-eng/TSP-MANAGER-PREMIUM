@@ -205,8 +205,9 @@ export function speakHindiConfirmation(
 
       if (!cleanText) return;
 
+      const isEnglish = settings?.language === 'en';
       const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.lang = 'hi-IN';
+      utterance.lang = isEnglish ? 'en-IN' : 'hi-IN';
       utterance.rate = options?.rate ?? 0.96; // Lively and clear retail feedback
       utterance.pitch = options?.pitch ?? 1.02;
 
@@ -215,7 +216,7 @@ export function speakHindiConfirmation(
         utterance.volume = Math.max(0.1, Math.min(1.0, (settings.soundOverallVolume / 100)));
       }
 
-      const voice = getBestHindiVoice();
+      const voice = isEnglish ? null : getBestHindiVoice();
       if (voice) {
         utterance.voice = voice;
       }
@@ -257,16 +258,22 @@ export function speakItemAddedConfirmation(
 }
 
 /**
- * Speaks Hindi confirmation when a bill is generated / saved
+ * Speaks voice confirmation when a bill is generated / saved.
+ * Delayed by 750ms so the crisp POS transaction chime plays in full first.
  */
 export function speakBillGeneratedConfirmation(
   amount?: number,
   settings?: Partial<AppSettings>
 ): void {
-  const text = amount && amount > 0 
-    ? `${Math.round(amount)} रुपये का बिल बन गया` 
-    : 'नया बिल तैयार हो गया';
-  speakHindiConfirmation(text, settings, { delay: 120 });
+  const isEnglish = settings?.language === 'en';
+  const text = isEnglish
+    ? (amount && amount > 0 
+        ? `Bill of ${Math.round(amount)} rupees created successfully` 
+        : 'Bill created successfully')
+    : (amount && amount > 0 
+        ? `${Math.round(amount)} रुपये का बिल बन गया` 
+        : 'नया बिल तैयार हो गया');
+  speakHindiConfirmation(text, settings, { delay: 750 });
 }
 
 /**

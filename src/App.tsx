@@ -166,6 +166,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { OnboardingForm } from './components/OnboardingForm';
 import { 
   doc, 
+  getDoc,
   setDoc, 
   onSnapshot, 
   collection, 
@@ -2013,27 +2014,53 @@ export default function App() {
     reader.readAsText(file);
   };
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    let isMounted = true;
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         if (user.email && user.uid !== 'guest_user') {
           localStorage.setItem('ts_last_logged_in_email', user.email);
         }
-        setState(prev => {
-          const isGuestDefaults = prev.settings.storeName === 'Guest Store' && prev.settings.storeOwnerName === 'Guest Merchant';
-          const cleanSettings = isGuestDefaults ? {
-            ...prev.settings,
-            storeName: '',
-            storeOwnerName: '',
-            storePhone: '',
-            storeAddress: '',
-            autoCloudSync: true
-          } : prev.settings;
-          return { 
+        try {
+          const userDocRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userDocRef);
+          if (!isMounted) return;
+          if (userSnap.exists()) {
+            const cloudSettings = userSnap.data();
+            setState(prev => ({ 
+              ...prev, 
+              user: { uid: user.uid, email: user.email },
+              settings: {
+                ...prev.settings,
+                ...cloudSettings,
+                autoCloudSync: true
+              }
+            }));
+          } else {
+            // First-time user without existing cloud document
+            setState(prev => ({ 
+              ...prev, 
+              user: { uid: user.uid, email: user.email },
+              settings: {
+                ...prev.settings,
+                storeName: '',
+                storeOwnerName: '',
+                storePhone: '',
+                storeAddress: '',
+                autoCloudSync: true
+              }
+            }));
+          }
+        } catch (fetchErr) {
+          console.warn("Could not fetch user document upon auth change:", fetchErr);
+          if (!isMounted) return;
+          setState(prev => ({ 
             ...prev, 
             user: { uid: user.uid, email: user.email },
-            settings: cleanSettings
-          };
-        });
+            settings: { ...prev.settings, autoCloudSync: true }
+          }));
+        } finally {
+          if (isMounted) setIsAuthChecking(false);
+        }
       } else {
         const isGuest = localStorage.getItem('ts_guest_logged_in') === 'true';
         if (isGuest) {
@@ -2054,15 +2081,16 @@ export default function App() {
         } else {
           setState(prev => ({ ...prev, user: null }));
         }
+        if (isMounted) setIsAuthChecking(false);
       }
-      setIsAuthChecking(false);
     });
 
     const fallbackAuthTimer = setTimeout(() => {
-      setIsAuthChecking(false);
-    }, 1200);
+      if (isMounted) setIsAuthChecking(false);
+    }, 4000);
 
     return () => {
+      isMounted = false;
       unsubscribe();
       clearTimeout(fallbackAuthTimer);
     };
@@ -2160,7 +2188,7 @@ export default function App() {
 
     // Sync Items (clean remote reflection with deletion tracking)
     const itemsRef = collection(db, 'users', state.user.uid, 'items');
-    const unsubItems = onSnapshot(query(itemsRef, orderBy('lastUpdated', 'desc')), (snap) => {
+    const unsubItems = onSnapshot(itemsRef, (snap) => {
       const itemsList: Item[] = [];
       const localImages = getAllLocalProductImages();
       snap.forEach(docSnap => {
@@ -2183,6 +2211,8 @@ export default function App() {
         }
       });
       
+      itemsList.sort((a, b) => (b.lastUpdated || '').localeCompare(a.lastUpdated || ''));
+
       setState(prev => ({
         ...prev,
         items: deduplicateById(itemsList)
@@ -2198,10 +2228,12 @@ export default function App() {
 
     // Sync Notes (clean remote reflection)
     const notesRef = collection(db, 'users', state.user.uid, 'notes');
-    const unsubNotes = onSnapshot(query(notesRef, orderBy('createdAt', 'desc')), (snap) => {
+    const unsubNotes = onSnapshot(notesRef, (snap) => {
       const notesList: Note[] = [];
       snap.forEach(doc => notesList.push({ ...doc.data() as Note, id: doc.id }));
       
+      notesList.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
       setState(prev => ({
         ...prev,
         notes: deduplicateById(notesList)
@@ -2214,7 +2246,7 @@ export default function App() {
 
     // Sync Bills (clean remote reflection, mapping and analytics trigger)
     const billsRef = collection(db, 'users', state.user.uid, 'bills');
-    const unsubBills = onSnapshot(query(billsRef, orderBy('timestamp', 'desc')), (snap) => {
+    const unsubBills = onSnapshot(billsRef, (snap) => {
       const billsList: Bill[] = [];
       snap.forEach(docSnap => {
         const data = docSnap.data();
@@ -2244,6 +2276,8 @@ export default function App() {
         }
       });
       
+      billsList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
       setAnalyticsRenderKey(k => k + 1);
       setState(prev => ({
         ...prev,
@@ -2588,50 +2622,70 @@ export default function App() {
 
   // --- Handlers ---
   const handleLogout = useCallback(async () => {
-    const wasGuest = state.user?.uid === 'guest_user' || localStorage.getItem('ts_guest_logged_in') === 'true';
     localStorage.removeItem('ts_guest_logged_in');
     await auth.signOut();
-    setState(prev => {
-      const isGuestDefaults = prev.settings.storeName === 'Guest Store' && prev.settings.storeOwnerName === 'Guest Merchant';
-      const cleanSettings = wasGuest && isGuestDefaults ? {
+    setState(prev => ({
+      ...prev,
+      user: null,
+      settings: {
         ...prev.settings,
-        storeName: '',
-        storeOwnerName: '',
-        storePhone: '',
-        storeAddress: '',
-      } : prev.settings;
-      return { ...prev, user: null, settings: cleanSettings };
-    });
+        autoCloudSync: true
+      }
+    }));
     addToast("Session terminated / लॉगआउट सफल!", "success");
-  }, [state.user, addToast]);
+  }, [addToast]);
 
   const handleGoogleLogin = useCallback(async () => {
     try {
       localStorage.removeItem('ts_guest_logged_in');
+      setIsAuthChecking(true);
       const user = await loginWithGoogle();
       if (user) {
         if (user.email) {
           localStorage.setItem('ts_last_logged_in_email', user.email);
         }
-        setState(prev => {
-          const isGuestDefaults = prev.settings.storeName === 'Guest Store' && prev.settings.storeOwnerName === 'Guest Merchant';
-          const cleanSettings = isGuestDefaults ? {
-            ...prev.settings,
-            storeName: '',
-            storeOwnerName: '',
-            storePhone: '',
-            storeAddress: '',
-            autoCloudSync: true
-          } : prev.settings;
-          return { 
+        try {
+          const userDocRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userDocRef);
+          if (userSnap.exists()) {
+            const cloudSettings = userSnap.data();
+            setState(prev => ({ 
+              ...prev, 
+              user: { uid: user.uid, email: user.email },
+              settings: {
+                ...prev.settings,
+                ...cloudSettings,
+                autoCloudSync: true
+              }
+            }));
+          } else {
+            setState(prev => ({ 
+              ...prev, 
+              user: { uid: user.uid, email: user.email },
+              settings: {
+                ...prev.settings,
+                storeName: '',
+                storeOwnerName: '',
+                storePhone: '',
+                storeAddress: '',
+                autoCloudSync: true
+              }
+            }));
+          }
+        } catch (fetchErr) {
+          console.warn("Could not pre-fetch user profile upon login:", fetchErr);
+          setState(prev => ({ 
             ...prev, 
             user: { uid: user.uid, email: user.email },
-            settings: cleanSettings
-          };
-        });
+            settings: { ...prev.settings, autoCloudSync: true }
+          }));
+        } finally {
+          setIsAuthChecking(false);
+        }
         addToast("Logged in with Google / गूगल लॉगिन सफल!", "success");
       }
     } catch (error: any) {
+      setIsAuthChecking(false);
       if (error?.code === 'auth/popup-closed-by-user') {
         alert('Sign-in cancelled. The login popup was closed before completing. Please try again.');
       } else if (error?.code === 'auth/popup-blocked') {
@@ -3703,7 +3757,8 @@ export default function App() {
     );
   }
 
-  if (isDetailsMissing) {
+  const isGuestUser = state.user?.uid === 'guest_user';
+  if (isDetailsMissing && !isGuestUser) {
     return (
       <div data-theme={state.settings.theme} className="min-h-screen">
         <OnboardingForm 

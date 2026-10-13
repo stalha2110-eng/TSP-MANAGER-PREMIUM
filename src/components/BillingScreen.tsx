@@ -4577,8 +4577,8 @@ export default function BillingScreen({
           
           <div className="space-y-4">
             {/* Cart Header */}
-            <div className="flex items-center justify-between border-b border-[var(--border)] pb-2 gap-2 flex-wrap">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)] flex items-center gap-1.5 shrink-0">
+            <div className="flex flex-wrap items-center justify-between border-b border-[var(--border)] pb-2.5 gap-x-2.5 gap-y-2">
+              <span className="text-[10px] sm:text-[10.5px] font-black uppercase tracking-wider text-[var(--primary)] flex items-center gap-1.5 shrink-0">
                 <CounterIcon size={14} className="shrink-0" />
                 <span>BILLING COUNTER:</span>
               </span>
@@ -4587,7 +4587,6 @@ export default function BillingScreen({
               <div className="flex items-center gap-2 shrink-0 ml-auto">
                 {/* Rate Pricing Mode Selector (Auto, Retail, Wholesale) */}
                 <div 
-                  style={{ width: '185.453px', paddingTop: '-1.25px', marginTop: '-28px' }}
                   className="flex items-center p-0.5 rounded-xl bg-[var(--foreground)]/[0.04] dark:bg-[var(--foreground)]/[0.06] border border-[var(--border)] shadow-2xs gap-0.5 select-none"
                 >
                   {/* Distinctive Intelligent 'Auto' Button */}
@@ -4596,7 +4595,7 @@ export default function BillingScreen({
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setBillingMode('auto')}
                     className={cn(
-                      "relative px-2.5 py-1 rounded-lg text-[8.5px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 leading-none",
+                      "relative px-2 sm:px-2.5 py-1 rounded-lg text-[8.5px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 leading-none",
                       billingMode === 'auto'
                         ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white shadow-sm shadow-emerald-600/30 border border-emerald-400/40 font-black"
                         : "text-emerald-600/85 dark:text-emerald-400/85 hover:text-emerald-600 hover:bg-emerald-500/10 border border-transparent font-extrabold"
@@ -4625,7 +4624,7 @@ export default function BillingScreen({
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setBillingMode('retail')}
                     className={cn(
-                      "relative px-2.5 py-1 rounded-lg text-[8.5px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer leading-none",
+                      "relative px-2 sm:px-2.5 py-1 rounded-lg text-[8.5px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer leading-none",
                       billingMode === 'retail'
                         ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-600/30 border border-blue-400/40"
                         : "text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:bg-[var(--foreground)]/5 border border-transparent font-bold"
@@ -4641,7 +4640,7 @@ export default function BillingScreen({
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setBillingMode('wholesale')}
                     className={cn(
-                      "relative px-2.5 py-1 rounded-lg text-[8.5px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer leading-none",
+                      "relative px-2 sm:px-2.5 py-1 rounded-lg text-[8.5px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer leading-none",
                       billingMode === 'wholesale'
                         ? "bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white shadow-sm shadow-amber-500/30 border border-amber-300/40"
                         : "text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:bg-[var(--foreground)]/5 border border-transparent font-bold"

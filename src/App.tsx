@@ -5694,37 +5694,37 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setDailyCycleModal(null)}
-            className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md"
+            className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md"
           >
             <motion.div 
               key="daily-cycle-modal-container-element"
-              initial={{ scale: 0.95, opacity: 0, y: 16 }}
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 16 }}
-              transition={{ type: "spring", duration: 0.3, bounce: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              transition={{ type: "spring", duration: 0.28, bounce: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[var(--card-solid,#0f172a)] bg-[var(--background)] border border-[var(--border)] rounded-3xl sm:rounded-[2rem] p-5 sm:p-7 max-w-md w-full shadow-2xl relative overflow-hidden text-[var(--foreground)] max-h-[92dvh] flex flex-col"
+              className="bg-[var(--card-solid,#0f172a)] bg-[var(--background)] border border-[var(--border)] rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 max-w-md w-full shadow-2xl relative overflow-hidden text-[var(--foreground)] max-h-[90dvh] flex flex-col pb-[max(1rem,env(safe-area-inset-bottom))]"
             >
               {/* Top ambient decor line */}
               <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-amber-500 via-[var(--primary)] to-indigo-500" />
               
               {/* Modal Header */}
-              <div className="flex items-start justify-between gap-3 mb-4 sm:mb-5 pt-1">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-12 w-12 sm:h-13 sm:w-13 rounded-2xl bg-amber-500/10 dark:bg-amber-400/15 border border-amber-500/20 flex items-center justify-center text-[var(--primary)] shrink-0">
+              <div className="flex items-start justify-between gap-3 mb-3.5 sm:mb-4 pt-1">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-amber-500/10 dark:bg-amber-400/15 border border-amber-500/20 flex items-center justify-center text-[var(--primary)] shrink-0">
                     {dailyCycleModal.type === 'opening' ? (
-                      <Sun className="text-amber-500 animate-[spin_10s_linear_infinite]" size={24} />
+                      <Sun className="text-amber-500 animate-[spin_12s_linear_infinite]" size={22} />
                     ) : (
-                      <Moon className="text-indigo-400" size={24} />
+                      <Moon className="text-indigo-400" size={22} />
                     )}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-base sm:text-lg font-black uppercase tracking-tight leading-tight text-[var(--foreground)] truncate">
+                    <h3 className="text-sm sm:text-base font-black uppercase tracking-tight leading-snug text-[var(--foreground)]">
                       {dailyCycleModal.type === 'opening' 
                         ? "Save All Bills" 
                         : "Daily Store Close Backup"}
                     </h3>
-                    <p className="text-[10.5px] sm:text-xs font-black uppercase tracking-wider text-[var(--primary)] mt-0.5 truncate">
+                    <p className="text-[10px] sm:text-[11px] font-bold text-amber-600 dark:text-amber-400 leading-tight">
                       {dailyCycleModal.type === 'opening' 
                         ? "(सभी बिलों को सेव करें)" 
                         : "दैनिक बिक्री इतिहास बचाएं"}
@@ -5736,7 +5736,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setDailyCycleModal(null)}
-                  className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-[var(--foreground)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
+                  className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-[var(--foreground)] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all shrink-0 cursor-pointer"
                   title="Close"
                 >
                   <X size={18} />
@@ -5744,44 +5744,44 @@ export default function App() {
               </div>
 
               {/* Scrollable Modal Body */}
-              <div className="overflow-y-auto overscroll-contain pr-1 -mr-1 space-y-4 text-xs font-medium leading-relaxed opacity-90 mb-5 pb-1">
-                <div className="p-3.5 rounded-2xl bg-[var(--foreground)]/[0.03] border border-[var(--border)] text-zinc-600 dark:text-zinc-300 space-y-2">
+              <div className="overflow-y-auto overscroll-contain pr-1 -mr-1 space-y-3 sm:space-y-3.5 text-xs font-medium leading-relaxed opacity-95 mb-4 pb-1">
+                <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-500/[0.06] dark:bg-amber-400/[0.08] border border-amber-500/20 text-zinc-700 dark:text-zinc-200 space-y-1.5">
                   {dailyCycleModal.type === 'opening' ? (
                     <>
-                      <p className="font-bold text-xs text-[var(--foreground)]">
-                        Click on <strong className="text-amber-500">"DOWNLOAD BACKUP &amp; RESET SHIFT"</strong> to download all bills to your device and start a fresh session.
+                      <p className="font-bold text-[11.5px] sm:text-xs text-[var(--foreground)] leading-snug">
+                        Click on <strong className="text-amber-600 dark:text-amber-400">"DOWNLOAD BACKUP &amp; RESET SHIFT"</strong> to save all bills to your device and start a fresh session.
                       </p>
-                      <p className="text-[11px] opacity-75 font-medium leading-normal">
-                        (कृपया "DOWNLOAD BACKUP &amp; RESET SHIFT" बटन पर क्लिक करें। यह आपके डिवाइस में सभी बिलों को डाउनलोड कर देगा)
+                      <p className="text-[10.5px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-normal">
+                        (कृपया "DOWNLOAD BACKUP &amp; RESET SHIFT" पर टैप करें। यह आपके फोन में सभी बिल सुरक्षित डाउनलोड कर देगा।)
                       </p>
                     </>
                   ) : (
                     <>
-                      <p className="font-bold text-xs text-[var(--foreground)]">
-                        It's store closing hour! Ensure your active daily billing files are archived. Back up your transactions and prepare the POS system for a clean daily cycle tomorrow.
+                      <p className="font-bold text-[11.5px] sm:text-xs text-[var(--foreground)] leading-snug">
+                        Store closing hour! Archive your daily billing records to Excel/PDF and prepare for tomorrow's clean shift.
                       </p>
-                      <p className="text-[11px] opacity-75 font-medium leading-normal">
-                        दुकान बंद करने का समय हो गया है! अपनी दैनिक बिक्री को सुरक्षित रूप से एक्सेल दस्तावेज़ में लें और कल के नए चक्र के लिए बिल रिकॉर्ड खाली करें।
+                      <p className="text-[10.5px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-normal">
+                        (दुकान बंद करने का समय! अपनी दैनिक बिक्री को सुरक्षित डाउनलोड करें और नए दिन के लिए रिकॉर्ड तैयार करें।)
                       </p>
                     </>
                   )}
                 </div>
                 
                 {/* Stats badge grid */}
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex flex-col justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex flex-col justify-between">
+                    <span className="text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
                       Total Bills
                     </span>
-                    <span className="text-base sm:text-lg font-black text-[var(--foreground)] mt-1 font-mono">
-                      {(state.bills || []).length} <span className="text-xs font-bold font-sans">Invoices</span>
+                    <span className="text-sm sm:text-base font-black text-[var(--foreground)] mt-1 font-mono">
+                      {(state.bills || []).length} <span className="text-[11px] font-bold font-sans opacity-75">Bills</span>
                     </span>
                   </div>
-                  <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex flex-col justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex flex-col justify-between">
+                    <span className="text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
                       Total Sales
                     </span>
-                    <span className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
+                    <span className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 mt-1 font-mono truncate">
                       ₹{((state.bills || []).reduce((sum, b) => sum + (b.total || 0), 0)).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                     </span>
                   </div>
@@ -5789,7 +5789,7 @@ export default function App() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col gap-2.5 pt-2 border-t border-[var(--border)] shrink-0">
+              <div className="flex flex-col gap-2 pt-2 border-t border-[var(--border)] shrink-0">
                 <Button 
                   onClick={async () => {
                     const success = await handleCycleBackupAndClear();
@@ -5805,13 +5805,13 @@ export default function App() {
                       setDailyCycleModal(null);
                     }
                   }}
-                  className="w-full h-12 sm:h-13 py-3 px-4 rounded-2xl font-black uppercase tracking-wider text-xs sm:text-sm bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-orange-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full min-h-[46px] sm:min-h-[50px] py-2.5 px-3 sm:px-4 rounded-xl sm:rounded-2xl font-black uppercase tracking-wider text-[11px] sm:text-xs bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-orange-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Download size={16} className="shrink-0" /> 
                   <span className="truncate">Download Backup &amp; Reset Shift</span>
                 </Button>
 
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-2">
                   <Button 
                     variant="outline"
                     onClick={() => {
@@ -5825,9 +5825,9 @@ export default function App() {
                       }
                       setDailyCycleModal(null);
                     }}
-                    className="h-11 rounded-xl text-[10.5px] uppercase font-black tracking-wider text-[var(--foreground)] border-[var(--border)] bg-transparent hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.98]"
+                    className="h-10 rounded-xl text-[10px] sm:text-[10.5px] uppercase font-black tracking-wider text-[var(--foreground)] border-[var(--border)] bg-transparent hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.98]"
                   >
-                    Remind Tomorrow
+                    Remind Later
                   </Button>
                   
                   <Button 
@@ -5835,7 +5835,7 @@ export default function App() {
                     onClick={() => {
                       setDailyCycleModal(null);
                     }}
-                    className="h-11 rounded-xl text-[10.5px] uppercase font-black tracking-wider text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 active:scale-[0.98]"
+                    className="h-10 rounded-xl text-[10px] sm:text-[10.5px] uppercase font-black tracking-wider text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 active:scale-[0.98]"
                   >
                     Cancel
                   </Button>

@@ -533,10 +533,15 @@ export function playTootBeep(type: 'beep' | 'toot', settings: AppSettings) {
 }
 
 /**
- * Synthesizes a dedicated, high-fidelity retail transaction success sound matching modern billing counters & payment registers.
- * Plays a resonant, dual-stage ascending payment chime:
- * 1. Warm register coin/tone ping (C6: 1046.5Hz & G6: 1567.98Hz harmonic)
- * 2. Signature sparkling payment success bell chord (E6: 1318.51Hz & C7: 2093.00Hz + G7 shimmer) with rich harmonic overtones and smooth decay.
+ * Synthesizes the iconic Paytm payment success jingle / soundbox tone.
+ * Faithfully reproduces the signature 5-note melodic motif ("Pay-tm Ka-ro"):
+ * 1. E5 (659.25 Hz)
+ * 2. E5 (659.25 Hz)
+ * 3. E5 (659.25 Hz)
+ * 4. C#5 (554.37 Hz)
+ * 5. D5 (587.33 Hz) - resolving bell chord with rich overtones and smooth natural decay.
+ * Each note blends a warm digital marimba triangle fundamental with a crisp octave overtone,
+ * matching real-world digital payment registers and soundboxes (Paytm Soundbox).
  */
 export function playTransactionSound(settings: AppSettings, isTestPreview: boolean = false) {
   const mode = settings.soundFeedbackMode || 'vibrate_sound';
@@ -552,43 +557,86 @@ export function playTransactionSound(settings: AppSettings, isTestPreview: boole
   const now = ctx.currentTime;
   const overallVol = (settings.soundOverallVolume ?? 100) / 100;
   const billingVol = (settings.soundBillingVolume ?? 80) / 100;
-  const targetVolume = overallVol * billingVol * 0.45;
+  const targetVolume = overallVol * billingVol * 0.48;
 
   try {
-    const playChimeNote = (
+    const playPaytmNote = (
       freq: number,
       start: number,
       duration: number,
       volFactor: number,
-      type: OscillatorType = 'sine'
+      hasSustainRing: boolean = false
     ) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      // Primary fundamental tone (triangle wave for clear digital marimba/bell body)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(freq, start);
 
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, start);
+      const noteVol = targetVolume * volFactor;
+      gain1.gain.setValueAtTime(0, start);
+      gain1.gain.linearRampToValueAtTime(noteVol, start + 0.005);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, start + duration);
 
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(targetVolume * volFactor, start + 0.008);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      osc1.start(start);
+      osc1.stop(start + duration + 0.04);
 
-      osc.start(start);
-      osc.stop(start + duration + 0.04);
+      // Bright chime octave harmonic (sine wave 1 octave up for digital Soundbox signature sparkle)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(freq * 2, start);
+
+      gain2.gain.setValueAtTime(0, start);
+      gain2.gain.linearRampToValueAtTime(noteVol * 0.35, start + 0.005);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, start + (hasSustainRing ? duration * 0.9 : duration));
+
+      osc2.start(start);
+      osc2.stop(start + duration + 0.04);
+
+      // Delicate high overtone shimmer for the final resolving note
+      if (hasSustainRing) {
+        const osc3 = ctx.createOscillator();
+        const gain3 = ctx.createGain();
+        osc3.connect(gain3);
+        gain3.connect(ctx.destination);
+        osc3.type = 'sine';
+        osc3.frequency.setValueAtTime(freq * 3, start);
+
+        gain3.gain.setValueAtTime(0, start);
+        gain3.gain.linearRampToValueAtTime(noteVol * 0.14, start + 0.008);
+        gain3.gain.exponentialRampToValueAtTime(0.0001, start + duration * 0.7);
+
+        osc3.start(start);
+        osc3.stop(start + duration + 0.04);
+      }
     };
 
-    // Stage 1: Initial crisp register tone ping (C6 & G6 harmonic)
-    playChimeNote(1046.50, now, 0.22, 0.7, 'triangle');
-    playChimeNote(1567.98, now + 0.012, 0.24, 0.5, 'sine');
+    // The iconic 5-note Paytm Melody: E5 -> E5 -> E5 -> C#5 -> D5 ("Pay-tm Ka-ro")
+    const E5 = 659.25;
+    const Cs5 = 554.37;
+    const D5 = 587.33;
 
-    // Stage 2: Main resonant payment success chord (E6 + C7 + sparkling overtone shimmer)
-    const t2 = now + 0.11;
-    playChimeNote(1318.51, t2, 0.48, 0.85, 'triangle');
-    playChimeNote(2093.00, t2, 0.55, 0.95, 'sine');
-    playChimeNote(3135.96, t2 + 0.015, 0.38, 0.28, 'sine');
+    // Note 1: "Pay" (E5)
+    playPaytmNote(E5, now, 0.095, 0.75);
+
+    // Note 2: "-tm" (E5)
+    playPaytmNote(E5, now + 0.11, 0.095, 0.75);
+
+    // Note 3: "Ka-" (E5)
+    playPaytmNote(E5, now + 0.22, 0.11, 0.85);
+
+    // Note 4: "-ro" leading tone (C#5)
+    playPaytmNote(Cs5, now + 0.35, 0.11, 0.90);
+
+    // Note 5: Final resolving payment confirmation bell (D5) with ringing decay
+    playPaytmNote(D5, now + 0.47, 0.46, 1.0, true);
   } catch (err) {
-    console.warn('Failed to play transaction sound:', err);
+    console.warn('Failed to play Paytm transaction sound:', err);
   }
 }
 
@@ -640,6 +688,8 @@ export function playWelcomeAnnouncement(settings: AppSettings) {
 
 export interface FeedbackContext {
   itemName?: string;
+  quantity?: number;
+  unit?: string;
   amount?: number;
   billNumber?: string | number;
 }
@@ -670,7 +720,7 @@ export function playFeedbackEvent(
 
   if (isVoiceEnabled && !isSilentMode && !isQuietHours(settings)) {
     if (event === 'product_added' && settings.soundProductAddedEnabled !== false) {
-      speakItemAddedConfirmation(context?.itemName, settings);
+      speakItemAddedConfirmation(context?.itemName, settings, context?.quantity, context?.unit);
     } else if (event === 'bill_saved' && settings.soundBillingEnabled !== false) {
       speakBillGeneratedConfirmation(context?.amount, settings);
     } else if (event === 'print_success' && settings.soundPrintEnabled !== false) {

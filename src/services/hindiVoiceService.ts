@@ -235,16 +235,19 @@ export function speakHindiConfirmation(
 }
 
 /**
- * Speaks Hindi confirmation when an item is added to the cart or catalog
+ * Speaks confirmation when an item is added to the cart or catalog.
+ * Mentions product name with added quantity (e.g. "Gravy Masala 1kg", "Chai Patti 500gm")
+ * without saying "जोड़ा गया" ("joda gya").
  */
 export function speakItemAddedConfirmation(
   itemName?: string,
-  settings?: Partial<AppSettings>
+  settings?: Partial<AppSettings>,
+  quantity?: number,
+  unit?: string
 ): void {
   if (isVoiceAssistantSuspended || isSpeechMuted) return;
   
-  // Guard: If item name is missing, empty, or whitespace, NEVER trigger generic "सामान जोड़ा गया"!
-  // This completely eliminates false-positive voice speech when opening modals or clicking buttons.
+  // Guard: If item name is missing, empty, or whitespace, ignore
   if (!itemName || !itemName.trim()) {
     return;
   }
@@ -253,27 +256,65 @@ export function speakItemAddedConfirmation(
   const cleanName = itemName.split('/')[0].split('(')[0].trim();
   if (!cleanName) return;
 
-  const text = `${cleanName} जोड़ा गया`;
+  // Format quantity & unit
+  let qtyUnitText = '';
+  if (quantity !== undefined && quantity !== null && !isNaN(quantity) && quantity > 0) {
+    const formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
+    const rawUnit = (unit || '').trim().toLowerCase();
+    
+    let displayUnit = '';
+    if (rawUnit === 'kg' || rawUnit === 'kilo' || rawUnit === 'kilogram') {
+      displayUnit = 'kg';
+    } else if (rawUnit === 'gm' || rawUnit === 'g' || rawUnit === 'gram' || rawUnit === 'grams') {
+      displayUnit = 'gm';
+    } else if (rawUnit === 'ltr' || rawUnit === 'l' || rawUnit === 'litre' || rawUnit === 'liter') {
+      displayUnit = 'litre';
+    } else if (rawUnit === 'pkt' || rawUnit === 'packet' || rawUnit === 'pack') {
+      displayUnit = 'packet';
+    } else if (rawUnit === 'pcs' || rawUnit === 'pc' || rawUnit === 'piece' || rawUnit === 'pieces') {
+      displayUnit = 'piece';
+    } else if (rawUnit === 'box' || rawUnit === 'boxes') {
+      displayUnit = 'box';
+    } else if (rawUnit === 'dozen' || rawUnit === 'darjan') {
+      displayUnit = 'dozen';
+    } else if (rawUnit) {
+      displayUnit = rawUnit;
+    } else {
+      displayUnit = 'piece';
+    }
+
+    // Check if cleanName already ends with this qty/unit (to avoid repeating e.g. "Gravy Masala 1kg 1kg")
+    const lowerName = cleanName.toLowerCase();
+    const compactTarget = `${formattedQty}${displayUnit}`.toLowerCase();
+    const spacedTarget = `${formattedQty} ${displayUnit}`.toLowerCase();
+    if (!lowerName.endsWith(compactTarget) && !lowerName.endsWith(spacedTarget)) {
+      qtyUnitText = ` ${formattedQty} ${displayUnit}`;
+    }
+  }
+
+  const text = `${cleanName}${qtyUnitText}`.trim();
   speakHindiConfirmation(text, settings, { delay: 100 });
 }
 
 /**
  * Speaks voice confirmation when a bill is generated / saved.
- * Delayed by 750ms so the crisp POS transaction chime plays in full first.
+ * Says "आप का टोटल हुआ है [amount] रुपये" ("Your total is [amount] rupees").
+ * Delayed by 960ms so the iconic 5-note Paytm payment jingle plays in full first.
  */
 export function speakBillGeneratedConfirmation(
   amount?: number,
   settings?: Partial<AppSettings>
 ): void {
   const isEnglish = settings?.language === 'en';
+  const rounded = amount && amount > 0 ? Math.round(amount) : 0;
   const text = isEnglish
-    ? (amount && amount > 0 
-        ? `Bill of ${Math.round(amount)} rupees created successfully` 
+    ? (rounded > 0 
+        ? `Your total is ${rounded} rupees` 
         : 'Bill created successfully')
-    : (amount && amount > 0 
-        ? `${Math.round(amount)} रुपये का बिल बन गया` 
-        : 'नया बिल तैयार हो गया');
-  speakHindiConfirmation(text, settings, { delay: 750 });
+    : (rounded > 0 
+        ? `आप का टोटल हुआ है ${rounded} रुपये` 
+        : 'आप का बिल तैयार हो गया है');
+  speakHindiConfirmation(text, settings, { delay: 960 });
 }
 
 /**

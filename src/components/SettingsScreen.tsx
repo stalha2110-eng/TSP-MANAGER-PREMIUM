@@ -1914,7 +1914,7 @@ export default function SettingsScreen({
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
                           { key: 'soundOverallVolume', label: 'Overall Master Volume', icon: '🎧', def: 100, testEvent: 'product_added' },
-                          { key: 'soundBillingVolume', label: 'Billing Success chime', icon: '💰', def: 80, testEvent: 'bill_saved' },
+                          { key: 'soundBillingVolume', label: 'Billing Sound (Paytm Chime)', icon: '💰', def: 80, testEvent: 'bill_saved' },
                           { key: 'soundPrintVolume', label: 'Invoice Printer Spool', icon: '🧾', def: 75, testEvent: 'print_success' },
                           { key: 'soundNotificationVolume', label: 'System Alarm Alerts', icon: '🚨', def: 85, testEvent: 'notification' }
                         ].map((vol) => {
@@ -1981,11 +1981,11 @@ export default function SettingsScreen({
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            playFeedbackEvent('product_added', { ...state.settings, soundHindiVoiceEnabled: true }, { itemName: 'काजू 500gm' });
+                            playFeedbackEvent('product_added', { ...state.settings, soundHindiVoiceEnabled: true }, { itemName: 'ग्रेवी मसाला', quantity: 1, unit: 'kg' });
                           }}
                           className="rounded-xl text-[9px] uppercase font-black px-3 py-2 border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-500 flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                          <span>🔊</span> Test: 'सामान जोड़ा गया'
+                          <span>🔊</span> Test: 'ग्रेवी मसाला 1kg'
                         </Button>
                         <Button
                           variant="outline"
@@ -1995,7 +1995,7 @@ export default function SettingsScreen({
                           }}
                           className="rounded-xl text-[9px] uppercase font-black px-3 py-2 border-indigo-500/20 hover:bg-indigo-500/10 text-indigo-500 flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                          <span>🧾</span> Test: '500 रुपये का बिल बन गया'
+                          <span>🧾</span> Test: 'आप का टोटल हुआ है 500 रुपये'
                         </Button>
                         <Button
                           variant="outline"
@@ -2022,7 +2022,7 @@ export default function SettingsScreen({
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
-                          { label: 'Billing Complete (Invoice Saved)', soundKey: 'soundBillingEnabled', vibeKey: 'vibrationBillingEnabled', soundDef: true, vibeDef: true, testEvent: 'bill_saved', soundEmoji: '🔔', vibeEmoji: '⚡' },
+                          { label: 'Billing Complete (Paytm Soundbox Tone)', soundKey: 'soundBillingEnabled', vibeKey: 'vibrationBillingEnabled', soundDef: true, vibeDef: true, testEvent: 'bill_saved', soundEmoji: '🔔', vibeEmoji: '⚡' },
                           { label: 'Product Added (Cart Registration)', soundKey: 'soundProductAddedEnabled', vibeKey: 'vibrationProductAddedEnabled', soundDef: true, vibeDef: true, testEvent: 'product_added', soundEmoji: '🔊', vibeEmoji: '⚡' },
                           { label: 'Print Success (Ticket Spooled)', soundKey: 'soundPrintEnabled', vibeKey: 'vibrationPrintEnabled', soundDef: true, vibeDef: true, testEvent: 'print_success', soundEmoji: '🔔', vibeEmoji: '⚡' },
                           { label: 'System Alert & Broadcasts', soundKey: 'soundNotificationEnabled', vibeKey: 'vibrationNotificationEnabled', soundDef: true, vibeDef: true, testEvent: 'notification', soundEmoji: '🔊', vibeEmoji: '⚡' },

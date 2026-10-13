@@ -1464,7 +1464,11 @@ export default function BillingScreen({
       }
     ]);
 
-    playFeedbackEvent('product_added', state.settings, { itemName: pName });
+    playFeedbackEvent('product_added', state.settings, { 
+      itemName: pName,
+      quantity: targetQty,
+      unit: customUnit || product.unit || 'piece'
+    });
     const trsForRecent = product.translations || { en: product.name || '', hi: '', mr: '', 'hi-en': '' };
     addRecentSearch(trsForRecent[currentLang] || trsForRecent.en || product.name);
   };
@@ -1806,7 +1810,11 @@ export default function BillingScreen({
     };
     
     setCart([...cart, newCartItem]);
-    playFeedbackEvent('product_added', state.settings, { itemName: manualName.trim() });
+    playFeedbackEvent('product_added', state.settings, { 
+      itemName: manualName.trim(),
+      quantity: 1,
+      unit: selectedUnit
+    });
     setManualName('');
     setManualPrice('');
     setManualCost('');
@@ -6631,13 +6639,19 @@ export default function BillingScreen({
       {/* COMPLETED TRANSACTION PRINTER OVERLAY MODAL */}
       <AnimatePresence>
         {completedBill && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 cursor-pointer"
+            onClick={() => {
+              if (navigator.vibrate) navigator.vibrate(20);
+              setCompletedBill(null);
+            }}
+          >
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm cursor-pointer"
             />
 
             {/* Modal Body */}
@@ -6645,14 +6659,18 @@ export default function BillingScreen({
               initial={{ scale: 0.95, y: 30, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 30, opacity: 0 }}
-              className="relative w-full max-w-md bg-[var(--background)] border-2 border-[var(--border)] rounded-[2.5rem] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[101] text-center space-y-5 overflow-hidden flex flex-col justify-between"
+              onClick={() => {
+                if (navigator.vibrate) navigator.vibrate(20);
+                setCompletedBill(null);
+              }}
+              className="relative w-full max-w-md bg-[var(--background)] border-2 border-[var(--border)] rounded-[2.5rem] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[101] text-center space-y-5 overflow-hidden flex flex-col justify-between cursor-pointer"
               style={{
                 borderStyle: 'outset',
                 borderColor: '#000000',
               }}
             >
               {/* TOP HEADER CONTROLS: Top-Left (Download PDF) & Top-Right (WhatsApp + Share Icon) */}
-              <div className="flex items-center justify-between w-full">
+              <div className="flex items-center justify-between w-full" onClick={(e) => e.stopPropagation()}>
                 {/* Download PDF Button (Top Left) */}
                 <button
                   type="button"
@@ -6800,11 +6818,12 @@ export default function BillingScreen({
               </div>
 
               {/* Action buttons */}
-              <div className="grid grid-cols-1 gap-2.5">
+              <div className="grid grid-cols-1 gap-2 pt-1">
                 {/* Primary New Bill Button */}
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     if (navigator.vibrate) navigator.vibrate(25);
                     setCompletedBill(null);
                   }}
@@ -6820,6 +6839,9 @@ export default function BillingScreen({
                   <Plus size={16} strokeWidth={3} />
                   <span>New Bill</span>
                 </button>
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium select-none">
+                  Click anywhere to close &amp; start new bill
+                </p>
               </div>
             </motion.div>
           </div>

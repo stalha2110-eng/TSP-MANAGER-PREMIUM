@@ -4345,7 +4345,7 @@ export default function BillingScreen({
               <div className="flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-[9.5px] font-black uppercase tracking-wider text-[var(--foreground)]/80">
-                  {cleanAndValidateText("⚡ Quick Picks / Recent Items (हाल ही के सामान)", currentLang, state.settings)}
+                  {cleanAndValidateText("⚡Recent Items (हाल ही के सामान)", currentLang, state.settings)}
                 </span>
               </div>
               <span className="text-[7.5px] font-black uppercase px-2 py-0.5 rounded-full bg-[var(--foreground)]/5 border border-[var(--border)] text-[var(--foreground)]/60">
@@ -4434,9 +4434,8 @@ export default function BillingScreen({
 
                       {/* Info & warnings on grid */}
                       <div className="flex items-end justify-between w-full mt-1 z-20">
-                        <button
-                          type="button"
-                          onClick={(e) => {
+                        <div
+                          onDoubleClick={(e) => {
                             e.stopPropagation();
                             if (singleBillingClickTimeoutRef.current) {
                               clearTimeout(singleBillingClickTimeoutRef.current);
@@ -4445,19 +4444,19 @@ export default function BillingScreen({
                             lastBillingItemClickRef.current = { id: '', time: 0 };
                             handleOpenRateSelect(item);
                           }}
-                          className="flex flex-col text-left group/rate cursor-pointer p-0.5 -m-0.5 rounded hover:bg-[var(--foreground)]/5 transition-colors"
-                          title="Click or Double-click to Select Rate / दर बदलें"
+                          className="flex flex-col text-left group/rate p-0.5 -m-0.5 rounded transition-colors select-none"
+                          title="Double-click to change price / दर बदलने के लिए डबल क्लिक करें"
                         >
                           <div className="flex items-center gap-0.5">
-                            <span className="text-[11px] font-mono font-black text-[var(--foreground)] group-hover/rate:text-[var(--primary)] leading-none transition-colors">
+                            <span className="text-[11px] font-mono font-black text-[var(--foreground)] group-hover:text-[var(--primary)] leading-none transition-colors">
                               ₹{formatNumber(billingMode === 'wholesale' ? (item.wholesalePrice || item.retailPrice) : item.retailPrice, state.settings?.pricePrecision || 0)}
                             </span>
-                            <Coins size={9} className="text-[var(--primary)] opacity-40 group-hover/rate:opacity-100 transition-opacity shrink-0" />
+                            <Coins size={9} className="text-[var(--primary)] opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
                           </div>
-                          <span className="text-[7.5px] font-black opacity-50 lowercase mt-0.5 group-hover/rate:opacity-80" style={{ fontSize: '7px' }}>
+                          <span className="text-[7.5px] font-black opacity-50 lowercase mt-0.5 group-hover:opacity-80" style={{ fontSize: '7px' }}>
                             / {billingMode === 'wholesale' ? (item.wholesalePriceUnit || item.unit || 'pcs') : (item.retailPriceUnit || item.unit || 'pcs')}
                           </span>
-                        </button>
+                        </div>
                         
                         <div className="flex items-center gap-1">
                           {onPeek && (
@@ -4977,8 +4976,26 @@ export default function BillingScreen({
                         initial={{ opacity: 0, y: 10, scale: 0.96 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, x: 30, scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 450, damping: 25 }}
+                        onDoubleClick={() => {
+                          const curRetail = itemObj?.retailPrice ?? ci.price;
+                          const curWholesale = itemObj?.wholesalePrice ?? (itemObj?.retailPrice ?? ci.price);
+                          const curRetailUnit = itemObj?.retailPriceUnit || ci.unit || itemObj?.unit || 'pcs';
+                          const curWholesaleUnit = itemObj?.wholesalePriceUnit || ci.unit || itemObj?.unit || 'pcs';
+                          setEditingRateItem({
+                            id: ci.id,
+                            name: ci.name,
+                            currentPrice: ci.price,
+                            retailPrice: curRetail,
+                            retailPriceUnit: curRetailUnit,
+                            wholesalePrice: curWholesale,
+                            wholesalePriceUnit: curWholesaleUnit,
+                            activeRateType: isWholesale ? 'wholesale' : 'retail',
+                            isManual: !!ci.item.isManual
+                          });
+                          setUnitSearchQuery('');
+                        }}
                         className="p-2.5 bg-[var(--card)] border border-[var(--border)] rounded-xl flex items-center justify-between gap-2 shadow-inner hover:border-[var(--primary)]/10 transition-colors select-none"
+                        title="Double-click to change rate / दर बदलने के लिए डबल क्लिक करें"
                       >
                         {/* Name description with attached image if present */}
                         <div className="flex-1 min-w-0 pr-0.5 flex flex-col justify-center">

@@ -816,20 +816,19 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                                   <span className="text-xs font-black text-[var(--foreground)] truncate max-w-[200px]">
                                     {displayName}
                                   </span>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
+                                  <span
+                                    onDoubleClick={(e) => {
                                       e.stopPropagation();
                                       if (onOpenRateSelect) {
                                         onOpenRateSelect(item);
                                       }
                                     }}
-                                    className="text-[9px] px-1.5 py-0.2 rounded font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-mono hover:bg-emerald-500/25 cursor-pointer flex items-center gap-1 transition-colors"
-                                    title="Click to Select Rate / दर बदलें"
+                                    className="text-[9px] px-1.5 py-0.2 rounded font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-mono flex items-center gap-1 select-none"
+                                    title="Double-click to change rate / दर बदलने के लिए डबल क्लिक करें"
                                   >
                                     <span>₹{formatNumber(itemPrice, precision)} / {item.unit || 'pcs'}</span>
                                     <Coins size={8} className="text-emerald-500 shrink-0" />
-                                  </button>
+                                  </span>
                                   {helperPill && (
                                     <span className="text-[9px] px-1.5 py-0.2 rounded font-black uppercase bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-mono animate-pulse">
                                       ⚡ {helperPill}
@@ -1067,9 +1066,8 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
 
                         {/* Bottom Pricing & Action Section inside Window Card */}
                         <div className="flex items-end justify-between w-full mt-0.5 z-20">
-                          <button
-                            type="button"
-                            onClick={(e) => {
+                          <div
+                            onDoubleClick={(e) => {
                               e.stopPropagation();
                               if (singleClickTimeoutRef.current) {
                                 clearTimeout(singleClickTimeoutRef.current);
@@ -1080,8 +1078,8 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                                 onOpenRateSelect(item);
                               }
                             }}
-                            className="flex flex-col text-left group/rate cursor-pointer p-0.5 -m-0.5 rounded hover:bg-[var(--foreground)]/5 transition-colors"
-                            title="Click or Double-click to Select Rate / दर बदलें"
+                            className="flex flex-col text-left group/rate p-0.5 -m-0.5 rounded transition-colors select-none"
+                            title="Double-click to change rate / दर बदलने के लिए डबल क्लिक करें"
                           >
                             <div className="flex items-center gap-0.5">
                               <span className="text-[10.5px] sm:text-[11px] font-mono font-black text-[var(--foreground)] group-hover/rate:text-[var(--primary)] leading-none transition-colors">
@@ -1092,7 +1090,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                             <span className="text-[6.5px] font-black opacity-50 lowercase mt-0.5 group-hover/rate:opacity-80">
                               / {activePriceUnit}
                             </span>
-                          </button>
+                          </div>
                           
                           <div className="flex items-center gap-0.5">
                             {countInCart > 0 ? (

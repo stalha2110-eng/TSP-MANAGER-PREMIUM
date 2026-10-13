@@ -259,27 +259,74 @@ export function speakItemAddedConfirmation(
   // Format quantity & unit
   let qtyUnitText = '';
   if (quantity !== undefined && quantity !== null && !isNaN(quantity) && quantity > 0) {
-    const formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
     const rawUnit = (unit || '').trim().toLowerCase();
-    
+    let formattedQty = '';
     let displayUnit = '';
-    if (rawUnit === 'kg' || rawUnit === 'kilo' || rawUnit === 'kilogram') {
-      displayUnit = 'kg';
+
+    const isKgUnit = rawUnit === 'kg' || rawUnit === 'kilo' || rawUnit === 'kilogram' || rawUnit === 'kilograms';
+    const isLtrUnit = rawUnit === 'ltr' || rawUnit === 'l' || rawUnit === 'litre' || rawUnit === 'liter' || rawUnit === 'litres';
+
+    if (isKgUnit) {
+      if (quantity < 1) {
+        // e.g. 0.1 kg -> 100 gram, 0.05 kg -> 50 gram, 0.25 kg -> 250 gram, 0.5 kg -> 500 gram
+        const grams = Math.round(quantity * 1000);
+        formattedQty = String(grams);
+        displayUnit = 'gram';
+      } else if (quantity % 1 !== 0) {
+        // e.g. 1.5 kg -> 1 kilo 500 gram
+        const wholeKg = Math.floor(quantity);
+        const remGrams = Math.round((quantity - wholeKg) * 1000);
+        if (remGrams > 0) {
+          formattedQty = `${wholeKg} kilo ${remGrams}`;
+          displayUnit = 'gram';
+        } else {
+          formattedQty = String(wholeKg);
+          displayUnit = 'kg';
+        }
+      } else {
+        formattedQty = String(quantity);
+        displayUnit = 'kg';
+      }
+    } else if (isLtrUnit) {
+      if (quantity < 1) {
+        // e.g. 0.5 litre -> 500 ml
+        const ml = Math.round(quantity * 1000);
+        formattedQty = String(ml);
+        displayUnit = 'ml';
+      } else if (quantity % 1 !== 0) {
+        const wholeLtr = Math.floor(quantity);
+        const remMl = Math.round((quantity - wholeLtr) * 1000);
+        if (remMl > 0) {
+          formattedQty = `${wholeLtr} litre ${remMl}`;
+          displayUnit = 'ml';
+        } else {
+          formattedQty = String(wholeLtr);
+          displayUnit = 'litre';
+        }
+      } else {
+        formattedQty = String(quantity);
+        displayUnit = 'litre';
+      }
     } else if (rawUnit === 'gm' || rawUnit === 'g' || rawUnit === 'gram' || rawUnit === 'grams') {
-      displayUnit = 'gm';
-    } else if (rawUnit === 'ltr' || rawUnit === 'l' || rawUnit === 'litre' || rawUnit === 'liter') {
-      displayUnit = 'litre';
+      formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
+      displayUnit = 'gram';
     } else if (rawUnit === 'pkt' || rawUnit === 'packet' || rawUnit === 'pack') {
+      formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
       displayUnit = 'packet';
     } else if (rawUnit === 'pcs' || rawUnit === 'pc' || rawUnit === 'piece' || rawUnit === 'pieces') {
+      formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
       displayUnit = 'piece';
     } else if (rawUnit === 'box' || rawUnit === 'boxes') {
+      formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
       displayUnit = 'box';
     } else if (rawUnit === 'dozen' || rawUnit === 'darjan') {
+      formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
       displayUnit = 'dozen';
     } else if (rawUnit) {
+      formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
       displayUnit = rawUnit;
     } else {
+      formattedQty = quantity % 1 === 0 ? String(quantity) : Number(quantity.toFixed(2)).toString();
       displayUnit = 'piece';
     }
 

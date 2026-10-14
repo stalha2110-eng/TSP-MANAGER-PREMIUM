@@ -783,6 +783,9 @@ export default function App() {
 
   const handleTabChange = useCallback((tab: 'home' | 'billing' | 'analytics' | 'udhar' | 'notes' | 'shift' | 'goals' | 'history') => {
     if (tab === activeTab) return;
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setIsTabLoading(true);
     setActiveTab(tab);
     backNavManager.onTabChanged(tab);

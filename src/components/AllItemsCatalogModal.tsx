@@ -70,6 +70,7 @@ const CatalogCardQuantityInput: React.FC<{
       <input
         type="number"
         step="any"
+        autoFocus={false}
         className="w-7 text-center text-[8.5px] font-mono font-black text-[var(--foreground)] bg-transparent border-none outline-none focus:ring-0 p-0"
         value={localVal}
         onChange={handleChange}
@@ -244,6 +245,19 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
 
   const lastItemClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
   const singleClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isSearchActivated, setIsSearchActivated] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Prevent device keyboard from automatically popping up when opening the catalog
+  useEffect(() => {
+    if (isOpen) {
+      setIsSearchActivated(false);
+      setIsSearchFocused(false);
+      if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     return () => {
@@ -608,7 +622,14 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
           <div className="shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--card)]/60 border-b border-[var(--border)] space-y-2 relative z-30 w-full">
             {/* Full-width Search Bar with Power Shorthand & Predictive Bill-Ready Autocomplete */}
             <div className="relative w-full">
-              <div className="relative flex items-center w-full pl-3.5 pr-2.5 py-1.5 sm:py-2 rounded-2xl bg-[var(--background)] border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/20 transition-all shadow-inner">
+              <div 
+                style={{ width: '286px', maxWidth: '100%' }}
+                onClick={() => {
+                  setIsSearchActivated(true);
+                  searchInputRef.current?.focus();
+                }}
+                className="relative flex items-center pl-3.5 pr-2.5 py-1.5 sm:py-2 rounded-2xl bg-[var(--background)] border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/20 transition-all shadow-inner cursor-text"
+              >
                 <Search className="text-[var(--primary)] opacity-70 shrink-0 mr-2" size={17} />
 
                 {/* Shorthand Mode Badge Indicator inside search bar */}
@@ -631,15 +652,39 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                 )}
 
                 <input
+                  ref={searchInputRef}
+                  id="all-items-catalog-search-input"
                   type="text"
+                  autoFocus={false}
+                  readOnly={!isSearchActivated}
                   value={searchQuery}
+                  placeholder={cleanAndValidateText("Search items, brand, or code...", currentLang, settings)}
+                  onClick={() => {
+                    setIsSearchActivated(true);
+                    setIsSearchFocused(true);
+                  }}
+                  onTouchStart={() => {
+                    setIsSearchActivated(true);
+                  }}
+                  onFocus={() => {
+                    if (!isSearchActivated) {
+                      searchInputRef.current?.blur();
+                      if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+                        document.activeElement.blur();
+                      }
+                    } else {
+                      setIsSearchFocused(true);
+                    }
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => {
+                      setIsSearchFocused(false);
+                      setIsSearchActivated(false);
+                    }, 250);
+                  }}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
                     setActivePredictionIndex(-1);
-                  }}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => {
-                    setTimeout(() => setIsSearchFocused(false), 250);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'ArrowDown') {
@@ -682,7 +727,6 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                       : cleanAndValidateText("Search products by name, barcode, or category (e.g. '1.5 kaju' or '₹100 almond')...", currentLang, settings)
                   }
                   className="w-full bg-transparent border-none text-sm text-[var(--foreground)] font-semibold placeholder:text-[var(--foreground)]/40 outline-none"
-                  autoFocus
                 />
 
                 {/* Clear search button */}

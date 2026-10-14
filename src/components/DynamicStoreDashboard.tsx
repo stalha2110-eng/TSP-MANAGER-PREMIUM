@@ -4,7 +4,7 @@ import {
   TrendingUp, TrendingDown, DollarSign, ShoppingBag, 
   AlertTriangle, CheckCircle, Smartphone, Clock, Award,
   Activity, RefreshCw, Database, Printer, Cloud,
-  Sliders, Plus, Trash2, Eye, EyeOff, Pin, PinOff,
+  Sliders, Plus, Trash2, Eye, EyeOff,
   ChevronDown, ChevronUp, BarChart3, ArrowRight, Save,
   X, Check, ShieldAlert, Award as Trophy, Zap, 
   Settings, Layers, Star, PlaySquare, Calendar, HelpCircle, AlertOctagon
@@ -420,11 +420,6 @@ export default function DynamicStoreDashboard({
       return true;
     });
 
-    const isPinned = (id: string) => {
-      const cfg = activeCardsConfig.find(c => c.id === id);
-      return cfg?.pinned || false;
-    };
-
     const dMode = settings.dashboardMode || 'hybrid';
 
     // 2. Perform sorting
@@ -432,26 +427,18 @@ export default function DynamicStoreDashboard({
       // Remains in the configured layout mapping order
       return list;
     } else if (dMode === 'dynamic') {
-      // 100% dynamic - Sorted by priority score descending, keeping Pinned strictly at top
-      return [...list].sort((a, b) => {
-        if (isPinned(a.id) && !isPinned(b.id)) return -1;
-        if (!isPinned(a.id) && isPinned(b.id)) return 1;
-        return (designScores[b.id as CardId] || 0) - (designScores[a.id as CardId] || 0);
-      });
+      // 100% dynamic - Sorted by priority score descending
+      return [...list].sort((a, b) => (designScores[b.id as CardId] || 0) - (designScores[a.id as CardId] || 0));
     } else {
-      // Hybrid recommended mode - Pinned and top items dynamic (scores > 50) at top section. Remaining fixed below.
+      // Hybrid mode - Top items dynamic (scores >= 50) at top section. Remaining standard below.
       const priorityCutoff = 50;
-      const dynamicTop = list.filter(cfg => isPinned(cfg.id) || (designScores[cfg.id as CardId] || 0) >= priorityCutoff);
-      const standardBottom = list.filter(cfg => !isPinned(cfg.id) && (designScores[cfg.id as CardId] || 0) < priorityCutoff);
+      const dynamicTop = list.filter(cfg => (designScores[cfg.id as CardId] || 0) >= priorityCutoff);
+      const standardBottom = list.filter(cfg => (designScores[cfg.id as CardId] || 0) < priorityCutoff);
 
       // Sort dynamic tops descending
-      const sortedTop = [...dynamicTop].sort((a, b) => {
-        if (isPinned(a.id) && !isPinned(b.id)) return -1;
-        if (!isPinned(a.id) && isPinned(b.id)) return 1;
-        return (designScores[b.id as CardId] || 0) - (designScores[a.id as CardId] || 0);
-      });
+      const sortedTop = [...dynamicTop].sort((a, b) => (designScores[b.id as CardId] || 0) - (designScores[a.id as CardId] || 0));
 
-      // Bottom cards keep their exact user configuration order
+      // Bottom cards keep their exact configuration order
       return [...sortedTop, ...standardBottom];
     }
   }, [
@@ -474,43 +461,6 @@ export default function DynamicStoreDashboard({
     simulatedBackupFailed,
     designScores
   ]);
-
-  // Card size modifier helpers
-  const handleResizeCard = (id: string, currentSize: 'small' | 'medium' | 'large') => {
-    const orderSizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
-    const idx = orderSizes.indexOf(currentSize);
-    const nextSize = orderSizes[(idx + 1) % orderSizes.length];
-
-    const updatedConfig = activeCardsConfig.map(cfg => {
-      if (cfg.id === id) {
-        return { ...cfg, size: nextSize };
-      }
-      return cfg;
-    });
-
-    const updatedDeck = (settings.dashboardCards || []).map(c => {
-      if (c.id === id) {
-        return { ...c, size: nextSize };
-      }
-      return c;
-    });
-
-    onUpdateSettings({ 
-      dashboardCardsConfig: updatedConfig,
-      dashboardCards: updatedDeck,
-      dashboardCardsVersion: 2
-    });
-  };
-
-  const handleTogglePin = (id: string) => {
-    const updated = activeCardsConfig.map(cfg => {
-      if (cfg.id === id) {
-        return { ...cfg, pinned: !cfg.pinned };
-      }
-      return cfg;
-    });
-    onUpdateSettings({ dashboardCardsConfig: updated });
-  };
 
   // Reorder commands for manual configuration (fixed mode or user swaps)
   const moveCard = (index: number, direction: 'up' | 'down') => {
@@ -647,7 +597,6 @@ export default function DynamicStoreDashboard({
             const cardDeckEntry = settings.dashboardCards?.find(c => c.id === cardId);
             const size = cardDeckEntry?.size || cardCfg.size || 'medium';
             const isCardExpanded = expandedCards[cardId];
-            const isPinned = cardCfg.pinned;
             const score = designScores[cardId] || 0;
             const hasGlow = score >= 70 && settings.dashboardPriorityHighlightEffects !== false;
 
@@ -672,22 +621,17 @@ export default function DynamicStoreDashboard({
                   hasGlow && "after:absolute after:inset-0 after:rounded-[2.5rem] after:border-2 after:border-amber-400/20 after:pointer-events-none"
                 )}
               >
-                {/* Priority Score tag & indicators */}
-                <div className="absolute top-4 right-4 flex items-center gap-1.5">
-                  {isPinned && (
-                    <span className="bg-[var(--primary)]/10 text-[var(--primary)] p-1 rounded-lg" title="Pinned to top">
-                      <Pin size={10} className="transform rotate-45" />
-                    </span>
-                  )}
-                  {settings.dashboardMode !== 'fixed' && score > 35 && (
+                {/* Priority Score tag */}
+                {settings.dashboardMode !== 'fixed' && score > 35 && (
+                  <div className="absolute top-4 right-4 flex items-center gap-1.5">
                     <span className={cn(
                       "text-[8px] font-black uppercase px-2 py-0.5 rounded-full",
                       score >= 70 ? "bg-red-500/10 text-red-500 animate-pulse" : "bg-amber-500/10 text-amber-500"
                     )}>
                       Priority {score}
                     </span>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {/* Card Content Handler */}
                 <div className="space-y-4">
@@ -718,7 +662,6 @@ export default function DynamicStoreDashboard({
                         <h3 className="text-xs font-black uppercase tracking-widest text-[var(--foreground)]">
                           {cardCfg.customTitle || t[cardId]}
                         </h3>
-                        {isPinned && <p className="text-[8px] opacity-40 font-bold uppercase tracking-wider -mt-0.5">Anchored Top Node</p>}
                       </div>
                     </div>
 
@@ -726,26 +669,10 @@ export default function DynamicStoreDashboard({
                     <div className="flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => toggleExpand(cardId, e)}
-                        className="p-1 hover:bg-[var(--foreground)]/5 rounded-lg"
+                        className="p-1 hover:bg-[var(--foreground)]/5 rounded-lg cursor-pointer"
                         title={isCardExpanded ? "Collapse view" : "Expand view"}
                       >
                         {isCardExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      </button>
-                      
-                      <button
-                        onClick={() => handleResizeCard(cardId, size)}
-                        className="p-1 hover:bg-[var(--foreground)]/5 rounded-lg text-[9px] font-black font-mono"
-                        title="Resize card grid span"
-                      >
-                        {size.toUpperCase()[0]}
-                      </button>
-
-                      <button
-                        onClick={() => handleTogglePin(cardId)}
-                        className="p-1 hover:bg-[var(--foreground)]/5 rounded-lg"
-                        title={isPinned ? "Unpin Card" : "Pin Card"}
-                      >
-                        {isPinned ? <PinOff size={11} /> : <Pin size={11} />}
                       </button>
                     </div>
                   </div>

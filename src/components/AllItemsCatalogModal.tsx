@@ -623,14 +623,14 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
             {/* Full-width Search Bar with Power Shorthand & Predictive Bill-Ready Autocomplete */}
             <div className="relative w-full">
               <div 
-                style={{ width: '286px', maxWidth: '100%' }}
+                style={{ width: '286px', maxWidth: '100%', marginLeft: '-5px' }}
                 onClick={() => {
                   setIsSearchActivated(true);
                   searchInputRef.current?.focus();
                 }}
                 className="relative flex items-center pl-3.5 pr-2.5 py-1.5 sm:py-2 rounded-2xl bg-[var(--background)] border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/20 transition-all shadow-inner cursor-text"
               >
-                <Search className="text-[var(--primary)] opacity-70 shrink-0 mr-2" size={17} />
+                <Search className="text-[var(--primary)] opacity-70 shrink-0 mr-2" size={17} style={{ marginLeft: '-6px' }} />
 
                 {/* Shorthand Mode Badge Indicator inside search bar */}
                 {parsedSearch.mode === 'multiplier' && parsedSearch.quantity && (
@@ -658,7 +658,6 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                   autoFocus={false}
                   readOnly={!isSearchActivated}
                   value={searchQuery}
-                  placeholder={cleanAndValidateText("Search items, brand, or code...", currentLang, settings)}
                   onClick={() => {
                     setIsSearchActivated(true);
                     setIsSearchFocused(true);
@@ -756,7 +755,11 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                   )}
                   title="Voice Search dictation"
                 >
-                  {isListening ? <MicOff size={12} /> : <Mic size={12} />}
+                  {isListening ? (
+                    <MicOff style={{ height: '14px', width: '17px' }} />
+                  ) : (
+                    <Mic style={{ height: '14px', width: '17px' }} />
+                  )}
                 </button>
               </div>
 

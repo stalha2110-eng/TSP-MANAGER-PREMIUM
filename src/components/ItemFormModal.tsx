@@ -62,6 +62,149 @@ type ItemFormData = Omit<
   minStockLevel?: number | string;
 };
 
+/**
+ * Advanced, professional 3D multi-layered isometric product entry icon
+ * replacing the simple '+' in the Full Entry section.
+ */
+function FullEntryProfessionalIcon({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+    >
+      <defs>
+        {/* Gradients for 3D Isometric Product Vault */}
+        <linearGradient id="fe-top-face" x1="16" y1="5" x2="16" y2="15" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#34D399" />
+          <stop offset="50%" stopColor="#10B981" />
+          <stop offset="100%" stopColor="#059669" />
+        </linearGradient>
+        <linearGradient id="fe-left-face" x1="6" y1="12" x2="16" y2="25" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#047857" />
+          <stop offset="100%" stopColor="#064E3B" />
+        </linearGradient>
+        <linearGradient id="fe-right-face" x1="16" y1="12" x2="26" y2="25" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#0D9488" />
+          <stop offset="100%" stopColor="#0F766E" />
+        </linearGradient>
+        <linearGradient id="fe-badge-grad" x1="18" y1="2" x2="29" y2="13" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#38BDF8" />
+          <stop offset="50%" stopColor="#06B6D4" />
+          <stop offset="100%" stopColor="#0284C7" />
+        </linearGradient>
+        <linearGradient id="fe-ring-glow" x1="20" y1="3" x2="27" y2="11" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#BAE6FD" />
+        </linearGradient>
+        {/* Soft Drop Shadow for depth */}
+        <filter id="fe-box-shadow" x="2" y="3" width="28" height="26" filterUnits="userSpaceOnUse">
+          <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodColor="#064E3B" floodOpacity="0.45" />
+        </filter>
+        <filter id="fe-badge-shadow" x="16" y="0" width="15" height="15" filterUnits="userSpaceOnUse">
+          <feDropShadow dx="0" dy="1.2" stdDeviation="1.2" floodColor="#0369A1" floodOpacity="0.55" />
+        </filter>
+      </defs>
+
+      {/* 3D Isometric Inventory Box */}
+      <g filter="url(#fe-box-shadow)">
+        {/* Top Facet */}
+        <polygon
+          points="15.5,5.2 24.5,9.8 15.5,14.6 6.5,9.8"
+          fill="url(#fe-top-face)"
+        />
+        {/* Left Facet */}
+        <polygon
+          points="6.5,9.8 15.5,14.6 15.5,24.5 6.5,19.7"
+          fill="url(#fe-left-face)"
+        />
+        {/* Right Facet */}
+        <polygon
+          points="15.5,14.6 24.5,9.8 24.5,19.7 15.5,24.5"
+          fill="url(#fe-right-face)"
+        />
+
+        {/* Precision Ridge Lines */}
+        <path
+          d="M15.5 14.6V24.5"
+          stroke="#6EE7B7"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeOpacity="0.8"
+        />
+        <path
+          d="M6.5 9.8L15.5 14.6L24.5 9.8"
+          stroke="#A7F3D0"
+          strokeWidth="0.9"
+          strokeLinecap="round"
+          strokeOpacity="0.75"
+        />
+
+        {/* Professional Metadata / Barcode Tracks on Right Face */}
+        <path
+          d="M18 16.8L22.5 14.5"
+          stroke="#99F6E4"
+          strokeWidth="1"
+          strokeLinecap="round"
+          strokeOpacity="0.75"
+        />
+        <path
+          d="M18 18.8L22.5 16.5"
+          stroke="#99F6E4"
+          strokeWidth="1"
+          strokeLinecap="round"
+          strokeOpacity="0.75"
+        />
+        <path
+          d="M18 20.8L21 19.3"
+          stroke="#99F6E4"
+          strokeWidth="1"
+          strokeLinecap="round"
+          strokeOpacity="0.6"
+        />
+
+        {/* Packaging Tape Center Strip on Top Face */}
+        <path
+          d="M11 7.5L20 12.2"
+          stroke="#34D399"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeOpacity="0.4"
+        />
+      </g>
+
+      {/* Floating Radiant Add / New Entry Crest */}
+      <g filter="url(#fe-badge-shadow)">
+        {/* Outer Halo */}
+        <circle
+          cx="23.5"
+          cy="7"
+          r="6.2"
+          fill="url(#fe-badge-grad)"
+          stroke="url(#fe-ring-glow)"
+          strokeWidth="1.3"
+        />
+        {/* Clean, High-Contrast Geometric Plus */}
+        <path
+          d="M23.5 4.2V9.8M20.7 7H26.3"
+          stroke="#FFFFFF"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+      </g>
+
+      {/* Jewel Starburst Micro-Accents */}
+      <path
+        d="M4.5 4L5.2 5.8L7 6.5L5.2 7.2L4.5 9L3.8 7.2L2 6.5L3.8 5.8L4.5 4Z"
+        fill="#FBBF24"
+      />
+      <circle cx="28.5" cy="18.5" r="0.8" fill="#38BDF8" opacity="0.8" />
+    </svg>
+  );
+}
+
 export function ItemFormModal({
   onClose,
   onSave,
@@ -474,8 +617,8 @@ export function ItemFormModal({
         >
           <div className="flex items-center justify-between px-4 py-3.5 sm:px-6 sm:py-4 max-w-3xl mx-auto">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              <div className="h-10 w-10 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] shadow-inner shrink-0">
-                {initialData ? <Edit2 size={20} /> : <Plus size={20} />}
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-cyan-500/15 border border-emerald-500/20 flex items-center justify-center text-[var(--primary)] shadow-sm shrink-0">
+                {initialData ? <Edit2 size={20} className="text-emerald-400" /> : <FullEntryProfessionalIcon className="w-7 h-7 drop-shadow-sm" />}
               </div>
               <div className="min-w-0">
                 <h2 className="text-base sm:text-lg font-black tracking-tighter uppercase text-[var(--foreground)] truncate leading-tight">

@@ -186,6 +186,8 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
     }
   };
 
+  const speechRecRef = useRef<any>(null);
+
   // Voice Search / Mic dictation handler
   const handleVoiceSearch = () => {
     try {
@@ -193,8 +195,19 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
       if (!SpeechRecognition) {
         return;
       }
+
+      if (isListening && speechRecRef.current) {
+        try {
+          speechRecRef.current.abort();
+        } catch {
+          // ignore
+        }
+        setIsListening(false);
+        return;
+      }
       
       const rec = new SpeechRecognition();
+      speechRecRef.current = rec;
       rec.lang = currentLang === 'hi' ? 'hi-IN' : (currentLang === 'mr' ? 'mr-IN' : 'en-IN');
       rec.continuous = false;
       rec.interimResults = false;
@@ -205,8 +218,12 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
         setIsListening(true);
       };
       rec.onresult = (event: any) => {
-        const textStr = event.results[0][0].transcript;
-        setSearchQuery(textStr);
+        const textStr = event.results?.[0]?.[0]?.transcript;
+        if (textStr) {
+          setSearchQuery(textStr);
+          setIsSearchActivated(true);
+          setIsSearchFocused(true);
+        }
         setIsListening(false);
       };
       rec.onerror = () => {
@@ -748,17 +765,23 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                   type="button"
                   onClick={handleVoiceSearch}
                   className={cn(
-                    "p-1 rounded-lg text-xs flex items-center justify-center shrink-0 transition-all cursor-pointer",
+                    "px-2 py-1 rounded-xl text-xs flex items-center gap-1 shrink-0 transition-all duration-200 cursor-pointer shadow-xs active:scale-95",
                     isListening 
-                      ? "bg-red-500 text-white animate-pulse" 
-                      : "bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/50 hover:text-[var(--foreground)]"
+                      ? "bg-rose-500 text-white ring-2 ring-rose-400 shadow-md shadow-rose-500/30 animate-pulse" 
+                      : "bg-gradient-to-r from-[var(--primary)]/15 via-indigo-500/15 to-violet-500/15 border border-[var(--primary)]/35 text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--primary)]/25 hover:shadow-[0_0_12px_rgba(99,102,241,0.25)] hover:scale-105 font-bold"
                   )}
-                  title="Voice Search dictation"
+                  title={isListening ? "Listening... click to stop" : "Voice search dictation (Speak product name)"}
                 >
                   {isListening ? (
-                    <MicOff style={{ height: '14px', width: '17px' }} />
+                    <>
+                      <MicOff size={14} className="text-white animate-bounce" />
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-white">Listening</span>
+                    </>
                   ) : (
-                    <Mic style={{ height: '14px', width: '17px' }} />
+                    <>
+                      <Mic size={14} className="text-[var(--primary)] stroke-[2.3]" />
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--primary)]">Voice</span>
+                    </>
                   )}
                 </button>
               </div>

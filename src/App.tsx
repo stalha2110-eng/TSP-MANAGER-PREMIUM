@@ -60,6 +60,7 @@ import {
   Type,
   Maximize2,
   Mic,
+  MicOff,
   Calendar,
   Pin,
   CheckCircle,
@@ -910,6 +911,8 @@ export default function App() {
 
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isHomeVoiceListening, setIsHomeVoiceListening] = useState(false);
+  const homeSpeechRecognitionRef = useRef<any>(null);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [activePredictionIndex, setActivePredictionIndex] = useState(-1);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -1022,6 +1025,67 @@ export default function App() {
       window.removeEventListener('app-add-toast', handleAddedCustomToast);
     };
   }, [addToast]);
+
+  // Voice Search handler for Home Dashboard search bar
+  const handleHomeVoiceSearch = () => {
+    try {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        addToast("Voice recognition is not supported in this browser. Please type to search.", "info");
+        return;
+      }
+
+      if (isHomeVoiceListening && homeSpeechRecognitionRef.current) {
+        try {
+          homeSpeechRecognitionRef.current.abort();
+        } catch {
+          // ignore
+        }
+        setIsHomeVoiceListening(false);
+        return;
+      }
+
+      const rec = new SpeechRecognition();
+      homeSpeechRecognitionRef.current = rec;
+      rec.lang = state.settings.language === 'hi' ? 'hi-IN' : (state.settings.language === 'mr' ? 'mr-IN' : 'en-IN');
+      rec.continuous = false;
+      rec.interimResults = false;
+
+      setIsHomeVoiceListening(true);
+
+      rec.onstart = () => {
+        setIsHomeVoiceListening(true);
+        addToast("Listening... Speak product name", "info");
+      };
+
+      rec.onresult = (event: any) => {
+        const textStr = event.results?.[0]?.[0]?.transcript;
+        if (textStr) {
+          setSearchQuery(textStr);
+          setIsSearchFocused(true);
+          addToast(`Heard: "${textStr}"`, "success");
+        }
+        setIsHomeVoiceListening(false);
+      };
+
+      rec.onerror = (e: any) => {
+        console.warn("Speech recognition error:", e);
+        setIsHomeVoiceListening(false);
+        if (e.error === 'not-allowed') {
+          addToast("Microphone permission denied. Please allow microphone access.", "error");
+        }
+      };
+
+      rec.onend = () => {
+        setIsHomeVoiceListening(false);
+      };
+
+      rec.start();
+    } catch (err) {
+      console.warn("Failed to start voice recognition:", err);
+      setIsHomeVoiceListening(false);
+    }
+  };
 
   // --- Desktop Size Mode (Large Screen Size Format, Large Buttons & Large Interface) ---
   // Stored strictly in local device storage (localStorage), NEVER in Firebase or Firestore
@@ -4622,11 +4686,11 @@ export default function App() {
                   <Settings2 size={10} className="stroke-[2.5]" />
                 </button>
               </div>
-              <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
+              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                 <Button 
                   variant={selectedCategory === null ? 'primary' : 'outline'}
                   size="sm"
-                  className="whitespace-nowrap px-6 rounded-xl border-white/5"
+                  className="whitespace-nowrap px-4 py-1.5 rounded-xl border-white/5"
                   onClick={() => setSelectedCategory(null)}
                 >
                   {t.all}
@@ -4636,7 +4700,7 @@ export default function App() {
                     key={`${cat.id || 'cat'}-${idx}`}
                     variant={selectedCategory === cat.id ? 'primary' : 'outline'}
                     size="sm"
-                    className="whitespace-nowrap px-6 rounded-xl border-white/5"
+                    className="whitespace-nowrap px-4 py-1.5 rounded-xl border-white/5"
                     onClick={() => setSelectedCategory(cat.id)}
                   >
                     {cat.name}
@@ -4646,14 +4710,15 @@ export default function App() {
             </div>
 
                {/* Registry Grid */}
-               <div className="space-y-6">
+               <div className="space-y-4">
                  {/* Search at top of list */}
                  <div id="tour-search" className={`relative group transition-all ${isSearchFocused && searchQuery.trim().length > 0 ? 'z-50' : 'z-20'}`}>
-                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--primary)] opacity-40 transition-opacity group-focus-within:opacity-100" size={20} />
+                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--primary)] opacity-40 transition-opacity group-focus-within:opacity-100" size={20} style={{ marginTop: '-11px' }} />
                    <input 
                      type="text"
                      placeholder={t.search}
-                     className="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] py-4 pl-12 pr-4 text-sm focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] focus:outline-none shadow-sm transition-all"
+                     style={{ marginTop: '-11px' }}
+                     className="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] py-4 pl-12 pr-28 text-sm focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] focus:outline-none shadow-sm transition-all"
                      value={searchQuery}
                      onChange={(e) => {
                        setSearchQuery(e.target.value);
@@ -4688,6 +4753,48 @@ export default function App() {
                        }
                      }}
                    />
+
+                   {/* Search Controls: Clear & Voice Mic Button */}
+                   <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-10" style={{ marginTop: '-11px' }}>
+                     {searchQuery && (
+                       <button
+                         type="button"
+                         onClick={() => {
+                           setSearchQuery('');
+                           setActivePredictionIndex(-1);
+                         }}
+                         className="p-1 rounded-lg text-[var(--foreground)]/40 hover:text-[var(--foreground)] hover:bg-[var(--foreground)]/10 transition-colors cursor-pointer"
+                         title="Clear search"
+                       >
+                         <X size={16} />
+                       </button>
+                     )}
+                     
+                     {/* Voice Mic Button inside Home Dashboard Search Bar */}
+                     <button
+                       type="button"
+                       onClick={handleHomeVoiceSearch}
+                       className={cn(
+                         "px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 cursor-pointer shadow-xs active:scale-95",
+                         isHomeVoiceListening
+                           ? "bg-rose-500 text-white ring-2 ring-rose-400 shadow-md shadow-rose-500/30 animate-pulse"
+                           : "bg-gradient-to-r from-[var(--primary)]/15 via-indigo-500/15 to-violet-500/15 border border-[var(--primary)]/35 text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--primary)]/25 hover:shadow-[0_0_12px_rgba(99,102,241,0.25)] hover:scale-105"
+                       )}
+                       title={isHomeVoiceListening ? "Listening... click to stop" : "Voice search products (Speak item name)"}
+                     >
+                       {isHomeVoiceListening ? (
+                         <>
+                           <MicOff size={15} className="text-white animate-bounce" />
+                           <span className="text-[11px] font-bold text-white tracking-wide">Listening...</span>
+                         </>
+                       ) : (
+                         <>
+                           <Mic size={15} className="text-[var(--primary)] stroke-[2.3]" />
+                           <span className="text-[11px] font-bold tracking-wide hidden sm:inline">Voice</span>
+                         </>
+                       )}
+                     </button>
+                   </div>
 
                    {/* Predictive Search Suggestions Dropdown Overlay */}
                    <AnimatePresence>

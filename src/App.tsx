@@ -5718,7 +5718,7 @@ export default function App() {
                   <div className="min-w-0">
                     <h3 className="text-sm sm:text-base font-bold tracking-tight text-white leading-tight">
                       {dailyCycleModal.type === 'opening' 
-                        ? "Morning Shift Backup" 
+                        ? "SAVE OLD BILLS" 
                         : "Daily Store Close Backup"}
                     </h3>
                   </div>
@@ -5737,7 +5737,7 @@ export default function App() {
               {/* Purpose in minimal words */}
               <p className="text-xs text-slate-300 leading-relaxed mb-3.5">
                 {dailyCycleModal.type === 'opening'
-                  ? "Archive previous bills to your device and start a clean billing session."
+                  ? 'Puraane Bills ko "Download Backup" Button Par Click Kar Ke Save karle.'
                   : "Save today's bills to your device and reset the counter for tomorrow."}
               </p>
 
@@ -5769,7 +5769,7 @@ export default function App() {
                   className="w-full h-10 py-2 px-3 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-slate-950 flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
                 >
                   <Download size={15} className="shrink-0" /> 
-                  <span>Download Backup &amp; Reset</span>
+                  <span>Download Backup</span>
                 </Button>
 
                 <button 

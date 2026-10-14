@@ -628,14 +628,6 @@ export default function DynamicStoreDashboard({
 
                     {/* Right corner controls */}
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {settings.dashboardMode !== 'fixed' && score > 35 && (
-                        <span className={cn(
-                          "text-[8px] font-black uppercase px-2 py-0.5 rounded-full",
-                          score >= 70 ? "bg-red-500/10 text-red-500 animate-pulse" : "bg-amber-500/10 text-amber-500"
-                        )}>
-                          Priority {score}
-                        </span>
-                      )}
 
                       {/* Small manage button on top active dashboard card */}
                       {index === 0 && onOpenDeckSettings && (

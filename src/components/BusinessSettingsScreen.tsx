@@ -2876,11 +2876,9 @@ export default function BusinessSettingsScreen({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--border)]">
             <div>
               <h3 className="text-base font-black uppercase tracking-tight flex items-center gap-2">
-                <Briefcase size={18} className="text-[var(--primary)]" /> Custom Dashboard Card Deck
+                <Briefcase size={18} className="text-[var(--primary)]" /> Custom Dashboard Cards
               </h3>
-              <p className="text-[10px] opacity-60 uppercase font-bold tracking-wider mt-1">
-                Select cards to display on the main dashboard. (By default, only Store Asset Valuation is shown).
-              </p>
+             
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20">

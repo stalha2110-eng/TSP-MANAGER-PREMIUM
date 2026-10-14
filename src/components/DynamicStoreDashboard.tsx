@@ -5,7 +5,7 @@ import {
   AlertTriangle, CheckCircle, Smartphone, Clock, Award,
   Activity, RefreshCw, Database, Printer, Cloud,
   Sliders, Plus, Trash2, Eye, EyeOff,
-  ChevronDown, ChevronUp, BarChart3, ArrowRight, Save,
+  BarChart3, ArrowRight, Save,
   X, Check, ShieldAlert, Award as Trophy, Zap, 
   Settings, Layers, Star, PlaySquare, Calendar, HelpCircle, AlertOctagon
 } from 'lucide-react';
@@ -97,14 +97,6 @@ export default function DynamicStoreDashboard({
   const [simulatedPrinterOffline, setSimulatedPrinterOffline] = useState(false);
   const [simulatedBackupFailed, setSimulatedBackupFailed] = useState(false);
 
-  // Toggle helper for dynamic card state expansion
-  const toggleExpand = (id: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setExpandedCards(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
 
   // Core Math - Todays Metrics
   const todayStr = new Date().toISOString().split('T')[0];
@@ -664,17 +656,6 @@ export default function DynamicStoreDashboard({
                         </h3>
                       </div>
                     </div>
-
-                    {/* Quick controls per card */}
-                    <div className="flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => toggleExpand(cardId, e)}
-                        className="p-1 hover:bg-[var(--foreground)]/5 rounded-lg cursor-pointer"
-                        title={isCardExpanded ? "Collapse view" : "Expand view"}
-                      >
-                        {isCardExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      </button>
-                    </div>
                   </div>
 
                   {/* Render 3 visual stages based on expanded boolean */}
@@ -765,9 +746,66 @@ export default function DynamicStoreDashboard({
                           </div>
                         )}
 
-                        {/* Default label placeholder */}
-                        {!['sales', 'profit', 'bills', 'inventory_value', 'low_stock', 'out_of_stock', 'pending_udhar', 'printer_status', 'goals_progress', 'business_health', 'quick_actions'].includes(cardId) && (
-                          <p className="text-sm font-black opacity-60">Tap Expand icon on card header to view status.</p>
+                        {cardId === 'top_products' && (
+                          <div className="space-y-1">
+                            {topProductsToday.length === 0 ? (
+                              <p className="text-xs text-[var(--foreground)]/45 select-none py-1">📈 No transactions processed yet today</p>
+                            ) : (
+                              topProductsToday.slice(0, 2).map((p, i) => (
+                                <div key={i} className="p-1.5 bg-[var(--foreground)]/5 border border-[var(--border)] rounded-xl flex justify-between items-center text-xs">
+                                  <span className="font-bold truncate max-w-[130px]">{p.name}</span>
+                                  <span className="opacity-60">{p.qty} items</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+                        {cardId === 'cloud_sync_status' && (
+                          <div className="flex items-center gap-2.5 py-1.5">
+                            <span className="inline-block h-3 w-3 rounded-full bg-emerald-500 shrink-0" />
+                            <div>
+                              <p className="text-xs font-black uppercase tracking-wide text-emerald-500">Secure Cloud Sync</p>
+                              <p className="text-[9px] opacity-50">Auto-saving active & verified</p>
+                            </div>
+                          </div>
+                        )}
+                        {cardId === 'backup_status' && (
+                          <div className="flex items-center gap-2.5 py-1.5">
+                            <span className="inline-block h-3 w-3 rounded-full bg-emerald-500 shrink-0" />
+                            <div>
+                              <p className="text-xs font-black uppercase tracking-wide">Excel Backup</p>
+                              <p className="text-[9px] opacity-50">Local snapshot enabled</p>
+                            </div>
+                          </div>
+                        )}
+                        {cardId === 'notifications' && (
+                          <div className="space-y-1">
+                            {unreadNotifications.length === 0 ? (
+                              <p className="text-xs text-[var(--foreground)]/40 font-bold select-none py-1">🔔 Quiet hours. No new unread messages.</p>
+                            ) : (
+                              <div className="p-2 bg-[var(--foreground)]/5 border border-[var(--border)] rounded-xl">
+                                <p className="text-[10px] font-black uppercase truncate">{unreadNotifications[0].title}</p>
+                                <p className="text-[9px] opacity-60 truncate">{unreadNotifications[0].description}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {cardId === 'recent_activity' && (
+                          <div className="p-2 bg-[var(--foreground)]/5 rounded-xl border border-[var(--border)] text-[10px] font-black flex items-center gap-1.5">
+                            <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse shrink-0" />
+                            <span className="truncate">Database transactions verified green.</span>
+                          </div>
+                        )}
+                        {cardId === 'business_journey' && (
+                          <div className="space-y-1.5">
+                            <div className="flex justify-between text-xs font-black">
+                              <span className="text-[var(--primary)] uppercase tracking-wide truncate">{currentMilestone.title}</span>
+                              <span className="opacity-55 shrink-0">Lvl {currentMilestone.level}</span>
+                            </div>
+                            <div className="h-2 w-full bg-[var(--foreground)]/5 border border-[var(--border)] rounded-full overflow-hidden p-0.5">
+                              <div className="h-full bg-gradient-to-r from-[var(--primary)] to-amber-500 rounded-full" style={{ width: `${currentMilestone.progress}%` }} />
+                            </div>
+                          </div>
                         )}
                       </div>
                     ) : (

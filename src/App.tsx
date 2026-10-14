@@ -4713,11 +4713,11 @@ export default function App() {
                <div className="space-y-4">
                  {/* Search at top of list */}
                  <div id="tour-search" className={`relative group transition-all ${isSearchFocused && searchQuery.trim().length > 0 ? 'z-50' : 'z-20'}`}>
-                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--primary)] opacity-40 transition-opacity group-focus-within:opacity-100" size={20} style={{ marginTop: '-11px' }} />
+                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--primary)] opacity-40 transition-opacity group-focus-within:opacity-100" size={20} style={{ marginTop: '-5px', marginBottom: '0px' }} />
                    <input 
                      type="text"
                      placeholder={t.search}
-                     style={{ marginTop: '-11px' }}
+                     style={{ marginTop: '-11px', height: '43.5px' }}
                      className="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] py-4 pl-12 pr-28 text-sm focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] focus:outline-none shadow-sm transition-all"
                      value={searchQuery}
                      onChange={(e) => {
@@ -4774,6 +4774,12 @@ export default function App() {
                      <button
                        type="button"
                        onClick={handleHomeVoiceSearch}
+                       style={{
+                         paddingLeft: '8.75px',
+                         paddingRight: '10.75px',
+                         paddingTop: '8.25px',
+                         marginBottom: '-9px'
+                       }}
                        className={cn(
                          "px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 cursor-pointer shadow-xs active:scale-95",
                          isHomeVoiceListening

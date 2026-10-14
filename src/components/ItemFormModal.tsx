@@ -1373,7 +1373,7 @@ export function ItemFormModal({
               )}
               onClick={handleSave}
             >
-              {initialData ? "Save Changes / बदलाव सेव करें" : "SAVE"}
+              {initialData ? "Save Changes" : "SAVE"}
             </Button>
           </div>
         </div>

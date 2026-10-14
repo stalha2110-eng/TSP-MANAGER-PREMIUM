@@ -5694,102 +5694,63 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setDailyCycleModal(null)}
-            className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md"
+            className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
           >
             <motion.div 
               key="daily-cycle-modal-container-element"
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              initial={{ scale: 0.94, opacity: 0, y: 8 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: "spring", duration: 0.28, bounce: 0 }}
+              exit={{ scale: 0.94, opacity: 0, y: 8 }}
+              transition={{ type: "spring", duration: 0.24, bounce: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[var(--card-solid,#0f172a)] bg-[var(--background)] border border-[var(--border)] rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 max-w-md w-full shadow-2xl relative overflow-hidden text-[var(--foreground)] max-h-[90dvh] flex flex-col pb-[max(1rem,env(safe-area-inset-bottom))]"
+              className="bg-[#0f172a] dark:bg-[#0b0f19] border border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-6 max-w-[360px] w-full shadow-2xl relative text-slate-100 flex flex-col"
             >
-              {/* Top ambient decor line */}
-              <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-amber-500 via-[var(--primary)] to-indigo-500" />
-              
-              {/* Modal Header */}
-              <div className="flex items-start justify-between gap-3 mb-3.5 sm:mb-4 pt-1">
-                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-amber-500/10 dark:bg-amber-400/15 border border-amber-500/20 flex items-center justify-center text-[var(--primary)] shrink-0">
+              {/* Header */}
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-9 w-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 text-amber-400">
                     {dailyCycleModal.type === 'opening' ? (
-                      <Sun className="text-amber-500 animate-[spin_12s_linear_infinite]" size={22} />
+                      <Sun size={18} />
                     ) : (
-                      <Moon className="text-indigo-400" size={22} />
+                      <Moon size={18} />
                     )}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-sm sm:text-base font-black uppercase tracking-tight leading-snug text-[var(--foreground)]">
+                    <h3 className="text-sm sm:text-base font-bold tracking-tight text-white leading-tight">
                       {dailyCycleModal.type === 'opening' 
-                        ? "Save All Bills" 
+                        ? "Morning Shift Backup" 
                         : "Daily Store Close Backup"}
                     </h3>
-                    <p className="text-[10px] sm:text-[11px] font-bold text-amber-600 dark:text-amber-400 leading-tight">
-                      {dailyCycleModal.type === 'opening' 
-                        ? "(सभी बिलों को सेव करें)" 
-                        : "दैनिक बिक्री इतिहास बचाएं"}
-                    </p>
                   </div>
                 </div>
 
-                {/* Top-right close button */}
                 <button
                   type="button"
                   onClick={() => setDailyCycleModal(null)}
-                  className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-[var(--foreground)] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all shrink-0 cursor-pointer"
+                  className="h-7 w-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
                   title="Close"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
 
-              {/* Scrollable Modal Body */}
-              <div className="overflow-y-auto overscroll-contain pr-1 -mr-1 space-y-3 sm:space-y-3.5 text-xs font-medium leading-relaxed opacity-95 mb-4 pb-1">
-                <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-500/[0.06] dark:bg-amber-400/[0.08] border border-amber-500/20 text-zinc-700 dark:text-zinc-200 space-y-1.5">
-                  {dailyCycleModal.type === 'opening' ? (
-                    <>
-                      <p className="font-bold text-[11.5px] sm:text-xs text-[var(--foreground)] leading-snug">
-                        Click on <strong className="text-amber-600 dark:text-amber-400">"DOWNLOAD BACKUP &amp; RESET SHIFT"</strong> to save all bills to your device and start a fresh session.
-                      </p>
-                      <p className="text-[10.5px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-normal">
-                        (कृपया "DOWNLOAD BACKUP &amp; RESET SHIFT" पर टैप करें। यह आपके फोन में सभी बिल सुरक्षित डाउनलोड कर देगा।)
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-bold text-[11.5px] sm:text-xs text-[var(--foreground)] leading-snug">
-                        Store closing hour! Archive your daily billing records to Excel/PDF and prepare for tomorrow's clean shift.
-                      </p>
-                      <p className="text-[10.5px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-normal">
-                        (दुकान बंद करने का समय! अपनी दैनिक बिक्री को सुरक्षित डाउनलोड करें और नए दिन के लिए रिकॉर्ड तैयार करें।)
-                      </p>
-                    </>
-                  )}
-                </div>
-                
-                {/* Stats badge grid */}
-                <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
-                  <div className="p-2.5 sm:p-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex flex-col justify-between">
-                    <span className="text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                      Total Bills
-                    </span>
-                    <span className="text-sm sm:text-base font-black text-[var(--foreground)] mt-1 font-mono">
-                      {(state.bills || []).length} <span className="text-[11px] font-bold font-sans opacity-75">Bills</span>
-                    </span>
-                  </div>
-                  <div className="p-2.5 sm:p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex flex-col justify-between">
-                    <span className="text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                      Total Sales
-                    </span>
-                    <span className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 mt-1 font-mono truncate">
-                      ₹{((state.bills || []).reduce((sum, b) => sum + (b.total || 0), 0)).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                    </span>
-                  </div>
-                </div>
+              {/* Purpose in minimal words */}
+              <p className="text-xs text-slate-300 leading-relaxed mb-3.5">
+                {dailyCycleModal.type === 'opening'
+                  ? "Archive previous bills to your device and start a clean billing session."
+                  : "Save today's bills to your device and reset the counter for tomorrow."}
+              </p>
+
+              {/* Minimal Summary Strip */}
+              <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/5 text-xs text-slate-300 mb-4">
+                <span>{(state.bills || []).length} Bills Logged</span>
+                <span className="font-semibold text-emerald-400 font-mono">
+                  ₹{((state.bills || []).reduce((sum, b) => sum + (b.total || 0), 0)).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                </span>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-2 pt-2 border-t border-[var(--border)] shrink-0">
+              {/* Actions */}
+              <div className="flex flex-col gap-2">
                 <Button 
                   onClick={async () => {
                     const success = await handleCycleBackupAndClear();
@@ -5805,41 +5766,29 @@ export default function App() {
                       setDailyCycleModal(null);
                     }
                   }}
-                  className="w-full min-h-[46px] sm:min-h-[50px] py-2.5 px-3 sm:px-4 rounded-xl sm:rounded-2xl font-black uppercase tracking-wider text-[11px] sm:text-xs bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-orange-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full h-10 py-2 px-3 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-slate-950 flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
                 >
-                  <Download size={16} className="shrink-0" /> 
-                  <span className="truncate">Download Backup &amp; Reset Shift</span>
+                  <Download size={15} className="shrink-0" /> 
+                  <span>Download Backup &amp; Reset</span>
                 </Button>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <Button 
-                    variant="outline"
-                    onClick={() => {
-                      const now = new Date();
-                      const pad = (n: number) => String(n).padStart(2, '0');
-                      const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-                      if (dailyCycleModal.type === 'opening') {
-                        localStorage.setItem('price_manager_last_open_prompt_date', todayStr);
-                      } else {
-                        localStorage.setItem('price_manager_last_close_prompt_date', todayStr);
-                      }
-                      setDailyCycleModal(null);
-                    }}
-                    className="h-10 rounded-xl text-[10px] sm:text-[10.5px] uppercase font-black tracking-wider text-[var(--foreground)] border-[var(--border)] bg-transparent hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.98]"
-                  >
-                    Remind Later
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost"
-                    onClick={() => {
-                      setDailyCycleModal(null);
-                    }}
-                    className="h-10 rounded-xl text-[10px] sm:text-[10.5px] uppercase font-black tracking-wider text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 active:scale-[0.98]"
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    const now = new Date();
+                    const pad = (n: number) => String(n).padStart(2, '0');
+                    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+                    if (dailyCycleModal.type === 'opening') {
+                      localStorage.setItem('price_manager_last_open_prompt_date', todayStr);
+                    } else {
+                      localStorage.setItem('price_manager_last_close_prompt_date', todayStr);
+                    }
+                    setDailyCycleModal(null);
+                  }}
+                  className="w-full py-1.5 text-center text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                >
+                  Remind Later
+                </button>
               </div>
             </motion.div>
           </motion.div>

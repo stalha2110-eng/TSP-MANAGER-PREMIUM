@@ -2890,8 +2890,17 @@ export default function BusinessSettingsScreen({
             </div>
           </div>
 
-          <div className="space-y-3">
-            {allPossibleDashboardCards.map(statCard => {
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[...allPossibleDashboardCards].sort((a, b) => {
+              const currentCards = state.settings.dashboardCards || [];
+              const cardA = currentCards.find(c => c.id === a.id);
+              const cardB = currentCards.find(c => c.id === b.id);
+              const isAVisible = cardA !== undefined ? cardA.visible : a.id === 'inventory_value';
+              const isBVisible = cardB !== undefined ? cardB.visible : b.id === 'inventory_value';
+              if (isAVisible && !isBVisible) return -1;
+              if (!isAVisible && isBVisible) return 1;
+              return 0;
+            }).map(statCard => {
               const currentCards = state.settings.dashboardCards || [];
               const cardConfig = currentCards.find(c => c.id === statCard.id);
               const isVisible = cardConfig !== undefined ? cardConfig.visible : statCard.id === 'inventory_value';
@@ -2935,28 +2944,6 @@ export default function BusinessSettingsScreen({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
-                    {isVisible ? (
-                      <div className="flex items-center gap-1 bg-[var(--background)] p-1 rounded-xl border border-[var(--border)]">
-                        {(['small', 'medium', 'large'] as const).map(sz => (
-                          <button
-                            key={sz}
-                            type="button"
-                            onClick={() => handleResizeDashboardCard(statCard.id, sz)}
-                            className={cn(
-                              "text-[8px] font-black uppercase tracking-wider py-1 px-2.5 rounded-lg transition-all cursor-pointer",
-                              cardSize === sz ? "bg-[var(--primary)] text-white shadow-sm" : "opacity-40 hover:opacity-100"
-                            )}
-                          >
-                            {sz}
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-[9px] font-bold uppercase tracking-wider opacity-40 px-2 py-1">
-                        Hidden
-                      </span>
-                    )}
 
                     <button
                       type="button"
@@ -2971,7 +2958,6 @@ export default function BusinessSettingsScreen({
                       {isVisible ? "Active" : "Enable"}
                     </button>
                   </div>
-                </div>
               );
             })}
           </div>

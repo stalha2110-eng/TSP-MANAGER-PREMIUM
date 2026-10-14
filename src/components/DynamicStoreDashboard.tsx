@@ -4,7 +4,7 @@ import {
   TrendingUp, TrendingDown, DollarSign, ShoppingBag, 
   AlertTriangle, CheckCircle, Smartphone, Clock, Award,
   Activity, RefreshCw, Database, Printer, Cloud,
-  Sliders, Plus, Trash2, Eye, EyeOff,
+  Sliders, Plus, Trash2, Eye, EyeOff, LayoutGrid,
   BarChart3, ArrowRight, Save,
   X, Check, ShieldAlert, Award as Trophy, Zap, 
   Settings, Layers, Star, PlaySquare, Calendar, HelpCircle, AlertOctagon
@@ -543,25 +543,6 @@ export default function DynamicStoreDashboard({
   return (
     <div className="space-y-4">
 
-      {/* Active Dashboard Cards Header & Quick Link to Biz Settings */}
-      <div className="flex items-center justify-between px-2 pt-1 pb-1">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-[var(--primary)] animate-pulse" />
-          <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
-            Active Dashboard Cards ({sortedCards.length})
-          </span>
-        </div>
-        {onOpenDeckSettings && (
-          <button
-            onClick={onOpenDeckSettings}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[var(--primary)] bg-[var(--primary)]/10 hover:bg-[var(--primary)]/20 border border-[var(--primary)]/20 rounded-xl transition-all cursor-pointer"
-          >
-            <Sliders size={11} />
-            <span>Customize Dashboard Deck</span>
-          </button>
-        )}
-      </div>
-
       {sortedCards.length === 0 && (
         <div className="p-8 text-center bg-[var(--card)] border border-[var(--border)] rounded-3xl space-y-3">
           <p className="text-sm font-bold opacity-60">No dashboard cards are currently enabled.</p>
@@ -570,8 +551,8 @@ export default function DynamicStoreDashboard({
               onClick={onOpenDeckSettings}
               className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--primary)] text-white text-xs font-black uppercase tracking-wider rounded-xl cursor-pointer"
             >
-              <Sliders size={12} />
-              <span>Enable Cards in Custom Deck</span>
+              <LayoutGrid size={12} />
+              <span>Configure Home Cards</span>
             </button>
           )}
         </div>
@@ -613,25 +594,13 @@ export default function DynamicStoreDashboard({
                   hasGlow && "after:absolute after:inset-0 after:rounded-[2.5rem] after:border-2 after:border-amber-400/20 after:pointer-events-none"
                 )}
               >
-                {/* Priority Score tag */}
-                {settings.dashboardMode !== 'fixed' && score > 35 && (
-                  <div className="absolute top-4 right-4 flex items-center gap-1.5">
-                    <span className={cn(
-                      "text-[8px] font-black uppercase px-2 py-0.5 rounded-full",
-                      score >= 70 ? "bg-red-500/10 text-red-500 animate-pulse" : "bg-amber-500/10 text-amber-500"
-                    )}>
-                      Priority {score}
-                    </span>
-                  </div>
-                )}
-
                 {/* Card Content Handler */}
                 <div className="space-y-4">
                   
                   {/* Card Header Title and Controls */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xl shrink-0">
                         {cardId === 'sales' && '📊'}
                         {cardId === 'profit' && '💰'}
                         {cardId === 'bills' && '🧾'}
@@ -650,11 +619,39 @@ export default function DynamicStoreDashboard({
                         {cardId === 'goals_progress' && '🎯'}
                         {cardId === 'quick_actions' && '⚡'}
                       </span>
-                      <div>
-                        <h3 className="text-xs font-black uppercase tracking-widest text-[var(--foreground)]">
+                      <div className="min-w-0">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-[var(--foreground)] truncate">
                           {cardCfg.customTitle || t[cardId]}
                         </h3>
                       </div>
+                    </div>
+
+                    {/* Right corner controls */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {settings.dashboardMode !== 'fixed' && score > 35 && (
+                        <span className={cn(
+                          "text-[8px] font-black uppercase px-2 py-0.5 rounded-full",
+                          score >= 70 ? "bg-red-500/10 text-red-500 animate-pulse" : "bg-amber-500/10 text-amber-500"
+                        )}>
+                          Priority {score}
+                        </span>
+                      )}
+
+                      {/* Small manage button on top active dashboard card */}
+                      {index === 0 && onOpenDeckSettings && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenDeckSettings();
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[var(--primary)] bg-[var(--primary)]/10 hover:bg-[var(--primary)]/20 active:scale-95 border border-[var(--primary)]/20 rounded-xl transition-all cursor-pointer whitespace-nowrap shadow-xs"
+                          title="Manage Home Cards"
+                        >
+                          <LayoutGrid size={11} className="shrink-0" />
+                          <span>Other Cards</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 

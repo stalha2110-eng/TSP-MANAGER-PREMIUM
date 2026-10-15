@@ -377,28 +377,15 @@ export default function DynamicStoreDashboard({
       // Permanently removed unneeded/complicated features requested by user
       if (cfg.id === 'quick_actions' || cfg.id === 'top_products' || cfg.id === 'goals_progress') return false;
 
-      // Manual hide option check
-      if (cfg.hidden) return false;
-
-      // Check Custom Dashboard Card Deck:
-      // By default: ONLY 'inventory_value' is visible.
-      // Other cards are ONLY shown if explicitly enabled (visible === true) in settings.dashboardCards.
+      // Check Custom Dashboard Card Deck (Stored locally for instant 0ms response):
+      // The user's explicit selection in settings.dashboardCards governs card visibility
       const deckConfig = settings.dashboardCards?.find(c => c.id === cfg.id);
       if (deckConfig !== undefined) {
         if (!deckConfig.visible) return false;
       } else {
         // Not configured in deck: only inventory_value is visible by default!
-        if (cfg.id !== 'inventory_value') return false;
+        if (cfg.hidden || cfg.id !== 'inventory_value') return false;
       }
-
-      // Show specific card toggles check
-      if (cfg.id === 'recent_activity' && settings.dashboardShowRecentActivity === false) return false;
-      if (cfg.id === 'business_health' && settings.dashboardShowBusinessHealth === false) return false;
-      if (cfg.id === 'printer_status' && settings.dashboardShowPrinterStatus === false) return false;
-      if (cfg.id === 'cloud_sync_status' && settings.dashboardShowCloudSync === false) return false;
-      if (cfg.id === 'backup_status' && settings.dashboardShowBackupStatus === false) return false;
-      if (cfg.id === 'business_journey' && settings.dashboardShowBusinessJourney === false) return false;
-      if (cfg.id === 'goals_progress' && settings.dashboardShowGoalsProgress === false) return false;
 
       // Auto Hide empty cards triggers
       if (settings.dashboardAutoHideEmptyCards) {

@@ -5,6 +5,7 @@ import { getUnbilledEntries } from '../lib/unbilledStorage';
 
 import { isItemDeleted } from '../utils/deletionTracker';
 import { getLocalProductImage } from '../utils/localImageStorage';
+import { getLocalDashboardStorage } from '../utils/localDashboardStorage';
 
 export const INITIAL_SETTINGS: AppSettings = {
   theme: 'minimalist-ivory',
@@ -195,15 +196,28 @@ export const getInitialState = (): AppState => {
       const parsedSettings = JSON.parse(savedSettings);
       if (parsedSettings) {
         settings = { ...INITIAL_SETTINGS, ...parsedSettings };
-        if (!parsedSettings.dashboardCardsVersion || parsedSettings.dashboardCardsVersion < 2) {
-          settings.dashboardCards = INITIAL_SETTINGS.dashboardCards;
-          settings.dashboardCardsConfig = INITIAL_SETTINGS.dashboardCardsConfig;
-          settings.dashboardCardsVersion = 2;
-        }
       }
     } catch (e) {
       console.error("Failed to parse saved settings", e);
     }
+  }
+
+  // Restore and ensure local dashboard cards persistence (never overridden by Firestore)
+  try {
+    const localDashboard = getLocalDashboardStorage();
+    settings = {
+      ...settings,
+      ...localDashboard,
+      dashboardCards: localDashboard.dashboardCards && localDashboard.dashboardCards.length > 0 
+        ? localDashboard.dashboardCards 
+        : INITIAL_SETTINGS.dashboardCards,
+      dashboardCardsConfig: localDashboard.dashboardCardsConfig && localDashboard.dashboardCardsConfig.length > 0
+        ? localDashboard.dashboardCardsConfig
+        : INITIAL_SETTINGS.dashboardCardsConfig,
+      dashboardCardsVersion: 2
+    };
+  } catch (e) {
+    console.warn("Failed to load local dashboard cards", e);
   }
 
   // Restore & ensure unified printer settings persistence

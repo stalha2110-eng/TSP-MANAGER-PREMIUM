@@ -60,6 +60,7 @@ import { BUSINESS_MODES, BUSINESS_MODES as modesMap, BusinessModeType, BusinessM
 import { cn, formatCurrency, formatPhoneNumber } from '../lib/utils';
 import { getCalculatedAchievements, downloadCertificateOfMilestone, ensureIsoString } from '../lib/achievementUtils';
 import { jsPDF } from 'jspdf';
+import { saveLocalDashboardStorage } from '../utils/localDashboardStorage';
 
 const formatDateSafely = (dateVal: any, fallback = 'Verified'): string => {
   if (!dateVal) return fallback;
@@ -336,11 +337,26 @@ export default function BusinessSettingsScreen({
       });
     }
 
-    onUpdateSettings({ 
+    const extraSetting: Partial<AppSettings> = {};
+    if (cardId === 'recent_activity') extraSetting.dashboardShowRecentActivity = isNowVisible;
+    if (cardId === 'business_health') extraSetting.dashboardShowBusinessHealth = isNowVisible;
+    if (cardId === 'printer_status') extraSetting.dashboardShowPrinterStatus = isNowVisible;
+    if (cardId === 'cloud_sync_status') extraSetting.dashboardShowCloudSync = isNowVisible;
+    if (cardId === 'backup_status') extraSetting.dashboardShowBackupStatus = isNowVisible;
+    if (cardId === 'business_journey') extraSetting.dashboardShowBusinessJourney = isNowVisible;
+    if (cardId === 'goals_progress') extraSetting.dashboardShowGoalsProgress = isNowVisible;
+
+    const newDeckSettings = {
       dashboardCards: updated,
       dashboardCardsConfig: updatedConfig,
-      dashboardCardsVersion: 2
-    });
+      dashboardCardsVersion: 2,
+      ...extraSetting
+    };
+
+    // Save locally immediately (never delay, never block on Firestore)
+    saveLocalDashboardStorage(newDeckSettings);
+
+    onUpdateSettings(newDeckSettings);
   };
 
   // Handle resize of Dashboard cards
@@ -364,11 +380,15 @@ export default function BusinessSettingsScreen({
       cfg.id === cardId ? { ...cfg, size } : cfg
     );
 
-    onUpdateSettings({ 
+    const newResizeSettings = {
       dashboardCards: updated,
       dashboardCardsConfig: updatedConfig,
       dashboardCardsVersion: 2
-    });
+    };
+
+    saveLocalDashboardStorage(newResizeSettings);
+
+    onUpdateSettings(newResizeSettings);
   };
 
   // --- Default Order & Reorder Handlers for the Biz Hub Cards ---

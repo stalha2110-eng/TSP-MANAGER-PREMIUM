@@ -152,6 +152,12 @@ import {
   removeMultipleLocalProductImages, 
   getAllLocalProductImages 
 } from './utils/localImageStorage';
+import {
+  saveLocalDashboardStorage,
+  stripDashboardSettingsFromCloud,
+  mergeCloudSettingsWithLocal,
+  isOnlyDashboardUpdate
+} from './utils/localDashboardStorage';
 import { 
   db, 
   auth, 
@@ -2234,11 +2240,14 @@ export default function App() {
 
     const userDocRef = doc(db, 'users', state.user.uid);
     
-    // Sync Settings
+    // Sync Settings (remote cloud settings merged while keeping local dashboard cards authoritative)
     const unsubSettings = onSnapshot(userDocRef, (snap) => {
       if (snap.exists()) {
         const data = snap.data();
-        setState(prev => ({ ...prev, settings: { ...prev.settings, ...data } }));
+        setState(prev => ({ 
+          ...prev, 
+          settings: mergeCloudSettingsWithLocal(data, prev.settings) 
+        }));
         if (data.printerSettings) {
           try {
             localStorage.setItem('price_manager_printer_config', JSON.stringify(data.printerSettings));
@@ -2788,21 +2797,32 @@ export default function App() {
   const handleUpdateSettings = useCallback(async (updates: Partial<AppSettings>) => {
     if (isSyncing) return;
     
+    // 1. Immediately persist any dashboard card / deck updates locally in localStorage (synchronous, 0ms delay)
+    saveLocalDashboardStorage(updates);
+
+    // 2. Local state update first (Instant, Responsive UI)
+    setState(prev => ({
+      ...prev,
+      settings: { ...prev.settings, ...updates }
+    }));
+
+    // 3. If this update is strictly for dashboard cards / layout, skip Firestore completely!
+    // No network roundtrip, no Firestore delay, 100% offline-ready and instant on Android and desktop.
+    if (isOnlyDashboardUpdate(updates)) {
+      return;
+    }
+
     // Set syncing flag if autoCloudSync is being toggled
     const isTogglingSync = 'autoCloudSync' in updates;
     if (isTogglingSync) setIsSyncing(true);
 
     try {
-      // Local state update first (Responsive UI)
-      setState(prev => ({
-        ...prev,
-        settings: { ...prev.settings, ...updates }
-      }));
+      // Cloud Persistence: Strip out all local dashboard card keys so they are NEVER sent to Firestore
+      const cloudUpdates = stripDashboardSettingsFromCloud(updates);
 
-      // Cloud Persistence
-      if (state.user && state.user.uid !== 'guest_user' && (updates.autoCloudSync ?? state.settings.autoCloudSync)) {
+      if (Object.keys(cloudUpdates).length > 0 && state.user && state.user.uid !== 'guest_user' && (updates.autoCloudSync ?? state.settings.autoCloudSync)) {
         try {
-          await setDoc(doc(db, 'users', state.user.uid), sanitizeForFirestore(updates), { merge: true });
+          await setDoc(doc(db, 'users', state.user.uid), sanitizeForFirestore(cloudUpdates), { merge: true });
         } catch (e) {
           handleFirestoreError(e, OperationType.WRITE, `users/${state.user.uid}`);
         }

@@ -16,6 +16,7 @@ import { deduplicateById } from '../constants/initialState';
 import { getUnbilledEntries, saveUnbilledEntries } from '../lib/unbilledStorage';
 import { isItemDeleted } from '../utils/deletionTracker';
 import { getAllLocalProductImages } from '../utils/localImageStorage';
+import { stripDashboardSettingsFromCloud, mergeCloudSettingsWithLocal } from '../utils/localDashboardStorage';
 
 export interface SyncResult {
   success: boolean;
@@ -303,12 +304,15 @@ export class CloudSyncService {
           if (onStateUpdate) {
             onStateUpdate(prev => ({
               ...prev,
-              settings: { ...prev.settings, ...cloudData }
+              settings: mergeCloudSettingsWithLocal(cloudData, prev.settings)
             }));
           }
         } else {
-          // Upload local settings to newly created document
-          await setDoc(userDocRef, sanitizeForFirestore(currentState.settings), { merge: true });
+          // Upload local settings to newly created document, strictly omitting local dashboard cards
+          const cloudSettings = stripDashboardSettingsFromCloud(currentState.settings);
+          if (Object.keys(cloudSettings).length > 0) {
+            await setDoc(userDocRef, sanitizeForFirestore(cloudSettings), { merge: true });
+          }
         }
       } catch (settErr) {
         console.warn("[CloudSync] Settings sync warning:", settErr);

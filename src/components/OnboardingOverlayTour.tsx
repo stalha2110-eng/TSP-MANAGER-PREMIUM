@@ -184,12 +184,12 @@ const FLOWS_CONFIG: Record<TutorialFlowType, { name: string; hindiName: string; 
       {
         id: "cbm3_step_1",
         targetId: "billing-view-all-items-btn",
-        title: "Open All Items Catalog",
-        hindiTitle: "VIEW ALL ITEMS बटन दबाएं",
-        hindiInstruction: "दुकान के सभी प्रोडक्ट्स की पूरी लिस्ट देखने के लिए 'VIEW ALL ITEMS' बटन पर टैप करें।",
-        hindiVoice: "दुकान के सभी प्रोडक्ट्स की पूरी लिस्ट देखने के लिए VIEW ALL ITEMS बटन पर टैप करें।",
+        title: "Open Store Catalog to Add Items",
+        hindiTitle: "+ ADD ITEMS TO BILL बटन दबाएं",
+        hindiInstruction: "बिल में सामान जोड़ने और कैटलॉग देखने के लिए '+ ADD ITEMS TO BILL' बटन पर टैप करें।",
+        hindiVoice: "बिल में सामान जोड़ने के लिए ऐड आइटम्स टू बिल बटन पर टैप करें।",
         gesture: "tap",
-        gestureLabel: "VIEW ALL ITEMS",
+        gestureLabel: "+ ADD ITEMS TO BILL",
         badge: "कदम 1 / 4",
         icon: <Layers size={16} className="text-indigo-400" />
       },

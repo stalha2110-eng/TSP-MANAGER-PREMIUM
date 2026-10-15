@@ -21,6 +21,7 @@ import FullBillHistoryView from './FullBillHistoryView';
 import UniversalStoreCalculator from './UniversalStoreCalculator';
 import AllItemsCatalogModal from './AllItemsCatalogModal';
 import { AnimatedPosBillingIcon } from './AnimatedPosBillingIcon';
+import { AnimatedAddItemButton } from './AnimatedAddItemButton';
 import { AnimatedBillHistoryIcon } from './AnimatedBillHistoryIcon';
 import { AnimatedCalculatorIcon } from './AnimatedCalculatorIcon';
 import { QuickWeightPresets, ItemHoldWeightModal } from './QuickWeightPresets';
@@ -4484,66 +4485,15 @@ export default function BillingScreen({
             )}
           </div>
 
-          {/* ACTION BUTTONS: VIEW ALL ITEMS (LARGE, MAIN ATTRACTIVE ANIMATED BUTTON) & ADD MANUAL ITEM */}
+          {/* ACTION BUTTONS: + ADD ITEMS TO BILL (SOLID HIGH-CONTRAST POS BUTTON) & ADD MANUAL ITEM */}
           <div className="shrink-0 space-y-2 pt-1 select-none">
-            {/* VIEW ALL ITEMS - LARGE & MAIN ATTRACTIVE ANIMATED BUTTON */}
-            <motion.button
-              id="billing-view-all-items-btn"
-              type="button"
+            {/* + ADD ITEMS TO BILL - ANIMATED POS STORYTELLING BUTTON */}
+            <AnimatedAddItemButton
               onClick={() => setShowAllItemsModal(true)}
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              animate={{
-                boxShadow: [
-                  "0 4px 14px 0 rgba(79, 70, 229, 0.35)",
-                  "0 8px 24px 4px rgba(124, 58, 237, 0.48)",
-                  "0 4px 14px 0 rgba(79, 70, 229, 0.35)"
-                ]
-              }}
-              transition={{
-                boxShadow: {
-                  duration: 2.2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                },
-                type: "spring",
-                stiffness: 400,
-                damping: 25
-              }}
-              className="w-full relative overflow-hidden rounded-2xl p-[2px] cursor-pointer group shadow-lg"
-            >
-              {/* Animated Gradient Outer Border & Background */}
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl opacity-90 group-hover:opacity-100 transition-opacity animate-pulse" />
-              
-              {/* Inner Button Content */}
-              <div className="relative bg-gradient-to-r from-indigo-900/95 via-purple-900/95 to-indigo-950/95 dark:from-indigo-950 dark:via-purple-950 dark:to-zinc-950 text-white px-4 py-3 rounded-[14px] flex items-center justify-between gap-2 transition-all">
-                {/* Left side: Icon with pulse animation and titles */}
-                <div className="flex items-center gap-3">
-                  <div className="relative h-9 w-9 rounded-xl bg-white/10 flex items-center justify-center text-white border border-white/20 shadow-inner shrink-0 group-hover:scale-110 transition-transform">
-                    <LayoutGrid size={18} className="animate-pulse" />
-                    <Sparkles size={11} className="absolute -top-1 -right-1 text-amber-300 animate-bounce" />
-                  </div>
-                  
-                  <div className="text-left">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-white drop-shadow-sm">
-                        {cleanAndValidateText("View All Items (सभी सामान देखें)", currentLang, state.settings)}
-                      </span>
-                    </div>
-                    <p className="text-[8.5px] font-extrabold text-indigo-200/80 uppercase tracking-wide">
-                      {cleanAndValidateText("Full Store Catalog & Details • Browse & Add to Bill", currentLang, state.settings)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Right side: Count Badge */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="px-2.5 py-1 rounded-full bg-white/20 text-white font-mono font-black text-[10px] tracking-wide border border-white/30 backdrop-blur-xs shadow-xs">
-                    {state.items.length} {cleanAndValidateText("Items", currentLang, state.settings)}
-                  </span>
-                </div>
-              </div>
-            </motion.button>
+              itemsCount={state.items.length}
+              currentLang={currentLang}
+              settings={state.settings}
+            />
 
             {/* ADD ITEM NOT IN LIST COMPACT BUTTON */}
             <div className="flex justify-center">

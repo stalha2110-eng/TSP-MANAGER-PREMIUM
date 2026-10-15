@@ -5737,7 +5737,7 @@ export default function App() {
                   type: nextTut.type,
                   next: nextTut.type === 'make_bill_search' ? {
                     type: 'make_bill_all_items',
-                    title: 'विधि 3 (View All Items)'
+                    title: 'विधि 3 (+ Add Items to Bill)'
                   } : undefined
                 });
               }

@@ -1212,56 +1212,6 @@ export default function BillingScreen({
     });
   }, [state.items, parsedSearch.cleanQuery, selectedCategory]);
 
-  // Top 4 items for the compact billing dashboard (eliminates user scrolling)
-  const recentDashboardItems = useMemo(() => {
-    const effectiveQuery = (parsedSearch.cleanQuery || '').trim();
-    // If search query or category is selected, show top 4 matches
-    if (effectiveQuery || selectedCategory) {
-      return filteredItems.slice(0, 4);
-    }
-
-    // 1. Gather recent item IDs from recent bills
-    const recentIds: string[] = [];
-    const bills = state.bills || [];
-    for (let i = bills.length - 1; i >= 0 && recentIds.length < 4; i--) {
-      const b = bills[i];
-      if (b.items) {
-        for (const it of b.items) {
-          if (it.itemId && !recentIds.includes(it.itemId) && state.items.some(x => x.id === it.itemId)) {
-            recentIds.push(it.itemId);
-            if (recentIds.length >= 4) break;
-          }
-        }
-      }
-    }
-
-    // 2. Map existing items
-    const result: Item[] = [];
-    recentIds.forEach(id => {
-      const found = state.items.find(x => x.id === id);
-      if (found && !result.some(r => r.id === found.id)) {
-        result.push(found);
-      }
-    });
-
-    // 3. Fill remaining slots with recently updated/created items
-    if (result.length < 4) {
-      const remaining = [...state.items]
-        .filter(it => !result.some(r => r.id === it.id))
-        .sort((a, b) => {
-          const timeA = new Date(a.lastUpdated || a.priceChangedAt || 0).getTime();
-          const timeB = new Date(b.lastUpdated || b.priceChangedAt || 0).getTime();
-          return timeB - timeA;
-        });
-
-      for (const it of remaining) {
-        result.push(it);
-        if (result.length >= 4) break;
-      }
-    }
-
-    return result.slice(0, 4);
-  }, [state.items, state.bills, parsedSearch.cleanQuery, selectedCategory, filteredItems]);
 
   const predictiveBillingItems = useMemo(() => {
     const effectiveQuery = (parsedSearch.cleanQuery || '').trim().toLowerCase();
@@ -4340,152 +4290,7 @@ export default function BillingScreen({
           (showLivePreview && cart.length > 0) ? "lg:col-span-4 xl:col-span-5" : "lg:col-span-7"
         )}>
 
-          {/* COMPACT RECENT ITEMS SELECTION (Strictly 4 items to prevent user scrolling) */}
-          <div className="space-y-1.5 shrink-0 select-none">
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[9.5px] font-black uppercase tracking-wider text-[var(--foreground)]/80">
-                  {cleanAndValidateText("⚡Recent Items (हाल ही के सामान)", currentLang, state.settings)}
-                </span>
-              </div>
-              <span className="text-[7.5px] font-black uppercase px-2 py-0.5 rounded-full bg-[var(--foreground)]/5 border border-[var(--border)] text-[var(--foreground)]/60">
-                {recentDashboardItems.length} of {state.items.length} {cleanAndValidateText("Items", currentLang, state.settings)}
-              </span>
-            </div>
-
-            {recentDashboardItems.length === 0 ? (
-              <div className="py-6 border border-[var(--border)] border-dashed rounded-xl text-center text-xs opacity-40">
-                No items available. Tap below to browse all items or add custom entry.
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {recentDashboardItems.map((item, idx) => {
-                  const qtyLimitValue = item.quantity;
-                  const isLow = qtyLimitValue <= (item.minStockLevel ?? state.settings?.minStockLevel ?? 10);
-                  const isOut = qtyLimitValue <= 0;
-                  const itemInCart = cart.find(c => c.id === item.id);
-                  const trs = item.translations || { en: item.name || '', hi: '', mr: '', 'hi-en': '' };
-                  const pName = trs[currentLang] || trs.en || item.name;
-                  
-                  return (
-                    <motion.div
-                      id={`billing-quick-product-card-${idx}`}
-                      key={`dash-recent-${item.id || 'item'}-${idx}`}
-                      onPointerDown={() => handleItemPointerDown(item)}
-                      onPointerUp={handleItemPointerUp}
-                      onPointerLeave={handleItemPointerUp}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        setHoldWeightItem(item);
-                      }}
-                      onClick={(e) => handleItemCardClick(item, e)}
-                      onDoubleClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (singleBillingClickTimeoutRef.current) {
-                          clearTimeout(singleBillingClickTimeoutRef.current);
-                          singleBillingClickTimeoutRef.current = null;
-                        }
-                        lastBillingItemClickRef.current = { id: '', time: 0 };
-                        handleOpenRateSelect(item);
-                      }}
-                      whileHover={{ 
-                        y: -3, 
-                        scale: 1.02, 
-                        borderColor: "var(--primary)",
-                        boxShadow: "0 10px 22px -8px rgba(0, 0, 0, 0.15), 0 0 12px 2px var(--primary)"
-                      }}
-                      whileTap={{ scale: 0.96 }}
-                      transition={{ type: "spring", stiffness: 450, damping: 22 }}
-                      className={cn(
-                        "p-2.5 rounded-xl bg-[var(--card)] border cursor-pointer active:scale-95 transition-all text-left flex flex-col justify-between h-[5.6rem] group relative overflow-hidden select-none",
-                        itemInCart
-                          ? "border-[var(--primary)] ring-2 ring-[var(--primary)]/25 bg-[var(--primary)]/[0.03]"
-                          : isOut 
-                            ? "border-red-500/10 bg-red-500/[0.02]" 
-                            : isLow 
-                              ? "border-amber-500/20 bg-amber-500/[0.01]" 
-                              : "border-[var(--border)]"
-                      )}
-                      title="Tap to add | Double-click to Select Rate (दर बदलें) | Press & Hold for weight presets"
-                    >
-                      <div>
-                        {/* Title & In-Cart Badge */}
-                        <div className="flex items-start justify-between gap-1">
-                          <h4 className="font-extrabold text-[10.5px] text-[var(--foreground)] truncate uppercase group-hover:text-[var(--primary)] flex-1">
-                            {pName}
-                          </h4>
-                          {itemInCart && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-[var(--primary)] text-white text-[7.5px] font-black shrink-0 shadow-xs">
-                              x{itemInCart.quantity}
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center justify-between text-[7.5px] font-bold text-[var(--foreground)]/50 uppercase tracking-wide mt-0.5">
-                          <span className="truncate max-w-[90px]">
-                            {state.categories?.find(c => c.id === item.categoryId)?.name || 'General'}
-                          </span>
-                          <span className="lowercase shrink-0">
-                            ({item.unit || 'pcs'})
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Info & warnings on grid */}
-                      <div className="flex items-end justify-between w-full mt-1 z-20">
-                        <div
-                          onDoubleClick={(e) => {
-                            e.stopPropagation();
-                            if (singleBillingClickTimeoutRef.current) {
-                              clearTimeout(singleBillingClickTimeoutRef.current);
-                              singleBillingClickTimeoutRef.current = null;
-                            }
-                            lastBillingItemClickRef.current = { id: '', time: 0 };
-                            handleOpenRateSelect(item);
-                          }}
-                          className="flex flex-col text-left group/rate p-0.5 -m-0.5 rounded transition-colors select-none"
-                          title="Double-click to change price / दर बदलने के लिए डबल क्लिक करें"
-                        >
-                          <div className="flex items-center gap-0.5">
-                            <span className="text-[11px] font-mono font-black text-[var(--foreground)] group-hover:text-[var(--primary)] leading-none transition-colors">
-                              ₹{formatNumber(billingMode === 'wholesale' ? (item.wholesalePrice || item.retailPrice) : item.retailPrice, state.settings?.pricePrecision || 0)}
-                            </span>
-                            <Coins size={9} className="text-[var(--primary)] opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
-                          </div>
-                          <span className="text-[7.5px] font-black opacity-50 lowercase mt-0.5 group-hover:opacity-80" style={{ fontSize: '7px' }}>
-                            / {billingMode === 'wholesale' ? (item.wholesalePriceUnit || item.unit || 'pcs') : (item.retailPriceUnit || item.unit || 'pcs')}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
-                          {onPeek && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onPeek({ type: 'item', payload: item });
-                              }}
-                              className="h-5 w-5 rounded-md bg-[var(--foreground)]/5 border border-[var(--border)] hover:bg-[var(--primary)] hover:text-white transition-all flex items-center justify-center text-[var(--foreground)]/55 cursor-pointer"
-                              title="Quick View Characteristics"
-                            >
-                              <Eye size={10} />
-                            </button>
-                          )}
-                          <div className="h-5 px-2 rounded-md bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 flex items-center justify-center text-[8px] font-black uppercase group-hover:bg-[var(--primary)] group-hover:text-white transition-colors">
-                            + Add
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* ACTION BUTTONS: + ADD ITEMS TO BILL (SOLID HIGH-CONTRAST POS BUTTON) & ADD MANUAL ITEM */}
+          {/* ACTION BUTTONS: + ADD ITEMS TO BILL & ADD MANUAL ITEM */}
           <div className="shrink-0 space-y-2 pt-1 select-none">
             {/* + ADD ITEMS TO BILL - ANIMATED POS STORYTELLING BUTTON */}
             <AnimatedAddItemButton
@@ -4621,53 +4426,92 @@ export default function BillingScreen({
             </div>
 
             {/* Smart Optional Customer Panel */}
-            <div className={cn(
-              "p-3 rounded-xl border transition-all space-y-2.5 select-none",
-              paymentMethod === 'Credit' 
-                ? "bg-rose-500/[0.03] border-rose-500/30 ring-1 ring-rose-500/10 shadow-sm"
-                : "bg-[var(--foreground)]/[0.02] border-[var(--border)]"
-            )}>
-              <div className="flex items-center justify-between">
-                <span className="text-[8px] font-black uppercase opacity-45 tracking-widest leading-none block">
-                  Customer Credentials
-                </span>
-                
-                {paymentMethod === 'Credit' && (
-                  <span className="text-[6.5px] font-black bg-rose-500 text-white px-1 leading-none py-0.5 rounded uppercase tracking-wider animate-pulse shrink-0">
-                    UDHAR COMPLIANT CODE
-                  </span>
-                )}
-              </div>
-
-              {/* Toggle Customer fields display indicator if parameters aren't met */}
-              {!(forceCustomerOpen || manualCustomerOpen) ? (
-                <div className="flex justify-center">
-                  <button
-                    onClick={() => setManualCustomerOpen(true)}
-                    className="py-1.5 px-3 bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[8px] font-black uppercase text-[var(--foreground)]/70 rounded-lg border border-[var(--border)] cursor-pointer select-none transition-all"
-                  >
-                    + Add Customer Info (ग्रहक की जानकारी)
-                  </button>
+            {!(forceCustomerOpen || manualCustomerOpen) ? (
+              (customerName || customerPhone) ? (
+                <div className="flex items-center justify-between px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--card)] text-xs select-none">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="h-6 w-6 rounded-md bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0">
+                      <User size={12} />
+                    </div>
+                    <div className="truncate">
+                      <span className="font-bold text-[var(--foreground)]">{customerName || 'Customer'}</span>
+                      {customerPhone && (
+                        <span className="text-[11px] font-mono text-[var(--foreground)]/60 ml-2">({customerPhone})</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setManualCustomerOpen(true)}
+                      className="px-2 py-0.5 rounded text-[11px] font-semibold text-[var(--foreground)]/70 hover:text-[var(--primary)] hover:bg-[var(--foreground)]/5 transition-colors cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setCustomerName(''); setCustomerPhone(''); }}
+                      className="px-2 py-0.5 rounded text-[11px] font-semibold text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  </div>
                 </div>
               ) : (
+                <button
+                  type="button"
+                  onClick={() => setManualCustomerOpen(true)}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--border)] hover:border-[var(--primary)]/40 bg-[var(--card)] hover:bg-[var(--foreground)]/[0.02] text-[var(--foreground)]/75 hover:text-[var(--foreground)] transition-all cursor-pointer group shadow-2xs select-none"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-md bg-[var(--foreground)]/5 group-hover:bg-[var(--primary)]/10 group-hover:text-[var(--primary)] flex items-center justify-center text-[var(--foreground)]/60 transition-colors">
+                      <User size={13} />
+                    </div>
+                    <span className="text-xs font-semibold">
+                      + Add Customer Info <span className="text-[10px] opacity-60 font-normal">({cleanAndValidateText("ग्राहक विवरण", currentLang, state.settings)})</span>
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-medium text-[var(--primary)] opacity-0 group-hover:opacity-100 transition-opacity">
+                    + Add
+                  </span>
+                </button>
+              )
+            ) : (
+              <div className={cn(
+                "p-3 rounded-xl border transition-all space-y-2 select-none",
+                paymentMethod === 'Credit' 
+                  ? "bg-rose-500/[0.03] border-rose-500/30 ring-1 ring-rose-500/10 shadow-xs"
+                  : "bg-[var(--card)] border-[var(--border)] shadow-xs"
+              )}>
+                {paymentMethod === 'Credit' && (
+                  <div className="flex items-center justify-between pb-1 border-b border-rose-500/10">
+                    <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                      Udhar Bill • Customer details required
+                    </span>
+                    <span className="text-[9px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded border border-rose-500/20">
+                      Udhar
+                    </span>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-2 animate-in fade-in duration-200">
                   <div className="relative col-span-1">
-                    <User className="absolute left-2 top-1/2 -translate-y-1/2 opacity-30" size={12} />
+                    <User className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-35 text-[var(--foreground)] pointer-events-none" size={13} />
                     <input
                       type="text"
-                      placeholder="Name / नाम *"
-                      className="w-full pl-6 pr-2 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[10px] uppercase font-bold outline-none font-sans focus:border-[var(--primary)]"
+                      placeholder="Customer Name / नाम *"
+                      className="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-xs font-medium outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/20 transition-all placeholder:text-[var(--foreground)]/40"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                     />
                   </div>
                   
                   <div className="relative col-span-1">
-                    <Phone className="absolute left-2 top-1/2 -translate-y-1/2 opacity-30" size={10} />
+                    <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-35 text-[var(--foreground)] pointer-events-none" size={12} />
                     <input
-                      type="text"
+                      type="tel"
                       placeholder="Mobile / फ़ोन *"
-                      className="w-full pl-6 pr-2 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[10px] font-mono outline-none focus:border-[var(--primary)]"
+                      className="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-xs font-mono font-medium outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/20 transition-all placeholder:text-[var(--foreground)]/40"
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
                     />
@@ -4675,32 +4519,41 @@ export default function BillingScreen({
 
                   {/* Date selection for udhar crediting */}
                   {paymentMethod === 'Credit' && (
-                    <div className="col-span-2 pt-1.5 border-t border-rose-500/10 space-y-1 animate-in slide-in-from-top-2 duration-300">
-                      <label className="text-[7px] font-black uppercase tracking-wider text-rose-500 block leading-none">
+                    <div className="col-span-2 pt-1 border-t border-rose-500/15 space-y-1">
+                      <label className="text-[10px] font-bold text-rose-600 dark:text-rose-400 block leading-none">
                         📅 Due Date / चुकाने की तारीख *
                       </label>
                       <input
                         type="date"
                         value={udharDueDate}
                         onChange={(e) => setUdharDueDate(e.target.value)}
-                        className="w-full text-[10px] font-mono font-black border border-rose-500/20 rounded-lg px-2.5 py-1.5 bg-[var(--card)] text-[var(--foreground)] cursor-pointer outline-none focus:border-rose-500"
+                        className="w-full text-xs font-mono font-medium border border-rose-500/25 rounded-lg px-2.5 py-1.5 bg-[var(--background)] text-[var(--foreground)] cursor-pointer outline-none focus:border-rose-500"
                       />
                     </div>
                   )}
 
-                  <div className="col-span-2 flex justify-end">
-                    {(!forceCustomerOpen) && (
+                  <div className="col-span-2 flex items-center justify-between pt-1">
+                    {(!forceCustomerOpen) ? (
                       <button
+                        type="button"
                         onClick={() => { setManualCustomerOpen(false); setCustomerName(''); setCustomerPhone(''); }}
-                        className="text-[7px] font-black text-rose-500 uppercase hover:underline leading-none cursor-pointer"
+                        className="text-[11px] font-medium text-rose-500 hover:text-rose-600 hover:underline cursor-pointer"
                       >
-                        Hide Panel
+                        Clear & Close
                       </button>
-                    )}
+                    ) : <div />}
+
+                    <button
+                      type="button"
+                      onClick={() => setManualCustomerOpen(false)}
+                      className="px-3 py-1 rounded-md bg-[var(--foreground)]/10 hover:bg-[var(--foreground)]/15 text-[11px] font-bold text-[var(--foreground)] transition-colors cursor-pointer ml-auto"
+                    >
+                      Done
+                    </button>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Cart list details */}
             <div className="space-y-1.5 max-h-[36vh] overflow-y-auto pr-1 custom-scrollbar">

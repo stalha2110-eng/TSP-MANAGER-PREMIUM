@@ -765,10 +765,10 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                   type="button"
                   onClick={handleVoiceSearch}
                   className={cn(
-                    "px-2 py-1 rounded-xl text-xs flex items-center gap-1 shrink-0 transition-all duration-200 cursor-pointer shadow-xs active:scale-95",
+                    "p-1.5 rounded-xl text-xs flex items-center justify-center shrink-0 transition-all duration-200 cursor-pointer shadow-xs active:scale-95",
                     isListening 
-                      ? "bg-rose-500 text-white ring-2 ring-rose-400 shadow-md shadow-rose-500/30 animate-pulse" 
-                      : "bg-gradient-to-r from-[var(--primary)]/15 via-indigo-500/15 to-violet-500/15 border border-[var(--primary)]/35 text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--primary)]/25 hover:shadow-[0_0_12px_rgba(99,102,241,0.25)] hover:scale-105 font-bold"
+                      ? "bg-rose-500 text-white ring-2 ring-rose-400 shadow-md shadow-rose-500/30 animate-pulse px-2 gap-1" 
+                      : "bg-gradient-to-r from-[var(--primary)]/15 via-indigo-500/15 to-violet-500/15 border border-[var(--primary)]/35 text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--primary)]/25 hover:shadow-[0_0_12px_rgba(99,102,241,0.25)] hover:scale-105"
                   )}
                   title={isListening ? "Listening... click to stop" : "Voice search dictation (Speak product name)"}
                 >
@@ -778,10 +778,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                       <span className="text-[10px] font-extrabold uppercase tracking-wider text-white">Listening</span>
                     </>
                   ) : (
-                    <>
-                      <Mic size={14} className="text-[var(--primary)] stroke-[2.3]" />
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--primary)]">Voice</span>
-                    </>
+                    <Mic size={15} className="text-[var(--primary)] stroke-[2.3]" />
                   )}
                 </button>
               </div>

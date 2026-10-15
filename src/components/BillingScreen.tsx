@@ -6,7 +6,7 @@ import {
   Clock, Download, Calendar, RefreshCw, FileText, Coins,
   Cloud, CloudOff, Layers, Pin, Copy, PauseCircle, Eye, Calculator,
   History, Receipt, CreditCard, ReceiptCent, Terminal, LayoutGrid,
-  Maximize2, Minimize2, ChevronUp, ChevronDown
+  Maximize2, Minimize2, ChevronUp, ChevronDown, UserPlus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppState, Item, Bill, TransactionItem, Note, DraftBill } from '../types';
@@ -52,6 +52,90 @@ export function CounterIcon({ size = 14, className }: { size?: number; className
       <path d="M0,0 L20,0 L20,85 L0,85 Z" transform="translate(436,278)" />
       <path d="M0,0 L6,0 L10,2 L12,6 L12,14 L8,22 L3,26 L0,27 Z" transform="translate(254,125)" />
       <path d="M0,0 L6,0 L6,27 L0,24 L-4,19 L-6,14 L-6,7 L-3,2 Z" transform="translate(74,125)" />
+    </svg>
+  );
+}
+
+export function CashExchangeHandsIcon({ size = 20, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      {/* Background Banknote (Green Cash note with currency emblem) */}
+      <rect
+        x="6"
+        y="3.5"
+        width="12"
+        height="7.5"
+        rx="1.5"
+        className="fill-emerald-500/25 stroke-emerald-600 dark:stroke-emerald-400"
+        strokeWidth="1.5"
+      />
+      <circle
+        cx="12"
+        cy="7.25"
+        r="1.8"
+        className="fill-emerald-500/35 stroke-emerald-600 dark:stroke-emerald-400"
+        strokeWidth="1"
+      />
+      <path
+        d="M8 7.25H8.01M16 7.25H16.01"
+        className="stroke-emerald-600 dark:stroke-emerald-400"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+
+      {/* Gold Coin / Change being returned */}
+      <circle
+        cx="16.5"
+        cy="12.5"
+        r="2.8"
+        className="fill-amber-400 stroke-amber-600 dark:stroke-amber-400"
+        strokeWidth="1.2"
+      />
+      <path
+        d="M15.5 12.5H17.5M16.5 11.5V13.5"
+        className="stroke-amber-900/80 dark:stroke-amber-950"
+        strokeWidth="0.8"
+        strokeLinecap="round"
+      />
+
+      {/* Left Hand: Handing over cash (wrist -> palm -> fingers) */}
+      <path
+        d="M2 14.5H6.5C7.8 14.5 9 13.8 9.8 12.8L11 11.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M2 17.5H6.5C8 17.5 9.5 16.5 10.5 15.2L12 13.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      {/* Right Hand: Receiving cash/change (cupped palm facing up from right) */}
+      <path
+        d="M22 15H17.5C16.2 15 15 15.8 14.2 16.8L13 18.2"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M22 18H17.5C16 18 14.5 19 13.5 20.2L12.2 21.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -4428,15 +4512,15 @@ export default function BillingScreen({
             {/* Smart Optional Customer Panel */}
             {!(forceCustomerOpen || manualCustomerOpen) ? (
               (customerName || customerPhone) ? (
-                <div className="flex items-center justify-between px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--card)] text-xs select-none">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="h-6 w-6 rounded-md bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0">
-                      <User size={12} />
+                <div className="flex items-center justify-between px-3.5 py-2 rounded-xl border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/50 dark:bg-indigo-950/30 text-xs select-none shadow-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="h-7 w-7 rounded-lg bg-indigo-600/10 dark:bg-indigo-400/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                      <User size={14} />
                     </div>
                     <div className="truncate">
                       <span className="font-bold text-[var(--foreground)]">{customerName || 'Customer'}</span>
                       {customerPhone && (
-                        <span className="text-[11px] font-mono text-[var(--foreground)]/60 ml-2">({customerPhone})</span>
+                        <span className="text-[11px] font-mono text-[var(--foreground)]/65 ml-2 font-medium">({customerPhone})</span>
                       )}
                     </div>
                   </div>
@@ -4444,14 +4528,14 @@ export default function BillingScreen({
                     <button
                       type="button"
                       onClick={() => setManualCustomerOpen(true)}
-                      className="px-2 py-0.5 rounded text-[11px] font-semibold text-[var(--foreground)]/70 hover:text-[var(--primary)] hover:bg-[var(--foreground)]/5 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 rounded-md text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors cursor-pointer"
                     >
                       Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => { setCustomerName(''); setCustomerPhone(''); }}
-                      className="px-2 py-0.5 rounded text-[11px] font-semibold text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 rounded-md text-[11px] font-bold text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
                     >
                       Clear
                     </button>
@@ -4461,18 +4545,14 @@ export default function BillingScreen({
                 <button
                   type="button"
                   onClick={() => setManualCustomerOpen(true)}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--border)] hover:border-[var(--primary)]/40 bg-[var(--card)] hover:bg-[var(--foreground)]/[0.02] text-[var(--foreground)]/75 hover:text-[var(--foreground)] transition-all cursor-pointer group shadow-2xs select-none"
+                  className="w-full h-10 px-4 rounded-xl bg-indigo-50/90 hover:bg-indigo-100 active:bg-indigo-200/80 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200/90 dark:border-indigo-800/70 font-bold text-xs flex items-center justify-center gap-2 shadow-xs hover:shadow-sm active:scale-[0.98] transition-all cursor-pointer select-none"
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded-md bg-[var(--foreground)]/5 group-hover:bg-[var(--primary)]/10 group-hover:text-[var(--primary)] flex items-center justify-center text-[var(--foreground)]/60 transition-colors">
-                      <User size={13} />
-                    </div>
-                    <span className="text-xs font-semibold">
-                      + Add Customer Info <span className="text-[10px] opacity-60 font-normal">({cleanAndValidateText("ग्राहक विवरण", currentLang, state.settings)})</span>
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-medium text-[var(--primary)] opacity-0 group-hover:opacity-100 transition-opacity">
-                    + Add
+                  <UserPlus size={15} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <span className="tracking-wide">
+                    + Add Customer Info
+                  </span>
+                  <span className="text-[10px] font-normal opacity-75 hidden sm:inline">
+                    ({cleanAndValidateText("ग्राहक विवरण", currentLang, state.settings)})
                   </span>
                 </button>
               )
@@ -5176,195 +5256,6 @@ export default function BillingScreen({
               )}
             </div>
 
-            {/* Smart Cash Handling Assistant */}
-            {cart.length > 0 && (
-              <div className="space-y-2 select-none">
-                <button
-                  type="button"
-                  id="smart-cash-assistant-toggle-btn"
-                  onClick={() => setIsCashAssistantOpen(!isCashAssistantOpen)}
-                  style={{
-                    width: '300.818px',
-                    paddingLeft: '27.5px',
-                    paddingRight: '14.5px',
-                    paddingTop: '9px',
-                    paddingBottom: '8px',
-                    marginLeft: '13px'
-                  }}
-                  className={cn(
-                    "border rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-between shadow-xs",
-                    isCashAssistantOpen 
-                      ? "bg-[var(--primary)]/[0.08] text-[var(--primary)] border-[var(--primary)]/40 ring-1 ring-[var(--primary)]/20 shadow-xs" 
-                      : "bg-[var(--card)] hover:bg-[var(--foreground)]/[0.03] text-[var(--foreground)]/80 border-[var(--border)]"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <Coins size={14} className={cn(isCashAssistantOpen ? "text-[var(--primary)] animate-bounce" : "opacity-60")} />
-                    <span>
-                      {state.settings.language === 'hi' 
-                        ? 'स्मार्ट नगद सहायक' 
-                        : state.settings.language === 'mr' 
-                          ? 'स्मार्ट रोख सहाय्यक' 
-                          : state.settings.language === 'hi-en' 
-                            ? 'Smart Cash Assistant (नगद कैलकुलेटर)' 
-                            : 'Smart Cash Assistant'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 font-mono text-[7px] font-black">
-                    {isCashAssistantOpen ? (
-                      <span className="bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-0.5 rounded border border-[var(--primary)]/25 font-black uppercase animate-pulse">
-                        ACTIVE
-                      </span>
-                    ) : (
-                      <span className="bg-[var(--foreground)]/5 text-[var(--foreground)]/45 px-2 py-0.5 rounded border border-[var(--border)] font-black uppercase">
-                        OPEN
-                      </span>
-                    )}
-                  </div>
-                </button>
-
-                <AnimatePresence>
-                  {isCashAssistantOpen && (
-                    <motion.div
-                      id="smart-cash-assistant-panel"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden border border-[var(--border)] rounded-xl bg-[var(--foreground)]/[0.015] p-3 space-y-3"
-                    >
-                      {/* Title & Reset */}
-                      <div className="flex items-center justify-between border-b border-[var(--border)] pb-1.5">
-                        <span className="text-[8px] font-black uppercase opacity-60 tracking-widest flex items-center gap-1">
-                          <span>💵 Cash Drawer Desk</span>
-                        </span>
-                        {cashReceivedStr !== '' && (
-                          <button 
-                            type="button"
-                            onClick={() => setCashReceivedStr('')}
-                            className="text-[7.5px] font-black text-rose-500 hover:text-rose-600 hover:underline uppercase tracking-wider cursor-pointer"
-                          >
-                            Clear Input
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Cash Suggestions / Proposed Denominations */}
-                      <div className="space-y-1.5">
-                        <span className="text-[7.5px] font-black uppercase tracking-wider opacity-45 block">
-                          {state.settings.language === 'hi' 
-                            ? 'त्वरित राशि चुनें (Quick Denomination):' 
-                            : state.settings.language === 'mr' 
-                              ? 'त्वरित मूल्यवर्ग (Quick Denomination):' 
-                              : 'Select Quick Denomination:'}
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {cashSuggestions.map((denom) => {
-                            const isSelected = parseFloat(cashReceivedStr) === denom;
-                            const isExactAmount = denom === total;
-                            
-                            return (
-                              <button
-                                type="button"
-                                key={denom}
-                                onClick={() => setCashReceivedStr(denom.toString())}
-                                className={cn(
-                                  "px-2.5 py-1.5 rounded-lg text-[9px] font-black transition-all cursor-pointer border shadow-xs select-none",
-                                  isSelected
-                                    ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 font-black shadow-md scale-95"
-                                    : isExactAmount
-                                      ? "bg-amber-500/10 hover:bg-amber-500/15 text-amber-600 border-amber-500/20"
-                                      : "bg-[var(--card)] border-[var(--border)] text-[var(--foreground)]/80 hover:border-blue-500/40"
-                                )}
-                              >
-                                {isExactAmount ? (
-                                  <span className="flex items-center gap-1">
-                                    <Check size={9} strokeWidth={3} />
-                                    Exact (₹{denom})
-                                  </span>
-                                ) : (
-                                  `₹${denom}`
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Manual input */}
-                      <div className="space-y-1">
-                        <label className="text-[7.5px] font-black uppercase tracking-wider opacity-45 block">
-                          {state.settings.language === 'hi' 
-                            ? 'नगद राशि दर्ज करें (Manual Cash Input):' 
-                            : state.settings.language === 'mr' 
-                              ? 'रोख रक्कम प्रविष्ट करा (Manual Cash Input):' 
-                              : 'Enter Manual Card/Cash:'}
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black opacity-40">₹</span>
-                          <input
-                             type="number"
-                             step="any"
-                             placeholder={state.settings.language === 'hi' ? "ग्राहक से प्राप्त नगद दर्ज करें..." : "Enter custom customer cash amount..."}
-                             value={cashReceivedStr}
-                             onChange={(e) => setCashReceivedStr(e.target.value)}
-                             className="w-full pl-6 pr-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-[11px] font-mono font-black text-[var(--foreground)] focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 outline-none shadow-inner"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Dynamic instant return calculation display message */}
-                      {cashReceivedStr !== '' && (() => {
-                        const receivedAmt = parseFloat(cashReceivedStr);
-                        if (isNaN(receivedAmt)) return null;
-
-                        const changeToReturn = receivedAmt - total;
-                        const isSufficient = changeToReturn >= 0;
-
-                        return (
-                          <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className={cn(
-                              "p-3 rounded-xl border flex flex-col items-center justify-center text-center space-y-1.5 shadow-sm transition-all duration-300",
-                              isSufficient 
-                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400" 
-                                : "bg-rose-500/10 border-rose-500/35 text-rose-600 dark:text-rose-400 animate-pulse"
-                            )}
-                          >
-                            {isSufficient ? (
-                              <>
-                                <span className="text-[8px] font-black uppercase tracking-widest opacity-75">
-                                  💵 Cash Back Calculation
-                                </span>
-                                <span className="text-sm md:text-base font-black tracking-tight leading-none uppercase">
-                                  Return ₹{formatNumber(changeToReturn, state.settings?.pricePrecision || 2)} change to customer
-                                </span>
-                                <span className="text-[7.5px] font-black opacity-60">
-                                  Verified change amount • Safe checkout
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="text-[8px] font-black uppercase tracking-widest opacity-75">
-                                  ⚠️ Insufficient Amount
-                                </span>
-                                <span className="text-[11px] font-extrabold tracking-tight leading-none uppercase">
-                                  Remaining Due: ₹{formatNumber(Math.abs(changeToReturn), state.settings?.pricePrecision || 2)}
-                                </span>
-                                <span className="text-[7px] font-bold opacity-60">
-                                  Request more cash balance from customer
-                                </span>
-                              </>
-                            )}
-                          </motion.div>
-                        );
-                      })()}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-
             {/* Commit Checkout bill */}
             <div className="space-y-2">
               {state.settings.businessMode === 'restaurant' && (
@@ -5392,6 +5283,188 @@ export default function BillingScreen({
               >
                 SAVE BILL
               </button>
+
+              {/* Smart Cash Calculator (Below SAVE BILL button) */}
+              {cart.length > 0 && (
+                <div className="pt-1 space-y-2 select-none">
+                  <button
+                    type="button"
+                    id="smart-cash-assistant-toggle-btn"
+                    onClick={() => setIsCashAssistantOpen(!isCashAssistantOpen)}
+                    className={cn(
+                      "w-full h-9 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between shadow-2xs select-none active:scale-[0.99]",
+                      isCashAssistantOpen 
+                        ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/40 ring-1 ring-amber-500/25" 
+                        : "bg-[var(--card)] hover:bg-[var(--foreground)]/5 text-[var(--foreground)]/80 hover:text-[var(--foreground)] border-[var(--border)]"
+                    )}
+                    title="Smart Cash Calculator (नगद कैलकुलेटर)"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-7 w-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                        <CashExchangeHandsIcon size={20} className={cn("shrink-0", isCashAssistantOpen ? "text-amber-600 dark:text-amber-400 scale-105 transition-transform" : "text-amber-500")} />
+                      </div>
+                      <span className="text-xs font-bold tracking-tight">
+                        Cash Calculator
+                      </span>
+                      <span className="text-[10px] font-normal opacity-60 hidden sm:inline">
+                        (नगद लेनदेन 🤝)
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 font-mono text-[8.5px] font-black">
+                      <span className={cn(
+                        "px-2 py-0.5 rounded font-black uppercase tracking-wider border",
+                        isCashAssistantOpen
+                          ? "bg-amber-500/20 text-amber-800 dark:text-amber-200 border-amber-500/30"
+                          : "bg-[var(--foreground)]/5 text-[var(--foreground)]/55 border-[var(--border)]"
+                      )}>
+                        {isCashAssistantOpen ? 'Active' : 'Open'}
+                      </span>
+                    </div>
+                  </button>
+
+                  <AnimatePresence>
+                    {isCashAssistantOpen && (
+                      <motion.div
+                        id="smart-cash-assistant-panel"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden border border-[var(--border)] rounded-xl bg-[var(--card)] p-3 space-y-3 shadow-xs"
+                      >
+                        {/* Title & Reset */}
+                        <div className="flex items-center justify-between border-b border-[var(--border)] pb-1.5">
+                          <span className="text-[8px] font-black uppercase opacity-60 tracking-widest flex items-center gap-1.5">
+                            <CashExchangeHandsIcon size={13} className="text-amber-500" />
+                            <span>Cash Tender & Return Change</span>
+                          </span>
+                          {cashReceivedStr !== '' && (
+                            <button 
+                              type="button"
+                              onClick={() => setCashReceivedStr('')}
+                              className="text-[7.5px] font-black text-rose-500 hover:text-rose-600 hover:underline uppercase tracking-wider cursor-pointer"
+                            >
+                              Clear Input
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Cash Suggestions / Proposed Denominations */}
+                        <div className="space-y-1.5">
+                          <span className="text-[7.5px] font-black uppercase tracking-wider opacity-45 block">
+                            {state.settings.language === 'hi' 
+                              ? 'त्वरित राशि चुनें (Quick Denomination):' 
+                              : state.settings.language === 'mr' 
+                                ? 'त्वरित मूल्यवर्ग (Quick Denomination):' 
+                                : 'Select Quick Denomination:'}
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {cashSuggestions.map((denom) => {
+                              const isSelected = parseFloat(cashReceivedStr) === denom;
+                              const isExactAmount = denom === total;
+                              
+                              return (
+                                <button
+                                  type="button"
+                                  key={denom}
+                                  onClick={() => setCashReceivedStr(denom.toString())}
+                                  className={cn(
+                                    "px-2.5 py-1.5 rounded-lg text-[9px] font-black transition-all cursor-pointer border shadow-xs select-none",
+                                    isSelected
+                                      ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 font-black shadow-md scale-95"
+                                      : isExactAmount
+                                        ? "bg-amber-500/10 hover:bg-amber-500/15 text-amber-600 border-amber-500/20"
+                                        : "bg-[var(--card)] border-[var(--border)] text-[var(--foreground)]/80 hover:border-blue-500/40"
+                                  )}
+                                >
+                                  {isExactAmount ? (
+                                    <span className="flex items-center gap-1">
+                                      <Check size={9} strokeWidth={3} />
+                                      Exact (₹{denom})
+                                    </span>
+                                  ) : (
+                                    `₹${denom}`
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Manual input */}
+                        <div className="space-y-1">
+                          <label className="text-[7.5px] font-black uppercase tracking-wider opacity-45 block">
+                            {state.settings.language === 'hi' 
+                              ? 'नगद राशि दर्ज करें (Manual Cash Input):' 
+                              : state.settings.language === 'mr' 
+                                ? 'रोख रक्कम प्रविष्ट करा (Manual Cash Input):' 
+                                : 'Enter Manual Card/Cash:'}
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black opacity-40">₹</span>
+                            <input
+                               type="number"
+                               step="any"
+                               placeholder={state.settings.language === 'hi' ? "ग्राहक से प्राप्त नगद दर्ज करें..." : "Enter custom customer cash amount..."}
+                               value={cashReceivedStr}
+                               onChange={(e) => setCashReceivedStr(e.target.value)}
+                               className="w-full pl-6 pr-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[11px] font-mono font-black text-[var(--foreground)] focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 outline-none shadow-inner"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Dynamic instant return calculation display message */}
+                        {cashReceivedStr !== '' && (() => {
+                          const receivedAmt = parseFloat(cashReceivedStr);
+                          if (isNaN(receivedAmt)) return null;
+
+                          const changeToReturn = receivedAmt - total;
+                          const isSufficient = changeToReturn >= 0;
+
+                          return (
+                            <motion.div
+                              initial={{ scale: 0.95, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              className={cn(
+                                "p-3 rounded-xl border flex flex-col items-center justify-center text-center space-y-1.5 shadow-sm transition-all duration-300",
+                                isSufficient 
+                                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400" 
+                                  : "bg-rose-500/10 border-rose-500/35 text-rose-600 dark:text-rose-400 animate-pulse"
+                              )}
+                            >
+                              {isSufficient ? (
+                                <>
+                                  <span className="text-[8px] font-black uppercase tracking-widest opacity-75">
+                                    💵 Cash Back Calculation
+                                  </span>
+                                  <span className="text-sm md:text-base font-black tracking-tight leading-none uppercase">
+                                    Return ₹{formatNumber(changeToReturn, state.settings?.pricePrecision || 2)} change to customer
+                                  </span>
+                                  <span className="text-[7.5px] font-black opacity-60">
+                                    Verified change amount • Safe checkout
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="text-[8px] font-black uppercase tracking-widest opacity-75">
+                                    ⚠️ Insufficient Amount
+                                  </span>
+                                  <span className="text-[11px] font-extrabold tracking-tight leading-none uppercase">
+                                    Remaining Due: ₹{formatNumber(Math.abs(changeToReturn), state.settings?.pricePrecision || 2)}
+                                  </span>
+                                  <span className="text-[7px] font-bold opacity-60">
+                                    Request more cash balance from customer
+                                  </span>
+                                </>
+                              )}
+                            </motion.div>
+                          );
+                        })()}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
             </div>
 
           </div>

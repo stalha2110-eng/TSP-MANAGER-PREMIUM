@@ -4912,16 +4912,6 @@ export default function App() {
                    )}
                    </AnimatePresence>
                  </div>
- 
-                 <div className="flex items-center justify-between px-1">
-                    <h2 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">{t.inventory} Registry</h2>
-                    {state.user && (
-                       <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/5 border border-green-500/10">
-                          <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                          <span className="text-[9px] font-black uppercase tracking-widest text-green-500/60">{t.success} (Synced)</span>
-                       </div>
-                    )}
-                 </div>
               <motion.div 
                 layout="position"
                 className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pb-20"

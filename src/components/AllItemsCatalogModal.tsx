@@ -129,7 +129,7 @@ export interface AllItemsCatalogModalProps {
   currentLang: LanguageType;
   settings: any;
   onPeek?: (preview: { type: 'item' | 'customer' | 'bill' | 'notification' | 'analytics'; payload: any } | null) => void;
-  onOpenManualModal?: () => void;
+  onOpenManualModal?: (initialName?: string) => void;
   onViewDraft?: () => void;
   onGoToTicketReceiptList?: () => void;
   customerName?: string;
@@ -502,6 +502,21 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
     return result;
   }, [items, selectedCategory, effectiveSearchTerm, sortBy, billingMode, currentLang, categories]);
 
+  // Exact match check to decide whether to show Add Item button in search bar and dropdown
+  const exactMatchExists = useMemo(() => {
+    if (!searchQuery.trim()) return false;
+    const clean = (parsedSearch.cleanQuery || searchQuery).trim().toLowerCase();
+    return items.some(it => {
+      const name = (it.name || '').trim().toLowerCase();
+      const trs = it.translations || { en: '', hi: '', mr: '', 'hi-en': '' };
+      return name === clean ||
+        (trs.en && trs.en.trim().toLowerCase() === clean) ||
+        (trs.hi && trs.hi.trim().toLowerCase() === clean) ||
+        (trs.mr && trs.mr.trim().toLowerCase() === clean) ||
+        (trs['hi-en'] && trs['hi-en'].trim().toLowerCase() === clean);
+    });
+  }, [searchQuery, parsedSearch.cleanQuery, items]);
+
   if (!isOpen) return null;
 
   return (
@@ -598,8 +613,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    onClose();
-                    onOpenManualModal();
+                    onOpenManualModal(searchQuery.trim());
                   }}
                   className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-[#99113b] hover:bg-[#800e31] text-white active:scale-95 transition-all flex items-center justify-center shadow-md cursor-pointer shrink-0"
                   title="Add Item Not in List (खुला / अतिरिक्त सामान जोड़ें)"
@@ -640,12 +654,12 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
             {/* Full-width Search Bar with Power Shorthand & Predictive Bill-Ready Autocomplete */}
             <div className="relative w-full">
               <div 
-                style={{ width: '286px', maxWidth: '100%', marginLeft: '-5px' }}
+                style={{ width: searchQuery.trim().length > 0 ? '380px' : '286px', maxWidth: '100%', marginLeft: '-5px' }}
                 onClick={() => {
                   setIsSearchActivated(true);
                   searchInputRef.current?.focus();
                 }}
-                className="relative flex items-center pl-3.5 pr-2.5 py-1.5 sm:py-2 rounded-2xl bg-[var(--background)] border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/20 transition-all shadow-inner cursor-text"
+                className="relative flex items-center pl-3.5 pr-2.5 py-1.5 sm:py-2 rounded-2xl bg-[var(--background)] border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/20 transition-all duration-200 shadow-inner cursor-text"
               >
                 <Search className="text-[var(--primary)] opacity-70 shrink-0 mr-2" size={17} style={{ marginLeft: '-6px' }} />
 
@@ -731,6 +745,9 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                         onAddToCart(selectedItem, undefined, targetQty, parsedSearch.mode !== 'plain', parsedSearch.explicitUnit);
                         setSearchQuery('');
                         setIsSearchFocused(false);
+                      } else if (searchQuery.trim().length > 0 && onOpenManualModal) {
+                        e.preventDefault();
+                        onOpenManualModal(parsedSearch.cleanQuery || searchQuery);
                       }
                     } else if (e.key === 'Escape') {
                       setIsSearchFocused(false);
@@ -744,6 +761,25 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                   }
                   className="w-full bg-transparent border-none text-sm text-[var(--foreground)] font-semibold placeholder:text-[var(--foreground)]/40 outline-none"
                 />
+
+                {/* 🛒 Direct Quick Add to Inventory & Bill button inside search bar */}
+                {searchQuery.trim().length > 0 && (!exactMatchExists || filteredAndSortedItems.length === 0) && onOpenManualModal && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onOpenManualModal(parsedSearch.cleanQuery || searchQuery);
+                    }}
+                    className="mr-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[10.5px] font-bold tracking-wide shadow-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border border-emerald-500/30 select-none"
+                    title={`Add "${(parsedSearch.cleanQuery || searchQuery).trim()}" to Inventory & Bill`}
+                  >
+                    <Plus size={13} strokeWidth={2.5} />
+                    <span>Add Item</span>
+                  </motion.button>
+                )}
 
                 {/* Clear search button */}
                 {searchQuery && (
@@ -826,11 +862,35 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
 
                     <div className="max-h-72 overflow-y-auto custom-scrollbar divide-y divide-[var(--border)]/60">
                       {filteredAndSortedItems.length === 0 ? (
-                        <div className="p-5 text-xs text-[var(--foreground)]/60 text-center font-bold">
-                          No products match "{searchQuery}".
+                        <div className="p-4 text-center space-y-2.5 bg-[var(--card)]">
+                          <div className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            <PackagePlus size={18} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-[var(--foreground)]">
+                              "{searchQuery.trim()}" not in inventory
+                            </p>
+                            <p className="text-[10px] text-[var(--foreground)]/60 font-medium mt-0.5">
+                              Add to catalog & insert into current bill
+                            </p>
+                          </div>
+                          {onOpenManualModal && (
+                            <button
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                onOpenManualModal(parsedSearch.cleanQuery || searchQuery);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold tracking-wide shadow-xs transition-all cursor-pointer"
+                            >
+                              <Plus size={14} strokeWidth={2.5} />
+                              <span>Add Item</span>
+                            </button>
+                          )}
                         </div>
                       ) : (
-                        filteredAndSortedItems.slice(0, 10).map((item, idx) => {
+                        <>
+                          {filteredAndSortedItems.slice(0, 10).map((item, idx) => {
                           const trs = item.translations || { en: item.name || '', hi: '', mr: '', 'hi-en': '' };
                           const displayName = trs[currentLang] || trs.en || item.name;
                           const isQtyLow = item.quantity <= (item.minStockLevel || settings?.minStockLevel || 10);
@@ -952,9 +1012,28 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                               </div>
                             </div>
                           );
-                        })
-                      )}
-                    </div>
+                        })}
+                        {!exactMatchExists && onOpenManualModal && (
+                          <div className="px-3 py-2 border-t border-[var(--border)] bg-[var(--foreground)]/[0.02] flex items-center justify-between gap-2">
+                            <span className="text-[10.5px] font-medium text-[var(--foreground)]/65 truncate">
+                              Not in inventory list?
+                            </span>
+                            <button
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                onOpenManualModal(parsedSearch.cleanQuery || searchQuery);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[10px] font-bold tracking-wide transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+                            >
+                              <Plus size={12} strokeWidth={2.5} />
+                              <span>Add Item</span>
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                   </motion.div>
                 )}
               </AnimatePresence>

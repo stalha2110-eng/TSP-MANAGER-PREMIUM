@@ -140,6 +140,17 @@ export function CashExchangeHandsIcon({ size = 20, className = "" }: { size?: nu
   );
 }
 
+export const QUICK_UNITS_DATA = [
+  { id: 'Pcs', label: 'Piece', sub: 'Pcs / नग' },
+  { id: 'Kg', label: 'Kg', sub: 'Kilo / किलो' },
+  { id: 'Gm', label: 'Gram', sub: 'Gm / ग्राम' },
+  { id: 'Ltr', label: 'Liter', sub: 'Ltr / ली.' },
+  { id: 'Pkt', label: 'Packet', sub: 'Pkt / पैकेट' },
+  { id: 'Box', label: 'Box', sub: 'Box / डिब्बा' },
+  { id: 'Bag', label: 'Bag', sub: 'Bag / बोरी' },
+  { id: 'Dzn', label: 'Dozen', sub: 'Dzn / दर्जन' },
+];
+
 interface BillingScreenProps {
   state: AppState;
   onUpdateState: (updates: Partial<AppState>, actionLabel?: string) => void;
@@ -898,7 +909,7 @@ export default function BillingScreen({
   const [manualPrice, setManualPrice] = useState('');
   const [manualCost, setManualCost] = useState('');
   const [manualUnit, setManualUnit] = useState('Pcs');
-  const [manualStock, setManualStock] = useState('10');
+  const [isCustomUnitMode, setIsCustomUnitMode] = useState(false);
   const [manualCategory, setManualCategory] = useState('');
 
   const openQuickAddItem = (initialName?: string) => {
@@ -907,7 +918,7 @@ export default function BillingScreen({
     setManualPrice('');
     setManualCost('');
     setManualUnit('Pcs');
-    setManualStock('10');
+    setIsCustomUnitMode(false);
     setManualCategory(state.categories?.[0]?.id || '');
     setShowManualModal(true);
   };
@@ -1863,7 +1874,7 @@ export default function BillingScreen({
     const selectedUnit = manualUnit.trim() || 'Pcs';
     trackRecentUnit(selectedUnit);
 
-    const initialStockQty = Math.max(1, parseFloat(manualStock) || 10);
+    const initialStockQty = 50; // Sensible default inventory stock for quick-added items
     const effectiveAddQty = (parsedSearch.mode !== 'plain' && parsedSearch.quantity) ? parsedSearch.quantity : 1;
     const remainingStock = Math.max(0, initialStockQty - effectiveAddQty);
 
@@ -1924,7 +1935,7 @@ export default function BillingScreen({
     setManualPrice('');
     setManualCost('');
     setManualUnit('Pcs');
-    setManualStock('10');
+    setIsCustomUnitMode(false);
     setSearchQuery('');
     setIsSearchFocused(false);
     setShowManualModal(false);
@@ -4223,12 +4234,11 @@ export default function BillingScreen({
                       e.stopPropagation();
                       openQuickAddItem(parsedSearch.cleanQuery || searchQuery);
                     }}
-                    className="mr-1.5 px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border border-emerald-500/30"
+                    className="mr-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[10.5px] font-bold tracking-wide shadow-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border border-emerald-500/30"
                     title={`Add "${(parsedSearch.cleanQuery || searchQuery).trim()}" to Inventory & Bill`}
                   >
-                    <PackagePlus size={13} strokeWidth={2.5} />
-                    <span className="hidden sm:inline">+ Add to Inventory & Bill</span>
-                    <span className="sm:hidden">+ Add</span>
+                    <Plus size={13} strokeWidth={2.5} />
+                    <span>Add Item</span>
                   </motion.button>
                 )}
 
@@ -4320,16 +4330,16 @@ export default function BillingScreen({
 
                       <div className="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-[var(--border)]/60">
                         {predictiveBillingItems.length === 0 ? (
-                          <div className="p-5 text-center space-y-3 bg-[var(--card)]">
-                            <div className="inline-flex items-center justify-center h-10 w-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                              <PackagePlus size={20} />
+                          <div className="p-4 text-center space-y-2.5 bg-[var(--card)]">
+                            <div className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                              <PackagePlus size={18} />
                             </div>
                             <div>
-                              <p className="text-xs font-black text-[var(--foreground)]">
+                              <p className="text-xs font-bold text-[var(--foreground)]">
                                 "{searchQuery.trim()}" not in inventory
                               </p>
-                              <p className="text-[10.5px] text-[var(--foreground)]/60 font-medium mt-0.5">
-                                Add this product to your store catalog and insert into this bill.
+                              <p className="text-[10px] text-[var(--foreground)]/60 font-medium mt-0.5">
+                                Add to catalog & insert into current bill
                               </p>
                             </div>
                             <button
@@ -4338,10 +4348,10 @@ export default function BillingScreen({
                                 e.preventDefault();
                                 openQuickAddItem(parsedSearch.cleanQuery || searchQuery);
                               }}
-                              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold tracking-wide shadow-xs transition-all cursor-pointer"
                             >
-                              <Plus size={14} strokeWidth={3} />
-                              <span>+ Add "{searchQuery.trim()}" to Inventory & Bill</span>
+                              <Plus size={14} strokeWidth={2.5} />
+                              <span>Add Item</span>
                             </button>
                           </div>
                         ) : (
@@ -4505,7 +4515,7 @@ export default function BillingScreen({
                                         className="px-2.5 py-1 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white shadow-xs hover:scale-105 active:scale-95 transition-all flex items-center gap-1 text-[9.5px] font-black uppercase cursor-pointer"
                                       >
                                         <Plus size={11} strokeWidth={3} />
-                                        <span>+ Add</span>
+                                        <span>Add</span>
                                       </button>
                                     )}
                                   </div>
@@ -4513,9 +4523,9 @@ export default function BillingScreen({
                               );
                             })}
                             {!exactMatchExists && (
-                              <div className="p-2.5 border-t border-[var(--border)] bg-[var(--foreground)]/[0.02] flex items-center justify-between gap-2">
-                                <span className="text-[10px] font-semibold text-[var(--foreground)]/60 truncate">
-                                  Not in the list?
+                              <div className="px-3 py-2 border-t border-[var(--border)] bg-[var(--foreground)]/[0.02] flex items-center justify-between gap-2">
+                                <span className="text-[10.5px] font-medium text-[var(--foreground)]/65 truncate">
+                                  Not in inventory list?
                                 </span>
                                 <button
                                   type="button"
@@ -4523,10 +4533,10 @@ export default function BillingScreen({
                                     e.preventDefault();
                                     openQuickAddItem(parsedSearch.cleanQuery || searchQuery);
                                   }}
-                                  className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-600 text-emerald-600 hover:text-white dark:text-emerald-400 dark:hover:text-white border border-emerald-500/30 text-[9.5px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[10px] font-bold tracking-wide transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
                                 >
-                                  <PackagePlus size={12} />
-                                  <span>+ Add "{searchQuery.trim()}" to Inventory & Bill</span>
+                                  <Plus size={12} strokeWidth={2.5} />
+                                  <span>Add Item</span>
                                 </button>
                               </div>
                             )}
@@ -6214,8 +6224,8 @@ export default function BillingScreen({
         taxPercent={taxPercent}
         onCheckout={handleCheckout}
         onOpenRateSelect={handleOpenRateSelect}
-        onOpenManualModal={() => {
-          openQuickAddItem();
+        onOpenManualModal={(initialName?: string) => {
+          openQuickAddItem(initialName);
         }}
         onViewDraft={() => {
           setShowAllItemsModal(false);
@@ -6239,7 +6249,7 @@ export default function BillingScreen({
       {/* MANUAL ITEM NOT IN LIST ADDITION POPUP MODAL */}
       <AnimatePresence>
         {showManualModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -6277,12 +6287,12 @@ export default function BillingScreen({
                 </button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 pt-1">
                 {/* Product Name */}
                 <div className="space-y-1">
-                  <label className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70 flex items-center justify-between">
+                  <label className="text-[9px] font-bold uppercase tracking-wider text-[var(--foreground)]/70 flex items-center justify-between">
                     <span>Product Name *</span>
-                    <span className="text-[8px] text-[var(--primary)] font-bold">Auto-filled</span>
+                    <span className="text-[8.5px] text-emerald-600 dark:text-emerald-400 font-semibold">Auto-filled</span>
                   </label>
                   <input
                     type="text"
@@ -6294,30 +6304,10 @@ export default function BillingScreen({
                   />
                 </div>
 
-                {/* Category Selection */}
-                {state.categories && state.categories.length > 0 && (
-                  <div className="space-y-1">
-                    <label className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70">
-                      Store Category
-                    </label>
-                    <select
-                      value={manualCategory || state.categories[0]?.id || ''}
-                      onChange={(e) => setManualCategory(e.target.value)}
-                      className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-1.5 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 font-medium cursor-pointer"
-                    >
-                      {state.categories.map((cat) => (
-                        <option key={cat.id} value={cat.id} className="bg-[var(--card)] text-[var(--foreground)]">
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Selling Price & Cost Price */}
+                {/* Selling Price & Category */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70">
+                    <label className="text-[9px] font-bold uppercase tracking-wider text-[var(--foreground)]/70">
                       Selling Price (₹) *
                     </label>
                     <input
@@ -6329,81 +6319,129 @@ export default function BillingScreen({
                       className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-2 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 font-mono font-bold"
                     />
                   </div>
+
                   <div className="space-y-1">
-                    <label className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70">
-                      Buy Cost (₹)
+                    <label className="text-[9px] font-bold uppercase tracking-wider text-[var(--foreground)]/70">
+                      Category
                     </label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={manualCost}
-                      onChange={(e) => setManualCost(e.target.value)}
-                      placeholder="₹ Optional"
-                      className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-2 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 font-mono font-bold"
-                    />
+                    <select
+                      value={manualCategory || state.categories?.[0]?.id || ''}
+                      onChange={(e) => setManualCategory(e.target.value)}
+                      className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-2.5 py-2 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 font-medium cursor-pointer"
+                    >
+                      {state.categories?.map((cat) => (
+                        <option key={cat.id} value={cat.id} className="bg-[var(--card)] text-[var(--foreground)]">
+                          {cat.name}
+                        </option>
+                      )) || <option value="general">General</option>}
+                    </select>
                   </div>
                 </div>
 
-                {/* Unit with quick chips */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70">
-                      Unit (इकाई) *
-                    </label>
-                    <div className="flex items-center gap-1">
-                      {['Pcs', 'Kg', 'Gm', 'Ltr', 'Pkt', 'Box'].map((u) => (
-                        <button
-                          key={`quick-unit-${u}`}
-                          type="button"
-                          onClick={() => setManualUnit(u)}
-                          className={cn(
-                            "px-1.5 py-0.5 rounded text-[8px] font-bold transition-all cursor-pointer",
-                            manualUnit.toLowerCase() === u.toLowerCase()
-                              ? "bg-emerald-600 text-white"
-                              : "bg-[var(--foreground)]/5 text-[var(--foreground)]/60 hover:bg-[var(--foreground)]/10"
-                          )}
-                        >
-                          {u}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    value={manualUnit}
-                    onChange={(e) => setManualUnit(e.target.value)}
-                    placeholder="e.g. Kg, Pcs, Bag..."
-                    className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-1.5 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 font-bold uppercase"
-                  />
-                </div>
-
-                {/* Initial Stock Quantity */}
+                {/* Optional Buy Cost */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70">
-                      Initial Inventory Stock
+                    <label className="text-[9px] font-bold uppercase tracking-wider text-[var(--foreground)]/70">
+                      Buy Cost (₹)
                     </label>
-                    <span className="text-[8px] text-[var(--foreground)]/50">
-                      (Saved to catalog)
-                    </span>
+                    <span className="text-[8px] text-[var(--foreground)]/45">Optional</span>
                   </div>
                   <input
                     type="number"
                     step="any"
-                    value={manualStock}
-                    onChange={(e) => setManualStock(e.target.value)}
-                    placeholder="e.g. 10"
-                    className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-1.5 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 font-mono font-bold"
+                    value={manualCost}
+                    onChange={(e) => setManualCost(e.target.value)}
+                    placeholder="₹ Purchase rate (optional)"
+                    className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-1.5 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 font-mono font-medium"
                   />
                 </div>
 
-                {/* Action button */}
+                {/* Easy One-Tap Unit Selection */}
+                <div className="space-y-1.5 pt-0.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[9px] font-bold uppercase tracking-wider text-[var(--foreground)]/70">
+                      Unit (इकाई) *
+                    </label>
+                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+                      Selected: {manualUnit || 'Pcs'}
+                    </span>
+                  </div>
+
+                  {/* Quick 8 Units Grid */}
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {QUICK_UNITS_DATA.map((u) => {
+                      const isSelected = !isCustomUnitMode && manualUnit.toLowerCase() === u.id.toLowerCase();
+                      return (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => {
+                            setManualUnit(u.id);
+                            setIsCustomUnitMode(false);
+                          }}
+                          className={cn(
+                            "py-1.5 px-1 rounded-xl text-center transition-all cursor-pointer border flex flex-col items-center justify-center",
+                            isSelected
+                              ? "bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/25"
+                              : "bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/80 border-[var(--border)]/50"
+                          )}
+                        >
+                          <span className="text-[11px] font-bold leading-tight">{u.label}</span>
+                          <span className={cn("text-[7.5px] leading-tight mt-0.5", isSelected ? "text-emerald-100" : "text-[var(--foreground)]/50")}>
+                            {u.sub}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Custom Unit Option */}
+                  <div className="pt-0.5">
+                    {!isCustomUnitMode ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomUnitMode(true);
+                          if (QUICK_UNITS_DATA.some(qu => qu.id.toLowerCase() === manualUnit.toLowerCase())) {
+                            setManualUnit('');
+                          }
+                        }}
+                        className="text-[9px] font-bold text-[var(--foreground)]/60 hover:text-emerald-600 flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <span>+ Other unit</span>
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          autoFocus
+                          value={manualUnit}
+                          onChange={(e) => setManualUnit(e.target.value)}
+                          placeholder="Custom unit (e.g. Mtr, Bundle, Bottle)..."
+                          className="flex-1 bg-[var(--foreground)]/5 border border-emerald-500/50 px-2.5 py-1.5 rounded-xl text-xs text-[var(--foreground)] outline-none font-bold uppercase"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustomUnitMode(false);
+                            if (!manualUnit.trim()) setManualUnit('Pcs');
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl text-[10px] font-bold bg-[var(--foreground)]/10 hover:bg-[var(--foreground)]/15 text-[var(--foreground)]/70 cursor-pointer"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Save & Add Action button */}
                 <button
                   type="button"
                   onClick={addManualItemToCart}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:scale-[1.01] active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full mt-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  <PackagePlus size={14} />
+                  <Plus size={15} strokeWidth={2.5} />
                   <span>Save to Inventory & Add to Bill</span>
                 </button>
               </div>

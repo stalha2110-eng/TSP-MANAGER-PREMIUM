@@ -1,8 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { AppSettings, LanguageType } from '../types';
-import { cleanAndValidateText } from '../services/languageEngine';
-import { ShoppingCart, Plus, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Plus, ArrowRight, Sparkles } from 'lucide-react';
 
 interface AnimatedAddItemButtonProps {
   onClick: () => void;
@@ -14,51 +13,80 @@ interface AnimatedAddItemButtonProps {
 export function AnimatedAddItemButton({
   onClick,
   currentLang,
-  settings
 }: AnimatedAddItemButtonProps) {
+  // Label explicitly set to 'All Items' as requested (with localization for hi/mr)
+  const allItemsLabel = currentLang === 'hi'
+    ? 'सभी सामान'
+    : currentLang === 'mr'
+      ? 'सर्व सामान'
+      : 'All Items';
+
+  const subtitleText = currentLang === 'hi'
+    ? 'सभी सामान कैटलॉग • बिल में जोड़ें'
+    : currentLang === 'mr'
+      ? 'सर्व सामान कॅटलॉग • बिलात जोडा'
+      : 'Browse all items catalog & add to cart';
+
   return (
     <motion.button
       id="billing-view-all-items-btn"
       type="button"
       onClick={onClick}
-      whileHover={{ scale: 1.008 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ scale: 1.006, y: -1 }}
+      whileTap={{ scale: 0.99, y: 0 }}
       transition={{ duration: 0.15 }}
-      className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white px-3.5 py-2 cursor-pointer group shadow-sm hover:shadow border border-indigo-500/50 flex items-center justify-between gap-3 transition-colors select-none"
+      className="w-full h-14 sm:h-15 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-blue-700 hover:from-indigo-500 hover:via-indigo-600 hover:to-blue-600 text-white px-4 sm:px-5 py-2.5 cursor-pointer group shadow-lg shadow-indigo-600/25 dark:shadow-indigo-950/50 border border-indigo-400/30 hover:border-indigo-300/50 flex items-center justify-between gap-3 transition-all select-none relative overflow-hidden"
+      title="Open All Items Catalog to add products to bill"
+      aria-label="Add Items to Bill"
     >
-      {/* Left: Shopping Trolley Icon & Label */}
-      <div className="flex items-center gap-2.5 min-w-0">
-        <div className="h-8 w-8 rounded-lg bg-white/15 border border-white/20 flex items-center justify-center text-white shrink-0 group-hover:bg-white/25 transition-colors">
+      {/* Subtle background ambient glow streak */}
+      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/[0.08] to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+      {/* Left: Trolley Icon Box & Command Typography */}
+      <div className="flex items-center gap-3.5 min-w-0 z-10">
+        <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-white/20 border border-white/30 backdrop-blur-xs flex items-center justify-center text-white shrink-0 group-hover:bg-white/25 group-hover:scale-105 shadow-inner transition-all">
           <motion.div
-            animate={{ scale: [1, 1.08, 1] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+            animate={{ 
+              scale: [1, 1.06, 1],
+              rotate: [0, -2, 2, 0]
+            }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
             className="relative flex items-center justify-center"
           >
             {/* Trolley / Shopping Cart Icon */}
-            <ShoppingCart size={17} className="text-white" />
-            <Plus size={8} strokeWidth={3.5} className="absolute -top-1 -right-1.5 text-amber-300 drop-shadow-xs" />
+            <ShoppingCart size={20} className="text-white drop-shadow-xs" />
+            <span className="absolute -top-1.5 -right-2 h-4 w-4 rounded-full bg-amber-400 text-indigo-950 flex items-center justify-center shadow-xs border border-white/60">
+              <Plus size={10} strokeWidth={4} />
+            </span>
           </motion.div>
         </div>
 
-        <div className="flex items-baseline gap-1.5 truncate text-left">
-          <span className="text-xs sm:text-sm font-bold tracking-tight text-white whitespace-nowrap">
-            + Add Items to Bill
-          </span>
-          <span className="text-[11px] font-medium text-indigo-200/90 whitespace-nowrap hidden sm:inline">
-            ({cleanAndValidateText("सामान जोड़ें", currentLang, settings)})
+        <div className="flex flex-col text-left justify-center min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm sm:text-base font-black tracking-wider uppercase text-white drop-shadow-xs whitespace-nowrap">
+              + Add Items to Bill
+            </span>
+            <span className="px-1.5 py-0.5 rounded-md bg-white/20 text-indigo-100 text-[10px] font-bold uppercase tracking-wider hidden sm:inline-flex items-center gap-1">
+              <Sparkles size={9} className="text-amber-300" />
+              <span>All Items</span>
+            </span>
+          </div>
+          <span className="text-[11px] sm:text-xs font-semibold text-indigo-100/90 truncate">
+            {subtitleText}
           </span>
         </div>
       </div>
 
-      {/* Right: Clean Action Indicator without Items Count */}
-      <div className="flex items-center gap-1 shrink-0 text-white/80 group-hover:text-white transition-colors">
-        <span className="text-[11px] font-semibold text-indigo-100 opacity-90 tracking-wide">
-          {cleanAndValidateText("Select", currentLang, settings)}
-        </span>
-        <ChevronRight
-          size={16}
-          className="text-white/70 group-hover:text-white group-hover:translate-x-0.5 transition-all"
-        />
+      {/* Right: High-Contrast Hero Action Pill with 'All Items' */}
+      <div className="flex items-center gap-2 shrink-0 z-10">
+        <div className="h-8 sm:h-9 px-3 sm:px-4 rounded-xl bg-white text-indigo-700 font-black text-xs uppercase tracking-wider shadow-sm flex items-center gap-1.5 group-hover:bg-indigo-50 group-hover:shadow-md transition-all">
+          <span>{allItemsLabel}</span>
+          <ArrowRight
+            size={14}
+            strokeWidth={2.8}
+            className="text-indigo-600 group-hover:translate-x-0.5 transition-transform"
+          />
+        </div>
       </div>
     </motion.button>
   );

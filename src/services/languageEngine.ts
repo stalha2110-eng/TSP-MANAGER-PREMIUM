@@ -626,7 +626,7 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
     en: "Add Item Not In List!",
     hi: "सूची से बाहर का सामान जोड़ें",
     mr: "यादीबाहेरील सामान जोडा",
-    "hi-en": "Add New Item"
+    "hi-en": "Add Item Not In List"
     // Hinglish
   },
   customerInfo: {
@@ -1274,6 +1274,9 @@ export function cleanAndValidateText(text: string, lang: LanguageType, settings?
     }
     if (lowerText.includes("stock management") || lowerText.includes("स्टॉक प्रबंधन")) {
       return TRANSLATION_DB.inventory?.[lang] || "Stock";
+    }
+    if (lowerText.includes("सामान जोड़ें") || lowerText.includes("सामान चुनें") || lowerText.includes("all items")) {
+      return "All Items";
     }
 
     // Remove text inside parenthesis that contains Devnagari (e.g. "(खुला सामान जोड़े)")

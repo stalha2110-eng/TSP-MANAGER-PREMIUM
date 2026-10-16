@@ -891,13 +891,26 @@ export default function BillingScreen({
     return `${dd}-${mm}-${yyyy}`;
   };
 
-  // Manual Not In List popup trigger states
+  // Manual Not In List / Quick Add to Inventory & Bill states
   const [showManualModal, setShowManualModal] = useState(false);
   const [showAllItemsModal, setShowAllItemsModal] = useState(false);
   const [manualName, setManualName] = useState('');
   const [manualPrice, setManualPrice] = useState('');
   const [manualCost, setManualCost] = useState('');
   const [manualUnit, setManualUnit] = useState('Pcs');
+  const [manualStock, setManualStock] = useState('10');
+  const [manualCategory, setManualCategory] = useState('');
+
+  const openQuickAddItem = (initialName?: string) => {
+    const nameToUse = (initialName || searchQuery || '').trim();
+    setManualName(nameToUse);
+    setManualPrice('');
+    setManualCost('');
+    setManualUnit('Pcs');
+    setManualStock('10');
+    setManualCategory(state.categories?.[0]?.id || '');
+    setShowManualModal(true);
+  };
 
   // Mic voice state
   const [isListening, setIsListening] = useState(false);
@@ -1311,6 +1324,18 @@ export default function BillingScreen({
              ((item as any).barcode || '').toLowerCase().includes(effectiveQuery);
     }).slice(0, 6);
   }, [state.items, parsedSearch.cleanQuery]);
+
+  const exactMatchExists = useMemo(() => {
+    const effectiveQuery = (parsedSearch.cleanQuery || searchQuery || '').trim().toLowerCase();
+    if (!effectiveQuery) return false;
+    return state.items.some(item => {
+      const trs = item.translations || { en: item.name || '', hi: '', mr: '', 'hi-en': '' };
+      return (trs.en || '').trim().toLowerCase() === effectiveQuery ||
+             (trs.hi || '').trim() === effectiveQuery ||
+             (trs['hi-en'] || '').trim().toLowerCase() === effectiveQuery ||
+             (item.name || '').trim().toLowerCase() === effectiveQuery;
+    });
+  }, [state.items, parsedSearch.cleanQuery, searchQuery]);
 
   // Voice Search Handler
   const handleVoiceSearch = () => {
@@ -1823,38 +1848,85 @@ export default function BillingScreen({
   };
 
   const addManualItemToCart = () => {
-    if (!manualName.trim()) {
-      alert("Please enter a item name.");
+    const trimmedName = manualName.trim();
+    if (!trimmedName) {
+      addToast("Please enter a product name.", "warning");
       return;
     }
     
     const rateVal = parseFloat(manualPrice) || 0;
+    if (rateVal < 0) {
+      addToast("Please enter a valid price.", "warning");
+      return;
+    }
     const costVal = parseFloat(manualCost) || 0;
-    const tempId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
     const selectedUnit = manualUnit.trim() || 'Pcs';
     trackRecentUnit(selectedUnit);
 
+    const initialStockQty = Math.max(1, parseFloat(manualStock) || 10);
+    const effectiveAddQty = (parsedSearch.mode !== 'plain' && parsedSearch.quantity) ? parsedSearch.quantity : 1;
+    const remainingStock = Math.max(0, initialStockQty - effectiveAddQty);
+
+    const newItemId = `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
+    // 1. Create complete Inventory Item entity
+    const newInventoryItem: Item = {
+      id: newItemId,
+      name: trimmedName,
+      translations: {
+        en: trimmedName,
+        hi: trimmedName,
+        mr: trimmedName,
+        'hi-en': trimmedName
+      },
+      categoryId: manualCategory || state.categories?.[0]?.id || 'general',
+      quantity: remainingStock,
+      unit: selectedUnit,
+      buyingPrice: costVal,
+      buyingPriceUnit: selectedUnit,
+      wholesalePrice: rateVal,
+      wholesalePriceUnit: selectedUnit,
+      retailPrice: rateVal,
+      retailPriceUnit: selectedUnit,
+      lastUpdated: new Date().toISOString(),
+      minStockLevel: 5
+    };
+
+    // 2. Persist directly into store inventory catalog
+    onUpdateState(
+      { items: [newInventoryItem, ...(state.items || [])] },
+      `Added "${trimmedName}" to inventory & bill`
+    );
+
+    // 3. Insert into active checkout ticket
     const newCartItem: CartItem = {
-      id: tempId,
-      item: { id: tempId, isManual: true, retailPrice: rateVal, unit: selectedUnit },
-      name: manualName.trim(),
-      quantity: 1,
+      id: newItemId,
+      item: newInventoryItem,
+      name: trimmedName,
+      quantity: effectiveAddQty,
       price: rateVal,
       cost: costVal,
       unit: selectedUnit
     };
     
-    setCart([...cart, newCartItem]);
+    setCart(prev => [...prev, newCartItem]);
+    
     playFeedbackEvent('product_added', state.settings, { 
-      itemName: manualName.trim(),
-      quantity: 1,
+      itemName: trimmedName,
+      quantity: effectiveAddQty,
       unit: selectedUnit
     });
+
+    addToast(`"${trimmedName}" saved to inventory & added to bill!`, "success");
+
+    // 4. Reset form & clear search bar
     setManualName('');
     setManualPrice('');
     setManualCost('');
     setManualUnit('Pcs');
+    setManualStock('10');
+    setSearchQuery('');
+    setIsSearchFocused(false);
     setShowManualModal(false);
   };
 
@@ -2944,7 +3016,7 @@ export default function BillingScreen({
                   transition={{ duration: 0.22, ease: "easeInOut" }}
                   className="overflow-hidden p-3.5 space-y-2.5 bg-[var(--card)]/40"
                 >
-                  {/* Controls row: Duplicate, Pin, Rename, Hold Bill, Holds Centre */}
+                  {/* Controls row: Pin, Hold Bill, Holds Centre (Left) & Mirror, Rename (Right) */}
                   <div className="flex items-center justify-between gap-2 border-b border-[var(--border)]/60 pb-2 flex-wrap">
                     <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
                       <button 
@@ -2966,30 +3038,6 @@ export default function BillingScreen({
                         aria-label="Pin Draft"
                       >
                         <Pin size={10} className={drafts.find(d => d.id === activeDraftId)?.isPinned ? "text-amber-500 fill-amber-500" : "opacity-60"} />
-                      </button>
-
-                      <button 
-                        onClick={() => {
-                          const draft = drafts.find(d => d.id === activeDraftId);
-                          if (draft) {
-                            showCustomPrompt(
-                              "Rename Register",
-                              "Specify a custom name/label for this checkout window:",
-                              draft.name,
-                              (newTitle) => {
-                                if (newTitle && newTitle.trim()) {
-                                  setDrafts(prev => prev.map(d => d.id === activeDraftId ? { ...d, name: newTitle.trim() } : d));
-                                  addToast(`Renamed checkout session to "${newTitle.trim()}"`, "info");
-                                }
-                              },
-                              "e.g., Register Alpha, Client #12..."
-                            );
-                          }
-                        }}
-                        className="h-6.5 px-2 rounded-lg border border-[var(--border)] text-[8.5px] font-black uppercase tracking-wider hover:bg-[var(--foreground)]/5 transition-all flex items-center gap-1 cursor-pointer active:scale-95 shrink-0"
-                      >
-                        <Edit2 size={9} className="opacity-40" />
-                        <span>Rename</span>
                       </button>
 
                       <button 
@@ -3045,50 +3093,77 @@ export default function BillingScreen({
                       </button>
                     </div>
 
-                    {/* Duplicate button in the very right corner */}
-                    <button 
-                      onClick={() => {
-                        const newId = `draft-${Date.now()}`;
-                        setDrafts(prev => {
-                          const updatedList = prev.map(d => {
-                            if (d.id === activeDraftId) {
-                              return {
-                                ...d,
-                                cart,
-                                customerName,
-                                customerPhone,
-                                discountPercent,
-                                taxPercent,
-                                paymentMethod,
-                                billingMode,
-                                udharDueDate,
+                    {/* Bill Actions: Mirror & Rename buttons */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button 
+                        onClick={() => {
+                          const newId = `draft-${Date.now()}`;
+                          setDrafts(prev => {
+                            const updatedList = prev.map(d => {
+                              if (d.id === activeDraftId) {
+                                return {
+                                  ...d,
+                                  cart,
+                                  customerName,
+                                  customerPhone,
+                                  discountPercent,
+                                  taxPercent,
+                                  paymentMethod,
+                                  billingMode,
+                                  udharDueDate,
+                                  lastActiveAt: Date.now()
+                                };
+                              }
+                              return d;
+                            });
+                            const activeObj = updatedList.find(d => d.id === activeDraftId);
+                            if (activeObj) {
+                              const newDraft: DraftBill = {
+                                ...activeObj,
+                                id: newId,
+                                name: `${activeObj.name} (Copy)`,
+                                isPinned: false,
                                 lastActiveAt: Date.now()
                               };
+                              return [...updatedList, newDraft];
                             }
-                            return d;
+                            return updatedList;
                           });
-                          const activeObj = updatedList.find(d => d.id === activeDraftId);
-                          if (activeObj) {
-                            const newDraft: DraftBill = {
-                              ...activeObj,
-                              id: newId,
-                              name: `${activeObj.name} (Copy)`,
-                              isPinned: false,
-                              lastActiveAt: Date.now()
-                            };
-                            return [...updatedList, newDraft];
+                          switchToDraft(newId, false);
+                          addToast("Register mirrored successfully", "success");
+                        }}
+                        className="h-6.5 px-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[8.5px] font-black uppercase tracking-wider hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0 shadow-xs"
+                        title="Mirror current bill"
+                      >
+                        <Copy size={9.5} className="opacity-80 shrink-0" />
+                        <span>Mirror</span>
+                      </button>
+
+                      <button 
+                        onClick={() => {
+                          const draft = drafts.find(d => d.id === activeDraftId);
+                          if (draft) {
+                            showCustomPrompt(
+                              "Rename Register",
+                              "Specify a custom name/label for this checkout window:",
+                              draft.name,
+                              (newTitle) => {
+                                if (newTitle && newTitle.trim()) {
+                                  setDrafts(prev => prev.map(d => d.id === activeDraftId ? { ...d, name: newTitle.trim() } : d));
+                                  addToast(`Renamed checkout session to "${newTitle.trim()}"`, "info");
+                                }
+                              },
+                              "e.g., Register Alpha, Client #12..."
+                            );
                           }
-                          return updatedList;
-                        });
-                        switchToDraft(newId, false);
-                        addToast("Register duplicated successfully", "success");
-                      }}
-                      className="h-6.5 px-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[8.5px] font-black uppercase tracking-wider hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0 shadow-xs"
-                      title="Duplicate current inventory cart"
-                    >
-                      <Copy size={9.5} className="opacity-80 shrink-0" />
-                      <span>Duplicate</span>
-                    </button>
+                        }}
+                        className="h-6.5 px-2.5 rounded-lg border border-[var(--border)] text-[8.5px] font-black uppercase tracking-wider hover:bg-[var(--foreground)]/5 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0 shadow-xs"
+                        title="Rename this bill"
+                      >
+                        <Edit2 size={9} className="opacity-50 shrink-0" />
+                        <span>Rename</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Scrollable Tab row with smooth active highlights */}
@@ -4028,6 +4103,16 @@ export default function BillingScreen({
       {/* Main Billing Grid */}
       <div className="grid grid-cols-12 gap-4 items-start">
 
+        {/* 🌟 HERO COMMAND BUTTON: + ADD ITEMS TO BILL (MAIN DOMINANT CTA ABOVE SEARCH BAR) */}
+        <div className="col-span-12 shrink-0 select-none">
+          <AnimatedAddItemButton
+            onClick={() => setShowAllItemsModal(true)}
+            itemsCount={state.items.length}
+            currentLang={currentLang}
+            settings={state.settings}
+          />
+        </div>
+
         {/* TOP SEARCH BAR & SHORTCUTS (WIDE FULL-WIDTH 12 COLS ACROSS BILLING DASHBOARD) */}
         <div className={cn("col-span-12 shrink-0 space-y-2 relative transition-all", isSearchFocused && searchQuery.trim().length > 0 ? "z-50" : "z-20")}>
           {/* Smart Typo-Tolerant Search Component with predictive real-time autocomplete */}
@@ -4109,6 +4194,10 @@ export default function BillingScreen({
 
                         setSearchQuery('');
                         setIsSearchFocused(false);
+                      } else if (searchQuery.trim().length > 0) {
+                        // User pressed Enter on an item name not in list -> open quick add
+                        e.preventDefault();
+                        openQuickAddItem(parsedSearch.cleanQuery || searchQuery);
                       }
                     } else if (e.key === 'Escape') {
                       setIsSearchFocused(false);
@@ -4123,6 +4212,26 @@ export default function BillingScreen({
                   }
                 />
                 
+                {/* 🛒 Direct Quick Add to Inventory & Bill button inside search bar */}
+                {searchQuery.trim().length > 0 && (!exactMatchExists || predictiveBillingItems.length === 0) && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openQuickAddItem(parsedSearch.cleanQuery || searchQuery);
+                    }}
+                    className="mr-1.5 px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border border-emerald-500/30"
+                    title={`Add "${(parsedSearch.cleanQuery || searchQuery).trim()}" to Inventory & Bill`}
+                  >
+                    <PackagePlus size={13} strokeWidth={2.5} />
+                    <span className="hidden sm:inline">+ Add to Inventory & Bill</span>
+                    <span className="sm:hidden">+ Add</span>
+                  </motion.button>
+                )}
+
                 {/* Clear search button */}
                 {searchQuery.trim().length > 0 && (
                   <button
@@ -4211,146 +4320,181 @@ export default function BillingScreen({
 
                       <div className="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-[var(--border)]/60">
                         {predictiveBillingItems.length === 0 ? (
-                          <div className="p-6 text-xs text-[var(--foreground)]/60 text-center font-bold">
-                            No products match "{searchQuery}".
+                          <div className="p-5 text-center space-y-3 bg-[var(--card)]">
+                            <div className="inline-flex items-center justify-center h-10 w-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                              <PackagePlus size={20} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-black text-[var(--foreground)]">
+                                "{searchQuery.trim()}" not in inventory
+                              </p>
+                              <p className="text-[10.5px] text-[var(--foreground)]/60 font-medium mt-0.5">
+                                Add this product to your store catalog and insert into this bill.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                openQuickAddItem(parsedSearch.cleanQuery || searchQuery);
+                              }}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+                            >
+                              <Plus size={14} strokeWidth={3} />
+                              <span>+ Add "{searchQuery.trim()}" to Inventory & Bill</span>
+                            </button>
                           </div>
                         ) : (
-                          predictiveBillingItems.map((item, idx) => {
-                            const trs = item.translations || { en: item.name || '', hi: '', mr: '', 'hi-en': '' };
-                            const displayName = trs[currentLang] || trs.en || item.name;
-                            const isQtyLow = item.quantity <= (item.minStockLevel || state.settings?.minStockLevel || 10);
-                            const isQtyOut = item.quantity <= 0;
-                            const itemPrice = billingMode === 'wholesale' ? (item.wholesalePrice || item.retailPrice) : item.retailPrice;
-                            const isSelected = activePredictionIndex === idx;
+                          <>
+                            {predictiveBillingItems.map((item, idx) => {
+                              const trs = item.translations || { en: item.name || '', hi: '', mr: '', 'hi-en': '' };
+                              const displayName = trs[currentLang] || trs.en || item.name;
+                              const isQtyLow = item.quantity <= (item.minStockLevel || state.settings?.minStockLevel || 10);
+                              const isQtyOut = item.quantity <= 0;
+                              const itemPrice = billingMode === 'wholesale' ? (item.wholesalePrice || item.retailPrice) : item.retailPrice;
+                              const isSelected = activePredictionIndex === idx;
 
-                            // Check if this item is currently in the active cart
-                            const cartItem = cart.find(ci => ci.id === item.id);
-                            const cartQty = cartItem ? cartItem.quantity : 0;
+                              // Check if this item is currently in the active cart
+                              const cartItem = cart.find(ci => ci.id === item.id);
+                              const cartQty = cartItem ? cartItem.quantity : 0;
 
-                            // Calculate custom parsed quantity if search has multiplier/budget
-                            let effectiveAddQty = 1;
-                            let computedTotalPrice = itemPrice;
-                            let helperPill = '';
+                              // Calculate custom parsed quantity if search has multiplier/budget
+                              let effectiveAddQty = 1;
+                              let computedTotalPrice = itemPrice;
+                              let helperPill = '';
 
-                            if (parsedSearch.mode === 'target_budget' && parsedSearch.targetPrice) {
-                              effectiveAddQty = calculateWeightFromAmount(parsedSearch.targetPrice, itemPrice || 1, 3);
-                              computedTotalPrice = parsedSearch.targetPrice;
-                              helperPill = `₹${parsedSearch.targetPrice} = ${effectiveAddQty}${item.unit || 'kg'}`;
-                            } else if (parsedSearch.quantity) {
-                              effectiveAddQty = parsedSearch.quantity;
-                              const pricing = getItemPriceAndUnit(item, effectiveAddQty, parsedSearch.explicitUnit);
-                              computedTotalPrice = +(effectiveAddQty * pricing.price).toFixed(precision);
-                              const displayUnit = parsedSearch.explicitUnit || pricing.unit || item.unit || 'kg';
-                              helperPill = `${effectiveAddQty}${displayUnit} = ₹${formatNumber(computedTotalPrice, precision)}`;
-                            }
+                              if (parsedSearch.mode === 'target_budget' && parsedSearch.targetPrice) {
+                                effectiveAddQty = calculateWeightFromAmount(parsedSearch.targetPrice, itemPrice || 1, 3);
+                                computedTotalPrice = parsedSearch.targetPrice;
+                                helperPill = `₹${parsedSearch.targetPrice} = ${effectiveAddQty}${item.unit || 'kg'}`;
+                              } else if (parsedSearch.quantity) {
+                                effectiveAddQty = parsedSearch.quantity;
+                                const pricing = getItemPriceAndUnit(item, effectiveAddQty, parsedSearch.explicitUnit);
+                                const displayUnit = parsedSearch.explicitUnit || pricing.unit || item.unit || 'kg';
+                                helperPill = `${effectiveAddQty}${displayUnit} = ₹${formatNumber(computedTotalPrice, precision)}`;
+                              }
 
-                            return (
-                              <div
-                                key={`search-item-${item.id || 'item'}-${idx}`}
-                                onMouseEnter={() => setActivePredictionIndex(idx)}
-                                className={`px-3.5 py-2.5 flex items-center justify-between gap-2.5 transition-all ${
-                                  isSelected 
-                                    ? 'bg-[var(--primary)]/15 border-l-4 border-[var(--primary)] pl-2.5' 
-                                    : 'hover:bg-[var(--foreground)]/[0.04]'
-                                }`}
-                              >
-                                {/* Product Info Description */}
-                                <div 
-                                  onClick={(e) => {
-                                    addToCart(item, { clientX: e.clientX, clientY: e.clientY }, effectiveAddQty, false, parsedSearch.explicitUnit);
-                                    if (parsedSearch.mode !== 'plain') {
-                                      setSearchQuery('');
-                                      setIsSearchFocused(false);
-                                    }
-                                  }}
-                                  className="min-w-0 flex-1 cursor-pointer select-none"
+                              return (
+                                <div
+                                  key={`search-item-${item.id || 'item'}-${idx}`}
+                                  onMouseEnter={() => setActivePredictionIndex(idx)}
+                                  className={`px-3.5 py-2.5 flex items-center justify-between gap-2.5 transition-all ${
+                                    isSelected 
+                                      ? 'bg-[var(--primary)]/15 border-l-4 border-[var(--primary)] pl-2.5' 
+                                      : 'hover:bg-[var(--foreground)]/[0.04]'
+                                  }`}
                                 >
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="text-xs font-black text-[var(--foreground)] truncate max-w-[180px] sm:max-w-[240px]">{displayName}</span>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-mono shrink-0">
-                                      ₹{formatNumber(itemPrice, precision)} /{item.unit || 'pcs'}
-                                    </span>
-                                    {helperPill && (
-                                      <span className="text-[9.5px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-mono animate-pulse shrink-0">
-                                        ⚡ {helperPill}
-                                      </span>
-                                    )}
-                                    {(item as any).barcode && (
-                                      <span className="text-[8.5px] font-mono px-1 py-0.5 rounded bg-[var(--foreground)]/[0.04] text-[var(--foreground)]/50 border border-[var(--border)] shrink-0">
-                                        🏷️ {(item as any).barcode}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-1.5 mt-0.5 text-[9.5px] text-[var(--foreground)]/70 font-semibold flex-wrap">
-                                    <span>Category: {state.categories?.find(c => c.id === item.categoryId)?.name || 'General'}</span>
-                                    <span>•</span>
-                                    <span className={`font-extrabold uppercase px-1.5 py-0.2 rounded ${
-                                      isQtyOut 
-                                        ? 'text-rose-600 dark:text-rose-400 bg-rose-500/10' 
-                                        : isQtyLow 
-                                          ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10' 
-                                          : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
-                                    }`}>
-                                      {isQtyOut ? 'Out of Stock' : `Stock: ${item.quantity}`}
-                                    </span>
-                                  </div>
-                                </div>
-                                
-                                {/* Multi-Add Quantity Interactive Stepper & Quick Weight Helper */}
-                                <div className="flex items-center gap-1 shrink-0 select-none">
-                                  {/* Quick Weight Presets Popover */}
-                                  <QuickWeightPresets
-                                    currentQty={cartQty > 0 ? cartQty : 1}
-                                    unitPrice={itemPrice}
-                                    unit={item.unit || 'Pcs'}
-                                    precision={precision}
-                                    onSelectQty={(qty) => {
-                                      addToCart(item, undefined, qty, true);
+                                  {/* Product Info Description */}
+                                  <div 
+                                    onClick={(e) => {
+                                      addToCart(item, { clientX: e.clientX, clientY: e.clientY }, effectiveAddQty, false, parsedSearch.explicitUnit);
                                       if (parsedSearch.mode !== 'plain') {
                                         setSearchQuery('');
                                         setIsSearchFocused(false);
                                       }
                                     }}
-                                    compact={true}
-                                    align="right"
-                                  />
-
-                                  {parsedSearch.mode !== 'plain' ? (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        addToCart(item, { clientX: e.clientX, clientY: e.clientY }, effectiveAddQty, false, parsedSearch.explicitUnit);
-                                        setSearchQuery('');
-                                        setIsSearchFocused(false);
+                                    className="min-w-0 flex-1 cursor-pointer select-none"
+                                  >
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="text-xs font-black text-[var(--foreground)] truncate max-w-[180px] sm:max-w-[240px]">{displayName}</span>
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-mono shrink-0">
+                                        ₹{formatNumber(itemPrice, precision)} /{item.unit || 'pcs'}
+                                      </span>
+                                      {helperPill && (
+                                        <span className="text-[9.5px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-wider bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-mono animate-pulse shrink-0">
+                                          ⚡ {helperPill}
+                                        </span>
+                                      )}
+                                      {(item as any).barcode && (
+                                        <span className="text-[8.5px] font-mono px-1 py-0.5 rounded bg-[var(--foreground)]/[0.04] text-[var(--foreground)]/50 border border-[var(--border)] shrink-0">
+                                          🏷️ {(item as any).barcode}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 mt-0.5 text-[9.5px] text-[var(--foreground)]/70 font-semibold flex-wrap">
+                                      <span>Category: {state.categories?.find(c => c.id === item.categoryId)?.name || 'General'}</span>
+                                      <span>•</span>
+                                      <span className={`font-extrabold uppercase px-1.5 py-0.2 rounded ${
+                                        isQtyOut 
+                                          ? 'text-rose-600 dark:text-rose-400 bg-rose-500/10' 
+                                          : isQtyLow 
+                                            ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10' 
+                                            : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                                      }`}>
+                                        {isQtyOut ? 'Out of Stock' : `Stock: ${item.quantity}`}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Multi-Add Quantity Interactive Stepper & Quick Weight Helper */}
+                                  <div className="flex items-center gap-1 shrink-0 select-none">
+                                    {/* Quick Weight Presets Popover */}
+                                    <QuickWeightPresets
+                                      currentQty={cartQty > 0 ? cartQty : 1}
+                                      unitPrice={itemPrice}
+                                      unit={item.unit || 'Pcs'}
+                                      precision={precision}
+                                      onSelectQty={(qty) => {
+                                        addToCart(item, undefined, qty, true);
+                                        if (parsedSearch.mode !== 'plain') {
+                                          setSearchQuery('');
+                                          setIsSearchFocused(false);
+                                        }
                                       }}
-                                      className="px-2.5 py-1 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white shadow-xs hover:scale-105 active:scale-95 transition-all flex items-center gap-1 text-[9.5px] font-black uppercase cursor-pointer"
-                                    >
-                                      <Plus size={11} strokeWidth={3} />
-                                      <span>Add {effectiveAddQty}{parsedSearch.explicitUnit || ''}</span>
-                                    </button>
-                                  ) : cartQty > 0 ? (
-                                    <div className="flex items-center gap-0.5 bg-[var(--primary)]/10 p-0.5 rounded-lg border border-[var(--primary)]/30 shadow-xs">
+                                      compact={true}
+                                      align="right"
+                                    />
+
+                                    {parsedSearch.mode !== 'plain' ? (
                                       <button
                                         type="button"
                                         onClick={(e) => {
                                           e.preventDefault();
                                           e.stopPropagation();
-                                          updateCartQuantity(item.id, cartQty - 1);
+                                          addToCart(item, { clientX: e.clientX, clientY: e.clientY }, effectiveAddQty, false, parsedSearch.explicitUnit);
+                                          setSearchQuery('');
+                                          setIsSearchFocused(false);
                                         }}
-                                        className="h-6 w-6 rounded-md bg-[var(--card)] hover:bg-rose-500 hover:text-white text-[var(--foreground)] border border-[var(--border)] flex items-center justify-center font-black transition-colors cursor-pointer active:scale-90"
-                                        title="Decrease quantity in bill"
+                                        className="px-2.5 py-1 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white shadow-xs hover:scale-105 active:scale-95 transition-all flex items-center gap-1 text-[9.5px] font-black uppercase cursor-pointer"
                                       >
-                                        <Minus size={10} strokeWidth={3} />
+                                        <Plus size={11} strokeWidth={3} />
+                                        <span>Add {effectiveAddQty}{parsedSearch.explicitUnit || ''}</span>
                                       </button>
+                                    ) : cartQty > 0 ? (
+                                      <div className="flex items-center gap-0.5 bg-[var(--primary)]/10 p-0.5 rounded-lg border border-[var(--primary)]/30 shadow-xs">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            updateCartQuantity(item.id, cartQty - 1);
+                                          }}
+                                          className="h-6 w-6 rounded-md bg-[var(--card)] hover:bg-rose-500 hover:text-white text-[var(--foreground)] border border-[var(--border)] flex items-center justify-center font-black transition-colors cursor-pointer active:scale-90"
+                                          title="Decrease quantity in bill"
+                                        >
+                                          <Minus size={10} strokeWidth={3} />
+                                        </button>
 
-                                      <div className="px-1.5 text-center">
-                                        <span className="text-[10.5px] font-black text-[var(--primary)] font-mono block leading-none">
-                                          {cartQty}
-                                        </span>
+                                        <div className="px-1.5 text-center">
+                                          <span className="text-[10.5px] font-black text-[var(--primary)] font-mono block leading-none">
+                                            {cartQty}
+                                          </span>
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            addToCart(item, { clientX: e.clientX, clientY: e.clientY });
+                                          }}
+                                          className="h-6 w-6 rounded-md bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white flex items-center justify-center font-black transition-transform cursor-pointer active:scale-90 shadow-xs"
+                                          title="Add one more quantity to bill"
+                                        >
+                                          <Plus size={10} strokeWidth={3} />
+                                        </button>
                                       </div>
-
+                                    ) : (
                                       <button
                                         type="button"
                                         onClick={(e) => {
@@ -4358,30 +4502,35 @@ export default function BillingScreen({
                                           e.stopPropagation();
                                           addToCart(item, { clientX: e.clientX, clientY: e.clientY });
                                         }}
-                                        className="h-6 w-6 rounded-md bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white flex items-center justify-center font-black transition-transform cursor-pointer active:scale-90 shadow-xs"
-                                        title="Add one more quantity to bill"
+                                        className="px-2.5 py-1 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white shadow-xs hover:scale-105 active:scale-95 transition-all flex items-center gap-1 text-[9.5px] font-black uppercase cursor-pointer"
                                       >
-                                        <Plus size={10} strokeWidth={3} />
+                                        <Plus size={11} strokeWidth={3} />
+                                        <span>+ Add</span>
                                       </button>
-                                    </div>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        addToCart(item, { clientX: e.clientX, clientY: e.clientY });
-                                      }}
-                                      className="px-2.5 py-1 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white shadow-xs hover:scale-105 active:scale-95 transition-all flex items-center gap-1 text-[9.5px] font-black uppercase cursor-pointer"
-                                    >
-                                      <Plus size={11} strokeWidth={3} />
-                                      <span>+ Add</span>
-                                    </button>
-                                  )}
+                                    )}
+                                  </div>
                                 </div>
+                              );
+                            })}
+                            {!exactMatchExists && (
+                              <div className="p-2.5 border-t border-[var(--border)] bg-[var(--foreground)]/[0.02] flex items-center justify-between gap-2">
+                                <span className="text-[10px] font-semibold text-[var(--foreground)]/60 truncate">
+                                  Not in the list?
+                                </span>
+                                <button
+                                  type="button"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    openQuickAddItem(parsedSearch.cleanQuery || searchQuery);
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-600 text-emerald-600 hover:text-white dark:text-emerald-400 dark:hover:text-white border border-emerald-500/30 text-[9.5px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                                >
+                                  <PackagePlus size={12} />
+                                  <span>+ Add "{searchQuery.trim()}" to Inventory & Bill</span>
+                                </button>
                               </div>
-                            );
-                          })
+                            )}
+                          </>
                         )}
                       </div>
                     </motion.div>
@@ -4415,56 +4564,12 @@ export default function BillingScreen({
             )}
         </div>
 
-        {/* LEFT COLUMN: ACTIVE PRODUCTS LIST & QUICK HELPER BUTTONS (7/12) - INDEPENDENT SCROLL CONTAINER */}
-        <div className={cn(
-          "col-span-12 lg:min-h-[calc(100vh-140px)] lg:flex lg:flex-col space-y-3 transition-all duration-300",
-          (showLivePreview && cart.length > 0) ? "lg:col-span-4 xl:col-span-5" : "lg:col-span-7"
-        )}>
-
-          {/* ACTION BUTTONS: + ADD ITEMS TO BILL & ADD MANUAL ITEM */}
-          <div className="shrink-0 space-y-2 pt-1 select-none">
-            {/* + ADD ITEMS TO BILL - ANIMATED POS STORYTELLING BUTTON */}
-            <AnimatedAddItemButton
-              onClick={() => setShowAllItemsModal(true)}
-              itemsCount={state.items.length}
-              currentLang={currentLang}
-              settings={state.settings}
-            />
-
-            {/* ADD ITEM NOT IN LIST COMPACT BUTTON */}
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setManualName('');
-                  setManualPrice('');
-                  setManualCost('');
-                  setManualUnit('Pcs');
-                  setShowManualModal(true);
-                }}
-                style={{
-                  width: '247.273px',
-                  backgroundColor: '#99113b',
-                  borderStyle: 'outset',
-                  fontFamily: "'Palanquin Dark', sans-serif",
-                  fontSize: '10px'
-                }}
-                className="px-4 py-2.5 border border-slate-950 dark:border-slate-50 text-white hover:opacity-90 font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
-              >
-                <PackagePlus size={13} />
-                <span>+ {transT.addItemNotInList || t?.addItemNotInList || (typeof t === 'function' ? t("addItemNotInList") : null) || cleanAndValidateText("Add Item Not in List (ADD NEW ITEM)", currentLang, state.settings)}</span>
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-        {/* RIGHT COLUMN: CASHIER CART & TOTALS BLOCK (5/12) - FIXED POS VIEWPORT */}
+        {/* CASHIER CART & TOTALS BLOCK - CLEAN BALANCED POS VIEWPORT */}
         <div 
           id="ticket-receipt-list"
           className={cn(
             "col-span-12 card p-4 bg-[var(--card)] border border-[var(--border)] rounded-2xl flex flex-col justify-between lg:max-h-[calc(100vh-100px)] lg:sticky lg:top-20 overflow-y-auto custom-scrollbar shadow-sm transition-all duration-300",
-            (showLivePreview && cart.length > 0) ? "lg:col-span-4 xl:col-span-4" : "lg:col-span-5"
+            (showLivePreview && cart.length > 0) ? "lg:col-span-8 xl:col-span-9" : "col-span-12 max-w-5xl mx-auto w-full"
           )}
         >
           
@@ -6110,11 +6215,7 @@ export default function BillingScreen({
         onCheckout={handleCheckout}
         onOpenRateSelect={handleOpenRateSelect}
         onOpenManualModal={() => {
-          setManualName('');
-          setManualPrice('');
-          setManualCost('');
-          setManualUnit('Pcs');
-          setShowManualModal(true);
+          openQuickAddItem();
         }}
         onViewDraft={() => {
           setShowAllItemsModal(false);
@@ -6152,72 +6253,158 @@ export default function BillingScreen({
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative z-10 w-full max-w-sm rounded-2xl bg-[var(--card-solid,#0f172a)] modal-opaque p-4 border border-[var(--border)] shadow-2xl space-y-3"
+              className="relative z-10 w-full max-w-sm rounded-2xl bg-[var(--card-solid,#0f172a)] modal-opaque p-4 border border-[var(--border)] shadow-2xl space-y-3.5"
             >
-              <div className="flex items-center justify-between border-b border-[var(--border)] pb-2">
-                <h3 className="font-black uppercase text-xs text-[var(--primary)] flex items-center gap-1">
-                  <PackagePlus size={14} />
-                  <span>Manual Item Not in List</span>
-                </h3>
+              <div className="flex items-center justify-between border-b border-[var(--border)] pb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                    <PackagePlus size={16} />
+                  </div>
+                  <div>
+                    <h3 className="font-black uppercase text-xs text-[var(--foreground)] leading-tight">
+                      Add to Inventory & Bill
+                    </h3>
+                    <p className="text-[9.5px] text-[var(--foreground)]/60 font-medium">
+                      Saves to store catalog & inserts into bill
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowManualModal(false)}
-                  className="p-1 text-[10px] uppercase font-bold opacity-50 hover:opacity-100"
+                  className="p-1 rounded-lg text-[var(--foreground)]/50 hover:text-[var(--foreground)] hover:bg-[var(--foreground)]/5 transition-colors cursor-pointer"
                 >
-                  <X size={14} />
+                  <X size={15} />
                 </button>
               </div>
 
               <div className="space-y-3">
-                <div className="space-y-0.5">
-                  <label className="text-[8px] font-black uppercase opacity-60">Product Name *</label>
+                {/* Product Name */}
+                <div className="space-y-1">
+                  <label className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70 flex items-center justify-between">
+                    <span>Product Name *</span>
+                    <span className="text-[8px] text-[var(--primary)] font-bold">Auto-filled</span>
+                  </label>
                   <input
                     type="text"
+                    autoFocus
                     value={manualName}
                     onChange={(e) => setManualName(e.target.value)}
-                    placeholder={cleanAndValidateText("e.g. Fresh Mangoes (खुला माल)", currentLang, state.settings)}
-                    className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-2 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-[var(--primary)] font-bold uppercase"
+                    placeholder="e.g. Fresh Mangoes, Basmati Rice..."
+                    className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-2 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 font-bold uppercase transition-colors"
                   />
                 </div>
 
+                {/* Category Selection */}
+                {state.categories && state.categories.length > 0 && (
+                  <div className="space-y-1">
+                    <label className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70">
+                      Store Category
+                    </label>
+                    <select
+                      value={manualCategory || state.categories[0]?.id || ''}
+                      onChange={(e) => setManualCategory(e.target.value)}
+                      className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-1.5 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 font-medium cursor-pointer"
+                    >
+                      {state.categories.map((cat) => (
+                        <option key={cat.id} value={cat.id} className="bg-[var(--card)] text-[var(--foreground)]">
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Selling Price & Cost Price */}
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-0.5">
-                    <label className="text-[8px] font-black uppercase opacity-60">{cleanAndValidateText("Price (दाम)", currentLang, state.settings)} *</label>
+                  <div className="space-y-1">
+                    <label className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70">
+                      Selling Price (₹) *
+                    </label>
                     <input
                       type="number"
+                      step="any"
                       value={manualPrice}
                       onChange={(e) => setManualPrice(e.target.value)}
                       placeholder="₹ Rate"
-                      className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-2 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-[var(--primary)] font-mono font-bold"
+                      className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-2 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 font-mono font-bold"
                     />
                   </div>
-                  <div className="space-y-0.5">
-                    <label className="text-[8px] font-black uppercase opacity-60">Base Cost (लागत)</label>
+                  <div className="space-y-1">
+                    <label className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70">
+                      Buy Cost (₹)
+                    </label>
                     <input
                       type="number"
+                      step="any"
                       value={manualCost}
                       onChange={(e) => setManualCost(e.target.value)}
-                      placeholder="₹ Buy Cost"
-                      className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-2 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-[var(--primary)] font-mono font-bold"
+                      placeholder="₹ Optional"
+                      className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-2 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 font-mono font-bold"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[8px] font-black uppercase opacity-60">Unit (इकाई) *</label>
+                {/* Unit with quick chips */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70">
+                      Unit (इकाई) *
+                    </label>
+                    <div className="flex items-center gap-1">
+                      {['Pcs', 'Kg', 'Gm', 'Ltr', 'Pkt', 'Box'].map((u) => (
+                        <button
+                          key={`quick-unit-${u}`}
+                          type="button"
+                          onClick={() => setManualUnit(u)}
+                          className={cn(
+                            "px-1.5 py-0.5 rounded text-[8px] font-bold transition-all cursor-pointer",
+                            manualUnit.toLowerCase() === u.toLowerCase()
+                              ? "bg-emerald-600 text-white"
+                              : "bg-[var(--foreground)]/5 text-[var(--foreground)]/60 hover:bg-[var(--foreground)]/10"
+                          )}
+                        >
+                          {u}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <input
                     type="text"
                     value={manualUnit}
                     onChange={(e) => setManualUnit(e.target.value)}
-                    placeholder="e.g. Kg, Pcs, Bag, Chatak"
-                    className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-2 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-[var(--primary)] font-bold uppercase"
+                    placeholder="e.g. Kg, Pcs, Bag..."
+                    className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-1.5 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 font-bold uppercase"
                   />
                 </div>
 
+                {/* Initial Stock Quantity */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/70">
+                      Initial Inventory Stock
+                    </label>
+                    <span className="text-[8px] text-[var(--foreground)]/50">
+                      (Saved to catalog)
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    step="any"
+                    value={manualStock}
+                    onChange={(e) => setManualStock(e.target.value)}
+                    placeholder="e.g. 10"
+                    className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] px-3 py-1.5 rounded-xl text-xs text-[var(--foreground)] outline-none focus:border-emerald-500 font-mono font-bold"
+                  />
+                </div>
+
+                {/* Action button */}
                 <button
+                  type="button"
                   onClick={addManualItemToCart}
-                  className="w-full py-2 bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:scale-[1.01] active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
-                  Confirm & Add to Ticket
+                  <PackagePlus size={14} />
+                  <span>Save to Inventory & Add to Bill</span>
                 </button>
               </div>
             </motion.div>

@@ -530,6 +530,7 @@ export default function BillingScreen({
   // --- FUTURISTIC COMPENSE FOR MULTIPLE SESSIONS ---
   const [holdSearchQuery, setHoldSearchQuery] = useState('');
   const [showHoldSessionsDrawer, setShowHoldSessionsDrawer] = useState(false);
+  const [isMultiBillsDropdownOpen, setIsMultiBillsDropdownOpen] = useState(false);
 
   // Custom dialogs & notification states to support embedded environments/iframes perfectly
   const [customConfirm, setCustomConfirm] = useState<{
@@ -2880,276 +2881,322 @@ export default function BillingScreen({
       {/* MAIN BILLING DASHBOARD SUB-TAB VIEW */}
       {billingSubTab === 'billing' && (
         <>
-          {/* 📁 MULTI-WINDOW POS DRAFT BILLING TABS & SMART REGISTER DECK */}
+          {/* 📁 MULTI BILLS DROPDOWN BUTTON & COLLAPSIBLE REGISTER DECK */}
           <div 
             style={{ marginBottom: '12px' }}
-            className="w-full bg-[var(--card)]/80 backdrop-blur-md rounded-2xl border border-[var(--border)] p-3.5 space-y-2.5 shadow-lg relative overflow-hidden group"
+            className="w-full bg-[var(--card)]/90 backdrop-blur-md rounded-2xl border border-[var(--border)] shadow-sm relative overflow-hidden transition-all"
           >
-        <div className="absolute top-0 right-0 h-32 w-32 bg-[var(--primary)]/5 rounded-full blur-2xl pointer-events-none" />
-        
-        {/* Top line: Checkout Windows title on the left, Duplicate button on the very right corner */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0">
-              <Layers size={13} />
-            </div>
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)]/60 leading-none block">Checkout Windows</span>
-              <p className="text-[8px] font-bold text-amber-500 uppercase tracking-widest mt-0.5 leading-none">Draft Control Console</p>
-            </div>
-          </div>
-          
-          {/* Duplicate button in the very right corner in the same line as Checkout Windows */}
-          <button 
-            onClick={() => {
-              const newId = `draft-${Date.now()}`;
-              
-              setDrafts(prev => {
-                const updatedList = prev.map(d => {
-                  if (d.id === activeDraftId) {
-                    return {
-                      ...d,
-                      cart,
-                      customerName,
-                      customerPhone,
-                      discountPercent,
-                      taxPercent,
-                      paymentMethod,
-                      billingMode,
-                      udharDueDate,
-                      lastActiveAt: Date.now()
-                    };
-                  }
-                  return d;
-                });
-                
-                const activeObj = updatedList.find(d => d.id === activeDraftId);
-                if (activeObj) {
-                  const newDraft: DraftBill = {
-                    ...activeObj,
-                    id: newId,
-                    name: `${activeObj.name} (Copy)`,
-                    isPinned: false,
-                    lastActiveAt: Date.now()
-                  };
-                  return [...updatedList, newDraft];
-                }
-                return updatedList;
-              });
-              
-              switchToDraft(newId, false);
-              addToast("Register duplicated successfully", "success");
-            }}
-            className="h-6.5 px-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0 shadow-xs"
-            title="Duplicate current inventory cart"
-          >
-            <Copy size={9} className="opacity-80 shrink-0" />
-            <span>Duplicate</span>
-          </button>
-        </div>
-
-        {/* Secondary controls row: Pin, Rename, Hold Bill, Holds Centre */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
-          <button 
-            onClick={() => {
-              const draft = drafts.find(d => d.id === activeDraftId);
-              if (draft) {
-                const transitionToPinned = !draft.isPinned;
-                setDrafts(prev => prev.map(d => d.id === activeDraftId ? { ...d, isPinned: transitionToPinned } : d));
-                addToast(transitionToPinned ? "Register pinned successfully" : "Register unpinned", "info");
-              }
-            }}
-            className={cn(
-              "h-6 w-6 rounded-lg border flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0",
-              drafts.find(d => d.id === activeDraftId)?.isPinned
-                ? "border-amber-500/30 bg-amber-500/10 text-amber-500 shadow-xs"
-                : "border-[var(--border)] text-[var(--foreground)]/60 hover:bg-[var(--foreground)]/5"
-            )}
-            title={drafts.find(d => d.id === activeDraftId)?.isPinned ? "Unpin draft" : "Pin draft"}
-            aria-label="Pin Draft"
-          >
-            <Pin size={10} className={drafts.find(d => d.id === activeDraftId)?.isPinned ? "text-amber-500 fill-amber-500" : "opacity-60"} />
-          </button>
-
-          <button 
-            onClick={() => {
-              const draft = drafts.find(d => d.id === activeDraftId);
-              if (draft) {
-                showCustomPrompt(
-                  "Rename Register",
-                  "Specify a custom name/label for this checkout window:",
-                  draft.name,
-                  (newTitle) => {
-                    if (newTitle && newTitle.trim()) {
-                      setDrafts(prev => prev.map(d => d.id === activeDraftId ? { ...d, name: newTitle.trim() } : d));
-                      addToast(`Renamed checkout session to "${newTitle.trim()}"`, "info");
-                    }
-                  },
-                  "e.g., Register Alpha, Client #12..."
-                );
-              }
-            }}
-            className="h-6 px-2 rounded-lg border border-[var(--border)] text-[8px] font-black uppercase tracking-wider hover:bg-[var(--foreground)]/5 transition-all flex items-center gap-1 cursor-pointer active:scale-95 shrink-0"
-          >
-            <Edit2 size={8} className="opacity-40" />
-            <span>Rename</span>
-          </button>
-
-          <button 
-            onClick={() => {
-              const active = drafts.find(d => d.id === activeDraftId);
-              if (active) {
-                if (drafts.length <= 1) {
-                  addToast("At least one active register is required. Launch another draft counter first.", "warning");
-                  return;
-                }
-                // Freeze active states inside snapshot
-                const heldDraftSnapshot: DraftBill = {
-                  ...active,
-                  cart,
-                  customerName,
-                  customerPhone,
-                  discountPercent,
-                  taxPercent,
-                  paymentMethod,
-                  billingMode,
-                  udharDueDate,
-                  lastActiveAt: Date.now()
-                };
-                setHoldDrafts(prev => [heldDraftSnapshot, ...prev]);
-                const remainingDrafts = drafts.filter(d => d.id !== activeDraftId);
-                setDrafts(remainingDrafts);
-                switchToDraft(remainingDrafts[0].id, false, remainingDrafts);
-                addToast(`Placed current session "${active.name}" on hold`, "info");
-              }
-            }}
-            className="h-6 px-2 rounded-lg border border-amber-500/15 bg-amber-500/[0.04] text-amber-500 text-[8px] font-black uppercase tracking-wider hover:bg-amber-500 hover:text-white transition-all flex items-center gap-1 cursor-pointer active:scale-95 shrink-0"
-            title="Temporarily hold unfinished bill and switch checkouts"
-          >
-            <PauseCircle size={9.5} />
-            <span>Hold Bill</span>
-          </button>
-
-          {/* Futuristic Drawer Control Button */}
-          <button
-            onClick={() => setShowHoldSessionsDrawer(true)}
-            className={cn(
-              "h-6 px-2.5 rounded-lg text-[8px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-all active:scale-95 border shrink-0",
-              holdDrafts.length > 0
-                ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/10 hover:bg-amber-600 animate-pulse"
-                : "bg-[var(--foreground)]/[0.03] border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--foreground)]/[0.08]"
-            )}
-          >
-            <PauseCircle size={9.5} className={cn(holdDrafts.length > 0 ? "text-white" : "text-amber-500")} />
-            <span>Holds Centre</span>
-            <span className="h-3.5 w-3.5 rounded-full bg-white/20 text-center items-center justify-center flex font-mono text-[7px] leading-none shrink-0 font-extrabold text-inherit">
-              {holdDrafts.length}
-            </span>
-          </button>
-        </div>
-
-        {/* Scrollable Tab row with smooth active highlights */}
-        <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 cursor-grab select-none items-center pr-2">
-          {drafts.map(tab => {
-            const isActive = tab.id === activeDraftId;
-            const itemsCount = tab.cart?.reduce((acc, c) => acc + c.quantity, 0) || 0;
-            return (
-              <div 
-                key={tab.id}
-                onClick={() => {
-                  if (!isActive) switchToDraft(tab.id);
-                }}
-                className={cn(
-                  "px-4 py-2.5 rounded-xl border flex items-center gap-2.5 transition-all cursor-pointer relative shrink-0 text-[10.5px] font-extrabold uppercase",
-                  isActive 
-                    ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-md shadow-[var(--primary)]/10" 
-                    : "bg-[var(--foreground)]/[0.02] border-[var(--border)] hover:bg-[var(--foreground)]/[0.05]"
-                )}
-              >
-                {tab.isPinned && <Pin size={8.5} className="text-amber-400 fill-amber-400 shrink-0" />}
-                <span className="truncate max-w-[90px] leading-none">{tab.name}</span>
-                <span className={cn(
-                  "px-2 py-0.5 rounded-full text-[8.5px] leading-none shrink-0 font-bold font-mono",
-                  isActive ? "bg-white/25 text-white" : "bg-[var(--foreground)]/[0.05] text-[var(--foreground)]/50"
-                )}>
-                  {itemsCount} {itemsCount === 1 ? 'item' : 'items'}
-                </span>
-                
-                {drafts.length > 1 && (
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      showCustomConfirm(
-                        "Discard Checkout Tab",
-                        `Are you sure you want to discard your draft workspace "${tab.name}"? This action will permanently empty its live items list.`,
-                        () => {
-                          const remaining = drafts.filter(d => d.id !== tab.id);
-                          setDrafts(remaining);
-                          if (isActive) {
-                            switchToDraft(remaining[0].id, false, remaining);
-                          }
-                          addToast(`Successfully discarded "${tab.name}"`, "warning");
-                        },
-                        true, // isDestructive
-                        "Discard Tab",
-                        "Cancel"
-                      );
-                    }}
-                    className={cn(
-                      "h-3.5 w-3.5 items-center justify-center flex rounded-full text-[10px] leading-none transition-colors hover:bg-red-500 hover:text-white shrink-0 font-mono cursor-pointer active:scale-90",
-                      isActive ? "text-white/40" : "text-[var(--foreground)]/30"
-                    )}
-                  >
-                    ×
-                  </button>
-                )}
+            {/* Top Dropdown Header Button */}
+            <button
+              type="button"
+              onClick={() => setIsMultiBillsDropdownOpen(!isMultiBillsDropdownOpen)}
+              className={cn(
+                "w-full px-3.5 py-2.5 flex items-center justify-between gap-2 transition-colors cursor-pointer select-none text-left",
+                isMultiBillsDropdownOpen 
+                  ? "bg-[var(--foreground)]/[0.03] border-b border-[var(--border)]" 
+                  : "hover:bg-[var(--foreground)]/[0.02]"
+              )}
+              title="Toggle Multi Bills workspace"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-7 w-7 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0">
+                  <Layers size={14} />
+                </div>
+                <div className="flex items-baseline gap-2 truncate">
+                  <span className="text-xs font-black uppercase tracking-wider text-[var(--foreground)]">
+                    Multi Bills
+                  </span>
+                  {/* Summary of currently active bill and items */}
+                  {(() => {
+                    const activeObj = drafts.find(d => d.id === activeDraftId);
+                    const qtyInActiveCart = cart.reduce((acc, c) => acc + c.quantity, 0);
+                    return (
+                      <span className="text-[10px] font-bold text-[var(--foreground)]/50 font-sans truncate hidden sm:inline">
+                        • Active: <strong className="text-[var(--primary)]">{activeObj?.name || 'Bill #101'}</strong> ({qtyInActiveCart} {qtyInActiveCart === 1 ? 'item' : 'items'})
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
-            );
-          })}
 
-          {/* Add Draft Session Trigger */}
-          <button 
-            onClick={() => {
-              if (drafts.length >= 15) {
-                alert("POS draft workspaces threshold reached (Max 15 active counter tabs supported simultaneously).");
-                return;
-              }
-              const newId = `draft-${Date.now()}`;
-              let num = 101;
-              while (drafts.some(d => d.name === `Bill #${num}`)) {
-                num++;
-              }
-              const freshDraft: DraftBill = {
-                id: newId,
-                name: `Bill #${num}`,
-                cart: [],
-                customerName: '',
-                customerPhone: '',
-                discountPercent: 0,
-                taxPercent: 0,
-                paymentMethod: 'Cash',
-                billingMode: 'auto',
-                udharDueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-                lastActiveAt: Date.now()
-              };
-              setDrafts(prev => [...prev, freshDraft]);
-              setActiveDraftId(newId);
-              setCart([]);
-              setCustomerName('');
-              setCustomerPhone('');
-              setDiscountPercent(0);
-              setTaxPercent(0);
-              setPaymentMethod('Cash');
-              setBillingMode('auto');
-            }}
-            className="h-8.5 px-3 rounded-xl bg-[var(--foreground)]/[0.03] border border-[var(--border)] hover:bg-[var(--foreground)]/[0.08] text-[var(--foreground)]/60 transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 text-[10px] font-black uppercase tracking-wider hover:text-[var(--foreground)]"
-            title="Open clean cash register checkout draft"
-          >
-            <Plus size={12} className="shrink-0" />
-            Counter
-          </button>
-        </div>
-      </div>
+              {/* Right Side: Total Active Bills Pill & Animated Dropdown Arrow */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="px-2 py-0.5 rounded-full bg-[var(--foreground)]/5 text-[var(--foreground)]/70 text-[9.5px] font-mono font-bold border border-[var(--border)]">
+                  {drafts.length} {drafts.length === 1 ? 'Bill' : 'Bills'}
+                  {holdDrafts.length > 0 && ` • ${holdDrafts.length} Held`}
+                </span>
+                <div className={cn(
+                  "h-6 w-6 rounded-md flex items-center justify-center text-[var(--foreground)]/50 hover:text-[var(--foreground)] transition-transform duration-200",
+                  isMultiBillsDropdownOpen ? "rotate-180 text-[var(--primary)]" : ""
+                )}>
+                  <ChevronDown size={15} />
+                </div>
+              </div>
+            </button>
+
+            {/* Dropdown Content - Revealed ONLY after clicking */}
+            <AnimatePresence>
+              {isMultiBillsDropdownOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.22, ease: "easeInOut" }}
+                  className="overflow-hidden p-3.5 space-y-2.5 bg-[var(--card)]/40"
+                >
+                  {/* Controls row: Duplicate, Pin, Rename, Hold Bill, Holds Centre */}
+                  <div className="flex items-center justify-between gap-2 border-b border-[var(--border)]/60 pb-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                      <button 
+                        onClick={() => {
+                          const draft = drafts.find(d => d.id === activeDraftId);
+                          if (draft) {
+                            const transitionToPinned = !draft.isPinned;
+                            setDrafts(prev => prev.map(d => d.id === activeDraftId ? { ...d, isPinned: transitionToPinned } : d));
+                            addToast(transitionToPinned ? "Register pinned successfully" : "Register unpinned", "info");
+                          }
+                        }}
+                        className={cn(
+                          "h-6.5 w-6.5 rounded-lg border flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0",
+                          drafts.find(d => d.id === activeDraftId)?.isPinned
+                            ? "border-amber-500/30 bg-amber-500/10 text-amber-500 shadow-xs"
+                            : "border-[var(--border)] text-[var(--foreground)]/60 hover:bg-[var(--foreground)]/5"
+                        )}
+                        title={drafts.find(d => d.id === activeDraftId)?.isPinned ? "Unpin draft" : "Pin draft"}
+                        aria-label="Pin Draft"
+                      >
+                        <Pin size={10} className={drafts.find(d => d.id === activeDraftId)?.isPinned ? "text-amber-500 fill-amber-500" : "opacity-60"} />
+                      </button>
+
+                      <button 
+                        onClick={() => {
+                          const draft = drafts.find(d => d.id === activeDraftId);
+                          if (draft) {
+                            showCustomPrompt(
+                              "Rename Register",
+                              "Specify a custom name/label for this checkout window:",
+                              draft.name,
+                              (newTitle) => {
+                                if (newTitle && newTitle.trim()) {
+                                  setDrafts(prev => prev.map(d => d.id === activeDraftId ? { ...d, name: newTitle.trim() } : d));
+                                  addToast(`Renamed checkout session to "${newTitle.trim()}"`, "info");
+                                }
+                              },
+                              "e.g., Register Alpha, Client #12..."
+                            );
+                          }
+                        }}
+                        className="h-6.5 px-2 rounded-lg border border-[var(--border)] text-[8.5px] font-black uppercase tracking-wider hover:bg-[var(--foreground)]/5 transition-all flex items-center gap-1 cursor-pointer active:scale-95 shrink-0"
+                      >
+                        <Edit2 size={9} className="opacity-40" />
+                        <span>Rename</span>
+                      </button>
+
+                      <button 
+                        onClick={() => {
+                          const active = drafts.find(d => d.id === activeDraftId);
+                          if (active) {
+                            if (drafts.length <= 1) {
+                              addToast("At least one active register is required. Launch another draft counter first.", "warning");
+                              return;
+                            }
+                            // Freeze active states inside snapshot
+                            const heldDraftSnapshot: DraftBill = {
+                              ...active,
+                              cart,
+                              customerName,
+                              customerPhone,
+                              discountPercent,
+                              taxPercent,
+                              paymentMethod,
+                              billingMode,
+                              udharDueDate,
+                              lastActiveAt: Date.now()
+                            };
+                            setHoldDrafts(prev => [heldDraftSnapshot, ...prev]);
+                            const remainingDrafts = drafts.filter(d => d.id !== activeDraftId);
+                            setDrafts(remainingDrafts);
+                            switchToDraft(remainingDrafts[0].id, false, remainingDrafts);
+                            addToast(`Placed current session "${active.name}" on hold`, "info");
+                          }
+                        }}
+                        className="h-6.5 px-2 rounded-lg border border-amber-500/20 bg-amber-500/[0.05] text-amber-600 dark:text-amber-400 text-[8.5px] font-black uppercase tracking-wider hover:bg-amber-500 hover:text-white transition-all flex items-center gap-1 cursor-pointer active:scale-95 shrink-0"
+                        title="Temporarily hold unfinished bill and switch checkouts"
+                      >
+                        <PauseCircle size={10} />
+                        <span>Hold Bill</span>
+                      </button>
+
+                      {/* Holds Centre Button */}
+                      <button
+                        onClick={() => setShowHoldSessionsDrawer(true)}
+                        className={cn(
+                          "h-6.5 px-2.5 rounded-lg text-[8.5px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-all active:scale-95 border shrink-0",
+                          holdDrafts.length > 0
+                            ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/10 hover:bg-amber-600 animate-pulse"
+                            : "bg-[var(--foreground)]/[0.03] border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--foreground)]/[0.08]"
+                        )}
+                      >
+                        <PauseCircle size={10} className={cn(holdDrafts.length > 0 ? "text-white" : "text-amber-500")} />
+                        <span>Holds Centre</span>
+                        <span className="h-3.5 w-3.5 rounded-full bg-white/20 text-center items-center justify-center flex font-mono text-[7px] leading-none shrink-0 font-extrabold text-inherit">
+                          {holdDrafts.length}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Duplicate button in the very right corner */}
+                    <button 
+                      onClick={() => {
+                        const newId = `draft-${Date.now()}`;
+                        setDrafts(prev => {
+                          const updatedList = prev.map(d => {
+                            if (d.id === activeDraftId) {
+                              return {
+                                ...d,
+                                cart,
+                                customerName,
+                                customerPhone,
+                                discountPercent,
+                                taxPercent,
+                                paymentMethod,
+                                billingMode,
+                                udharDueDate,
+                                lastActiveAt: Date.now()
+                              };
+                            }
+                            return d;
+                          });
+                          const activeObj = updatedList.find(d => d.id === activeDraftId);
+                          if (activeObj) {
+                            const newDraft: DraftBill = {
+                              ...activeObj,
+                              id: newId,
+                              name: `${activeObj.name} (Copy)`,
+                              isPinned: false,
+                              lastActiveAt: Date.now()
+                            };
+                            return [...updatedList, newDraft];
+                          }
+                          return updatedList;
+                        });
+                        switchToDraft(newId, false);
+                        addToast("Register duplicated successfully", "success");
+                      }}
+                      className="h-6.5 px-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[8.5px] font-black uppercase tracking-wider hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0 shadow-xs"
+                      title="Duplicate current inventory cart"
+                    >
+                      <Copy size={9.5} className="opacity-80 shrink-0" />
+                      <span>Duplicate</span>
+                    </button>
+                  </div>
+
+                  {/* Scrollable Tab row with smooth active highlights */}
+                  <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 cursor-grab select-none items-center pr-2 pt-1">
+                    {drafts.map(tab => {
+                      const isActive = tab.id === activeDraftId;
+                      const itemsCount = tab.cart?.reduce((acc, c) => acc + c.quantity, 0) || 0;
+
+                      return (
+                        <div 
+                          key={tab.id}
+                          onClick={() => {
+                            if (!isActive) switchToDraft(tab.id);
+                          }}
+                          className={cn(
+                            "px-4 py-2 rounded-xl border flex items-center gap-2.5 transition-all cursor-pointer relative shrink-0 text-[10.5px] font-extrabold uppercase",
+                            isActive 
+                              ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-md shadow-[var(--primary)]/10" 
+                              : "bg-[var(--foreground)]/[0.02] border-[var(--border)] hover:bg-[var(--foreground)]/[0.05]"
+                          )}
+                        >
+                          {tab.isPinned && <Pin size={8.5} className="text-amber-400 fill-amber-400 shrink-0" />}
+                          <span className="truncate max-w-[90px] leading-none">{tab.name}</span>
+                          <span className={cn(
+                            "px-2 py-0.5 rounded-full text-[8.5px] leading-none shrink-0 font-bold font-mono",
+                            isActive ? "bg-white/25 text-white" : "bg-[var(--foreground)]/[0.05] text-[var(--foreground)]/50"
+                          )}>
+                            {itemsCount} {itemsCount === 1 ? 'item' : 'items'}
+                          </span>
+                          
+                          {drafts.length > 1 && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showCustomConfirm(
+                                  "Discard Checkout Tab",
+                                  `Are you sure you want to discard your draft workspace "${tab.name}"? This action will permanently empty its live items list.`,
+                                  () => {
+                                    const remaining = drafts.filter(d => d.id !== tab.id);
+                                    setDrafts(remaining);
+                                    if (isActive) {
+                                      switchToDraft(remaining[0].id, false, remaining);
+                                    }
+                                    addToast(`Successfully discarded "${tab.name}"`, "warning");
+                                  },
+                                  true, // isDestructive
+                                  "Discard Tab",
+                                  "Cancel"
+                                );
+                              }}
+                              className={cn(
+                                "h-3.5 w-3.5 items-center justify-center flex rounded-full text-[10px] leading-none transition-colors hover:bg-red-500 hover:text-white shrink-0 font-mono cursor-pointer active:scale-90",
+                                isActive ? "text-white/40" : "text-[var(--foreground)]/30"
+                              )}
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Add Draft Session Trigger */}
+                    <button 
+                      onClick={() => {
+                        if (drafts.length >= 15) {
+                          alert("POS draft workspaces threshold reached (Max 15 active counter tabs supported simultaneously).");
+                          return;
+                        }
+                        const newId = `draft-${Date.now()}`;
+                        let num = 101;
+                        while (drafts.some(d => d.name === `Bill #${num}`)) {
+                          num++;
+                        }
+                        const freshDraft: DraftBill = {
+                          id: newId,
+                          name: `Bill #${num}`,
+                          cart: [],
+                          customerName: '',
+                          customerPhone: '',
+                          discountPercent: 0,
+                          taxPercent: 0,
+                          paymentMethod: 'Cash',
+                          billingMode: 'auto',
+                          udharDueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+                          lastActiveAt: Date.now()
+                        };
+                        setDrafts(prev => [...prev, freshDraft]);
+                        setActiveDraftId(newId);
+                        setCart([]);
+                        setCustomerName('');
+                        setCustomerPhone('');
+                        setDiscountPercent(0);
+                        setTaxPercent(0);
+                        setPaymentMethod('Cash');
+                        setBillingMode('auto');
+                      }}
+                      className="h-8 px-3 rounded-xl bg-[var(--foreground)]/[0.03] border border-[var(--border)] hover:bg-[var(--foreground)]/[0.08] text-[var(--foreground)]/60 transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 text-[10px] font-black uppercase tracking-wider hover:text-[var(--foreground)]"
+                      title="Open clean cash register checkout draft"
+                    >
+                      <Plus size={12} className="shrink-0" />
+                      + New Bill
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
       {/* 🔮 IMMERSIVE HOLD WINDOW SESSIONS Drawer */}
       <AnimatePresence>

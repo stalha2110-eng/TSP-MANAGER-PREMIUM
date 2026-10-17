@@ -90,17 +90,6 @@ const CatalogCardQuantityInput: React.FC<{
       >
         <Plus size={7} />
       </button>
-
-      <QuickWeightPresets
-        currentQty={quantity}
-        unitPrice={unitPrice}
-        unit={unit}
-        precision={precision}
-        onSelectQty={onChange}
-        compact={true}
-        align="right"
-        customPresets={customPresets}
-      />
     </div>
   );
 };
@@ -1239,7 +1228,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                           </div>
                           
                           <div className="flex items-center gap-0.5">
-                            {countInCart > 0 ? (
+                            {countInCart > 0 && (
                               <CatalogCardQuantityInput
                                 quantity={countInCart}
                                 unitPrice={activePrice}
@@ -1270,32 +1259,6 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                                   }
                                 }}
                               />
-                            ) : (
-                              <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-                                <QuickWeightPresets
-                                  currentQty={1}
-                                  unitPrice={activePrice}
-                                  unit={item.unit || 'pcs'}
-                                  precision={settings?.pricePrecision || 0}
-                                  onSelectQty={(qty) => {
-                                    onAddToCart(item, undefined, qty, true);
-                                  }}
-                                  compact={true}
-                                  align="right"
-                                  customPresets={settings?.customWeightPresets}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onAddToCart(item, e);
-                                  }}
-                                  className="h-4.5 px-1.5 rounded-md bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 hover:bg-[var(--primary)] hover:text-white flex items-center justify-center text-[7.5px] font-black uppercase transition-colors cursor-pointer"
-                                  title="Add to ticket"
-                                >
-                                  + Add
-                                </button>
-                              </div>
                             )}
                           </div>
                         </div>

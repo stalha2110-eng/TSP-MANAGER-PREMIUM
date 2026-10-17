@@ -1336,80 +1336,82 @@ export function VoiceProductAssistant({
         </div>
 
         {/* Scrollable Body Canvas */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-[var(--background)]/30">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-[var(--background)]/30 flex flex-col">
           
           {activeTab === 'assistant' && (
-            <div className="space-y-6">
+            <div className={`space-y-6 flex flex-col ${draftProducts.length === 0 ? 'flex-1 justify-center my-auto' : ''}`}>
               
               {/* MIC STATION PANEL */}
-              <div className="relative rounded-3xl bg-[var(--card)] border border-[var(--border)] p-4 sm:p-5 overflow-hidden flex flex-col items-center justify-center text-center space-y-3 sm:space-y-3.5 shadow-sm">
+              <div className={`relative rounded-3xl bg-[var(--card)] border border-[var(--border)] p-4 sm:p-6 overflow-hidden flex flex-col items-center justify-center text-center shadow-sm ${
+                draftProducts.length === 0 ? 'my-auto py-8 sm:py-12 space-y-4' : 'space-y-3 sm:space-y-3.5'
+              }`}>
                 {/* Floating ambient glow */}
                 <div className={`absolute -top-32 -left-32 w-64 h-64 rounded-full filter blur-[100px] transition-all opacity-15 ${isListening ? "bg-amber-500 scale-150" : "bg-teal-500"}`} />
                 <div className={`absolute -bottom-32 -right-32 w-64 h-64 rounded-full filter blur-[100px] transition-all opacity-15 ${isListening ? "bg-amber-500 scale-150" : "bg-amber-500"}`} />
 
                 {/* Main Interactive Mic Button Section */}
                 <div className="relative flex flex-col items-center justify-center py-2">
-                  <div className="relative flex items-center justify-center h-28 w-28 sm:h-32 sm:w-32">
-                    {/* Continuous Idle & Active Ripple Waves in squircle shape */}
+                  <div className="relative flex items-center justify-center h-32 w-32 sm:h-36 sm:w-36">
+                    {/* Continuous Idle & Active Ripple Waves in circular round shape */}
                     {isListening ? (
                       <>
                         <motion.div 
                           initial={{ scale: 0.85, opacity: 0.8 }}
-                          animate={{ scale: [1, 2.1], opacity: [0.8, 0] }}
+                          animate={{ scale: [1, 2.2], opacity: [0.8, 0] }}
                           transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut" }}
-                          className="absolute inset-0 rounded-[28px] border-2 border-rose-500/60 bg-rose-500/10 pointer-events-none"
+                          className="absolute inset-0 rounded-full border-2 border-rose-500/60 bg-rose-500/10 pointer-events-none"
                         />
                         <motion.div 
                           initial={{ scale: 0.85, opacity: 0.6 }}
-                          animate={{ scale: [1, 1.7], opacity: [0.6, 0] }}
+                          animate={{ scale: [1, 1.8], opacity: [0.6, 0] }}
                           transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut", delay: 0.4 }}
-                          className="absolute inset-0 rounded-[28px] border-2 border-amber-500/50 bg-amber-500/10 pointer-events-none"
+                          className="absolute inset-0 rounded-full border-2 border-amber-500/50 bg-amber-500/10 pointer-events-none"
                         />
                         <motion.div 
                           initial={{ scale: 0.85, opacity: 0.4 }}
-                          animate={{ scale: [1, 1.35], opacity: [0.4, 0] }}
+                          animate={{ scale: [1, 1.4], opacity: [0.4, 0] }}
                           transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut", delay: 0.8 }}
-                          className="absolute inset-0 rounded-[28px] border border-red-500/40 pointer-events-none"
+                          className="absolute inset-0 rounded-full border border-red-500/40 pointer-events-none"
                         />
                       </>
                     ) : (
                       <>
                         {/* Inviting Idle Ripple Wave 1 */}
                         <motion.div 
-                          animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
+                          animate={{ scale: [1, 1.55], opacity: [0.5, 0] }}
                           transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut" }}
-                          className="absolute inset-0 rounded-[28px] border-2 border-amber-500/40 bg-amber-500/5 pointer-events-none"
+                          className="absolute inset-0 rounded-full border-2 border-amber-500/40 bg-amber-500/5 pointer-events-none"
                         />
                         {/* Inviting Idle Ripple Wave 2 */}
                         <motion.div 
-                          animate={{ scale: [1, 1.3], opacity: [0.35, 0] }}
+                          animate={{ scale: [1, 1.35], opacity: [0.35, 0] }}
                           transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut", delay: 1.2 }}
-                          className="absolute inset-0 rounded-[28px] border border-amber-400/35 bg-amber-400/5 pointer-events-none"
+                          className="absolute inset-0 rounded-full border border-amber-400/35 bg-amber-400/5 pointer-events-none"
                         />
                         {/* Rotating subtle conic glow aura */}
                         <motion.div 
                           animate={{ rotate: 360 }}
                           transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                          className="absolute -inset-2 rounded-[32px] bg-gradient-to-tr from-amber-500/20 via-orange-500/10 to-amber-300/25 blur-md pointer-events-none"
+                          className="absolute -inset-2 rounded-full bg-gradient-to-tr from-amber-500/20 via-orange-500/10 to-amber-300/25 blur-md pointer-events-none"
                         />
                       </>
                     )}
 
-                    {/* Squircle Mic Button (╭──────────╮ │ 🎙️ │ ╰──────────╯) */}
+                    {/* Circular Round Mic Button */}
                     <motion.button
                       id="voice-assistant-mic-record-btn"
                       onClick={toggleListening}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.06 }}
+                      whileTap={{ scale: 0.94 }}
                       animate={isListening ? {
-                        scale: [1, 1.04, 1],
+                        scale: [1, 1.05, 1],
                         boxShadow: [
                           "0 10px 25px -4px rgba(239, 68, 68, 0.6), 0 0 0 3px rgba(239, 68, 68, 0.4)",
                           "0 15px 35px -4px rgba(245, 158, 11, 0.8), 0 0 20px 8px rgba(239, 68, 68, 0.2)",
                           "0 10px 25px -4px rgba(239, 68, 68, 0.6), 0 0 0 3px rgba(239, 68, 68, 0.4)"
                         ]
                       } : {
-                        scale: [1, 1.02, 1],
+                        scale: [1, 1.03, 1],
                         boxShadow: [
                           "0 8px 20px -4px rgba(245, 158, 11, 0.4), 0 0 0 2px rgba(245, 158, 11, 0.2)",
                           "0 12px 28px 0px rgba(245, 158, 11, 0.6), 0 0 14px 4px rgba(245, 158, 11, 0.15)",
@@ -1428,7 +1430,7 @@ export function VoiceProductAssistant({
                           ease: "easeInOut"
                         }
                       }}
-                      className={`relative z-10 flex items-center justify-center h-22 w-22 sm:h-24 sm:w-24 rounded-[26px] cursor-pointer select-none outline-none focus:outline-none focus:ring-4 focus:ring-amber-400/50 transition-colors border-3 sm:border-4 ${
+                      className={`relative z-10 flex items-center justify-center h-24 w-24 sm:h-28 sm:w-28 rounded-full cursor-pointer select-none outline-none focus:outline-none focus:ring-4 focus:ring-amber-400/50 transition-colors border-3 sm:border-4 ${
                         isListening 
                           ? 'bg-gradient-to-tr from-rose-600 via-red-500 to-amber-500 border-rose-300/80 text-white shadow-xl' 
                           : 'bg-gradient-to-tr from-amber-500 via-amber-600 to-orange-500 border-amber-300/80 text-white shadow-xl'
@@ -1436,7 +1438,7 @@ export function VoiceProductAssistant({
                       title={isListening ? "Click to Stop Listening" : "Click to Speak Products"}
                     >
                       {/* Inner highlight rim */}
-                      <div className="absolute inset-1 rounded-[22px] border border-white/30 pointer-events-none" />
+                      <div className="absolute inset-1 rounded-full border border-white/30 pointer-events-none" />
 
                       <AnimatePresence mode="wait">
                         <motion.div
@@ -1448,9 +1450,9 @@ export function VoiceProductAssistant({
                           className="flex flex-col items-center justify-center"
                         >
                           {isListening ? (
-                            <MicOff size={36} className="text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)] animate-pulse stroke-[2.5]" />
+                            <MicOff size={38} className="text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)] animate-pulse stroke-[2.5]" />
                           ) : (
-                            <Mic size={36} className="text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)] stroke-[2.5]" />
+                            <Mic size={38} className="text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)] stroke-[2.5]" />
                           )}
                         </motion.div>
                       </AnimatePresence>
@@ -1866,6 +1868,30 @@ export function VoiceProductAssistant({
                       <Save size={18} /> Review & Add {draftProducts.length} Products
                     </Button>
                   </div>
+                </div>
+              )}
+
+              {/* Mobile-Friendly Sticky Bottom-Center Round Mic Button when reviewing drafts */}
+              {draftProducts.length > 0 && (
+                <div className="sm:hidden sticky bottom-2 z-30 flex items-center justify-center pt-2 pb-1 pointer-events-none">
+                  <motion.button
+                    type="button"
+                    onClick={toggleListening}
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
+                    className={`pointer-events-auto h-15 w-15 rounded-full flex items-center justify-center shadow-2xl border-3 transition-all cursor-pointer ${
+                      isListening
+                        ? 'bg-gradient-to-tr from-rose-600 via-red-500 to-amber-500 border-rose-300 text-white shadow-rose-500/40 animate-pulse'
+                        : 'bg-gradient-to-tr from-amber-500 via-amber-600 to-orange-500 border-amber-300 text-white shadow-amber-500/40'
+                    }`}
+                    title={isListening ? "Listening • Tap to Stop" : "Tap to Speak More Products"}
+                  >
+                    {isListening ? (
+                      <MicOff size={26} className="text-white drop-shadow stroke-[2.5]" />
+                    ) : (
+                      <Mic size={26} className="text-white drop-shadow stroke-[2.5]" />
+                    )}
+                  </motion.button>
                 </div>
               )}
             </div>

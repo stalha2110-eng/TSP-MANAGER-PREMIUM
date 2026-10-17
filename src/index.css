@@ -419,3 +419,41 @@ body.desktop-size-mode,
   background: rgba(120, 120, 120, 0.6);
 }
 
+/* Animated Running Gradient Border Beam Effects for Hero Actions */
+@keyframes running-border-spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes running-border-glow {
+  0%, 100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer-sweep {
+  0% {
+    transform: translateX(-150%) skewX(-15deg);
+  }
+  50%, 100% {
+    transform: translateX(150%) skewX(-15deg);
+  }
+}
+
+.animate-running-border {
+  animation: running-border-spin 9s linear infinite;
+  will-change: transform;
+}
+
+.animate-shimmer-sweep {
+  animation: shimmer-sweep 5.5s ease-in-out infinite;
+  will-change: transform;
+}
+

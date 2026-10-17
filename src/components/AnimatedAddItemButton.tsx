@@ -27,21 +27,57 @@ export function AnimatedAddItemButton({
       ? 'सर्व सामान कॅटलॉग • बिलात जोडा'
       : 'Browse all items catalog & add to cart';
 
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+      try {
+        window.navigator.vibrate(18);
+      } catch {
+        // Ignore browser vibration restrictions silently
+      }
+    }
+    onClick();
+  };
+
   return (
     <motion.button
       id="billing-view-all-items-btn"
       type="button"
-      onClick={onClick}
+      onClick={handleClick}
       whileHover={{ scale: 1.006, y: -1 }}
       whileTap={{ scale: 0.99, y: 0 }}
       transition={{ duration: 0.15 }}
       style={{ height: '55px', marginLeft: '0px', paddingLeft: '7px' }}
-      className="w-full h-[55px] ml-0 pl-[7px] pr-4 sm:pr-5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-blue-700 hover:from-indigo-500 hover:via-indigo-600 hover:to-blue-600 text-white py-2.5 cursor-pointer group shadow-lg shadow-indigo-600/25 dark:shadow-indigo-950/50 border border-indigo-400/30 hover:border-indigo-300/50 flex items-center justify-between gap-3 transition-all select-none relative overflow-hidden"
+      className="w-full h-[55px] ml-0 pl-[7px] pr-4 sm:pr-5 rounded-2xl bg-indigo-950 text-white py-2.5 cursor-pointer group shadow-xl shadow-indigo-600/30 dark:shadow-indigo-950/60 hover:shadow-indigo-500/40 flex items-center justify-between gap-3 transition-all select-none relative overflow-hidden"
       title="Open All Items Catalog to add products to bill"
       aria-label="Add Items to Bill"
     >
-      {/* Subtle background ambient glow streak */}
-      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/[0.08] to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      {/* 🌈 Running Multi-Gradient Border & Edge Motion Engine */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+        {/* Layer 1: Continuous Multi-Color Rotating Conic Gradient Beam */}
+        <div
+          className="absolute top-1/2 left-1/2 w-[1600px] h-[1600px] -translate-x-1/2 -translate-y-1/2 animate-running-border pointer-events-none opacity-95 group-hover:opacity-100 transition-opacity"
+          style={{
+            background: 'conic-gradient(from 0deg, #6366f1 0%, #8b5cf6 12%, #ec4899 25%, #f43f5e 38%, #f59e0b 50%, #10b981 63%, #06b6d4 76%, #3b82f6 88%, #6366f1 100%)',
+          }}
+        />
+
+        {/* Layer 2: Glowing Neon Aura Diffusion along the running edge */}
+        <div
+          className="absolute top-1/2 left-1/2 w-[1600px] h-[1600px] -translate-x-1/2 -translate-y-1/2 animate-running-border blur-[5px] pointer-events-none opacity-80 group-hover:opacity-95 transition-opacity"
+          style={{
+            background: 'conic-gradient(from 0deg, #6366f1 0%, #8b5cf6 12%, #ec4899 25%, #f43f5e 38%, #f59e0b 50%, #10b981 63%, #06b6d4 76%, #3b82f6 88%, #6366f1 100%)',
+          }}
+        />
+
+        {/* Layer 3: Solid Inner Core Body (inset 2.5px) revealing the running edge gradient */}
+        <div className="absolute inset-[2.5px] rounded-[13.5px] bg-gradient-to-r from-indigo-800 via-indigo-900 to-blue-900 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950 transition-colors pointer-events-none shadow-inner" />
+
+        {/* Layer 4: Glass Top Highlight & Subtle Inner Depth Bevel */}
+        <div className="absolute inset-[2.5px] rounded-[13.5px] bg-gradient-to-b from-white/[0.14] via-transparent to-black/[0.2] pointer-events-none border border-white/15" />
+
+        {/* Layer 5: Luminous Shimmer Sheen moving across the button face */}
+        <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/[0.14] to-transparent pointer-events-none animate-shimmer-sweep" />
+      </div>
 
       {/* Left: Trolley Icon Box & Command Typography */}
       <div className="flex items-center gap-3.5 min-w-0 z-10">

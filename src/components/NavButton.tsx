@@ -11,12 +11,24 @@ export interface NavButtonProps {
 }
 
 export function NavButton({ active, icon, label, onClick, id }: NavButtonProps) {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Provide tactile vibration haptic feedback for mobile navigation
+    if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+      try {
+        window.navigator.vibrate(20);
+      } catch {
+        // Silently catch if not allowed by browser permissions
+      }
+    }
+    onClick();
+  };
+
   return (
     <motion.button 
       id={id}
       whileHover={{ y: -1 }}
       whileTap={{ scale: 0.92 }}
-      onClick={onClick}
+      onClick={handleClick}
       className="relative flex flex-col items-center gap-1.5 py-1.5 px-4 select-none cursor-pointer group focus:outline-none"
     >
       {/* Sliding Background Tab Pill */}

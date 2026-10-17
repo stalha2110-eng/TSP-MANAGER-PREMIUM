@@ -35,7 +35,8 @@ export function AnimatedAddItemButton({
       whileHover={{ scale: 1.006, y: -1 }}
       whileTap={{ scale: 0.99, y: 0 }}
       transition={{ duration: 0.15 }}
-      className="w-full h-14 sm:h-15 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-blue-700 hover:from-indigo-500 hover:via-indigo-600 hover:to-blue-600 text-white px-4 sm:px-5 py-2.5 cursor-pointer group shadow-lg shadow-indigo-600/25 dark:shadow-indigo-950/50 border border-indigo-400/30 hover:border-indigo-300/50 flex items-center justify-between gap-3 transition-all select-none relative overflow-hidden"
+      style={{ height: '55px', marginLeft: '0px', paddingLeft: '7px' }}
+      className="w-full h-[55px] ml-0 pl-[7px] pr-4 sm:pr-5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-blue-700 hover:from-indigo-500 hover:via-indigo-600 hover:to-blue-600 text-white py-2.5 cursor-pointer group shadow-lg shadow-indigo-600/25 dark:shadow-indigo-950/50 border border-indigo-400/30 hover:border-indigo-300/50 flex items-center justify-between gap-3 transition-all select-none relative overflow-hidden"
       title="Open All Items Catalog to add products to bill"
       aria-label="Add Items to Bill"
     >
@@ -79,7 +80,10 @@ export function AnimatedAddItemButton({
 
       {/* Right: High-Contrast Hero Action Pill with 'All Items' */}
       <div className="flex items-center gap-2 shrink-0 z-10">
-        <div className="h-8 sm:h-9 px-3 sm:px-4 rounded-xl bg-white text-indigo-700 font-black text-xs uppercase tracking-wider shadow-sm flex items-center gap-1.5 group-hover:bg-indigo-50 group-hover:shadow-md transition-all">
+        <div 
+          style={{ height: '36px' }}
+          className="h-[36px] px-3 sm:px-4 rounded-xl bg-white text-indigo-700 font-black text-xs uppercase tracking-wider shadow-sm flex items-center gap-1.5 group-hover:bg-indigo-50 group-hover:shadow-md transition-all"
+        >
           <span>{allItemsLabel}</span>
           <ArrowRight
             size={14}

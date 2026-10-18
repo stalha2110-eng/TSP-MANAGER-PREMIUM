@@ -287,55 +287,54 @@ export default function BusinessSettingsScreen({
 
   // Handle Dashboard card toggling / resizing
   const handleToggleDashboardCard = (cardId: string) => {
-    const currentCards = state.settings.dashboardCards && state.settings.dashboardCards.length > 0
-      ? [...state.settings.dashboardCards]
-      : allPossibleDashboardCards.map(c => ({
-          id: c.id,
-          title: c.label,
-          visible: c.id === 'inventory_value',
-          size: (c.id === 'sales' || c.id === 'business_journey' ? 'large' : (c.id === 'printer_status' || c.id === 'cloud_sync_status' || c.id === 'backup_status' ? 'small' : 'medium')) as 'small' | 'medium' | 'large'
-        }));
-
-    let found = false;
-    const updated = currentCards.map(c => {
-      if (c.id === cardId) {
-        found = true;
-        return { ...c, visible: !c.visible };
+    const existingCards = state.settings.dashboardCards || [];
+    const updated = allPossibleDashboardCards.map(pc => {
+      const existing = existingCards.find(c => c.id === pc.id);
+      const isVisible = existing !== undefined ? existing.visible : pc.id === 'inventory_value';
+      const size = existing?.size || (pc.id === 'sales' || pc.id === 'business_journey' ? 'large' : (pc.id === 'printer_status' || pc.id === 'cloud_sync_status' || pc.id === 'backup_status' ? 'small' : 'medium'));
+      
+      if (pc.id === cardId) {
+        return {
+          id: pc.id,
+          title: pc.label,
+          visible: !isVisible,
+          size
+        };
       }
-      return c;
+      return {
+        id: pc.id,
+        title: existing?.title || pc.label,
+        visible: isVisible,
+        size
+      };
     });
 
-    // If card doesn't exist in the list yet, insert it with enabled state
-    if (!found) {
-      const def = allPossibleDashboardCards.find(c => c.id === cardId);
-      updated.push({
-        id: cardId,
-        title: def?.label || cardId,
-        visible: true,
-        size: (cardId === 'sales' || cardId === 'business_journey' ? 'large' : (cardId === 'printer_status' || cardId === 'cloud_sync_status' || cardId === 'backup_status' ? 'small' : 'medium')) as 'small' | 'medium' | 'large'
-      });
-    }
-
-    // Also synchronize dashboardCardsConfig hidden state
-    const currentConfig = state.settings.dashboardCardsConfig || [];
-    const updatedConfig = [...currentConfig];
     const toggledCard = updated.find(c => c.id === cardId);
     const isNowVisible = toggledCard ? toggledCard.visible : false;
 
-    const existingCfgIdx = updatedConfig.findIndex(cfg => cfg.id === cardId);
-    if (existingCfgIdx >= 0) {
-      updatedConfig[existingCfgIdx] = {
-        ...updatedConfig[existingCfgIdx],
-        hidden: !isNowVisible
-      };
-    } else {
-      updatedConfig.push({
-        id: cardId,
-        size: toggledCard?.size || 'medium',
-        pinned: false,
-        hidden: !isNowVisible
-      });
-    }
+    // Synchronize dashboardCardsConfig so every single card is represented with correct hidden state
+    const currentConfig = state.settings.dashboardCardsConfig || [];
+    const updatedConfig = [...currentConfig];
+
+    allPossibleDashboardCards.forEach(pc => {
+      const cardState = updated.find(c => c.id === pc.id);
+      const cardVisible = cardState ? cardState.visible : pc.id === 'inventory_value';
+      const cfgIdx = updatedConfig.findIndex(cfg => cfg.id === pc.id);
+      
+      if (cfgIdx >= 0) {
+        updatedConfig[cfgIdx] = {
+          ...updatedConfig[cfgIdx],
+          hidden: !cardVisible
+        };
+      } else {
+        updatedConfig.push({
+          id: pc.id,
+          size: cardState?.size || 'medium',
+          pinned: false,
+          hidden: !cardVisible
+        });
+      }
+    });
 
     const extraSetting: Partial<AppSettings> = {};
     if (cardId === 'recent_activity') extraSetting.dashboardShowRecentActivity = isNowVisible;
@@ -361,18 +360,18 @@ export default function BusinessSettingsScreen({
 
   // Handle resize of Dashboard cards
   const handleResizeDashboardCard = (cardId: string, size: 'small' | 'medium' | 'large') => {
-    const currentCards = state.settings.dashboardCards && state.settings.dashboardCards.length > 0
-      ? [...state.settings.dashboardCards]
-      : allPossibleDashboardCards.map(c => ({
-          id: c.id,
-          title: c.label,
-          visible: c.id === 'inventory_value',
-          size: (c.id === 'sales' || c.id === 'business_journey' ? 'large' : 'medium') as 'small' | 'medium' | 'large'
-        }));
-
-    const updated = currentCards.map(c => 
-      c.id === cardId ? { ...c, size } : c
-    );
+    const existingCards = state.settings.dashboardCards || [];
+    const updated = allPossibleDashboardCards.map(pc => {
+      const existing = existingCards.find(c => c.id === pc.id);
+      const isVisible = existing !== undefined ? existing.visible : pc.id === 'inventory_value';
+      const cardSize = pc.id === cardId ? size : (existing?.size || (pc.id === 'sales' || pc.id === 'business_journey' ? 'large' : 'medium'));
+      return {
+        id: pc.id,
+        title: existing?.title || pc.label,
+        visible: isVisible,
+        size: cardSize as 'small' | 'medium' | 'large'
+      };
+    });
 
     // Also synchronize dashboardCardsConfig size
     const currentConfig = state.settings.dashboardCardsConfig || [];
@@ -2929,29 +2928,38 @@ export default function BusinessSettingsScreen({
               return (
                 <div 
                   key={statCard.id} 
+                  onClick={() => handleToggleDashboardCard(statCard.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleToggleDashboardCard(statCard.id);
+                    }
+                  }}
                   className={cn(
-                    "p-4 border rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all duration-200",
+                    "p-4 border rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all duration-200 cursor-pointer select-none active:scale-[0.99]",
                     isVisible 
-                      ? "bg-[var(--card)] border-[var(--primary)]/30 shadow-sm" 
-                      : "bg-[var(--background)]/60 border-[var(--border)] opacity-65 hover:opacity-100"
+                      ? "bg-[var(--card)] border-[var(--primary)]/40 shadow-sm ring-1 ring-[var(--primary)]/20" 
+                      : "bg-[var(--background)]/60 border-[var(--border)] opacity-65 hover:opacity-100 hover:border-[var(--primary)]/30"
                   )}
                 >
-                  <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                  <div className="flex items-center gap-3.5 flex-1 min-w-0 pointer-events-none">
                     <input 
                       type="checkbox"
                       id={`check-card-${statCard.id}`}
                       checked={isVisible}
-                      onChange={() => handleToggleDashboardCard(statCard.id)}
-                      className="h-5 w-5 rounded accent-[var(--primary)] border-[var(--border)] text-[var(--primary)] cursor-pointer shrink-0"
+                      readOnly
+                      className="h-5 w-5 rounded accent-[var(--primary)] border-[var(--border)] text-[var(--primary)] shrink-0 pointer-events-none"
                     />
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-[var(--foreground)]/5 border border-[var(--border)]">
                       {statCard.icon}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <label htmlFor={`check-card-${statCard.id}`} className="text-xs uppercase font-black select-none cursor-pointer tracking-wide truncate">
+                        <span className="text-xs uppercase font-black tracking-wide truncate">
                           {statCard.label}
-                        </label>
+                        </span>
                         {statCard.id === 'inventory_value' && (
                           <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-md bg-[var(--primary)]/15 text-[var(--primary)] shrink-0">
                             Default
@@ -2964,20 +2972,22 @@ export default function BusinessSettingsScreen({
                     </div>
                   </div>
 
-
-                    <button
-                      type="button"
-                      onClick={() => handleToggleDashboardCard(statCard.id)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
-                        isVisible 
-                          ? "bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)]/20" 
-                          : "bg-[var(--foreground)]/5 text-[var(--foreground)]/60 hover:bg-[var(--foreground)]/10"
-                      )}
-                    >
-                      {isVisible ? "Active" : "Enable"}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleDashboardCard(statCard.id);
+                    }}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shrink-0",
+                      isVisible 
+                        ? "bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)]/20 border border-[var(--primary)]/25" 
+                        : "bg-[var(--foreground)]/5 text-[var(--foreground)]/60 hover:bg-[var(--foreground)]/10 border border-[var(--border)]"
+                    )}
+                  >
+                    {isVisible ? "Active" : "Enable"}
+                  </button>
+                </div>
               );
             })}
           </div>

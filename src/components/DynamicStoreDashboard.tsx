@@ -21,6 +21,23 @@ export type CardId =
   | 'notifications' | 'business_health' | 'recent_activity' | 'business_journey' | 'goals_progress'
   | 'quick_actions';
 
+export const ALL_SUPPORTED_DASHBOARD_CARDS: { id: CardId; size: 'small' | 'medium' | 'large' }[] = [
+  { id: 'inventory_value', size: 'medium' },
+  { id: 'sales', size: 'large' },
+  { id: 'profit', size: 'medium' },
+  { id: 'bills', size: 'medium' },
+  { id: 'low_stock', size: 'medium' },
+  { id: 'out_of_stock', size: 'medium' },
+  { id: 'pending_udhar', size: 'medium' },
+  { id: 'notifications', size: 'medium' },
+  { id: 'business_health', size: 'medium' },
+  { id: 'printer_status', size: 'small' },
+  { id: 'cloud_sync_status', size: 'small' },
+  { id: 'backup_status', size: 'small' },
+  { id: 'recent_activity', size: 'medium' },
+  { id: 'business_journey', size: 'large' }
+];
+
 interface DynamicStoreDashboardProps {
   state: AppState;
   onUpdateSettings: (updates: Partial<AppSettings>) => void;
@@ -230,26 +247,22 @@ export default function DynamicStoreDashboard({
 
   // Retrieve current active cards layout mapping
   const activeCardsConfig = useMemo(() => {
-    const defaultConfigs = settings.dashboardCardsConfig || [
-      { id: 'quick_actions', size: 'large', pinned: true, hidden: false },
-      { id: 'business_health', size: 'medium', pinned: false, hidden: false },
-      { id: 'sales', size: 'large', pinned: false, hidden: false },
-      { id: 'profit', size: 'medium', pinned: false, hidden: false },
-      { id: 'bills', size: 'medium', pinned: false, hidden: false },
-      { id: 'low_stock', size: 'medium', pinned: false, hidden: false },
-      { id: 'out_of_stock', size: 'medium', pinned: false, hidden: false },
-      { id: 'pending_udhar', size: 'medium', pinned: false, hidden: false },
-      { id: 'inventory_value', size: 'medium', pinned: false, hidden: false },
-      { id: 'top_products', size: 'large', pinned: false, hidden: false },
-      { id: 'goals_progress', size: 'large', pinned: false, hidden: false },
-      { id: 'printer_status', size: 'small', pinned: false, hidden: false },
-      { id: 'cloud_sync_status', size: 'small', pinned: false, hidden: false },
-      { id: 'backup_status', size: 'small', pinned: false, hidden: false },
-      { id: 'notifications', size: 'medium', pinned: false, hidden: false },
-      { id: 'recent_activity', size: 'medium', pinned: false, hidden: false },
-      { id: 'business_journey', size: 'large', pinned: false, hidden: false }
-    ];
-    return defaultConfigs;
+    const userConfigs = settings.dashboardCardsConfig || [];
+    const result = [...userConfigs];
+
+    // Ensure every supported dashboard card is present so none are lost
+    ALL_SUPPORTED_DASHBOARD_CARDS.forEach(card => {
+      if (!result.some(c => c.id === card.id)) {
+        result.push({
+          id: card.id,
+          size: card.size,
+          pinned: false,
+          hidden: card.id !== 'inventory_value'
+        });
+      }
+    });
+
+    return result;
   }, [settings.dashboardCardsConfig]);
 
   // Computed Priority Scores (0 to 120+) for all card IDs
@@ -387,8 +400,8 @@ export default function DynamicStoreDashboard({
         if (cfg.hidden || cfg.id !== 'inventory_value') return false;
       }
 
-      // Auto Hide empty cards triggers
-      if (settings.dashboardAutoHideEmptyCards) {
+      // Auto Hide empty cards triggers (only when explicitly enabled)
+      if (settings.dashboardAutoHideEmptyCards === true) {
         if (cfg.id === 'low_stock' && lowStockItems.length === 0) return false;
         if (cfg.id === 'out_of_stock' && outOfStockItems.length === 0) return false;
         if (cfg.id === 'notifications' && unreadNotifications.length === 0) return false;
@@ -568,7 +581,7 @@ export default function DynamicStoreDashboard({
             return (
               <motion.div
                 key={`dashboard-card-${cardId}`}
-                layoutId={`card-container-${cardId}`}
+                layout={settings.dashboardSmoothCardMovement !== false}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 whileHover={{ y: -6, scale: 1.018, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)" }}
@@ -1279,7 +1292,7 @@ export default function DynamicStoreDashboard({
                       <label key={opt.key} className="flex gap-3 p-3 bg-[var(--foreground)]/5 border border-[var(--border)] rounded-2xl cursor-pointer select-none items-start hover:scale-[1.01] transition-transform">
                         <input
                           type="checkbox"
-                          checked={settings[opt.key as keyof AppSettings] !== false}
+                          checked={opt.key === 'dashboardAutoHideEmptyCards' ? Boolean(settings.dashboardAutoHideEmptyCards) : settings[opt.key as keyof AppSettings] !== false}
                           onChange={(e) => onUpdateSettings({ [opt.key]: e.target.checked })}
                           className="mt-1 h-4 w-4 rounded accent-[var(--primary)] shrink-0 border-[var(--border)] bg-transparent"
                         />

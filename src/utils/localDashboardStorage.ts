@@ -69,47 +69,74 @@ export const stripDashboardSettingsFromCloud = <T extends Record<string, any>>(o
  * Get current dashboard card settings strictly from local device storage.
  */
 export const getLocalDashboardStorage = (): Partial<AppSettings> => {
+  let result: Partial<AppSettings> = {};
+
   try {
     const raw = localStorage.getItem(LOCAL_DASHBOARD_CARDS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
-        return parsed;
+        result = parsed;
       }
     }
   } catch (e) {
     console.warn("Failed to parse local dashboard cards storage", e);
   }
 
-  // Fallback to checking price_manager_settings in localStorage
-  try {
-    const rawSettings = localStorage.getItem('price_manager_settings');
-    if (rawSettings) {
-      const parsed = JSON.parse(rawSettings);
-      if (parsed && typeof parsed === 'object') {
-        const extracted: Record<string, any> = {};
-        for (const k of DASHBOARD_LOCAL_KEYS) {
-          if (parsed[k] !== undefined) {
-            extracted[k] = parsed[k];
+  // Fallback to checking price_manager_settings in localStorage if not found
+  if (!result.dashboardCards || !Array.isArray(result.dashboardCards) || result.dashboardCards.length === 0) {
+    try {
+      const rawSettings = localStorage.getItem('price_manager_settings');
+      if (rawSettings) {
+        const parsed = JSON.parse(rawSettings);
+        if (parsed && typeof parsed === 'object') {
+          for (const k of DASHBOARD_LOCAL_KEYS) {
+            if (parsed[k] !== undefined && (result as Record<string, any>)[k] === undefined) {
+              (result as Record<string, any>)[k] = parsed[k];
+            }
           }
         }
-        if (Object.keys(extracted).length > 0) {
-          return extracted;
-        }
       }
+    } catch {
+      // ignore
     }
-  } catch {
-    // ignore
   }
 
-  // Fallback defaults
-  return {
-    dashboardCards: INITIAL_SETTINGS.dashboardCards,
-    dashboardCardsConfig: INITIAL_SETTINGS.dashboardCardsConfig,
-    dashboardCardsVersion: 2,
-    dashboardMode: INITIAL_SETTINGS.dashboardMode,
-    dashboardAutoHideEmptyCards: INITIAL_SETTINGS.dashboardAutoHideEmptyCards
-  };
+  // Ensure all 14 standard cards are represented in dashboardCards
+  const initialCards = INITIAL_SETTINGS.dashboardCards || [];
+  if (!result.dashboardCards || !Array.isArray(result.dashboardCards) || result.dashboardCards.length === 0) {
+    result.dashboardCards = [...initialCards];
+  } else {
+    const existingIds = new Set(result.dashboardCards.map((c: any) => c.id));
+    const merged = [...result.dashboardCards];
+    initialCards.forEach(ic => {
+      if (!existingIds.has(ic.id)) {
+        merged.push({ ...ic });
+      }
+    });
+    result.dashboardCards = merged;
+  }
+
+  // Ensure all 14 standard cards are represented in dashboardCardsConfig
+  const initialConfig = INITIAL_SETTINGS.dashboardCardsConfig || [];
+  if (!result.dashboardCardsConfig || !Array.isArray(result.dashboardCardsConfig) || result.dashboardCardsConfig.length === 0) {
+    result.dashboardCardsConfig = [...initialConfig];
+  } else {
+    const existingCfgIds = new Set(result.dashboardCardsConfig.map((c: any) => c.id));
+    const mergedConfig = [...result.dashboardCardsConfig];
+    initialConfig.forEach(ic => {
+      if (!existingCfgIds.has(ic.id)) {
+        mergedConfig.push({ ...ic });
+      }
+    });
+    result.dashboardCardsConfig = mergedConfig;
+  }
+
+  result.dashboardCardsVersion = 2;
+  result.dashboardMode = result.dashboardMode || INITIAL_SETTINGS.dashboardMode || 'hybrid';
+  result.dashboardAutoHideEmptyCards = result.dashboardAutoHideEmptyCards ?? false;
+
+  return result;
 };
 
 /**

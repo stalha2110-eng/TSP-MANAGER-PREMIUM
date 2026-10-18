@@ -69,31 +69,6 @@ export function ThemeVisualEffects({ theme, disableMovement = false }: ThemeVisu
     );
   }
 
-  if (theme === 'glass_modern') {
-    return (
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30 z-0 rounded-[2.5rem]">
-        {/* Intersecting soft deforming blurred blobs */}
-        <motion.div
-          animate={disableMovement ? { x: 0, y: 0, scale: 1 } : {
-            x: [0, 30, -15, 0],
-            y: [0, -25, 15, 0],
-            scale: [1, 1.1, 0.95, 1]
-          }}
-          transition={disableMovement ? undefined : { duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-12 -left-12 w-64 h-64 bg-purple-500/25 rounded-full blur-[80px]"
-        />
-        <motion.div
-          animate={disableMovement ? { x: 0, y: 0, scale: 1 } : {
-            x: [0, -30, 20, 0],
-            y: [0, 20, -25, 0],
-            scale: [1, 0.9, 1.05, 1]
-          }}
-          transition={disableMovement ? undefined : { duration: 22, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-          className="absolute -bottom-16 -right-16 w-80 h-80 bg-pink-500/20 rounded-full blur-[90px]"
-        />
-      </div>
-    );
-  }
 
   if (theme === 'luxury_gold') {
     return (

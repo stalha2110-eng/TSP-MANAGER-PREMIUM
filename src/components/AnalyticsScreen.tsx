@@ -149,15 +149,6 @@ const getThemeChartColors = (theme: string) => {
         axisText: '#fef3c7',
         cardBorder: 'border border-amber-500/20'
       };
-    case 'glass_modern':
-      return {
-        gridColor: 'rgba(255, 255, 255, 0.05)',
-        gridDash: '3,3',
-        sales: { stroke: '#a855f7', fill: 'rgba(168, 85, 247, 0.08)', strokeWidth: 2.5 },
-        profit: { stroke: '#f43f5e', fill: 'rgba(244, 63, 94, 0.04)', strokeWidth: 2 },
-        axisText: '#cbd5e1',
-        cardBorder: 'border border-white/10'
-      };
     case 'cyberpunk':
       return {
         gridColor: 'rgba(6, 182, 212, 0.16)',
@@ -242,17 +233,6 @@ const getThemeContainerStyle = (theme: string) => {
         accentText: 'text-amber-400',
         hudBg: 'bg-stone-950 border border-amber-500/25 text-white shadow-2xl',
         panelTitle: 'Executive Statement'
-      };
-    case 'glass_modern':
-      return {
-        cardBg: 'bg-white/5 dark:bg-white/5 border border-white/10 shadow-xl backdrop-blur-3xl text-slate-100 rounded-[2.5rem]',
-        headerBorder: 'border-b border-white/10',
-        chartBg: 'bg-white/[0.02] border border-white/5 shadow-inner rounded-3xl',
-        legendBg: 'bg-white/5 border border-white/10 shadow-inner backdrop-blur-md rounded-2xl',
-        glowGradient: 'from-purple-500/10 to-transparent',
-        accentText: 'text-purple-300',
-        hudBg: 'bg-slate-950/98 border border-purple-500/30 text-white shadow-2xl',
-        panelTitle: 'Performance Ledger'
       };
     case 'cyberpunk':
       return {

@@ -63,20 +63,26 @@ export function ComparisonModal({
                 </div>
 
                 <div className="space-y-4">
-                   <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
-                      <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40">{t.retail || "Retail"}</span>
+                   <div className="flex justify-between items-center bg-red-900/10 dark:bg-red-950/50 p-3 rounded-xl border border-red-900/35 dark:border-red-800/50">
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-red-900/90 dark:text-red-300 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-800 dark:bg-red-700 shadow-xs" />
+                        {t.retail || "Retail"}
+                      </span>
                       <div className="text-right">
-                        <span className="text-sm font-black">₹{formatNumber(item.retailPrice, precision)}</span>
-                        <span className="text-[8px] opacity-40 block">/ {item.retailPriceUnit}</span>
+                        <span className="text-sm font-black text-red-950 dark:text-red-100">₹{formatNumber(item.retailPrice, precision)}</span>
+                        <span className="text-[8px] text-red-900/70 dark:text-red-300/70 block">/ {item.retailPriceUnit}</span>
                       </div>
                    </div>
 
                    {!hideBuyingPrice && (
-                     <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40">{t.buying || "Buying"}</span>
+                     <div className="flex justify-between items-center bg-sky-500/10 dark:bg-sky-950/40 p-3 rounded-xl border border-sky-400/30 dark:border-sky-600/50">
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-sky-700 dark:text-sky-400 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-xs" />
+                          {t.buying || "Buying"}
+                        </span>
                         <div className="text-right">
-                          <span className="text-sm font-black">₹{formatNumber(item.buyingPrice, precision)}</span>
-                          <span className="text-[8px] opacity-40 block">/ {item.buyingPriceUnit}</span>
+                          <span className="text-sm font-black text-sky-950 dark:text-sky-100">₹{formatNumber(item.buyingPrice, precision)}</span>
+                          <span className="text-[8px] text-sky-700/80 dark:text-sky-300/70 block">/ {item.buyingPriceUnit}</span>
                         </div>
                      </div>
                    )}

@@ -338,21 +338,6 @@ export function MonthlySalesTargetPanel({ state, onUpdateSettings, t = {} }: Mon
           milestoneInactive: 'bg-slate-900 border border-emerald-500/10 text-emerald-600/50',
           milestoneActive: 'bg-emerald-500 border border-emerald-300 text-slate-950 font-bold shadow-[0_0_10px_rgba(16,185,129,0.6)]',
         };
-      case 'glass_modern':
-        return {
-          cardBg: 'bg-white/5 border border-white/10 shadow-xl backdrop-blur-3xl text-slate-100',
-          accentBorder: 'border-white/10',
-          accentColor: 'text-purple-400',
-          badgeColor: 'bg-purple-500/20 text-purple-200 border border-purple-500/30',
-          inputBg: 'bg-slate-900/40 border border-white/20 text-white backdrop-blur-lg',
-          buttonPrimary: 'bg-purple-600 hover:bg-purple-500 text-white font-bold',
-          presetChip: 'border border-white/10 bg-white/5 text-slate-200 hover:bg-white/15',
-          titleColor: 'text-purple-300',
-          textSub: 'text-slate-400',
-          progressBarTrack: 'bg-black/20 border border-white/5',
-          milestoneInactive: 'bg-slate-900 border border-white/5 text-slate-500',
-          milestoneActive: 'bg-purple-500 border border-purple-300 text-white shadow-[0_0_10px_rgba(168,85,247,0.4)]',
-        };
       case 'emerald-gold':
         return {
           cardBg: 'bg-emerald-950/40 border-2 border-emerald-500/30 text-emerald-50 shadow-xl',
@@ -818,8 +803,6 @@ export function MonthlySalesTargetPanel({ state, onUpdateSettings, t = {} }: Mon
                   ? 'bg-stone-900 border-amber-500 text-amber-100 font-sans shadow-[0_0_40px_rgba(245,158,11,0.25)]'
                   : currentTheme === 'emerald_matrix'
                   ? 'bg-slate-950 border-emerald-500 font-mono text-emerald-300 shadow-[0_0_30px_rgba(16,185,129,0.25)]'
-                  : currentTheme === 'glass_modern'
-                  ? 'bg-slate-900/95 border-purple-500/40 text-purple-100 backdrop-blur-2xl shadow-[0_0_40px_rgba(168,85,247,0.2)]'
                   : currentTheme === 'emerald-gold'
                   ? 'bg-emerald-950 border-amber-400 text-emerald-50'
                   : currentTheme === 'minimalist-ivory'

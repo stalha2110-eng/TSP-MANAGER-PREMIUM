@@ -260,8 +260,6 @@ const getLogoGlowFilter = (theme: string) => {
       return 'drop-shadow(0 2px 4px rgba(0,0,0,0.5)) drop-shadow(0 0 10px rgba(59,130,246,0.65)) drop-shadow(0 0 20px rgba(59,130,246,0.25))';
     case 'neo_brutalist':
       return 'drop-shadow(0 2px 4px rgba(0,0,0,0.6)) drop-shadow(0 0 8px rgba(250,204,21,0.8)) drop-shadow(0 0 16px rgba(250,204,21,0.35))';
-    case 'glass_modern':
-      return 'drop-shadow(0 2px 5px rgba(0,0,0,0.5)) drop-shadow(0 0 12px rgba(168,85,247,0.7)) drop-shadow(0 0 25px rgba(236,72,153,0.3))';
     case 'luxury_gold':
       return 'drop-shadow(0 2px 4px rgba(0,0,0,0.5)) drop-shadow(0 0 12px rgba(251,191,36,0.75)) drop-shadow(0 0 25px rgba(251,191,36,0.3))';
     case 'emerald_matrix':
@@ -282,11 +280,6 @@ const getLogoBackplateClass = (theme: string) => {
       return {
         glow: 'bg-yellow-500/10',
         gradient: 'from-yellow-400/25 via-red-500/5 to-yellow-400/30'
-      };
-    case 'glass_modern':
-      return {
-        glow: 'bg-purple-500/10',
-        gradient: 'from-purple-500/20 via-pink-400/5 to-purple-500/25'
       };
     case 'luxury_gold':
       return {
@@ -2426,8 +2419,12 @@ export default function App() {
 
   // Separate Effect for Theme & Core Styles (low frequency)
   useEffect(() => {
+    if ((state.settings.theme as string) === 'glass_modern') {
+      handleUpdateSettings({ theme: 'midnight_blue' });
+      return;
+    }
     document.documentElement.setAttribute('data-theme', state.settings.theme);
-    const darkThemes = ['midnight_blue', 'glass_modern', 'luxury_gold', 'emerald_matrix', 'cyberpunk', 'retro-blue', 'emerald-gold'];
+    const darkThemes = ['midnight_blue', 'luxury_gold', 'emerald_matrix', 'cyberpunk', 'retro-blue', 'emerald-gold'];
     if (darkThemes.includes(state.settings.theme)) {
       document.documentElement.classList.add('dark');
     } else {
@@ -4106,17 +4103,31 @@ export default function App() {
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-black uppercase">
-                    <div className="p-2 border border-[var(--border)] bg-[var(--foreground)]/[0.01] rounded-lg">
-                      <span className="text-[7.5px] opacity-45 block">Buying Cost</span>
-                      <span className="text-xs">₹{quickPeek.payload.buyingPrice}</span>
+                    {/* Buying Cost: Light Blue */}
+                    <div className="p-2 border border-sky-400/30 dark:border-sky-600/50 bg-sky-500/10 dark:bg-sky-950/40 rounded-xl">
+                      <div className="flex items-center justify-center gap-1 mb-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-xs" />
+                        <span className="text-[7.5px] text-sky-700 dark:text-sky-400 block font-black">Buying Cost</span>
+                      </div>
+                      <span className="text-xs font-black text-sky-950 dark:text-sky-100">₹{quickPeek.payload.buyingPrice}</span>
                     </div>
-                    <div className="p-2 border border-[var(--border)] bg-[var(--foreground)]/[0.01] rounded-lg">
-                      <span className="text-[7.5px] opacity-45 block">Retail Tag</span>
-                      <span className="text-xs text-[var(--primary)]">₹{quickPeek.payload.retailPrice}</span>
+
+                    {/* Retail Tag: Dark Dim Red */}
+                    <div className="p-2 border border-red-900/35 dark:border-red-800/50 bg-red-900/10 dark:bg-red-950/50 rounded-xl">
+                      <div className="flex items-center justify-center gap-1 mb-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-800 dark:bg-red-700 shadow-xs" />
+                        <span className="text-[7.5px] text-red-900/90 dark:text-red-300 block font-black">Retail Tag</span>
+                      </div>
+                      <span className="text-xs font-black text-red-950 dark:text-red-100">₹{quickPeek.payload.retailPrice}</span>
                     </div>
-                    <div className="p-2 border border-[var(--border)] bg-[var(--foreground)]/[0.01] rounded-lg">
-                      <span className="text-[7.5px] opacity-45 block">Wholesale Tag</span>
-                      <span className="text-xs">₹{quickPeek.payload.wholesalePrice}</span>
+
+                    {/* Wholesale Tag: Yellow */}
+                    <div className="p-2 border border-yellow-300 dark:border-yellow-700/50 bg-yellow-100/70 dark:bg-yellow-950/40 rounded-xl">
+                      <div className="flex items-center justify-center gap-1 mb-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 shadow-xs" />
+                        <span className="text-[7.5px] text-yellow-800 dark:text-yellow-400 block font-black">Wholesale Tag</span>
+                      </div>
+                      <span className="text-xs font-black text-yellow-950 dark:text-yellow-100">₹{quickPeek.payload.wholesalePrice}</span>
                     </div>
                   </div>
 

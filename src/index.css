@@ -72,22 +72,6 @@ html {
   --radius: 0rem;
 }
 
-[data-theme='glass_modern'] {
-  --primary-rgb: 139, 92, 246;
-  --primary: #8b5cf6;
-  --primary-foreground: #ffffff;
-  --secondary: #7c3aed;
-  --accent: #ec4899;
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --card: rgba(255, 255, 255, 0.05);
-  --card-solid: #0f172a;
-  --card-foreground: #f8fafc;
-  --border: rgba(255, 255, 255, 0.1);
-  --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --radius: 2rem;
-}
-
 [data-theme='luxury_gold'] {
   --primary-rgb: 121, 95, 0;
   --primary: #795f00;

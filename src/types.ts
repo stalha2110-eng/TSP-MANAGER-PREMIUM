@@ -1,7 +1,6 @@
 export type ThemeType = 
   | 'midnight_blue' 
   | 'neo_brutalist' 
-  | 'glass_modern' 
   | 'luxury_gold' 
   | 'emerald_matrix'
   | 'retro-blue'

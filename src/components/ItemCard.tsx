@@ -305,45 +305,57 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
         </div>
         
         <div className="mt-3.5 grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-center relative z-10">
-          {/* Retail */}
-          <div className="rounded-xl bg-[var(--primary)]/5 p-2 border border-[var(--primary)]/15">
-            <p className="text-[8.5px] font-black uppercase tracking-wider text-[var(--primary)] opacity-75 mb-0.5">{t.retail}</p>
-            <p className="text-xs font-black text-[var(--foreground)] truncate">₹{formatNumber(item.retailPrice, precision)}</p>
-            <p className="text-[7.5px] opacity-40">/ {item.retailPriceUnit === 'Chatak' ? 'Chatak (50gm)' : item.retailPriceUnit}</p>
+          {/* Retail Rate: Dark Dim Red */}
+          <div className="rounded-xl bg-red-900/10 dark:bg-red-950/50 p-2 border border-red-900/35 dark:border-red-800/50 shadow-xs transition-colors">
+            <div className="flex items-center justify-center gap-1 mb-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-800 dark:bg-red-700 shadow-xs" />
+              <p className="text-[8.5px] font-black uppercase tracking-wider text-red-900/90 dark:text-red-300">{t.retail}</p>
+            </div>
+            <p className="text-xs font-black text-red-950 dark:text-red-100 truncate">₹{formatNumber(item.retailPrice, precision)}</p>
+            <p className="text-[7.5px] font-semibold text-red-900/70 dark:text-red-300/70">/ {item.retailPriceUnit === 'Chatak' ? 'Chatak (50gm)' : item.retailPriceUnit}</p>
           </div>
 
-          {/* Wholesale */}
-          <div className="rounded-xl bg-[var(--foreground)]/[0.02] p-2 border border-[var(--border)]/60">
-            <p className="text-[8.5px] font-black uppercase tracking-wider opacity-45 mb-0.5">{t.wholesale}</p>
-            <p className="text-xs font-black text-[var(--foreground)] truncate">₹{formatNumber(item.wholesalePrice, precision)}</p>
-            <p className="text-[7.5px] opacity-40">/ {item.wholesalePriceUnit === 'Chatak' ? 'Chatak (50gm)' : item.wholesalePriceUnit}</p>
+          {/* Wholesale Rate: Yellow */}
+          <div className="rounded-xl bg-yellow-100/70 dark:bg-yellow-950/40 p-2 border border-yellow-300 dark:border-yellow-700/50 shadow-xs transition-colors">
+            <div className="flex items-center justify-center gap-1 mb-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 shadow-xs" />
+              <p className="text-[8.5px] font-black uppercase tracking-wider text-yellow-800 dark:text-yellow-400">{t.wholesale}</p>
+            </div>
+            <p className="text-xs font-black text-yellow-950 dark:text-yellow-100 truncate">₹{formatNumber(item.wholesalePrice, precision)}</p>
+            <p className="text-[7.5px] font-semibold text-yellow-800/80 dark:text-yellow-300/70">/ {item.wholesalePriceUnit === 'Chatak' ? 'Chatak (50gm)' : item.wholesalePriceUnit}</p>
           </div>
 
-          {/* Buy */}
-          <div className="rounded-xl bg-[var(--foreground)]/[0.02] p-2 border border-[var(--border)]/60">
-            <p className="text-[8.5px] font-black uppercase tracking-wider opacity-45 mb-0.5">{t.buy}</p>
+          {/* Buying Rate: Light Blue */}
+          <div className="rounded-xl bg-sky-500/10 dark:bg-sky-950/40 p-2 border border-sky-400/30 dark:border-sky-600/50 shadow-xs transition-colors">
+            <div className="flex items-center justify-center gap-1 mb-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-xs" />
+              <p className="text-[8.5px] font-black uppercase tracking-wider text-sky-700 dark:text-sky-400">{t.buy}</p>
+            </div>
             <div className="flex flex-col items-center justify-center">
               {isLocked ? (
-                <Lock size={10} className="opacity-40" />
+                <Lock size={10} className="text-sky-600/60 dark:text-sky-400/60" />
               ) : (
                 <>
-                  <p className="text-xs font-black text-[var(--foreground)] truncate">₹{formatNumber(item.buyingPrice, precision)}</p>
-                  <p className="text-[7.5px] opacity-40">/ {item.buyingPriceUnit === 'Chatak' ? 'Chatak (50gm)' : item.buyingPriceUnit}</p>
+                  <p className="text-xs font-black text-sky-950 dark:text-sky-100 truncate">₹{formatNumber(item.buyingPrice, precision)}</p>
+                  <p className="text-[7.5px] font-semibold text-sky-700/80 dark:text-sky-300/70">/ {item.buyingPriceUnit === 'Chatak' ? 'Chatak (50gm)' : item.buyingPriceUnit}</p>
                 </>
               )}
             </div>
           </div>
 
-          {/* Profit Margin */}
-          <div className="rounded-xl bg-emerald-500/5 p-2 border border-emerald-500/15">
-            <p className="text-[8.5px] font-black uppercase tracking-wider text-emerald-600 opacity-75 mb-0.5">{t.margin}</p>
+          {/* Profit Margin: Vibrant Emerald Green */}
+          <div className="rounded-xl bg-emerald-500/[0.08] dark:bg-emerald-950/40 p-2 border border-emerald-500/25 dark:border-emerald-700/40 shadow-xs transition-colors">
+            <div className="flex items-center justify-center gap-1 mb-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <p className="text-[8.5px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{t.margin}</p>
+            </div>
             <div className="flex flex-col items-center justify-center">
               {isLocked ? (
-                <Lock size={10} className="opacity-40" />
+                <Lock size={10} className="text-emerald-600/60 dark:text-emerald-400/60" />
               ) : (
                 <>
-                  <p className="text-xs font-black text-emerald-600 truncate">₹{formatNumber(item.retailPrice - item.buyingPrice, precision)}</p>
-                  <p className="text-[7.5px] text-emerald-500 font-bold leading-none">
+                  <p className="text-xs font-black text-emerald-950 dark:text-emerald-100 truncate">₹{formatNumber(item.retailPrice - item.buyingPrice, precision)}</p>
+                  <p className="text-[7.5px] text-emerald-600 dark:text-emerald-400 font-bold leading-none">
                     {item.buyingPrice > 0 ? `+${formatNumber(((item.retailPrice - item.buyingPrice) / item.buyingPrice) * 100, 1)}%` : '---'}
                   </p>
                 </>

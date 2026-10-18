@@ -93,26 +93,6 @@ const getThemeCelebrationStyles = (theme: string) => {
         dismissBtn: 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 hover:text-amber-100 border-amber-500/20',
         closeBtn: 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 hover:text-amber-100 border-amber-500/20'
       };
-    case 'glass_modern':
-      return {
-        cardGlow: 'shadow-[0_0_50px_rgba(139,92,246,0.35)]',
-        borderStyle: 'border-2 border-purple-400/50',
-        bgGradient: 'bg-gradient-to-b from-[#2e1065] via-[#1e1b4b] to-[#0f172a]',
-        topBar: 'bg-gradient-to-r from-purple-400 via-pink-400 to-purple-500',
-        trophyGlow: 'from-purple-400 via-pink-500 to-purple-600',
-        badgeBg: 'bg-purple-500/25 border-purple-400/50 text-purple-300',
-        titleText: 'text-white',
-        subText: 'text-purple-200/60',
-        itemTitle: 'text-white',
-        highlightText: 'text-purple-300',
-        descText: 'text-purple-100/90',
-        infoBoxBg: 'bg-purple-950/40 border-purple-500/30',
-        timestampText: 'text-purple-200/60',
-        primaryBtn: 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-black border-purple-300/50 shadow-purple-500/30',
-        secondaryBtn: 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-200 border-purple-400/30',
-        dismissBtn: 'bg-white/5 hover:bg-white/15 text-purple-200 hover:text-white border-white/10',
-        closeBtn: 'bg-white/10 hover:bg-white/20 text-purple-200 hover:text-white border-white/15'
-      };
     case 'retro-blue':
       return {
         cardGlow: 'shadow-[0_0_50px_rgba(99,102,241,0.35)]',

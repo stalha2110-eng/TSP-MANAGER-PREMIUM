@@ -438,49 +438,49 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
 
                       {/* Portal Call To Actions */}
                       <div className="space-y-4">
-                        {/* Advanced Google Auth Button with Integrated Session Email Display */}
+                        {/* Advanced Google Auth Button with Official Google Brand Identity */}
                         <button
                           id="google-login-btn"
                           onClick={handleGoogleClick}
                           disabled={isLoggingInGoogle || isLoggingInGuest}
-                          className="w-full relative flex flex-col items-center justify-center bg-slate-950 hover:bg-slate-900 text-white transition-all py-4 px-6 rounded-2xl cursor-pointer active:scale-95 shadow-[0_10px_25px_rgba(15,23,42,0.15)] disabled:opacity-50 disabled:pointer-events-none group"
+                          className="w-full relative flex flex-col items-center justify-center bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-white transition-all duration-200 py-3.5 px-6 rounded-2xl cursor-pointer active:scale-[0.98] shadow-[0_10px_25px_rgba(15,23,42,0.18)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.25)] disabled:opacity-50 disabled:pointer-events-none group"
                         >
                           <div className="flex items-center justify-center gap-3 w-full">
                             {isLoggingInGoogle ? (
-                              <div className="h-4.5 w-4.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              <div className="h-5 w-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin shrink-0" />
                             ) : (
-                              <svg className="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24">
-                                <path
-                                  fill="#FFFFFF"
-                                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                                />
-                                <path
-                                  fill="#FFFFFF"
-                                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                                  className="opacity-90"
-                                />
-                                <path
-                                  fill="#FFFFFF"
-                                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                                  className="opacity-80"
-                                />
-                                <path
-                                  fill="#FFFFFF"
-                                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                                />
-                              </svg>
+                              <div className="h-7 w-7 rounded-full bg-white flex items-center justify-center shadow-xs shrink-0 ring-1 ring-black/10 group-hover:scale-105 transition-transform duration-200">
+                                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                                  <path
+                                    fill="#4285F4"
+                                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                                  />
+                                  <path
+                                    fill="#34A853"
+                                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                                  />
+                                  <path
+                                    fill="#FBBC05"
+                                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                                  />
+                                  <path
+                                    fill="#EA4335"
+                                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                                  />
+                                </svg>
+                              </div>
                             )}
                             
-                            <span className="font-black text-xs uppercase tracking-widest">
+                            <span className="font-bold text-[13.5px] tracking-wide text-white group-hover:text-slate-100 transition-colors">
                               {isLoggingInGoogle ? "Syncing Identity..." : "Continue with Google"}
                             </span>
                           </div>
 
                           {!isLoggingInGoogle && previousEmail && (
-                            <div className="mt-2 w-full bg-slate-900 border border-slate-800/80 rounded-lg py-1.5 px-3 flex items-center justify-center gap-2 text-[9.5px] text-indigo-300 font-medium tracking-normal hover:text-white transition-colors">
-                              <Mail size={10.5} className="text-indigo-400 shrink-0" />
-                              <span className="truncate">Sign in as: {previousEmail}</span>
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                            <div className="mt-2.5 w-full bg-slate-900 border border-slate-800 rounded-xl py-1.5 px-3 flex items-center justify-center gap-2 text-[10px] text-indigo-300 font-medium tracking-normal hover:text-white transition-colors">
+                              <Mail size={11} className="text-indigo-400 shrink-0" />
+                              <span className="truncate">Sign in as: <strong className="text-white font-semibold">{previousEmail}</strong></span>
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                             </div>
                           )}
                         </button>

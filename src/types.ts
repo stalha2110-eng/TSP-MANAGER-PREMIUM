@@ -1,11 +1,11 @@
 export type ThemeType = 
+  | 'minimalist-ivory'
   | 'midnight_blue' 
-  | 'neo_brutalist' 
   | 'luxury_gold' 
+  | 'neo_brutalist' 
   | 'emerald_matrix'
   | 'retro-blue'
   | 'emerald-gold'
-  | 'minimalist-ivory'
   | 'cyberpunk';
 
 export type LanguageType = 'en' | 'hi' | 'mr' | 'hi-en';

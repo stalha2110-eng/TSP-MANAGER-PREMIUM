@@ -17,14 +17,14 @@ export const UNITS = [
 ];
 
 export const THEMES: { id: ThemeType; name: string; description: string; emoji: string }[] = [
+  { id: 'minimalist-ivory', name: 'Classic Clean Ivory', description: 'Elite light neutral tone background', emoji: '🍦' },
   { id: 'midnight_blue', name: 'Midnight Pro', description: 'Deep contrast, technical precision', emoji: '🌑' },
-  { id: 'neo_brutalist', name: 'Neo-Brutalist', description: 'Bold, graphic colors and energy', emoji: '⚡' },
   { id: 'luxury_gold', name: 'Luxury Gold', description: 'Premium, elegant gold accents', emoji: '👑' },
+  { id: 'neo_brutalist', name: 'Neo-Brutalist', description: 'Bold, graphic colors and energy', emoji: '⚡' },
   { id: 'emerald_matrix', name: 'Technical Green', description: 'Matrix data-grid optimization', emoji: '📟' },
-  { id: 'cyberpunk', name: 'Cyber Neon Punch', description: 'Neon cyan, hot pink futuristic grid', emoji: '⚡' },
   { id: 'retro-blue', name: 'Cosmic Retro Blue', description: 'Classic indigo space theme vibe', emoji: '🌌' },
   { id: 'emerald-gold', name: 'Emerald Botanical Gold', description: 'Botanical wealth and golden accents', emoji: '🌿' },
-  { id: 'minimalist-ivory', name: 'Classic Clean Ivory', description: 'Elite light neutral tone background', emoji: '🍦' }
+  { id: 'cyberpunk', name: 'Cyber Neon Punch', description: 'Neon cyan, hot pink futuristic grid', emoji: '⚡' }
 ];
 
 export const LANGUAGES: { id: LanguageType; name: string; label: string; emoji: string }[] = [

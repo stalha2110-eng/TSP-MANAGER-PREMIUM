@@ -1,35 +1,27 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { 
-  TrendingUp, TrendingDown, Receipt, 
-  ArrowUpRight, ArrowDownRight, RotateCcw,
-  Sparkles, Percent, BarChart3, LineChart, Activity, Zap
-} from 'lucide-react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
+import { TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppState, Bill, UnbilledEntry } from '../types';
 import { calculateBillProfit, parseTimestamp } from '../lib/utils';
+import { ThemeVisualEffects } from './ThemeVisualEffects';
 
-export type TimeRangeType = 'today' | 'week' | 'month' | 'year' | 'custom';
-export type MetricMode = 'sales' | 'profit' | 'dual';
-export type ChartStyle = 'spline' | 'bars';
-
-interface PremiumInteractiveChartProps {
-  state: AppState;
-  timePeriod?: 'today' | 'week' | 'month' | 'year' | 'all';
-  onTimePeriodChange?: (period: 'today' | 'week' | 'month' | 'year' | 'all') => void;
-  currentBills: Bill[];
-  currentUnbilled?: UnbilledEntry[];
-  themeChartColors?: any;
-}
-
-export interface DataPoint {
+export interface ChartBucket {
   label: string;
   subLabel?: string;
   fullLabel: string;
   sales: number;
   profit: number;
   bills: number;
-  units: number;
   timestamp: string;
+}
+
+interface PremiumInteractiveChartProps {
+  state: AppState;
+  timePeriod: 'today' | 'week' | 'month' | 'year' | 'all';
+  currentBills: Bill[];
+  currentUnbilled?: UnbilledEntry[];
+  themeChartColors?: any;
+  themeContainerStyle?: any;
 }
 
 // Calculate cost of goods and profit of a single bill
@@ -55,633 +47,373 @@ function getBezierCurvePath(points: { x: number; y: number }[]): string {
   return path;
 }
 
+// Default theme container fallback if not passed directly
+const getDefaultThemeContainerStyle = (theme: string) => {
+  switch (theme) {
+    case 'neo_brutalist':
+      return {
+        cardBg: 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 shadow-sm text-zinc-900 dark:text-zinc-50 rounded-[2.5rem]',
+        headerBorder: 'border-b border-zinc-100 dark:border-zinc-800',
+        chartBg: 'bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200/80 dark:border-zinc-800/60 rounded-3xl',
+        legendBg: 'bg-white/80 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-850/80 backdrop-blur-md',
+        glowGradient: 'from-zinc-500/5 to-transparent',
+        accentText: 'text-zinc-900 dark:text-zinc-100',
+        hudBg: 'bg-white/95 dark:bg-zinc-950/95 border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xl',
+        panelTitle: 'Financial Overview'
+      };
+    case 'emerald_matrix':
+      return {
+        cardBg: 'bg-emerald-950/30 border border-emerald-500/15 shadow-xl backdrop-blur-xl text-emerald-100 rounded-[2.5rem]',
+        headerBorder: 'border-b border-emerald-500/10',
+        chartBg: 'bg-emerald-950/10 border border-emerald-500/10 rounded-3xl',
+        legendBg: 'bg-emerald-950/40 border border-emerald-500/10 shadow-sm backdrop-blur-md',
+        glowGradient: 'from-[#10b981]/10 to-transparent',
+        accentText: 'text-emerald-400',
+        hudBg: 'bg-slate-950/95 border border-emerald-500/30 text-white shadow-2xl',
+        panelTitle: 'Growth Ledger'
+      };
+    case 'luxury_gold':
+      return {
+        cardBg: 'bg-stone-900 border border-amber-500/15 shadow-2xl rounded-[2.5rem] text-amber-100',
+        headerBorder: 'border-b border-amber-500/10',
+        chartBg: 'bg-stone-950 border border-amber-500/10 rounded-3xl',
+        legendBg: 'bg-stone-900/80 border border-amber-500/15 shadow-sm backdrop-blur-md',
+        glowGradient: 'from-amber-500/10 to-transparent',
+        accentText: 'text-amber-400',
+        hudBg: 'bg-stone-950 border border-amber-500/25 text-white shadow-2xl',
+        panelTitle: 'Executive Statement'
+      };
+    case 'cyberpunk':
+      return {
+        cardBg: 'bg-zinc-950/40 border border-cyan-500/20 shadow-[0_0_20px_rgba(236,72,153,0.1)] text-cyan-100 rounded-[2.5rem] backdrop-blur-2xl relative overflow-hidden',
+        headerBorder: 'border-b border-pink-500/15',
+        chartBg: 'bg-slate-950/40 border border-cyan-500/15 shadow-[inset_0_2px_12px_rgba(6,182,212,0.06)] rounded-3xl',
+        legendBg: 'bg-black/80 border border-pink-500/35 shadow-[0_0_15px_rgba(236,72,153,0.2)] backdrop-blur-lg rounded-2xl',
+        glowGradient: 'from-pink-500/10 via-transparent to-cyan-500/10',
+        accentText: 'text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] font-black uppercase tracking-widest',
+        hudBg: 'bg-slate-950/98 border border-pink-500/40 text-pink-100 shadow-[0_0_35px_rgba(236,72,153,0.25)]',
+        panelTitle: 'Cybernetic Revenue Core'
+      };
+    case 'retro-blue':
+      return {
+        cardBg: 'bg-[#03001e]/80 border border-indigo-500/15 shadow-2xl rounded-[2.5rem] backdrop-blur-3xl text-indigo-50',
+        headerBorder: 'border-b border-indigo-500/10',
+        chartBg: 'bg-indigo-950/20 border border-indigo-500/10 rounded-3xl',
+        legendBg: 'bg-slate-950/90 border border-purple-500/20 shadow-lg backdrop-blur-md rounded-2xl',
+        glowGradient: 'from-indigo-600/15 via-transparent to-purple-600/15',
+        accentText: 'text-purple-400 drop-shadow-[0_0_6px_rgba(168,85,247,0.5)]',
+        hudBg: 'bg-indigo-950/95 border border-indigo-500/30 text-indigo-100 shadow-xl',
+        panelTitle: 'Decade Cosmos Ledger'
+      };
+    case 'emerald-gold':
+      return {
+        cardBg: 'bg-[#021f18]/80 border border-emerald-500/15 shadow-2xl rounded-[2.5rem] backdrop-blur-3xl text-emerald-100',
+        headerBorder: 'border-b border-emerald-500/10',
+        chartBg: 'bg-emerald-950/20 border border-emerald-500/10 rounded-3xl',
+        legendBg: 'bg-emerald-950/90 border border-amber-500/20 shadow-lg backdrop-blur-md rounded-2xl',
+        glowGradient: 'from-emerald-600/10 via-transparent to-amber-600/10',
+        accentText: 'text-amber-400 drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]',
+        hudBg: 'bg-emerald-950/95 border border-emerald-500/30 text-emerald-100 shadow-xl',
+        panelTitle: 'Botanical Trust Valuation'
+      };
+    case 'minimalist-ivory':
+      return {
+        cardBg: 'bg-[#fdfcf7] border border-stone-300 shadow-md rounded-[2.5rem] text-stone-900',
+        headerBorder: 'border-b border-stone-200',
+        chartBg: 'bg-stone-100/50 border border-stone-200 rounded-3xl',
+        legendBg: 'bg-white border border-stone-250 shadow-sm rounded-2xl',
+        glowGradient: 'from-stone-200/5 to-transparent',
+        accentText: 'text-stone-800 font-extrabold',
+        hudBg: 'bg-[#f8f6f0] border border-stone-300 text-stone-900 shadow-md',
+        panelTitle: 'Classic Ledger Report'
+      };
+    case 'midnight_blue':
+    default:
+      return {
+        cardBg: 'bg-[#0a0f1d] border border-blue-500/10 shadow-3xl text-slate-100 rounded-[2.5rem]',
+        headerBorder: 'border-b border-blue-500/5',
+        chartBg: 'bg-[#050811] border border-blue-500/10 shadow-inner rounded-3xl',
+        legendBg: 'bg-[#0d1527]/80 border border-blue-500/10 shadow-sm backdrop-blur-md rounded-2xl',
+        glowGradient: 'from-blue-600/10 to-transparent',
+        accentText: 'text-blue-400',
+        hudBg: 'bg-slate-950/98 border border-blue-500/20 text-slate-100 shadow-2xl',
+        panelTitle: 'Executive Summary'
+      };
+  }
+};
+
 export default function PremiumInteractiveChart({
   state,
-  timePeriod: parentTimePeriod,
-  onTimePeriodChange,
+  timePeriod = 'month',
   currentBills = [],
   currentUnbilled = [],
-  themeChartColors
+  themeChartColors,
+  themeContainerStyle: passedContainerStyle
 }: PremiumInteractiveChartProps) {
-  // 1. Time Range State: today, week, month, year, custom
-  const [timeRange, setTimeRange] = useState<TimeRangeType>(() => {
-    if (parentTimePeriod === 'today') return 'today';
-    if (parentTimePeriod === 'week') return 'week';
-    if (parentTimePeriod === 'month') return 'month';
-    if (parentTimePeriod === 'year') return 'year';
-    return 'today';
-  });
+  const currentTheme = state.settings.theme;
+  const containerStyle = passedContainerStyle || getDefaultThemeContainerStyle(currentTheme);
 
-  // App-native View Options: Metric Mode (Sales, Profit, Dual) and Chart Style (Spline Curve vs App Bar Pillars)
-  const [metricMode, setMetricMode] = useState<MetricMode>('dual');
-  const [chartStyle, setChartStyle] = useState<ChartStyle>('spline');
-
-  // Custom date range state (defaults to past 14 days)
-  const [customStart, setCustomStart] = useState<string>(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 14);
-    return d.toISOString().split('T')[0];
-  });
-  const [customEnd, setCustomEnd] = useState<string>(() => {
-    return new Date().toISOString().split('T')[0];
-  });
-  const [showCustomPicker, setShowCustomPicker] = useState(false);
-
-  // Sync with parent time period if parent changes
-  useEffect(() => {
-    if (parentTimePeriod === 'today') setTimeRange('today');
-    else if (parentTimePeriod === 'week') setTimeRange('week');
-    else if (parentTimePeriod === 'month') setTimeRange('month');
-    else if (parentTimePeriod === 'year') setTimeRange('year');
-  }, [parentTimePeriod]);
-
-  // Notify parent on change if provided
-  const handleTimeRangeChange = (newRange: TimeRangeType) => {
-    if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-      try { window.navigator.vibrate(12); } catch {}
-    }
-    setTimeRange(newRange);
-    if (newRange === 'custom') {
-      setShowCustomPicker(true);
-    } else {
-      setShowCustomPicker(false);
-      if (onTimePeriodChange) {
-        if (newRange === 'today' || newRange === 'week' || newRange === 'month' || newRange === 'year') {
-          onTimePeriodChange(newRange);
-        }
-      }
-    }
-  };
-
-  // 2. Touch / Scrub state
+  // Active scrubbed point on chart
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [isInteracting, setIsInteracting] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const lastHapticIndexRef = useRef<number | null>(null);
 
-  // Raw bills & unbilled records from app state
-  const allBills = useMemo(() => state.bills || [], [state.bills]);
-  const allUnbilled = useMemo(() => {
-    const fromState = state.unbilledEntries || [];
-    const map = new Map<string, UnbilledEntry>();
-    [...currentUnbilled, ...fromState].forEach(e => {
-      if (e && e.id) map.set(e.id, e);
-    });
-    return Array.from(map.values());
-  }, [state.unbilledEntries, currentUnbilled]);
+  // Extract color values
+  const salesStroke = themeChartColors?.sales?.stroke || '#3b82f6';
+  const profitStroke = themeChartColors?.profit?.stroke || '#10b981';
+  const gridStroke = themeChartColors?.gridColor || 'rgba(255, 255, 255, 0.05)';
+  const gridDash = themeChartColors?.gridDash || '4,4';
+  const axisColor = themeChartColors?.axisText || '#94a3b8';
 
-  // Clear activeIndex when switching timeRange
-  useEffect(() => {
-    setActiveIndex(null);
-  }, [timeRange, customStart, customEnd]);
-
-  // 3. Generate both Sales & Profit data points & comparison metrics
-  const { dataPoints, totals, prevTotals, hasAnyData } = useMemo(() => {
+  // 1. Generate Buckets based on selected timePeriod
+  const { buckets, totalSales, totalProfit, totalBills } = useMemo(() => {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
-    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const midnight = new Date(year, month, now.getDate());
 
-    let points: DataPoint[] = [];
-    let prevSalesTotal = 0;
-    let prevProfitTotal = 0;
-    let prevBillsTotal = 0;
-    let prevUnitsTotal = 0;
+    let list: ChartBucket[] = [];
 
-    let currSalesTotal = 0;
-    let currProfitTotal = 0;
-    let currBillsTotal = 0;
-    let currUnitsTotal = 0;
-
-    if (timeRange === 'today') {
-      // 24 hourly buckets for Today (00:00 to 23:00)
-      points = Array.from({ length: 24 }, (_, h) => {
+    if (timePeriod === 'today') {
+      // 24 hourly buckets
+      list = Array.from({ length: 24 }, (_, h) => {
         const isPM = h >= 12;
         const formattedHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
-        const label = `${formattedHour}${isPM ? 'P' : 'A'}`;
-        const fullLabel = `Today · ${formattedHour}:00 ${isPM ? 'PM' : 'AM'}`;
         return {
-          label,
-          fullLabel,
+          label: `${formattedHour}${isPM ? 'p' : 'a'}`,
+          fullLabel: `Today · ${formattedHour}:00 ${isPM ? 'PM' : 'AM'}`,
           sales: 0,
           profit: 0,
           bills: 0,
-          units: 0,
           timestamp: new Date(year, month, now.getDate(), h, 0, 0).toISOString()
         };
       });
 
-      // Populate current today's bills
-      allBills.forEach(bill => {
+      currentBills.forEach(bill => {
         const d = parseTimestamp(bill.timestamp);
         if (d >= midnight && d <= now) {
           const h = d.getHours();
           if (h >= 0 && h < 24) {
-            const billSales = Number(bill.total) || 0;
-            const billProfit = getBillProfit(bill, state.items);
-            let billUnits = 0;
-            if (Array.isArray(bill.items)) {
-              bill.items.forEach(item => {
-                const q = Number(item.quantity);
-                billUnits += (!isNaN(q) && q > 0) ? q : 1;
-              });
-            } else {
-              billUnits = 1;
-            }
-
-            points[h].sales += billSales;
-            points[h].profit += billProfit;
-            points[h].bills += 1;
-            points[h].units += billUnits;
+            list[h].sales += Number(bill.total) || 0;
+            list[h].profit += getBillProfit(bill, state.items);
+            list[h].bills += 1;
           }
         }
       });
 
-      // Populate current today's unbilled entries
-      allUnbilled.forEach(entry => {
+      currentUnbilled.forEach(entry => {
         const d = parseTimestamp(entry.timestamp || entry.dateStr);
         if (d >= midnight && d <= now) {
           const h = d.getHours();
           if (h >= 0 && h < 24) {
             const amt = Number(entry.amount) || 0;
-            points[h].sales += amt;
-            points[h].profit += amt;
-            points[h].bills += 1;
-            points[h].units += 1;
+            list[h].sales += amt;
+            list[h].profit += amt;
+            list[h].bills += 1;
           }
         }
       });
 
-      // Previous period: Yesterday
-      const yesterdayMidnight = new Date(midnight.getTime() - 24 * 3600 * 1000);
-      const yesterdayCutoff = new Date(now.getTime() - 24 * 3600 * 1000);
-
-      allBills.forEach(bill => {
-        const d = parseTimestamp(bill.timestamp);
-        if (d >= yesterdayMidnight && d <= yesterdayCutoff) {
-          prevSalesTotal += Number(bill.total) || 0;
-          prevProfitTotal += getBillProfit(bill, state.items);
-          prevBillsTotal += 1;
-          if (Array.isArray(bill.items)) {
-            bill.items.forEach(item => {
-              const q = Number(item.quantity);
-              prevUnitsTotal += (!isNaN(q) && q > 0) ? q : 1;
-            });
-          } else {
-            prevUnitsTotal += 1;
-          }
-        }
-      });
-
-      allUnbilled.forEach(entry => {
-        const d = parseTimestamp(entry.timestamp || entry.dateStr);
-        if (d >= yesterdayMidnight && d <= yesterdayCutoff) {
-          const amt = Number(entry.amount) || 0;
-          prevSalesTotal += amt;
-          prevProfitTotal += amt;
-          prevBillsTotal += 1;
-          prevUnitsTotal += 1;
-        }
-      });
-
-    } else if (timeRange === 'week') {
-      // 7 days of this week (Mon-Sun or past 7 days)
+    } else if (timePeriod === 'week') {
+      // 7 days (Monday through Sunday)
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      const past7Days: Date[] = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(year, month, now.getDate() - i);
-        past7Days.push(d);
-      }
+      const dayOfWeek = now.getDay();
+      const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const monday = new Date(year, month, now.getDate() + diffToMonday);
 
-      points = past7Days.map(d => {
-        const dayIdx = d.getDay();
-        const dateNum = d.getDate();
-        const label = dayNames[dayIdx];
-        const fullLabel = `${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}`;
+      list = Array.from({ length: 7 }, (_, i) => {
+        const dayDate = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+        const name = dayNames[dayDate.getDay()];
         return {
-          label,
-          fullLabel,
+          label: name,
+          fullLabel: `${dayDate.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}`,
           sales: 0,
           profit: 0,
           bills: 0,
-          units: 0,
-          timestamp: d.toISOString()
+          timestamp: dayDate.toISOString()
         };
       });
 
-      const weekStart = new Date(year, month, now.getDate() - 6);
-      weekStart.setHours(0, 0, 0, 0);
-
-      allBills.forEach(bill => {
+      currentBills.forEach(bill => {
         const d = parseTimestamp(bill.timestamp);
-        if (d >= weekStart && d <= now) {
-          const diffDays = Math.floor((d.getTime() - weekStart.getTime()) / (24 * 3600 * 1000));
-          if (diffDays >= 0 && diffDays < 7) {
-            const billSales = Number(bill.total) || 0;
-            const billProfit = getBillProfit(bill, state.items);
-            let billUnits = 0;
-            if (Array.isArray(bill.items)) {
-              bill.items.forEach(item => {
-                const q = Number(item.quantity);
-                billUnits += (!isNaN(q) && q > 0) ? q : 1;
-              });
-            } else {
-              billUnits = 1;
-            }
-
-            points[diffDays].sales += billSales;
-            points[diffDays].profit += billProfit;
-            points[diffDays].bills += 1;
-            points[diffDays].units += billUnits;
-          }
+        const dayIndex = Math.floor((d.getTime() - monday.getTime()) / (24 * 3600 * 1000));
+        if (dayIndex >= 0 && dayIndex < 7) {
+          list[dayIndex].sales += Number(bill.total) || 0;
+          list[dayIndex].profit += getBillProfit(bill, state.items);
+          list[dayIndex].bills += 1;
         }
       });
 
-      allUnbilled.forEach(entry => {
+      currentUnbilled.forEach(entry => {
         const d = parseTimestamp(entry.timestamp || entry.dateStr);
-        if (d >= weekStart && d <= now) {
-          const diffDays = Math.floor((d.getTime() - weekStart.getTime()) / (24 * 3600 * 1000));
-          if (diffDays >= 0 && diffDays < 7) {
-            const amt = Number(entry.amount) || 0;
-            points[diffDays].sales += amt;
-            points[diffDays].profit += amt;
-            points[diffDays].bills += 1;
-            points[diffDays].units += 1;
-          }
-        }
-      });
-
-      // Previous 7 days
-      const prevWeekStart = new Date(weekStart.getTime() - 7 * 24 * 3600 * 1000);
-      const prevWeekEnd = new Date(weekStart.getTime());
-
-      allBills.forEach(bill => {
-        const d = parseTimestamp(bill.timestamp);
-        if (d >= prevWeekStart && d < prevWeekEnd) {
-          prevSalesTotal += Number(bill.total) || 0;
-          prevProfitTotal += getBillProfit(bill, state.items);
-          prevBillsTotal += 1;
-          if (Array.isArray(bill.items)) {
-            bill.items.forEach(item => {
-              const q = Number(item.quantity);
-              prevUnitsTotal += (!isNaN(q) && q > 0) ? q : 1;
-            });
-          } else {
-            prevUnitsTotal += 1;
-          }
-        }
-      });
-
-      allUnbilled.forEach(entry => {
-        const d = parseTimestamp(entry.timestamp || entry.dateStr);
-        if (d >= prevWeekStart && d < prevWeekEnd) {
+        const dayIndex = Math.floor((d.getTime() - monday.getTime()) / (24 * 3600 * 1000));
+        if (dayIndex >= 0 && dayIndex < 7) {
           const amt = Number(entry.amount) || 0;
-          prevSalesTotal += amt;
-          prevProfitTotal += amt;
-          prevBillsTotal += 1;
-          prevUnitsTotal += 1;
+          list[dayIndex].sales += amt;
+          list[dayIndex].profit += amt;
+          list[dayIndex].bills += 1;
         }
       });
 
-    } else if (timeRange === 'month') {
-      // Days of this month
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      points = Array.from({ length: daysInMonth }, (_, i) => {
+    } else if (timePeriod === 'month') {
+      // Days of the current month
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      list = Array.from({ length: lastDay }, (_, i) => {
         const dayNum = i + 1;
-        const bucketDate = new Date(year, month, dayNum);
         return {
           label: `${dayNum}`,
-          fullLabel: `${bucketDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`,
+          fullLabel: `${new Date(year, month, dayNum).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}`,
           sales: 0,
           profit: 0,
           bills: 0,
-          units: 0,
-          timestamp: bucketDate.toISOString()
+          timestamp: new Date(year, month, dayNum).toISOString()
         };
       });
 
-      allBills.forEach(bill => {
+      currentBills.forEach(bill => {
         const d = parseTimestamp(bill.timestamp);
         if (d.getFullYear() === year && d.getMonth() === month) {
           const dayIdx = d.getDate() - 1;
-          if (dayIdx >= 0 && dayIdx < daysInMonth) {
-            const billSales = Number(bill.total) || 0;
-            const billProfit = getBillProfit(bill, state.items);
-            let billUnits = 0;
-            if (Array.isArray(bill.items)) {
-              bill.items.forEach(item => {
-                const q = Number(item.quantity);
-                billUnits += (!isNaN(q) && q > 0) ? q : 1;
-              });
-            } else {
-              billUnits = 1;
-            }
-
-            points[dayIdx].sales += billSales;
-            points[dayIdx].profit += billProfit;
-            points[dayIdx].bills += 1;
-            points[dayIdx].units += billUnits;
+          if (dayIdx >= 0 && dayIdx < lastDay) {
+            list[dayIdx].sales += Number(bill.total) || 0;
+            list[dayIdx].profit += getBillProfit(bill, state.items);
+            list[dayIdx].bills += 1;
           }
         }
       });
 
-      allUnbilled.forEach(entry => {
+      currentUnbilled.forEach(entry => {
         const d = parseTimestamp(entry.timestamp || entry.dateStr);
         if (d.getFullYear() === year && d.getMonth() === month) {
           const dayIdx = d.getDate() - 1;
-          if (dayIdx >= 0 && dayIdx < daysInMonth) {
+          if (dayIdx >= 0 && dayIdx < lastDay) {
             const amt = Number(entry.amount) || 0;
-            points[dayIdx].sales += amt;
-            points[dayIdx].profit += amt;
-            points[dayIdx].bills += 1;
-            points[dayIdx].units += 1;
+            list[dayIdx].sales += amt;
+            list[dayIdx].profit += amt;
+            list[dayIdx].bills += 1;
           }
         }
       });
 
-      // Previous Calendar Month
-      const prevMonth = month === 0 ? 11 : month - 1;
-      const prevYear = month === 0 ? year - 1 : year;
-
-      allBills.forEach(bill => {
-        const d = parseTimestamp(bill.timestamp);
-        if (d.getFullYear() === prevYear && d.getMonth() === prevMonth) {
-          prevSalesTotal += Number(bill.total) || 0;
-          prevProfitTotal += getBillProfit(bill, state.items);
-          prevBillsTotal += 1;
-          if (Array.isArray(bill.items)) {
-            bill.items.forEach(item => {
-              const q = Number(item.quantity);
-              prevUnitsTotal += (!isNaN(q) && q > 0) ? q : 1;
-            });
-          } else {
-            prevUnitsTotal += 1;
-          }
-        }
-      });
-
-      allUnbilled.forEach(entry => {
-        const d = parseTimestamp(entry.timestamp || entry.dateStr);
-        if (d.getFullYear() === prevYear && d.getMonth() === prevMonth) {
-          const amt = Number(entry.amount) || 0;
-          prevSalesTotal += amt;
-          prevProfitTotal += amt;
-          prevBillsTotal += 1;
-          prevUnitsTotal += 1;
-        }
-      });
-
-    } else if (timeRange === 'year') {
-      // 12 Months of this Year
+    } else if (timePeriod === 'year') {
+      // 12 months
       const monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      points = monthShort.map((mName, idx) => {
-        const bucketDate = new Date(year, idx, 1);
-        return {
-          label: mName,
-          fullLabel: `${mName} ${year}`,
-          sales: 0,
-          profit: 0,
-          bills: 0,
-          units: 0,
-          timestamp: bucketDate.toISOString()
-        };
-      });
+      list = monthShort.map((mName, mIdx) => ({
+        label: mName,
+        fullLabel: `${new Date(year, mIdx, 1).toLocaleDateString([], { month: 'long', year: 'numeric' })}`,
+        sales: 0,
+        profit: 0,
+        bills: 0,
+        timestamp: new Date(year, mIdx, 1).toISOString()
+      }));
 
-      allBills.forEach(bill => {
+      currentBills.forEach(bill => {
         const d = parseTimestamp(bill.timestamp);
         if (d.getFullYear() === year) {
-          const m = d.getMonth();
-          if (m >= 0 && m < 12) {
-            const billSales = Number(bill.total) || 0;
-            const billProfit = getBillProfit(bill, state.items);
-            let billUnits = 0;
-            if (Array.isArray(bill.items)) {
-              bill.items.forEach(item => {
-                const q = Number(item.quantity);
-                billUnits += (!isNaN(q) && q > 0) ? q : 1;
-              });
-            } else {
-              billUnits = 1;
-            }
-
-            points[m].sales += billSales;
-            points[m].profit += billProfit;
-            points[m].bills += 1;
-            points[m].units += billUnits;
+          const mIdx = d.getMonth();
+          if (mIdx >= 0 && mIdx < 12) {
+            list[mIdx].sales += Number(bill.total) || 0;
+            list[mIdx].profit += getBillProfit(bill, state.items);
+            list[mIdx].bills += 1;
           }
         }
       });
 
-      allUnbilled.forEach(entry => {
+      currentUnbilled.forEach(entry => {
         const d = parseTimestamp(entry.timestamp || entry.dateStr);
         if (d.getFullYear() === year) {
-          const m = d.getMonth();
-          if (m >= 0 && m < 12) {
+          const mIdx = d.getMonth();
+          if (mIdx >= 0 && mIdx < 12) {
             const amt = Number(entry.amount) || 0;
-            points[m].sales += amt;
-            points[m].profit += amt;
-            points[m].bills += 1;
-            points[m].units += 1;
+            list[mIdx].sales += amt;
+            list[mIdx].profit += amt;
+            list[mIdx].bills += 1;
           }
         }
       });
 
-      // Previous Calendar Year
-      const prevYear = year - 1;
-      allBills.forEach(bill => {
-        const d = parseTimestamp(bill.timestamp);
-        if (d.getFullYear() === prevYear) {
-          prevSalesTotal += Number(bill.total) || 0;
-          prevProfitTotal += getBillProfit(bill, state.items);
-          prevBillsTotal += 1;
-          if (Array.isArray(bill.items)) {
-            bill.items.forEach(item => {
-              const q = Number(item.quantity);
-              prevUnitsTotal += (!isNaN(q) && q > 0) ? q : 1;
-            });
+    } else {
+      // All time: group by last 12 active months
+      const monthMap = new Map<string, ChartBucket>();
+      
+      const allEvents = [
+        ...currentBills.map(b => ({ ts: b.timestamp, sales: Number(b.total) || 0, profit: getBillProfit(b, state.items) })),
+        ...currentUnbilled.map(u => ({ ts: u.timestamp || u.dateStr, sales: Number(u.amount) || 0, profit: Number(u.amount) || 0 }))
+      ];
+
+      allEvents.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+
+      if (allEvents.length === 0) {
+        list = [
+          { label: 'Start', fullLabel: 'Historical Ledger', sales: 0, profit: 0, bills: 0, timestamp: new Date().toISOString() },
+          { label: 'Now', fullLabel: 'Current Ledger', sales: 0, profit: 0, bills: 0, timestamp: new Date().toISOString() }
+        ];
+      } else {
+        allEvents.forEach(item => {
+          const d = parseTimestamp(item.ts);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const existing = monthMap.get(key);
+          if (existing) {
+            existing.sales += item.sales;
+            existing.profit += item.profit;
+            existing.bills += 1;
           } else {
-            prevUnitsTotal += 1;
-          }
-        }
-      });
-
-      allUnbilled.forEach(entry => {
-        const d = parseTimestamp(entry.timestamp || entry.dateStr);
-        if (d.getFullYear() === prevYear) {
-          const amt = Number(entry.amount) || 0;
-          prevSalesTotal += amt;
-          prevProfitTotal += amt;
-          prevBillsTotal += 1;
-          prevUnitsTotal += 1;
-        }
-      });
-
-    } else if (timeRange === 'custom') {
-      // Custom Range
-      const start = new Date(customStart + 'T00:00:00');
-      const end = new Date(customEnd + 'T23:59:59');
-      const diffMs = Math.max(0, end.getTime() - start.getTime());
-      const diffDays = Math.min(60, Math.max(1, Math.ceil(diffMs / (24 * 3600 * 1000))));
-
-      points = Array.from({ length: diffDays }, (_, i) => {
-        const bucketDate = new Date(start.getTime() + i * 24 * 3600 * 1000);
-        const dayNum = bucketDate.getDate();
-        const monthShortStr = bucketDate.toLocaleDateString(undefined, { month: 'short' });
-        return {
-          label: `${dayNum} ${monthShortStr}`,
-          subLabel: monthShortStr,
-          fullLabel: `${monthShortStr} ${dayNum}, ${bucketDate.getFullYear()}`,
-          sales: 0,
-          profit: 0,
-          bills: 0,
-          units: 0,
-          timestamp: bucketDate.toISOString()
-        };
-      });
-
-      allBills.forEach(bill => {
-        const d = parseTimestamp(bill.timestamp);
-        if (d >= start && d <= end) {
-          const dayIdx = Math.floor((d.getTime() - start.getTime()) / (24 * 3600 * 1000));
-          if (dayIdx >= 0 && dayIdx < diffDays) {
-            const billSales = Number(bill.total) || 0;
-            const billProfit = getBillProfit(bill, state.items);
-            let billUnits = 0;
-            if (Array.isArray(bill.items)) {
-              bill.items.forEach(item => {
-                const q = Number(item.quantity);
-                billUnits += (!isNaN(q) && q > 0) ? q : 1;
-              });
-            } else {
-              billUnits = 1;
-            }
-
-            points[dayIdx].sales += billSales;
-            points[dayIdx].profit += billProfit;
-            points[dayIdx].bills += 1;
-            points[dayIdx].units += billUnits;
-          }
-        }
-      });
-
-      allUnbilled.forEach(entry => {
-        const d = parseTimestamp(entry.timestamp || entry.dateStr);
-        if (d >= start && d <= end) {
-          const dayIdx = Math.floor((d.getTime() - start.getTime()) / (24 * 3600 * 1000));
-          if (dayIdx >= 0 && dayIdx < diffDays) {
-            const amt = Number(entry.amount) || 0;
-            points[dayIdx].sales += amt;
-            points[dayIdx].profit += amt;
-            points[dayIdx].bills += 1;
-            points[dayIdx].units += 1;
-          }
-        }
-      });
-
-      // Prior period
-      const prevStart = new Date(start.getTime() - diffMs);
-      const prevEnd = start;
-
-      allBills.forEach(bill => {
-        const d = parseTimestamp(bill.timestamp);
-        if (d >= prevStart && d < prevEnd) {
-          prevSalesTotal += Number(bill.total) || 0;
-          prevProfitTotal += getBillProfit(bill, state.items);
-          prevBillsTotal += 1;
-          if (Array.isArray(bill.items)) {
-            bill.items.forEach(item => {
-              const q = Number(item.quantity);
-              prevUnitsTotal += (!isNaN(q) && q > 0) ? q : 1;
+            monthMap.set(key, {
+              label: d.toLocaleDateString([], { month: 'short', year: '2-digit' }),
+              fullLabel: d.toLocaleDateString([], { month: 'long', year: 'numeric' }),
+              sales: item.sales,
+              profit: item.profit,
+              bills: 1,
+              timestamp: d.toISOString()
             });
-          } else {
-            prevUnitsTotal += 1;
           }
-        }
-      });
+        });
+        list = Array.from(monthMap.values()).slice(-12);
+      }
     }
 
-    // Compute totals
-    points.forEach(p => {
-      currSalesTotal += p.sales;
-      currProfitTotal += p.profit;
-      currBillsTotal += p.bills;
-      currUnitsTotal += p.units;
+    let totS = 0;
+    let totP = 0;
+    let totB = 0;
+    list.forEach(b => {
+      totS += b.sales;
+      totP += b.profit;
+      totB += b.bills;
     });
 
-    const hasData = currSalesTotal > 0 || currBillsTotal > 0 || currProfitTotal > 0;
-
     return {
-      dataPoints: points,
-      totals: {
-        sales: currSalesTotal,
-        profit: currProfitTotal,
-        bills: currBillsTotal,
-        units: currUnitsTotal
-      },
-      prevTotals: {
-        sales: prevSalesTotal,
-        profit: prevProfitTotal,
-        bills: prevBillsTotal,
-        units: prevUnitsTotal
-      },
-      hasAnyData: hasData
+      buckets: list,
+      totalSales: totS,
+      totalProfit: totP,
+      totalBills: totB
     };
-  }, [allBills, allUnbilled, timeRange, customStart, customEnd, state.items]);
+  }, [timePeriod, currentBills, currentUnbilled, state.items]);
 
-  // 4. Growth calculations vs prior period
-  const salesGrowth = useMemo(() => {
-    if (prevTotals.sales === 0) {
-      return totals.sales > 0 ? 100 : 0;
-    }
-    return ((totals.sales - prevTotals.sales) / prevTotals.sales) * 100;
-  }, [totals.sales, prevTotals.sales]);
-
-  const profitMargin = useMemo(() => {
-    if (totals.sales <= 0) return 0;
-    return (totals.profit / totals.sales) * 100;
-  }, [totals.sales, totals.profit]);
-
-  const comparisonLabel = useMemo(() => {
-    switch (timeRange) {
-      case 'today': return 'vs yesterday';
-      case 'week': return 'vs last week';
-      case 'month': return 'vs last month';
-      case 'year': return 'vs last year';
-      case 'custom': return 'vs prior';
-      default: return 'vs prev';
-    }
-  }, [timeRange]);
-
-  // 5. Visual Colors for Sales and Profit
-  const salesColor = themeChartColors?.sales?.stroke || '#3b82f6';
-  const profitColor = themeChartColors?.profit?.stroke || '#10b981';
-
-  // 6. Graph Coordinate Calculations for Virtual SVG Space (Mobile Optimized)
+  // Virtual Canvas Coordinates
   const svgWidth = 1000;
-  const svgHeight = 310;
-  const paddingLeft = 46;
+  const svgHeight = 290;
+  const paddingLeft = 52;
   const paddingRight = 24;
-  const paddingTop = 28;
-  const paddingBottom = 42;
+  const paddingTop = 26;
+  const paddingBottom = 40;
 
   const drawableWidth = svgWidth - paddingLeft - paddingRight;
   const drawableHeight = svgHeight - paddingTop - paddingBottom;
 
-  // Max value spanning Sales and Profit
+  // Max peak for scaling
   const maxVal = useMemo(() => {
     let peak = 1;
-    dataPoints.forEach(p => {
-      if (p.sales > peak) peak = p.sales;
-      if (p.profit > peak) peak = p.profit;
+    buckets.forEach(b => {
+      if (b.sales > peak) peak = b.sales;
+      if (b.profit > peak) peak = b.profit;
     });
-    return peak * 1.18; // 18% breathing ceiling
-  }, [dataPoints]);
+    return peak * 1.15;
+  }, [buckets]);
 
-  // Compute dual coordinate points
+  // Coordinate mapping
   const coordPoints = useMemo(() => {
-    const total = dataPoints.length;
+    const total = buckets.length;
     if (total === 0) return [];
-    return dataPoints.map((pt, i) => {
+    return buckets.map((pt, i) => {
       const x = total === 1 
         ? paddingLeft + drawableWidth / 2 
         : paddingLeft + (i / (total - 1)) * drawableWidth;
@@ -689,31 +421,14 @@ export default function PremiumInteractiveChart({
       const yProfit = paddingTop + drawableHeight - (pt.profit / maxVal) * drawableHeight;
       return { x, ySales, yProfit, original: pt, index: i };
     });
-  }, [dataPoints, maxVal, drawableWidth, drawableHeight]);
+  }, [buckets, maxVal, drawableWidth, drawableHeight]);
 
-  // Peak Point Detection for on-canvas badge
-  const peakPoint = useMemo(() => {
-    if (coordPoints.length === 0) return null;
-    let max = coordPoints[0];
-    coordPoints.forEach(p => {
-      if (p.original.sales > max.original.sales) max = p;
-    });
-    return max.original.sales > 0 ? max : null;
-  }, [coordPoints]);
-
-  // Latest / Current Active Point (right edge beacon)
-  const latestPoint = useMemo(() => {
-    if (coordPoints.length === 0) return null;
-    return coordPoints[coordPoints.length - 1];
-  }, [coordPoints]);
-
-  // Smooth Bezier Curve Path for Sales
+  // Bezier Paths
   const salesLinePath = useMemo(() => {
     const pts = coordPoints.map(p => ({ x: p.x, y: p.ySales }));
     return getBezierCurvePath(pts);
   }, [coordPoints]);
 
-  // Area Fill Path for Sales
   const salesFillPath = useMemo(() => {
     if (coordPoints.length === 0) return '';
     const bottomY = paddingTop + drawableHeight;
@@ -722,13 +437,11 @@ export default function PremiumInteractiveChart({
     return `${salesLinePath} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
   }, [coordPoints, salesLinePath, paddingTop, drawableHeight]);
 
-  // Smooth Bezier Curve Path for Profit
   const profitLinePath = useMemo(() => {
     const pts = coordPoints.map(p => ({ x: p.x, y: p.yProfit }));
     return getBezierCurvePath(pts);
   }, [coordPoints]);
 
-  // Area Fill Path for Profit
   const profitFillPath = useMemo(() => {
     if (coordPoints.length === 0) return '';
     const bottomY = paddingTop + drawableHeight;
@@ -737,8 +450,8 @@ export default function PremiumInteractiveChart({
     return `${profitLinePath} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
   }, [coordPoints, profitLinePath, paddingTop, drawableHeight]);
 
-  // 7. Pointer / Touch-to-Scrub Engine with Real-Time Haptic Ticks
-  const handlePointerCoords = useCallback((clientX: number) => {
+  // Touch and pointer interaction
+  const handlePointer = useCallback((clientX: number) => {
     if (!containerRef.current || coordPoints.length === 0) return;
     const rect = containerRef.current.getBoundingClientRect();
     if (rect.width <= 0) return;
@@ -748,84 +461,26 @@ export default function PremiumInteractiveChart({
 
     let closestIdx = 0;
     let minDiff = Infinity;
-
-    coordPoints.forEach((pt, idx) => {
+    coordPoints.forEach((pt, i) => {
       const diff = Math.abs(pt.x - virtualX);
       if (diff < minDiff) {
         minDiff = diff;
-        closestIdx = idx;
+        closestIdx = i;
       }
     });
 
-    // Provide crisp native haptic vibration tick on crossing intervals
-    if (lastHapticIndexRef.current !== closestIdx) {
-      lastHapticIndexRef.current = closestIdx;
-      if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-        try { window.navigator.vibrate(8); } catch {}
-      }
-    }
-
     setActiveIndex(closestIdx);
-  }, [coordPoints, svgWidth]);
+  }, [coordPoints]);
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    setIsInteracting(true);
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
-    handlePointerCoords(e.clientX);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (isInteracting || e.pointerType === 'mouse') {
-      handlePointerCoords(e.clientX);
-    }
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {}
-    setIsInteracting(false);
-  };
-
-  const handlePointerCancel = () => {
-    setIsInteracting(false);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length > 0) {
-      setIsInteracting(true);
-      handlePointerCoords(e.touches[0].clientX);
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length > 0) {
-      handlePointerCoords(e.touches[0].clientX);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    setIsInteracting(false);
-  };
-
-  // Active Point currently scrubbed/inspected
-  const activePoint = activeIndex !== null && coordPoints[activeIndex] ? coordPoints[activeIndex] : null;
-
-  const activeMargin = useMemo(() => {
-    if (!activePoint || activePoint.original.sales <= 0) return 0;
-    return (activePoint.original.profit / activePoint.original.sales) * 100;
-  }, [activePoint]);
-
-  // Smart X-axis label strides to prevent mobile clutter
-  const visibleLabelIndices = useMemo(() => {
-    const total = dataPoints.length;
+  // Visible X-axis tick indices to prevent label overlapping
+  const visibleTickIndices = useMemo(() => {
+    const total = buckets.length;
     const indices = new Set<number>();
-    if (total <= 7) {
+    if (total <= 8) {
       for (let i = 0; i < total; i++) indices.add(i);
-    } else if (total <= 12) {
-      for (let i = 0; i < total; i++) indices.add(i);
+    } else if (total <= 14) {
+      for (let i = 0; i < total; i += 2) indices.add(i);
+      indices.add(total - 1);
     } else if (total <= 25) {
       for (let i = 0; i < total; i += 4) indices.add(i);
       indices.add(total - 1);
@@ -834,777 +489,276 @@ export default function PremiumInteractiveChart({
       indices.add(total - 1);
     }
     return indices;
-  }, [dataPoints.length]);
+  }, [buckets.length]);
 
-  // Unique key to trigger fresh start-to-end animation whenever parameters change
-  const animationKey = `${timeRange}-${chartStyle}-${metricMode}-${customStart}-${customEnd}`;
-
-  // Active displayed metrics: Scrubbed vs Total
-  const displayedSales = activePoint ? activePoint.original.sales : totals.sales;
-  const displayedProfit = activePoint ? activePoint.original.profit : totals.profit;
-  const displayedMargin = activePoint ? activeMargin : profitMargin;
+  const activePoint = activeIndex !== null && coordPoints[activeIndex] ? coordPoints[activeIndex] : null;
 
   return (
-    <div className="bg-[var(--card)]/90 backdrop-blur-xl border border-[var(--border)] rounded-[2.2rem] p-4 sm:p-6 shadow-2xl relative overflow-hidden text-[var(--foreground)] space-y-4 select-none">
-      
-      {/* Ambient Atmospheric Radial Glow Tinted by Primary Color */}
-      <div 
-        className="absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl pointer-events-none opacity-20"
-        style={{ background: `radial-gradient(circle, ${salesColor} 0%, transparent 70%)` }}
-      />
-      <div 
-        className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full blur-3xl pointer-events-none opacity-15"
-        style={{ background: `radial-gradient(circle, ${profitColor} 0%, transparent 70%)` }}
-      />
+    <div className={`p-5 sm:p-6 rounded-[2.5rem] ${containerStyle.cardBg} border ${themeChartColors?.cardBorder || 'border-[var(--border)]'} relative overflow-hidden shadow-2xl`}>
+      <ThemeVisualEffects theme={currentTheme} disableMovement={true} />
+      <div className={`absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl ${containerStyle.glowGradient || 'from-blue-500/10 to-transparent'} rounded-full blur-3xl pointer-events-none`} />
 
-      {/* 1. APP HEADER: STATUS TELEMETRY + VIEW CONTROLS */}
-      <div className="flex items-center justify-between gap-2 flex-wrap pb-1 relative z-10">
-        {/* Left: App Telemetry Status */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 shadow-xs">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="text-[9.5px] font-black uppercase tracking-wider text-emerald-500 font-mono">
-              Live App Stream
-            </span>
+      {/* Header Bar */}
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 gap-3.5 border-b ${containerStyle.headerBorder} relative z-10`}>
+        <div className="flex items-center gap-2.5">
+          <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${containerStyle.accentText} bg-[var(--foreground)]/5 border border-[var(--border)]`}>
+            <TrendingUp size={18} />
           </div>
-
-          <span className="text-[11px] font-bold text-[var(--foreground)]/50 hidden sm:inline truncate max-w-[200px]">
-            {state.settings.storeName || "Store Telemetry"}
-          </span>
+          <div>
+            <h3 className={`text-sm sm:text-base font-extrabold uppercase tracking-tight ${containerStyle.accentText}`}>
+              {containerStyle.panelTitle || "Financial Overview"}
+            </h3>
+            <p className="text-[10px] font-bold opacity-50 uppercase tracking-widest mt-0.5">
+              {timePeriod === 'today' ? "Today's Hourly Revenue & Margin Stream" :
+               timePeriod === 'week' ? "Weekly Revenue & Margin Distribution" :
+               timePeriod === 'month' ? "Monthly Performance Ledger" :
+               timePeriod === 'year' ? "Annual Revenue & Margin Evolution" : "All-Time Financial Progression"}
+            </p>
+          </div>
         </div>
 
-        {/* Right: App Native Controls (Metric Mode & Chart Type) */}
-        <div className="flex items-center gap-1.5 ml-auto">
-          {/* Metric Selector: Sales / Profit / Dual */}
-          <div className="flex items-center bg-[var(--foreground)]/[0.05] p-0.5 rounded-xl border border-[var(--border)]">
-            <button
-              type="button"
-              onClick={() => {
-                setMetricMode('sales');
-                if (typeof window !== 'undefined' && window.navigator?.vibrate) window.navigator.vibrate(8);
-              }}
-              className={`px-2 py-1 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                metricMode === 'sales'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-[var(--foreground)]/60 hover:text-[var(--foreground)]'
-              }`}
-            >
-              Sales
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMetricMode('profit');
-                if (typeof window !== 'undefined' && window.navigator?.vibrate) window.navigator.vibrate(8);
-              }}
-              className={`px-2 py-1 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                metricMode === 'profit'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-[var(--foreground)]/60 hover:text-[var(--foreground)]'
-              }`}
-            >
-              Profit
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMetricMode('dual');
-                if (typeof window !== 'undefined' && window.navigator?.vibrate) window.navigator.vibrate(8);
-              }}
-              className={`px-2 py-1 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                metricMode === 'dual'
-                  ? 'bg-[var(--foreground)] text-[var(--background)] shadow-xs'
-                  : 'text-[var(--foreground)]/60 hover:text-[var(--foreground)]'
-              }`}
-            >
-              Both
-            </button>
+        {/* Legend Pill */}
+        <div className={`flex items-center gap-3 px-3.5 py-1.5 rounded-2xl ${containerStyle.legendBg} shrink-0 self-start sm:self-auto`}>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: salesStroke }} />
+            <span className="text-[9.5px] font-black uppercase opacity-60">Sales</span>
+            <span className="text-[11px] font-black font-mono">₹{Math.round(totalSales).toLocaleString()}</span>
           </div>
-
-          {/* Chart View Toggle: Curve (LineChart) vs Pillars (BarChart3) */}
-          <div className="flex items-center bg-[var(--foreground)]/[0.05] p-0.5 rounded-xl border border-[var(--border)]">
-            <button
-              type="button"
-              onClick={() => {
-                setChartStyle('spline');
-                if (typeof window !== 'undefined' && window.navigator?.vibrate) window.navigator.vibrate(8);
-              }}
-              title="Smooth Bezier Curve View"
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                chartStyle === 'spline'
-                  ? 'bg-[var(--foreground)] text-[var(--background)] shadow-xs'
-                  : 'text-[var(--foreground)]/50 hover:text-[var(--foreground)]'
-              }`}
-            >
-              <LineChart size={13} />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setChartStyle('bars');
-                if (typeof window !== 'undefined' && window.navigator?.vibrate) window.navigator.vibrate(8);
-              }}
-              title="Mobile Volume Pillars View"
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                chartStyle === 'bars'
-                  ? 'bg-[var(--foreground)] text-[var(--background)] shadow-xs'
-                  : 'text-[var(--foreground)]/50 hover:text-[var(--foreground)]'
-              }`}
-            >
-              <BarChart3 size={13} />
-            </button>
+          <div className="w-px h-3 bg-[var(--border)] opacity-50" />
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: profitStroke }} />
+            <span className="text-[9.5px] font-black uppercase opacity-60">Profit</span>
+            <span className="text-[11px] font-black font-mono" style={{ color: profitStroke }}>₹{Math.round(totalProfit).toLocaleString()}</span>
           </div>
+          {totalSales > 0 && (
+            <>
+              <div className="w-px h-3 bg-[var(--border)] opacity-50" />
+              <span className="text-[9.5px] font-black font-mono text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                {((totalProfit / totalSales) * 100).toFixed(0)}%
+              </span>
+            </>
+          )}
         </div>
       </div>
 
-      {/* 2. APP HERO HEADLINE: DYNAMIC ROLLING METRIC & SCRUB FEEDBACK */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pt-1 border-b border-[var(--border)] pb-4 relative z-10">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)]/50 font-mono">
-              {activePoint ? (
-                <span className="text-blue-500 font-bold">
-                  {activePoint.original.fullLabel}
-                </span>
-              ) : (
-                timeRange === 'today' ? "Today's Gross Performance" :
-                timeRange === 'week' ? "This Week's Gross Performance" :
-                timeRange === 'month' ? "This Month's Gross Performance" :
-                timeRange === 'year' ? "This Year's Gross Performance" : "Custom Period Performance"
-              )}
-            </span>
+      {/* Interactive Chart Canvas */}
+      <div 
+        ref={containerRef}
+        onPointerDown={(e) => handlePointer(e.clientX)}
+        onPointerMove={(e) => handlePointer(e.clientX)}
+        onPointerLeave={() => setActiveIndex(null)}
+        onTouchMove={(e) => {
+          if (e.touches[0]) handlePointer(e.touches[0].clientX);
+        }}
+        onTouchEnd={() => setActiveIndex(null)}
+        style={{ touchAction: 'pan-y' }}
+        className={`p-2 sm:p-4 rounded-3xl ${containerStyle.chartBg} relative z-10 cursor-crosshair select-none`}
+      >
+        <svg
+          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+          className="w-full h-[240px] sm:h-[280px] overflow-visible pointer-events-none"
+          preserveAspectRatio="none"
+        >
+          <defs>
+            {/* Sales Area Fill Gradient */}
+            <linearGradient id="prevSalesGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={salesStroke} stopOpacity="0.28" />
+              <stop offset="60%" stopColor={salesStroke} stopOpacity="0.08" />
+              <stop offset="100%" stopColor={salesStroke} stopOpacity="0.0" />
+            </linearGradient>
 
-            {activePoint && (
-              <button
-                type="button"
-                onClick={() => setActiveIndex(null)}
-                className="inline-flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-[var(--foreground)]/[0.08] hover:bg-[var(--foreground)]/15 text-[var(--foreground)]/70 transition-all cursor-pointer"
-              >
-                <RotateCcw size={9} /> Reset
-              </button>
-            )}
-          </div>
+            {/* Profit Area Fill Gradient */}
+            <linearGradient id="prevProfitGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={profitStroke} stopOpacity="0.30" />
+              <stop offset="60%" stopColor={profitStroke} stopOpacity="0.08" />
+              <stop offset="100%" stopColor={profitStroke} stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
 
-          {/* Large App-Native Number */}
-          <div className="flex items-baseline gap-3 flex-wrap">
-            <motion.div
-              key={`metric-val-${displayedSales}-${displayedProfit}`}
-              initial={{ opacity: 0.8, y: -2 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.15 }}
-              className="text-3xl sm:text-4xl font-black font-mono tracking-tight text-[var(--foreground)] flex items-baseline gap-1"
-            >
-              <span className="text-xl sm:text-2xl text-[var(--foreground)]/50">₹</span>
-              <span>
-                {metricMode === 'profit' 
-                  ? Math.round(displayedProfit).toLocaleString() 
-                  : Math.round(displayedSales).toLocaleString()}
-              </span>
-            </motion.div>
-
-            {/* Micro Badge for Margin & Growth */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono">
-                <Percent size={9} />
-                {displayedMargin.toFixed(1)}% Margin
-              </span>
-
-              {!activePoint && (
-                <span className={`inline-flex items-center gap-0.5 text-[9.5px] font-black px-2 py-0.5 rounded-full border ${
-                  salesGrowth >= 0 
-                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                    : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-                }`}>
-                  {salesGrowth >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
-                  {salesGrowth >= 0 ? '+' : ''}{salesGrowth.toFixed(1)}% {comparisonLabel}
-                </span>
-              )}
-
-              {activePoint && (
-                <span className="text-[10px] font-mono font-bold text-[var(--foreground)]/60">
-                  {activePoint.original.bills} Invoices · Profit ₹{Math.round(activePoint.original.profit).toLocaleString()}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* 3. APP-NATIVE SEGMENTED TIME SELECTOR WITH SLIDING GLIDER */}
-        <div className="flex items-center bg-[var(--foreground)]/[0.05] p-1 rounded-2xl border border-[var(--border)] max-w-full overflow-x-auto self-start sm:self-auto scrollbar-none">
-          {([
-            { id: 'today', label: 'Today' },
-            { id: 'week', label: 'Week' },
-            { id: 'month', label: 'Month' },
-            { id: 'year', label: 'Year' },
-            { id: 'custom', label: 'Custom' }
-          ] as const).map(tab => {
-            const isSelected = timeRange === tab.id;
+          {/* Gridlines with Y-axis value tags */}
+          {[0.25, 0.5, 0.75, 1.0].map((ratio, idx) => {
+            const yPos = paddingTop + drawableHeight - ratio * drawableHeight;
+            const gridVal = (maxVal * ratio) / 1.15;
             return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => handleTimeRangeChange(tab.id)}
-                className={`relative px-3 sm:px-3.5 py-1.5 rounded-xl text-[10.5px] font-black uppercase tracking-wider transition-colors cursor-pointer select-none whitespace-nowrap ${
-                  isSelected 
-                    ? 'text-[var(--background)]' 
-                    : 'text-[var(--foreground)]/60 hover:text-[var(--foreground)]'
-                }`}
-              >
-                {/* Framer Motion Spring Glider */}
-                {isSelected && (
-                  <motion.div
-                    layoutId="activeRangePill"
-                    className="absolute inset-0 bg-[var(--foreground)] rounded-xl shadow-md z-0"
-                    transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                  />
-                )}
-                <span className="relative z-10">{tab.label}</span>
-              </button>
+              <g key={idx}>
+                <line
+                  x1={paddingLeft}
+                  y1={yPos}
+                  x2={paddingLeft + drawableWidth}
+                  y2={yPos}
+                  stroke={gridStroke}
+                  strokeWidth={1}
+                  strokeDasharray={gridDash}
+                />
+                <text
+                  x={paddingLeft - 8}
+                  y={yPos + 3.5}
+                  textAnchor="end"
+                  fontSize={9.5}
+                  fontWeight="bold"
+                  fill={axisColor}
+                  className="font-mono opacity-60"
+                >
+                  ₹{gridVal >= 1000 ? `${(gridVal / 1000).toFixed(0)}k` : Math.round(gridVal)}
+                </text>
+              </g>
             );
           })}
-        </div>
-      </div>
 
-      {/* Custom Date Range Picker Expander */}
-      {timeRange === 'custom' && showCustomPicker && (
-        <motion.div 
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="p-3 bg-[var(--foreground)]/[0.02] border border-[var(--border)] rounded-2xl flex flex-wrap items-center gap-3 relative z-10"
-        >
-          <div className="flex items-center gap-2 text-xs font-bold">
-            <span className="text-[10px] font-black text-[var(--foreground)]/60 uppercase">From:</span>
-            <input
-              type="date"
-              value={customStart}
-              onChange={(e) => setCustomStart(e.target.value)}
-              className="bg-[var(--background)] border border-[var(--border)] rounded-xl px-2.5 py-1 text-xs font-mono font-bold focus:outline-none focus:border-[var(--primary)]"
+          {/* Bottom baseline */}
+          <line
+            x1={paddingLeft}
+            y1={paddingTop + drawableHeight}
+            x2={paddingLeft + drawableWidth}
+            y2={paddingTop + drawableHeight}
+            stroke={gridStroke}
+            strokeWidth={1}
+          />
+
+          {/* Sales Gradient Fill Area */}
+          {salesFillPath && (
+            <motion.path
+              key={`prev-sales-fill-${timePeriod}`}
+              d={salesFillPath}
+              fill="url(#prevSalesGradient)"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
             />
-          </div>
-          <div className="flex items-center gap-2 text-xs font-bold">
-            <span className="text-[10px] font-black text-[var(--foreground)]/60 uppercase">To:</span>
-            <input
-              type="date"
-              value={customEnd}
-              onChange={(e) => setCustomEnd(e.target.value)}
-              className="bg-[var(--background)] border border-[var(--border)] rounded-xl px-2.5 py-1 text-xs font-mono font-bold focus:outline-none focus:border-[var(--primary)]"
+          )}
+
+          {/* Profit Gradient Fill Area */}
+          {profitFillPath && (
+            <motion.path
+              key={`prev-profit-fill-${timePeriod}`}
+              d={profitFillPath}
+              fill="url(#prevProfitGradient)"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.8 }}
+              transition={{ duration: 0.6 }}
             />
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowCustomPicker(false)}
-            className="px-3 py-1 bg-[var(--primary)] text-white text-[10px] font-black uppercase tracking-wider rounded-xl cursor-pointer shadow-sm hover:opacity-90 ml-auto"
-          >
-            Apply Range
-          </button>
-        </motion.div>
-      )}
+          )}
 
-      {/* 4. THE LIVING APP GRAPH CANVAS (START-TO-END ANIMATION + TOUCH-TO-SCRUB) */}
-      <div className="relative pt-1">
-        {!hasAnyData ? (
-          <div className="h-64 rounded-3xl border border-dashed border-[var(--border)] bg-[var(--foreground)]/[0.01] flex flex-col items-center justify-center p-6 text-center space-y-3">
-            <div className="h-12 w-12 rounded-2xl bg-[var(--foreground)]/[0.04] border border-[var(--border)] text-[var(--foreground)]/40 flex items-center justify-center">
-              <Receipt size={22} />
-            </div>
-            <div className="space-y-1 max-w-sm">
-              <h4 className="text-xs font-black uppercase tracking-tight text-[var(--foreground)]">
-                No Transactions Recorded For This Period
-              </h4>
-              <p className="text-[10px] text-[var(--foreground)]/50 leading-relaxed font-semibold uppercase tracking-wider">
-                Select Week, Month, or Year to visualize performance graphs and profit curves.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => handleTimeRangeChange('week')}
-                className="px-3.5 py-1.5 rounded-xl bg-[var(--foreground)]/[0.06] hover:bg-[var(--foreground)]/12 text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer"
-              >
-                This Week
-              </button>
-              <button
-                type="button"
-                onClick={() => handleTimeRangeChange('month')}
-                className="px-3.5 py-1.5 rounded-xl bg-[var(--primary)] text-white text-[10px] font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer"
-              >
-                This Month
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div
-            ref={containerRef}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerCancel}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            style={{ touchAction: 'pan-y' }}
-            className="relative w-full h-[270px] sm:h-[310px] cursor-crosshair select-none touch-pan-y"
-          >
-            {/* SVG Graph Canvas with Start-To-End Motion Engine */}
-            <svg
-              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-              className="w-full h-full overflow-visible pointer-events-none"
-              preserveAspectRatio="none"
-            >
-              <defs>
-                {/* Luminous Neon Gradient for Sales */}
-                <linearGradient id="appSalesGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={salesColor} stopOpacity="0.38" />
-                  <stop offset="45%" stopColor={salesColor} stopOpacity="0.14" />
-                  <stop offset="95%" stopColor={salesColor} stopOpacity="0.01" />
-                  <stop offset="100%" stopColor={salesColor} stopOpacity="0" />
-                </linearGradient>
+          {/* Sales Smooth Curve */}
+          {salesLinePath && (
+            <motion.path
+              key={`prev-sales-line-${timePeriod}`}
+              d={salesLinePath}
+              fill="none"
+              stroke={salesStroke}
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 0.85, ease: "easeOut" }}
+            />
+          )}
 
-                {/* Luminous Neon Gradient for Profit */}
-                <linearGradient id="appProfitGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={profitColor} stopOpacity="0.40" />
-                  <stop offset="45%" stopColor={profitColor} stopOpacity="0.15" />
-                  <stop offset="95%" stopColor={profitColor} stopOpacity="0.01" />
-                  <stop offset="100%" stopColor={profitColor} stopOpacity="0" />
-                </linearGradient>
+          {/* Profit Smooth Curve */}
+          {profitLinePath && (
+            <motion.path
+              key={`prev-profit-line-${timePeriod}`}
+              d={profitLinePath}
+              fill="none"
+              stroke={profitStroke}
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray={timePeriod === 'today' ? undefined : "4 3"}
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 0.85, delay: 0.08, ease: "easeOut" }}
+            />
+          )}
 
-                {/* Soft Glowing Filter for Lines and Points */}
-                <filter id="neonAppGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-              </defs>
-
-              {/* Minimalist Horizontal Guide Gridlines with App Tick Labels */}
-              {[0.25, 0.5, 0.75, 1.0].map((ratio, idx) => {
-                const yPos = paddingTop + drawableHeight - ratio * drawableHeight;
-                const gridVal = (maxVal * ratio) / 1.18;
-                return (
-                  <g key={idx} className="opacity-20">
-                    <line
-                      x1={paddingLeft}
-                      y1={yPos}
-                      x2={paddingLeft + drawableWidth}
-                      y2={yPos}
-                      stroke="currentColor"
-                      strokeWidth={1}
-                      strokeDasharray="3 4"
-                    />
-                    <text
-                      x={paddingLeft - 8}
-                      y={yPos + 3.5}
-                      textAnchor="end"
-                      fontSize={9.5}
-                      fontWeight="bold"
-                      fill="currentColor"
-                      className="font-mono opacity-65"
-                    >
-                      ₹{gridVal >= 1000 ? `${(gridVal / 1000).toFixed(0)}k` : Math.round(gridVal)}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Baseline Horizontal Axis */}
+          {/* Interactive vertical guide line & indicator circles */}
+          {activePoint && (
+            <g>
               <line
-                x1={paddingLeft}
-                y1={paddingTop + drawableHeight}
-                x2={paddingLeft + drawableWidth}
+                x1={activePoint.x}
+                y1={paddingTop}
+                x2={activePoint.x}
                 y2={paddingTop + drawableHeight}
-                stroke="currentColor"
+                stroke={axisColor}
                 strokeWidth={1.2}
-                className="opacity-20"
+                strokeDasharray="3 3"
+                opacity={0.4}
               />
+              <circle
+                cx={activePoint.x}
+                cy={activePoint.ySales}
+                r={5}
+                fill={salesStroke}
+                stroke="#ffffff"
+                strokeWidth={2}
+              />
+              <circle
+                cx={activePoint.x}
+                cy={activePoint.yProfit}
+                r={4.5}
+                fill={profitStroke}
+                stroke="#ffffff"
+                strokeWidth={2}
+              />
+            </g>
+          )}
 
-              {/* MODE 1: SPLINE CURVE MODE WITH START-TO-END DRAWING */}
-              {chartStyle === 'spline' && (
-                <>
-                  {/* Sales Area Fill Bloom */}
-                  {(metricMode === 'sales' || metricMode === 'dual') && salesFillPath && (
-                    <motion.path
-                      key={`sales-fill-${animationKey}`}
-                      d={salesFillPath}
-                      fill="url(#appSalesGradient)"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 1.1, delay: 0.15, ease: "easeOut" }}
-                    />
-                  )}
+          {/* X-axis tick labels */}
+          {coordPoints.map((pt, i) => {
+            if (!visibleTickIndices.has(i)) return null;
+            return (
+              <text
+                key={i}
+                x={pt.x}
+                y={paddingTop + drawableHeight + 20}
+                textAnchor="middle"
+                fontSize={9.5}
+                fontWeight="bold"
+                fill={axisColor}
+                className="font-mono opacity-65"
+              >
+                {pt.original.label}
+              </text>
+            );
+          })}
+        </svg>
 
-                  {/* Profit Area Fill Bloom */}
-                  {(metricMode === 'profit' || metricMode === 'dual') && profitFillPath && (
-                    <motion.path
-                      key={`profit-fill-${animationKey}`}
-                      d={profitFillPath}
-                      fill="url(#appProfitGradient)"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: metricMode === 'dual' ? 0.7 : 1 }}
-                      transition={{ duration: 1.1, delay: 0.25, ease: "easeOut" }}
-                    />
-                  )}
-
-                  {/* Sales Bezier Spline Curve: START-TO-END DRAWING ANIMATION */}
-                  {(metricMode === 'sales' || metricMode === 'dual') && salesLinePath && (
-                    <motion.path
-                      key={`sales-line-${animationKey}`}
-                      d={salesLinePath}
-                      fill="none"
-                      stroke={salesColor}
-                      strokeWidth={3.5}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      initial={{ pathLength: 0, opacity: 0 }}
-                      animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{ duration: 1.15, ease: [0.16, 1, 0.3, 1] }}
-                      filter="url(#neonAppGlow)"
-                    />
-                  )}
-
-                  {/* Profit Bezier Spline Curve: START-TO-END DRAWING ANIMATION */}
-                  {(metricMode === 'profit' || metricMode === 'dual') && profitLinePath && (
-                    <motion.path
-                      key={`profit-line-${animationKey}`}
-                      d={profitLinePath}
-                      fill="none"
-                      stroke={profitColor}
-                      strokeWidth={metricMode === 'dual' ? 2.5 : 3.5}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeDasharray={metricMode === 'dual' ? "5 4" : undefined}
-                      initial={{ pathLength: 0, opacity: 0 }}
-                      animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{ duration: 1.15, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                      filter="url(#neonAppGlow)"
-                    />
-                  )}
-
-                  {/* Living App Beacon: Glowing radar pulse at latest data point */}
-                  {latestPoint && (
-                    <motion.g
-                      key={`beacon-${animationKey}`}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 1.0, duration: 0.4 }}
-                    >
-                      <motion.circle
-                        cx={latestPoint.x}
-                        cy={metricMode === 'profit' ? latestPoint.yProfit : latestPoint.ySales}
-                        r={12}
-                        fill={metricMode === 'profit' ? profitColor : salesColor}
-                        animate={{ scale: [1, 2.3, 1], opacity: [0.65, 0, 0.65] }}
-                        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-                      />
-                      <circle
-                        cx={latestPoint.x}
-                        cy={metricMode === 'profit' ? latestPoint.yProfit : latestPoint.ySales}
-                        r={5}
-                        fill="#ffffff"
-                        stroke={metricMode === 'profit' ? profitColor : salesColor}
-                        strokeWidth={3}
-                      />
-                    </motion.g>
-                  )}
-
-                  {/* Peak Callout Badge directly on the canvas */}
-                  {peakPoint && peakPoint.original.sales > 0 && (
-                    <motion.g
-                      key={`peak-${animationKey}`}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.1, duration: 0.4 }}
-                      className="pointer-events-none"
-                    >
-                      <line
-                        x1={peakPoint.x}
-                        y1={peakPoint.ySales}
-                        x2={peakPoint.x}
-                        y2={Math.max(paddingTop + 14, peakPoint.ySales - 22)}
-                        stroke={salesColor}
-                        strokeWidth={1}
-                        strokeDasharray="2 2"
-                        opacity={0.6}
-                      />
-                      <g transform={`translate(${Math.max(48, Math.min(svgWidth - 48, peakPoint.x))}, ${Math.max(paddingTop + 8, peakPoint.ySales - 24)})`}>
-                        <rect
-                          x={-34}
-                          y={-11}
-                          width={68}
-                          height={18}
-                          rx={9}
-                          fill="var(--card)"
-                          stroke={salesColor}
-                          strokeWidth={1.2}
-                          opacity={0.96}
-                        />
-                        <text
-                          x={0}
-                          y={0}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          fontSize={8.5}
-                          fontWeight="900"
-                          fill={salesColor}
-                          className="font-mono"
-                        >
-                          PEAK ₹{peakPoint.original.sales >= 1000 ? `${(peakPoint.original.sales / 1000).toFixed(1)}k` : Math.round(peakPoint.original.sales)}
-                        </text>
-                      </g>
-                    </motion.g>
-                  )}
-                </>
-              )}
-
-              {/* MODE 2: MOBILE VOLUME PILLARS WITH VERTICAL SPRING GROWTH */}
-              {chartStyle === 'bars' && (
-                <g>
-                  {coordPoints.map((pt, i) => {
-                    const barW = Math.max(8, Math.min(28, (drawableWidth / coordPoints.length) * 0.65));
-                    const barH = (pt.original.sales / maxVal) * drawableHeight;
-                    const barY = paddingTop + drawableHeight - barH;
-                    const profitH = (pt.original.profit / maxVal) * drawableHeight;
-                    const profitY = paddingTop + drawableHeight - profitH;
-                    const isScrubbed = activeIndex === i;
-
-                    return (
-                      <g key={`bar-group-${animationKey}-${i}`}>
-                        {/* Sales Pillar */}
-                        {(metricMode === 'sales' || metricMode === 'dual') && (
-                          <motion.rect
-                            initial={{ scaleY: 0 }}
-                            animate={{ scaleY: 1 }}
-                            transition={{
-                              type: "spring",
-                              stiffness: 320,
-                              damping: 24,
-                              delay: Math.min(0.5, i * (0.6 / coordPoints.length))
-                            }}
-                            style={{ transformOrigin: `50% ${paddingTop + drawableHeight}px` }}
-                            x={pt.x - barW / 2}
-                            y={barY}
-                            width={barW}
-                            height={Math.max(3, barH)}
-                            rx={Math.min(barW / 2, 5)}
-                            fill={isScrubbed ? '#ffffff' : salesColor}
-                            opacity={isScrubbed ? 1 : 0.85}
-                          />
-                        )}
-
-                        {/* Profit Pillar Overlay (in Profit or Dual Mode) */}
-                        {metricMode === 'profit' && (
-                          <motion.rect
-                            initial={{ scaleY: 0 }}
-                            animate={{ scaleY: 1 }}
-                            transition={{
-                              type: "spring",
-                              stiffness: 320,
-                              damping: 24,
-                              delay: Math.min(0.5, i * (0.6 / coordPoints.length))
-                            }}
-                            style={{ transformOrigin: `50% ${paddingTop + drawableHeight}px` }}
-                            x={pt.x - barW / 2}
-                            y={profitY}
-                            width={barW}
-                            height={Math.max(3, profitH)}
-                            rx={Math.min(barW / 2, 5)}
-                            fill={isScrubbed ? '#ffffff' : profitColor}
-                            opacity={isScrubbed ? 1 : 0.9}
-                          />
-                        )}
-                      </g>
-                    );
-                  })}
-                </g>
-              )}
-
-              {/* Bottom X-Axis Tick Labels with Smart Mobile Spacing */}
-              {coordPoints.map((pt, i) => {
-                if (!visibleLabelIndices.has(i)) return null;
-                const isScrubbed = activeIndex === i;
-                return (
-                  <g key={`x-tick-${i}`}>
-                    <text
-                      x={pt.x}
-                      y={paddingTop + drawableHeight + 17}
-                      textAnchor="middle"
-                      fontSize={9.5}
-                      fontWeight={isScrubbed ? "900" : "800"}
-                      fill={isScrubbed ? salesColor : "currentColor"}
-                      className={`font-mono uppercase tracking-tight transition-colors ${
-                        isScrubbed ? "opacity-100" : "opacity-45"
-                      }`}
-                    >
-                      {pt.original.label}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Active Scrub Laser Beam & Snapping Marker Rings */}
-              {activePoint && (
-                <g>
-                  {/* Vertical Laser Beam Guide Line */}
-                  <line
-                    x1={activePoint.x}
-                    y1={paddingTop}
-                    x2={activePoint.x}
-                    y2={paddingTop + drawableHeight}
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                    strokeDasharray="4 4"
-                    opacity={0.6}
-                  />
-
-                  {/* SALES Highlight Snapping Ring */}
-                  {(metricMode === 'sales' || metricMode === 'dual') && (
-                    <>
-                      <circle
-                        cx={activePoint.x}
-                        cy={activePoint.ySales}
-                        r={14}
-                        fill={salesColor}
-                        opacity={0.25}
-                      />
-                      <circle
-                        cx={activePoint.x}
-                        cy={activePoint.ySales}
-                        r={6.5}
-                        fill={salesColor}
-                        stroke="#ffffff"
-                        strokeWidth={2.5}
-                        filter="url(#neonAppGlow)"
-                      />
-                      <circle
-                        cx={activePoint.x}
-                        cy={activePoint.ySales}
-                        r={2.5}
-                        fill="#ffffff"
-                      />
-                    </>
-                  )}
-
-                  {/* PROFIT Highlight Snapping Ring */}
-                  {(metricMode === 'profit' || metricMode === 'dual') && (
-                    <>
-                      <circle
-                        cx={activePoint.x}
-                        cy={activePoint.yProfit}
-                        r={13}
-                        fill={profitColor}
-                        opacity={0.25}
-                      />
-                      <circle
-                        cx={activePoint.x}
-                        cy={activePoint.yProfit}
-                        r={6}
-                        fill={profitColor}
-                        stroke="#ffffff"
-                        strokeWidth={2}
-                        filter="url(#neonAppGlow)"
-                      />
-                      <circle
-                        cx={activePoint.x}
-                        cy={activePoint.yProfit}
-                        r={2.5}
-                        fill="#ffffff"
-                      />
-                    </>
-                  )}
-                </g>
-              )}
-            </svg>
-
-            {/* Mobile-Friendly Floating HUD Glass Capsule Pinned to Active Point */}
-            <AnimatePresence>
-              {activePoint && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                  transition={{ duration: 0.12 }}
-                  className="absolute pointer-events-none z-30"
-                  style={{
-                    left: `${Math.max(18, Math.min(82, (activePoint.x / svgWidth) * 100))}%`,
-                    top: '8px',
-                    transform: 'translateX(-50%)'
-                  }}
-                >
-                  <div className="bg-[var(--card)]/95 border border-[var(--border)] text-[var(--foreground)] px-3.5 py-2 rounded-2xl shadow-2xl backdrop-blur-2xl flex items-center gap-3 whitespace-nowrap">
-                    {/* Sales Tag */}
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-blue-500 shadow-xs" />
-                      <span className="text-[10px] font-black font-mono text-blue-400">
-                        ₹{Math.round(activePoint.original.sales).toLocaleString()}
-                      </span>
-                    </div>
-
-                    <div className="h-3.5 w-px bg-[var(--border)]" />
-
-                    {/* Profit Tag */}
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-xs" />
-                      <span className="text-[10px] font-black font-mono text-emerald-400">
-                        ₹{Math.round(activePoint.original.profit).toLocaleString()}
-                      </span>
-                    </div>
-
-                    {/* Time Label */}
-                    <span className="text-[9px] font-black text-[var(--foreground)]/60 border-l border-[var(--border)] pl-2 uppercase font-mono">
-                      {activePoint.original.label}
-                    </span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
+        {/* Floating Interactive Tooltip (HUD) */}
+        <AnimatePresence>
+          {activePoint && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -4 }}
+              transition={{ duration: 0.12 }}
+              style={{
+                left: `${Math.max(12, Math.min(88, (activePoint.x / svgWidth) * 100))}%`,
+                top: '12px'
+              }}
+              className={`absolute -translate-x-1/2 ${containerStyle.hudBg} px-3.5 py-2.5 rounded-2xl shadow-2xl border pointer-events-none z-20 whitespace-nowrap space-y-1`}
+            >
+              <p className="text-[10px] font-black uppercase tracking-wider text-[var(--foreground)] border-b border-[var(--border)] pb-1">
+                {activePoint.original.fullLabel}
+              </p>
+              <div className="flex items-center gap-3 text-[11px] font-mono pt-0.5">
+                <span className="flex items-center gap-1 font-bold">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: salesStroke }} />
+                  Sales: ₹{Math.round(activePoint.original.sales).toLocaleString()}
+                </span>
+                <span className="flex items-center gap-1 font-bold" style={{ color: profitStroke }}>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: profitStroke }} />
+                  Profit: ₹{Math.round(activePoint.original.profit).toLocaleString()}
+                </span>
+              </div>
+              <p className="text-[9px] font-bold opacity-60 uppercase font-mono">
+                {activePoint.original.bills} {activePoint.original.bills === 1 ? 'transaction' : 'transactions'}
+                {activePoint.original.sales > 0 && ` · Margin ${((activePoint.original.profit / activePoint.original.sales) * 100).toFixed(0)}%`}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-
-      {/* 5. APP-NATIVE BOTTOM SUMMARY METRICS DOCK */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-[var(--border)]">
-        <div className="p-2.5 rounded-2xl bg-[var(--foreground)]/[0.03] border border-[var(--border)] space-y-0.5 transition-all hover:bg-[var(--foreground)]/[0.05]">
-          <span className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/50 block font-mono">
-            Avg Velocity
-          </span>
-          <span className="text-xs font-black font-mono text-blue-400">
-            ₹{dataPoints.length > 0
-              ? Math.round(totals.sales / dataPoints.length).toLocaleString()
-              : '0'}/int
-          </span>
-        </div>
-
-        <div className="p-2.5 rounded-2xl bg-[var(--foreground)]/[0.03] border border-[var(--border)] space-y-0.5 transition-all hover:bg-[var(--foreground)]/[0.05]">
-          <span className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/50 block font-mono">
-            Net Margin
-          </span>
-          <span className="text-xs font-black font-mono text-emerald-400 flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            {profitMargin.toFixed(1)}% Return
-          </span>
-        </div>
-
-        <div className="p-2.5 rounded-2xl bg-[var(--foreground)]/[0.03] border border-[var(--border)] space-y-0.5 transition-all hover:bg-[var(--foreground)]/[0.05]">
-          <span className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/50 block font-mono">
-            Total Invoices
-          </span>
-          <span className="text-xs font-black font-mono text-[var(--foreground)]">
-            {totals.bills} Bills
-          </span>
-        </div>
-
-        <div className="p-2.5 rounded-2xl bg-[var(--foreground)]/[0.03] border border-[var(--border)] space-y-0.5 transition-all hover:bg-[var(--foreground)]/[0.05]">
-          <span className="text-[8.5px] font-black uppercase tracking-wider text-[var(--foreground)]/50 block font-mono">
-            Units Dispatched
-          </span>
-          <span className="text-xs font-black font-mono text-amber-400">
-            {totals.units} Items Sold
-          </span>
-        </div>
-      </div>
-
     </div>
   );
 }

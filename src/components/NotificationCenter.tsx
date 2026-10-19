@@ -268,7 +268,7 @@ export default function NotificationCenter({
                   <Bell className="animate-spin-slow" size={20} />
                 </div>
                 <div>
-                  <h3 className="text-base font-black uppercase tracking-tight leading-tight">Sync Alerts Center</h3>
+                  <h3 className="text-base font-black uppercase tracking-tight leading-tight">NOTIFICATIONS</h3>
                   <p className="text-[9px] font-black uppercase tracking-widest text-[var(--primary)] opacity-60">TS Price Manager Feed</p>
                 </div>
               </div>

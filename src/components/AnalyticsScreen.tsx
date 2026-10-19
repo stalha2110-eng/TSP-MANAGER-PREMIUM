@@ -922,7 +922,6 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
           currentBills={currentBills} 
           currentUnbilled={currentUnbilled}
           themeChartColors={themeChartColors} 
-          themeContainerStyle={themeContainerStyle}
         />
       </div>
 

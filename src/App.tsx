@@ -1007,10 +1007,15 @@ export default function App() {
 
   const addToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
     if (toastTimeout) clearTimeout(toastTimeout);
+    if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+      try {
+        window.navigator.vibrate(type === 'error' ? [30, 50, 30] : 15);
+      } catch {}
+    }
     setToast({ message, type: type === 'error' ? 'warning' : type });
     const t = setTimeout(() => {
       setToast(null);
-    }, 3000);
+    }, 3800);
     setToastTimeout(t);
   };
 

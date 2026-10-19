@@ -919,6 +919,11 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
         <PremiumInteractiveChart 
           state={state} 
           timePeriod={timePeriod} 
+          onTimePeriodChange={(p) => {
+            if (p === 'today' || p === 'week' || p === 'month' || p === 'year') {
+              setTimePeriod(p);
+            }
+          }}
           currentBills={currentBills} 
           currentUnbilled={currentUnbilled}
           themeChartColors={themeChartColors} 

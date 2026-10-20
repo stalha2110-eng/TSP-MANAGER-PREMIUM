@@ -248,6 +248,7 @@ import { GoalShiftPanelModal } from './components/GoalShiftPanelModal';
 import { DeleteConfirmationModal } from './components/DeleteConfirmationModal';
 import { ItemCard } from './components/ItemCard';
 import { NavButton } from './components/NavButton';
+import { triggerNavHaptic } from './utils/haptics';
 import { IOSPullToRefresh } from './components/IOSPullToRefresh';
 import { markItemsAsDeleted, unmarkItemsAsDeleted, isItemDeleted } from './utils/deletionTracker';
 
@@ -782,12 +783,8 @@ export default function App() {
   const [isTabLoading, setIsTabLoading] = useState(false);
 
   const handleTabChange = useCallback((tab: 'home' | 'billing' | 'analytics' | 'udhar' | 'notes' | 'shift' | 'goals' | 'history') => {
+    triggerNavHaptic(28);
     if (tab === activeTab) return;
-    if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-      try {
-        window.navigator.vibrate(20);
-      } catch (e) {}
-    }
     if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }

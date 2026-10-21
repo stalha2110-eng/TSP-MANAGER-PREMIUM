@@ -399,7 +399,7 @@ export default function App() {
 
   const [showMenu, setShowMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const [moreMenuView, setMoreMenuView] = useState<'main' | 'themes'>('main');
+  const [moreMenuView, setMoreMenuView] = useState<'main' | 'themes' | 'share_rates'>('main');
   const [menuTab, setMenuTab] = useState<'profile' | 'settings' | 'business_settings' | 'printer' | 'day_closing' | 'help'>('profile');
   const [settingsSubTab, setSettingsSubTab] = useState<'overview' | 'interface' | 'security' | 'sound' | 'data'>('overview');
   const [businessSubTab, setBusinessSubTab] = useState<'overview' | 'journey' | 'profile' | 'features' | 'categories' | 'dashboard' | 'knowledge' | 'recovery'>('overview');
@@ -4397,7 +4397,7 @@ export default function App() {
                       transition={{ type: "spring", stiffness: 480, damping: 26 }}
                       className={cn(
                         "absolute right-0 top-full mt-2 rounded-2xl border border-[var(--border)] shadow-2xl z-[120] overflow-hidden text-[var(--foreground)] theme-menu-card bg-[var(--card-solid,#111a2e)]",
-                        moreMenuView === 'themes' ? "w-64 sm:w-72 max-w-[90vw]" : "w-48 py-1.5"
+                        moreMenuView === 'themes' ? "w-64 sm:w-72 max-w-[90vw]" : moreMenuView === 'share_rates' ? "w-60 sm:w-64 max-w-[90vw]" : "w-48 py-1.5"
                       )}
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -4451,7 +4451,22 @@ export default function App() {
                             <ChevronRight size={14} className="text-[var(--foreground)]/40 group-hover:text-[var(--foreground)] group-hover:translate-x-0.5 transition-all" />
                           </button>
 
-                          {/* 4. Help */}
+                          {/* 4. Share Rates */}
+                          <button
+                            type="button"
+                            onClick={() => setMoreMenuView('share_rates')}
+                            className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold hover:bg-[var(--foreground)]/5 transition-colors text-left cursor-pointer group select-none border-t border-[var(--border)]/40"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                <Share2 size={15} />
+                              </div>
+                              <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Share Rates</span>
+                            </div>
+                            <ChevronRight size={14} className="text-[var(--foreground)]/40 group-hover:text-[var(--foreground)] group-hover:translate-x-0.5 transition-all" />
+                          </button>
+
+                          {/* 5. Help */}
                           <button
                             type="button"
                             onClick={() => {
@@ -4467,6 +4482,119 @@ export default function App() {
                             <span className="text-[12px] font-extrabold text-[var(--foreground)] tracking-wide">Help</span>
                           </button>
                         </>
+                      ) : moreMenuView === 'share_rates' ? (
+                        /* Share Rates View inside the Popup */
+                        <div className="flex flex-col bg-[var(--card-solid,#111a2e)]">
+                          <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--border)] bg-[var(--card-solid,#111a2e)]">
+                            <button
+                              type="button"
+                              onClick={() => setMoreMenuView('main')}
+                              className="flex items-center gap-1.5 text-xs font-extrabold text-[var(--foreground)]/70 hover:text-[var(--foreground)] cursor-pointer group transition-colors"
+                            >
+                              <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+                              <span>Back</span>
+                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <Share2 size={13} className="text-teal-500" />
+                              <span className="text-[11px] font-black uppercase tracking-wider text-[var(--foreground)]">Share Rates</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowMoreMenu(false);
+                                setMoreMenuView('main');
+                              }}
+                              className="p-1 rounded-lg hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/60 hover:text-[var(--foreground)] cursor-pointer transition-colors"
+                              title="Close"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+
+                          <div className="p-1.5 space-y-1 bg-[var(--card-solid,#111a2e)]">
+                            {/* Option 1: Share on WhatsApp */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowMoreMenu(false);
+                                setMoreMenuView('main');
+                                handleShareProductList();
+                              }}
+                              className="w-full flex items-center justify-between p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] hover:bg-emerald-500/10 hover:border-emerald-500/40 text-left transition-all cursor-pointer group select-none active:scale-[0.98]"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                  <MessageSquare size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="text-[12px] font-extrabold text-[var(--foreground)] block group-hover:text-emerald-500 transition-colors">
+                                    Share on WhatsApp
+                                  </span>
+                                  <span className="text-[9px] font-medium opacity-60 block truncate">
+                                    Send live rate list
+                                  </span>
+                                </div>
+                              </div>
+                              <ChevronRight size={14} className="text-[var(--foreground)]/40 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all shrink-0" />
+                            </button>
+
+                            {/* Option 2: PDF with Download Icon */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowMoreMenu(false);
+                                setMoreMenuView('main');
+                                setExportModal({ isOpen: true, format: 'pdf' });
+                              }}
+                              className="w-full flex items-center justify-between p-2.5 rounded-xl border border-red-500/20 bg-red-500/[0.04] hover:bg-red-500/10 hover:border-red-500/40 text-left transition-all cursor-pointer group select-none active:scale-[0.98]"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-8 h-8 rounded-lg bg-red-500/15 text-red-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                  <FilePdf size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="text-[12px] font-extrabold text-[var(--foreground)] block group-hover:text-red-500 transition-colors">
+                                    PDF
+                                  </span>
+                                  <span className="text-[9px] font-medium opacity-60 block truncate">
+                                    Print-ready document (.pdf)
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 text-red-500 shrink-0">
+                                <Download size={15} className="group-hover:translate-y-0.5 transition-transform" />
+                              </div>
+                            </button>
+
+                            {/* Option 3: EXCEL with Download Icon */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowMoreMenu(false);
+                                setMoreMenuView('main');
+                                setExportModal({ isOpen: true, format: 'excel' });
+                              }}
+                              className="w-full flex items-center justify-between p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] hover:bg-emerald-500/10 hover:border-emerald-500/40 text-left transition-all cursor-pointer group select-none active:scale-[0.98]"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                  <FileSpreadsheet size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="text-[12px] font-extrabold text-[var(--foreground)] block group-hover:text-emerald-500 transition-colors">
+                                    EXCEL
+                                  </span>
+                                  <span className="text-[9px] font-medium opacity-60 block truncate">
+                                    Spreadsheet (.xlsx format)
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 shrink-0">
+                                <Download size={15} className="group-hover:translate-y-0.5 transition-transform" />
+                              </div>
+                            </button>
+                          </div>
+                        </div>
                       ) : (
                         /* Themes View inside the Popup */
                         <div className="flex flex-col bg-[var(--card-solid,#111a2e)]">

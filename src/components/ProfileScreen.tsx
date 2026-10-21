@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   User, Mail, LogOut, LogIn, ShieldCheck, Lock, CheckCircle, XCircle, 
-  EyeOff, Eye, Download, ChevronRight, MessageSquare, Share2, RefreshCw, 
+  EyeOff, Eye, Download, ChevronRight, MessageSquare, RefreshCw, 
   Store, Cloud, Database, Phone, MapPin, Clock, Sun, Moon, Bell, Save,
   Monitor, Smartphone, Check, Minimize2, Type, Maximize2
 } from 'lucide-react';
@@ -763,11 +763,11 @@ export function ProfileScreen({
            </button>
          )}
 
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
             <button 
               disabled={isSharing}
               onClick={onShareProductList}
-              className="flex items-center justify-between p-6 bg-[var(--card)] border border-[var(--border)] rounded-[2rem] hover:border-green-500/30 hover:bg-green-500/5 transition-all group disabled:opacity-50 cursor-pointer"
+              className="w-full flex items-center justify-between p-6 bg-[var(--card)] border border-[var(--border)] rounded-[2rem] hover:border-green-500/30 hover:bg-green-500/5 transition-all group disabled:opacity-50 cursor-pointer"
             >
                <div className="flex items-center gap-4">
                   <div className={cn(
@@ -783,30 +783,11 @@ export function ProfileScreen({
                </div>
                <ChevronRight size={16} className="opacity-20 group-hover:translate-x-1 transition-transform" />
             </button>
-
-            <button 
-              onClick={() => {
-                  const message = encodeURIComponent(`Check out TS BIZ MANAGER: ${window.location.host}`);
-                  window.open(`https://wa.me/?text=${message}`, '_blank');
-              }}
-              className="flex items-center justify-between p-6 bg-[var(--card)] border border-[var(--border)] rounded-[2rem] hover:border-blue-500/30 hover:bg-blue-500/5 transition-all group cursor-pointer"
-            >
-               <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center transition-colors group-hover:bg-blue-500 group-hover:text-white">
-                     <Share2 size={22} />
-                  </div>
-                  <div className="text-left">
-                     <p className="text-sm font-black uppercase group-hover:text-blue-500 transition-colors">{t.clientShare}</p>
-                     <p className="text-[8px] font-bold opacity-40 uppercase tracking-widest">{t.appShareHint || "Invite other merchants"}</p>
-                  </div>
-               </div>
-               <ChevronRight size={16} className="opacity-20 group-hover:translate-x-1 transition-transform" />
-            </button>
          </div>
 
          {/* ========================================================================= */}
          {/* DEVICE PLATFORM: ANDROID & IOS BUTTONS                                    */}
-         {/* Positioned directly below "Share with Customer" as requested              */}
+         {/* Positioned below share section                                            */}
          {/* Detects actual device & supports device-specific capability handling      */}
          {/* ========================================================================= */}
          <div className="space-y-2">

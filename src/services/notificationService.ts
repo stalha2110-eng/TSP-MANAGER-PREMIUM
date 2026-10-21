@@ -191,9 +191,9 @@ export class NotificationService {
                 // Trigger browser notification
                 if (pushOn && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
                   try {
-                    new Notification(addedData.title || 'TS Price Manager Alert', {
+                    new Notification(addedData.title || 'TS BIZ MANAGER Alert', {
                       body: addedData.message || '',
-                      icon: '/avatar.png',
+                      icon: '/logoBizManager.png',
                       tag: 'ts_pm_' + change.doc.id,
                       requireInteraction: priority === 'high'
                     });

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { AppSettings } from '../types';
 import { formatPhoneNumber } from '../lib/utils';
-import logoTSPM from '../logoTSPM.png';
+import logoBizManager from '../logoBizManager.png';
 
 interface OnboardingFormProps {
   settings: AppSettings;
@@ -115,8 +115,8 @@ export function OnboardingForm({ settings, onComplete, userEmail, onBack }: Onbo
               <div className="flex items-center gap-3">
                 <div className="h-11 w-11 rounded-xl bg-slate-50 p-1.5 border border-slate-200/80 flex items-center justify-center">
                   <img 
-                    src={logoTSPM} 
-                    alt="TS Price Manager Logo" 
+                    src={logoBizManager} 
+                    alt="TS BIZ MANAGER Logo" 
                     className="h-full w-full object-contain rounded-lg"
                     referrerPolicy="no-referrer"
                   />
@@ -158,7 +158,7 @@ export function OnboardingForm({ settings, onComplete, userEmail, onBack }: Onbo
                 {/* Store Name */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                    <img src={logoTSPM} className="h-3.5 w-3.5 object-contain rounded-sm" referrerPolicy="no-referrer" alt="" />
+                    <img src={logoBizManager} className="h-3.5 w-3.5 object-contain rounded-sm" referrerPolicy="no-referrer" alt="" />
                     Shop/Store Name *
                   </label>
                   <input 

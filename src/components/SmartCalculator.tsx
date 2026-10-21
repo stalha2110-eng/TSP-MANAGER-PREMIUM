@@ -611,12 +611,12 @@ export default function SmartCalculator() {
     }
     const formattedContent = calcHistory.map((item, index) => {
       return `${index + 1}. [${item.timestamp}] Expression: ${item.formula} => Output: ₹${item.outcome} ${item.isPinned ? '(PINNED FAVORITE)' : ''}`;
-    }).join('\n\n--- TS PRICE MANAGER CALCULATOR EXPORTED LEDGER ---\n\n');
+    }).join('\n\n--- TS BIZ MANAGER CALCULATOR EXPORTED LEDGER ---\n\n');
     
     const blob = new Blob([formattedContent], { type: 'text/plain;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `TS_Price_Calculator_Logs_${new Date().toISOString().split('T')[0]}.txt`;
+    link.download = `TS_Biz_Calculator_Logs_${new Date().toISOString().split('T')[0]}.txt`;
     link.click();
     URL.revokeObjectURL(link.href);
     triggerToast("Ledger spreadsheet downloaded successfully!");

@@ -73,7 +73,7 @@ export function OnboardingTour({
                 <div className="h-12 w-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-2">
                   <Sparkles size={24} className="animate-spin duration-3000" />
                 </div>
-                <h3 className="text-xl font-black tracking-tight uppercase leading-tight">Welcome to TS Price Manager</h3>
+                <h3 className="text-xl font-black tracking-tight uppercase leading-tight">Welcome to TS BIZ MANAGER</h3>
                 <p className="text-xs text-[var(--foreground)]/70 leading-relaxed md:max-w-lg">
                   Designed for wholesalers, retail outlets, and fast-paced billing yards. This wizard will initialize your database, store details, local language settings, and hardware preferences in 1 minute.
                 </p>

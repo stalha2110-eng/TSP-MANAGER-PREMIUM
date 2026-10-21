@@ -659,7 +659,7 @@ export function playWelcomeAnnouncement(settings: AppSettings) {
     // Cancel any ongoing speech to avoid overlap
     synth.cancel();
     
-    const text = "WELCOME IN PREMIUM TS PRICE MANAGER APP";
+    const text = "WELCOME IN PREMIUM TS BIZ MANAGER APP";
     const utterance = new SpeechSynthesisUtterance(text);
     
     // Choose a clean English voice if available

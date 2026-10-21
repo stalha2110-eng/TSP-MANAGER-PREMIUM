@@ -398,7 +398,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
     try {
       const doc = new jsPDF();
       doc.setFont("helvetica", "bold");
-      doc.text(settings?.storeName || "TS PRICE MANAGER", 20, 20);
+      doc.text(settings?.storeName || "TS BIZ MANAGER", 20, 20);
       doc.setFontSize(10);
       doc.text(`Customer: ${customerName || 'Unknown'}`, 20, 30);
       doc.text(`Phone: ${customerPhone || 'N/A'}`, 20, 35);
@@ -1316,7 +1316,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                         "font-black tracking-tight uppercase leading-none text-zinc-900 mb-0.5",
                         livePreviewTheme === 'laser' ? "text-xs text-[var(--primary)]" : "text-[10px]"
                       )}>
-                        {settings?.storeName || 'TS PRICE MANAGER'}
+                        {settings?.storeName || 'TS BIZ MANAGER'}
                       </h3>
                       <p className="opacity-70 text-[6.5px] uppercase tracking-wider font-extrabold text-zinc-600 leading-tight">
                         {settings?.storeAddress || '101, Business Hub, Terminal C'}
@@ -1595,7 +1595,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                       {/* Store Header Info */}
                       <div className="text-center space-y-1 pb-3 border-b border-dashed border-zinc-300 select-none">
                         <h3 className="font-black uppercase leading-none text-zinc-900 text-xs mb-1">
-                          {settings?.storeName || 'TS PRICE MANAGER'}
+                          {settings?.storeName || 'TS BIZ MANAGER'}
                         </h3>
                         <p className="opacity-70 text-[7px] uppercase tracking-wider font-extrabold text-zinc-500">
                           {settings?.storeAddress || '101, Business Hub, Terminal C'}

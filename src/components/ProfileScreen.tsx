@@ -786,7 +786,7 @@ export function ProfileScreen({
 
             <button 
               onClick={() => {
-                  const message = encodeURIComponent(`Check out TS PRICE MANAGER: ${window.location.host}`);
+                  const message = encodeURIComponent(`Check out TS BIZ MANAGER: ${window.location.host}`);
                   window.open(`https://wa.me/?text=${message}`, '_blank');
               }}
               className="flex items-center justify-between p-6 bg-[var(--card)] border border-[var(--border)] rounded-[2rem] hover:border-blue-500/30 hover:bg-blue-500/5 transition-all group cursor-pointer"

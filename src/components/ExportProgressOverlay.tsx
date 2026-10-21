@@ -77,7 +77,7 @@ export function ExportProgressOverlay({
             </h3>
             <p className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)]/40 flex items-center justify-center gap-1">
               <Sparkles size={10} className="text-amber-400" />
-              TS BIZ MANAGER Core Engine
+              TS Price Manager Core Engine
             </p>
           </div>
         </div>

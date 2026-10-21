@@ -659,7 +659,7 @@ export default function StoreClosingControlCenter({
 ========================================
      🎯 STORE CLOSING DISPATCH REPORT
 ========================================
-Store: ${state.settings.storeName || 'TS BIZ MANAGER'}
+Store: ${state.settings.storeName || 'TS Price Manager'}
 Date: ${target.date}
 Mode: ${activeMode.toUpperCase()}
 Readiness: ${target.readinessScore}%

@@ -76,7 +76,7 @@ export const downloadCertificateOfMilestone = (storeName: string, milestone: Mil
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(26);
     doc.setTextColor(31, 41, 55); // Slate-800
-    doc.text("TS BIZ MANAGER", width / 2, 45, { align: 'center' });
+    doc.text("TS PRICE MANAGER", width / 2, 45, { align: 'center' });
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);

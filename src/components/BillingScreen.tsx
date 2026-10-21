@@ -5645,7 +5645,7 @@ export default function BillingScreen({
               const downloadLivePDF = () => {
                 const doc = new jsPDF();
                 doc.setFont("helvetica", "bold");
-                doc.text(state.settings.storeName || "TS BIZ MANAGER", 20, 20);
+                doc.text(state.settings.storeName || "TS PRICE MANAGER", 20, 20);
                 doc.setFontSize(10);
                 doc.text(`Customer: ${customerName || 'Unknown'}`, 20, 30);
                 doc.text(`Phone: ${customerPhone || 'N/A'}`, 20, 35);
@@ -5724,7 +5724,7 @@ export default function BillingScreen({
                           "font-black tracking-tight uppercase leading-none text-zinc-955 mb-1",
                           livePreviewTheme === 'laser' ? "text-sm text-[var(--primary)]" : "text-[11px]"
                         )}>
-                          {state.settings.storeName || 'TS BIZ MANAGER'}
+                          {state.settings.storeName || 'TS Price Manager'}
                         </h3>
                         <p className="opacity-70 text-[7.5px] uppercase tracking-wider font-extrabold text-zinc-600">
                           {state.settings.storeAddress || '101, Business Hub, Terminal C'}
@@ -5987,7 +5987,7 @@ export default function BillingScreen({
                 const downloadLivePDF = () => {
                   const doc = new jsPDF();
                   doc.setFont("helvetica", "bold");
-                  doc.text(state.settings.storeName || "TS BIZ MANAGER", 20, 20);
+                  doc.text(state.settings.storeName || "TS PRICE MANAGER", 20, 20);
                   doc.setFontSize(10);
                   doc.text(`Customer: ${customerName || 'Unknown'}`, 20, 30);
                   doc.text(`Phone: ${customerPhone || 'N/A'}`, 20, 35);
@@ -6067,7 +6067,7 @@ export default function BillingScreen({
                       {/* Store Header with Large, Prominent Branding */}
                       <div className="text-center space-y-1 pb-3 border-b-2 border-dashed border-zinc-300 select-none">
                         <h3 className="font-black uppercase leading-tight text-zinc-950 text-base sm:text-lg tracking-tight mb-1">
-                          {state.settings.storeName || 'TS BIZ MANAGER'}
+                          {state.settings.storeName || 'TS Price Manager'}
                         </h3>
                         <p className="text-[11px] sm:text-xs uppercase tracking-wider font-bold text-zinc-600">
                           {state.settings.storeAddress || '101, Business Hub, Terminal C'}
@@ -7152,7 +7152,7 @@ export default function BillingScreen({
                   className="w-40 bg-white text-black p-3.5 shadow-2xl rounded-t-lg z-10 flex flex-col justify-start text-left space-y-2 border-t border-b border-dashed border-zinc-300 font-mono text-[6px]"
                 >
                   <div className="text-center font-black uppercase text-[7px] leading-none mb-1">
-                    {printSettings.storeName || 'TS BIZ MANAGER'}
+                    {printSettings.storeName || 'TS Price Manager'}
                   </div>
                   <div className="flex justify-between border-b pb-1 font-bold">
                     <span>{previewBillData?.billNumber || 'INV-1024'}</span>

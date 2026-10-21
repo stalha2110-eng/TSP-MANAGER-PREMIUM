@@ -1,5 +1,5 @@
 // Firebase Cloud Messaging Background Service Worker
-// Fully modular, production-grade Web Push handler for TS BIZ MANAGER
+// Fully modular, production-grade Web Push handler for TS Price Manager
 
 importScripts('https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.1/firebase-messaging-compat.js');
@@ -20,10 +20,10 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message:', payload);
 
-  const title = payload.notification?.title || payload.data?.title || 'TS BIZ MANAGER';
+  const title = payload.notification?.title || payload.data?.title || 'TS Price Manager';
   const body = payload.notification?.body || payload.data?.body || 'New update available!';
-  const icon = payload.notification?.image || payload.data?.image || '/logoBizManager.png';
-  const badge = '/logoBizManager.png';
+  const icon = payload.notification?.image || payload.data?.image || '/logoTSPM.png';
+  const badge = '/logoTSPM.png';
 
   // Extract notification attributes
   const category = payload.data?.category || 'system';

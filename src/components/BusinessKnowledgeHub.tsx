@@ -903,7 +903,7 @@ export default function BusinessKnowledgeHub({ state, onUpdateSettings, t = {} }
       
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
-      doc.text(`Generated: ${new Date().toLocaleDateString()} | TS BIZ MANAGER Hub`, 15, 30);
+      doc.text(`Generated: ${new Date().toLocaleDateString()} | TS Price Manager Hub`, 15, 30);
       
       doc.setTextColor(31, 41, 55);
       doc.setFont("helvetica", "bold");
@@ -932,7 +932,7 @@ export default function BusinessKnowledgeHub({ state, onUpdateSettings, t = {} }
       // Footer page marking
       doc.setFontSize(8);
       doc.setTextColor(156, 163, 175);
-      doc.text("Confidential Information © TS BIZ MANAGER operating procedures.", 15, 285);
+      doc.text("Confidential Information © TS Price Manager operating procedures.", 15, 285);
       
       doc.save(`${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_document.pdf`);
     } catch (error) {
@@ -964,7 +964,7 @@ export default function BusinessKnowledgeHub({ state, onUpdateSettings, t = {} }
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       doc.text("Complete Knowledge Directory, Suppliers List and Staff Guidelines Catalog", 15, 28);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()} | TS BIZ MANAGER`, 15, 36);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()} | TS Price Manager`, 15, 36);
 
       y = 60;
 
@@ -1168,7 +1168,7 @@ export default function BusinessKnowledgeHub({ state, onUpdateSettings, t = {} }
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         doc.setTextColor(156, 163, 175);
-        doc.text(`Page ${i} of ${pageCount} | TS BIZ MANAGER Operating Ledger`, 15, 290);
+        doc.text(`Page ${i} of ${pageCount} | TS Price Manager Operating Ledger`, 15, 290);
       }
 
       doc.save(`operating_ledger_${Date.now()}.pdf`);

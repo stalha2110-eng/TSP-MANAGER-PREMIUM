@@ -1,7 +1,7 @@
 {
-  "name": "TS BIZ MANAGER",
-  "short_name": "BIZ MANAGER",
-  "description": "Professional Enterprise Business & Inventory Manager",
+  "name": "TS PRICE MANAGER",
+  "short_name": "TSP manager",
+  "description": "Professional Enterprise Price & Inventory Manager",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,28 +10,28 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "logoBizManager.png",
+      "src": "logoTSPM.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "logoBizManager.png",
+      "src": "logoTSPM.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "logoBizManager.png",
+      "src": "logoTSPM.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any"
     },
     {
-      "src": "logoBizManager.png",
+      "src": "logoTSPM.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any"
     }
   ]
 }

@@ -3,7 +3,7 @@ import {
   X, ReceiptText, Search, Download, Trash, Edit2, Check,
   FileText, Calendar, Clock, DollarSign, ArrowUpRight, ArrowDownLeft,
   Coins, Filter, Archive, CheckCircle, Save, Plus, Trash2, Milestone,
-  Printer
+  Printer, Maximize2, Minimize2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppState, Bill, TransactionItem, Item } from '../types';
@@ -14,6 +14,7 @@ import { RecoveryService } from '../services/recoveryService';
 import { printerService, DEFAULT_PRINT_SETTINGS } from '../services/printerService';
 import { playFeedbackEvent } from '../services/soundFeedbackService';
 import { useBackModal } from '../utils/backNavigationManager';
+import { triggerNavHaptic } from '../utils/haptics';
 
 interface BillHistoryDrawerProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ interface CartItem {
 export default function BillHistoryDrawer({ isOpen, onClose, state, onUpdateState }: BillHistoryDrawerProps) {
   const [activeBillDetail, setActiveBillDetail] = useState<Bill | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -43,6 +45,8 @@ export default function BillHistoryDrawer({ isOpen, onClose, state, onUpdateStat
       return () => {
         document.body.style.overflow = originalStyle;
       };
+    } else {
+      setIsMaximized(false);
     }
   }, [isOpen]);
 
@@ -916,7 +920,10 @@ Do you want to permanently delete these ${group.bills.length} bills from history
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-            className="relative w-full max-w-sm sm:max-w-md bg-[var(--card-solid,#0f172a)] modal-opaque text-[var(--foreground)] shadow-2xl border-r border-[var(--border)] flex flex-col h-full z-50 text-left overflow-hidden overscroll-contain"
+            className={cn(
+              "relative bg-[var(--card-solid,#0f172a)] modal-opaque text-[var(--foreground)] shadow-2xl border-r border-[var(--border)] flex flex-col h-full z-50 text-left overflow-hidden overscroll-contain transition-all duration-300 ease-in-out",
+              isMaximized ? "w-full max-w-none" : "w-full max-w-sm sm:max-w-md"
+            )}
           >
             {/* Drawer Header */}
             <div className="flex items-center justify-between p-4 border-b border-[var(--border)] shrink-0 bg-slate-50/50 dark:bg-slate-950/20">
@@ -927,12 +934,34 @@ Do you want to permanently delete these ${group.bills.length} bills from history
                   <p className="text-[9px] text-[var(--foreground)]/60 font-semibold leading-none mt-0.5">Explore day's ledger accounts</p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="p-1 px-3 rounded-xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[9px] font-extrabold uppercase tracking-wider cursor-pointer transition-all border border-[var(--border)]"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Maximize / Restore Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerNavHaptic(25);
+                    setIsMaximized(prev => !prev);
+                  }}
+                  title={isMaximized ? "Restore view" : "Maximize to full screen"}
+                  aria-label={isMaximized ? "Restore view" : "Maximize view"}
+                  className="p-1.5 rounded-xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/80 hover:text-[var(--foreground)] cursor-pointer transition-all border border-[var(--border)] flex items-center justify-center active:scale-95"
+                >
+                  {isMaximized ? (
+                    <Minimize2 size={14} className="text-[var(--primary)]" />
+                  ) : (
+                    <Maximize2 size={14} />
+                  )}
+                </button>
+
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-1 px-3 rounded-xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[9px] font-extrabold uppercase tracking-wider cursor-pointer transition-all border border-[var(--border)] active:scale-95"
+                >
+                  Close
+                </button>
+              </div>
             </div>
 
             {/* Quick stats grid for invoices */}

@@ -162,7 +162,7 @@ export function UnbilledAuditAnalyticsSection({
       return;
     }
 
-    const storeName = state.settings.storeName || 'TS PRICE MANAGER STORE';
+    const storeName = state.settings.storeName || 'TS BIZ MANAGER STORE';
     const reportDate = new Date().toLocaleString();
 
     const categoryRows = categoryBreakdown.map(c => `
@@ -261,7 +261,7 @@ export function UnbilledAuditAnalyticsSection({
           </table>
 
           <div class="footer">
-            Note: This document provides an official audit trail for unbilled rush hour and micro-sales cash drawer reconciliation. Verified and synced by TS Price Manager Telemetry System.
+            Note: This document provides an official audit trail for unbilled rush hour and micro-sales cash drawer reconciliation. Verified and synced by TS BIZ MANAGER Telemetry System.
           </div>
 
           <script>

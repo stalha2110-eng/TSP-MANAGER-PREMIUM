@@ -98,7 +98,7 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   customWidth: 58,
   fontSize: 'medium',
   boldTitle: true,
-  storeName: 'TS Price Manager',
+  storeName: 'TS BIZ MANAGER',
   storeOwnerName: '',
   storeAddress: '12-A Digital Bazaar',
   storePhone: '9876543210',
@@ -197,7 +197,7 @@ const TRANSLATIONS: Record<string, Record<string, string>> = {
     grandTotal: 'Grand Total:',
     cashReceived: 'Cash Received:',
     scanPay: 'Scan to Pay via UPI',
-    poweredBy: 'Powered by TS Price Manager',
+    poweredBy: 'Powered by TS BIZ MANAGER',
     youSaved: 'YOU SAVED',
     totalSavings: 'TOTAL SAVINGS'
   },
@@ -215,7 +215,7 @@ const TRANSLATIONS: Record<string, Record<string, string>> = {
     grandTotal: 'अंतिम देय राशि:',
     cashReceived: 'नकद प्राप्त:',
     scanPay: 'UPI द्वारा भुगतान स्कैन करें',
-    poweredBy: 'संचालित: TS Price Manager',
+    poweredBy: 'संचालित: TS BIZ MANAGER',
     youSaved: 'आपने बचाए',
     totalSavings: 'कुल बचत'
   },
@@ -233,7 +233,7 @@ const TRANSLATIONS: Record<string, Record<string, string>> = {
     grandTotal: 'एकूण देय रक्कम:',
     cashReceived: 'रोख प्राप्त:',
     scanPay: 'UPI द्वारे पेमेंट स्कॅन करा',
-    poweredBy: 'द्वारे संचालित: TS Price Manager',
+    poweredBy: 'द्वारे संचालित: TS BIZ MANAGER',
     youSaved: 'तुम्ही वाचवले',
     totalSavings: 'एकूण बचत'
   },
@@ -251,7 +251,7 @@ const TRANSLATIONS: Record<string, Record<string, string>> = {
     grandTotal: 'Net Total Amnt:',
     cashReceived: 'Cash Mila:',
     scanPay: 'Pay karne ke liye Scan karein',
-    poweredBy: 'Powered by TS Price Manager',
+    poweredBy: 'Powered by TS BIZ MANAGER',
     youSaved: 'Aapne Bachaye',
     totalSavings: 'TOTAL BACHAT'
   }

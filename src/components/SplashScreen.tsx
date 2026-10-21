@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion } from 'motion/react';
 // @ts-ignore
-import appLogo from './ui/premium(TsPrice).png';
+import appLogo from './ui/tsBizManagerLogo.png';
 
 export interface SplashScreenProps {
   onComplete: () => void;
@@ -32,7 +32,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             transition={{ duration: 3, repeat: Infinity }}
           />
           <div className="relative h-40 w-40 rounded-[2.5rem] bg-gradient-to-br from-slate-800 to-slate-900 p-1 border border-white/10 shadow-2xl overflow-hidden">
-             <img src={appLogo} alt="TS" className="h-full w-full object-contain" />
+             <img src={appLogo} alt="TS BIZ MANAGER" className="h-full w-full object-contain" />
           </div>
         </div>
 
@@ -43,10 +43,10 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
           className="text-center"
         >
           <h1 className="text-4xl font-black tracking-tighter text-white">
-            TS <span className="text-amber-500">PRICE</span> MANAGER
+            TS <span className="text-amber-500">BIZ</span> MANAGER
           </h1>
           <p className="mt-2 text-[10px] font-black uppercase tracking-[0.5em] text-white/30">
-            Enterprise Pricing Core v2.5
+            Enterprise Business Core v2.5
           </p>
         </motion.div>
         

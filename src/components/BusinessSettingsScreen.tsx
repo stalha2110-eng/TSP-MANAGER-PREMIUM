@@ -785,7 +785,7 @@ export default function BusinessSettingsScreen({
       {
         id: 'chk_store_name',
         label: 'Add Store Name',
-        completed: !!(s.storeName && s.storeName !== "TS Price Manager"),
+        completed: !!(s.storeName && s.storeName !== "TS BIZ MANAGER" && s.storeName !== "TS Price Manager"),
         actionLabel: 'Set Name',
         desc: 'Customize the business name for invoice headers.',
         onAction: () => setConfiguringFactor('profile')
@@ -893,7 +893,7 @@ export default function BusinessSettingsScreen({
   const profileCompleteness = useMemo(() => {
     const s = state.settings;
     const factors = [
-      { id: 'name', label: 'Store Name', completed: !!(s.storeName && s.storeName !== "TS Price Manager"), weight: 15, field: "profileStoreName" },
+      { id: 'name', label: 'Store Name', completed: !!(s.storeName && s.storeName !== "TS BIZ MANAGER" && s.storeName !== "TS Price Manager"), weight: 15, field: "profileStoreName" },
       { id: 'logo', label: 'Store Logo Preset', completed: !!(s.businessLogo || s.storeLogo), weight: 15, field: "profileLogoPreset" },
       { id: 'owner', label: 'Owner Name', completed: !!s.storeOwnerName, weight: 10, field: "profileOwnerName" },
       { id: 'gst', label: 'GST Number', completed: !!s.gstNumber, weight: 15, field: "profileGst" },
@@ -981,7 +981,7 @@ export default function BusinessSettingsScreen({
 
   const handleSaveInlineProfileDetails = () => {
     onUpdateSettings({
-      storeName: profileStoreName.trim() || "TS Price Manager",
+      storeName: profileStoreName.trim() || "TS BIZ MANAGER",
       storeOwnerName: profileOwnerName.trim(),
       storePhone: formatPhoneNumber(profilePhone).trim() || profilePhone.trim(),
       storeAddress: profileAddress.trim(),
@@ -1119,7 +1119,7 @@ export default function BusinessSettingsScreen({
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(22);
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.text((state.settings.storeName || "TS PRICE MANAGER").toUpperCase(), 15, 18);
+      doc.text((state.settings.storeName || "TS BIZ MANAGER").toUpperCase(), 15, 18);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
@@ -2585,7 +2585,7 @@ export default function BusinessSettingsScreen({
                         {formatDateSafely(m.unlockedAt, 'Verified Target')}
                       </span>
                       <button
-                        onClick={() => downloadCertificateOfMilestone(state.settings.storeName || "TS Price Manager", m)}
+                        onClick={() => downloadCertificateOfMilestone(state.settings.storeName || "TS BIZ MANAGER", m)}
                         className="py-1 px-3 text-[9px] font-black uppercase tracking-wider bg-[var(--primary)] text-white hover:opacity-90 transition-all rounded-lg cursor-pointer flex items-center gap-1"
                       >
                         <Download className="w-3 h-3" /> Certificate PDF

@@ -72,7 +72,7 @@ export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
 };
 
 /**
- * Normalizes unit names into standardized TS Price Manager units
+ * Normalizes unit names into standardized TS BIZ MANAGER units
  */
 export function normalizeUnit(word: string): string {
   if (!word) return "KG";

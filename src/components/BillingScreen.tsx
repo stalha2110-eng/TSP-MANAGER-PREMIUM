@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { 
   Plus, Minus, Trash2, Search, User, Phone, Check, 
   ReceiptText, ShoppingCart, Percent, Edit2, Save, X, 
@@ -636,26 +636,7 @@ export default function BillingScreen({
       return;
     }
 
-    const now = Date.now();
-    if (lastBillingItemClickRef.current.id === item.id && (now - lastBillingItemClickRef.current.time) < 420) {
-      if (singleBillingClickTimeoutRef.current) {
-        clearTimeout(singleBillingClickTimeoutRef.current);
-        singleBillingClickTimeoutRef.current = null;
-      }
-      lastBillingItemClickRef.current = { id: '', time: 0 };
-      handleOpenRateSelect(item);
-      return;
-    }
-
-    lastBillingItemClickRef.current = { id: item.id, time: now };
-    if (singleBillingClickTimeoutRef.current) {
-      clearTimeout(singleBillingClickTimeoutRef.current);
-    }
-    const clickCoords = { clientX: e.clientX, clientY: e.clientY };
-    singleBillingClickTimeoutRef.current = setTimeout(() => {
-      addToCart(item, clickCoords as any);
-      singleBillingClickTimeoutRef.current = null;
-    }, 220);
+    addToCart(item, { clientX: e.clientX, clientY: e.clientY });
   };
 
   const addToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
@@ -833,17 +814,33 @@ export default function BillingScreen({
     }
   }, [state.settings.businessMode]);
 
-  // Synchronize drafts state elements to localStorage
+  // Synchronize drafts state elements to localStorage (debounced & deferred off the critical touch path)
   useEffect(() => {
-    localStorage.setItem('pos_billing_draft_tabs', JSON.stringify(drafts));
+    const timer = setTimeout(() => {
+      const runDeferred = typeof window !== 'undefined' && 'requestIdleCallback' in window
+        ? (cb: () => void) => (window as any).requestIdleCallback(cb, { timeout: 300 })
+        : (cb: () => void) => setTimeout(cb, 0);
+
+      runDeferred(() => {
+        try {
+          localStorage.setItem('pos_billing_draft_tabs', JSON.stringify(drafts));
+        } catch {}
+      });
+    }, 350);
+
+    return () => clearTimeout(timer);
   }, [drafts]);
 
   useEffect(() => {
-    localStorage.setItem('pos_billing_active_draft_id', activeDraftId);
+    try {
+      localStorage.setItem('pos_billing_active_draft_id', activeDraftId);
+    } catch {}
   }, [activeDraftId]);
 
   useEffect(() => {
-    localStorage.setItem('pos_billing_hold_drafts', JSON.stringify(holdDrafts));
+    try {
+      localStorage.setItem('pos_billing_hold_drafts', JSON.stringify(holdDrafts));
+    } catch {}
   }, [holdDrafts]);
 
   // Synchronize changes in local input states back into drafts list automatically
@@ -1472,41 +1469,45 @@ export default function BillingScreen({
     return { price: rawPrice, unit: customUnit };
   };
 
-  const addToCart = (product: Item, e?: React.MouseEvent | any, customQty?: number, replaceQty?: boolean, customUnit?: string) => {
+  const addToCart = useCallback((product: Item, e?: React.MouseEvent | any, customQty?: number, replaceQty?: boolean, customUnit?: string) => {
     const targetQty = (typeof customQty === 'number' && !isNaN(customQty) && customQty > 0) ? customQty : 1;
-    const existingIndex = cart.findIndex(c => c.id === product.id);
-    let newQty = targetQty;
-    if (existingIndex > -1) {
-      if (replaceQty) {
-        newQty = targetQty;
+    
+    // Functional updater guarantees that rapid sequential taps on multiple cards NEVER drop items
+    setCart(prevCart => {
+      const existingIndex = prevCart.findIndex(c => c.id === product.id);
+      let newQty = targetQty;
+      if (existingIndex > -1) {
+        if (replaceQty) {
+          newQty = targetQty;
+        } else {
+          newQty = parseFloat((prevCart[existingIndex].quantity + targetQty).toFixed(3));
+        }
+        const { price, unit } = getItemPriceAndUnit(product, newQty, customUnit || prevCart[existingIndex].unit);
+        
+        const updated = [...prevCart];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: newQty,
+          price,
+          unit: customUnit || unit || updated[existingIndex].unit
+        };
+        return updated;
       } else {
-        newQty = parseFloat((cart[existingIndex].quantity + targetQty).toFixed(3));
+        const { price, unit } = getItemPriceAndUnit(product, newQty, customUnit);
+        
+        const trs = product.translations || { en: product.name || '', hi: '', mr: '', 'hi-en': '' };
+        const newCartItem: CartItem = {
+          id: product.id,
+          item: product,
+          name: trs[currentLang] || trs.en || product.name,
+          quantity: newQty,
+          price,
+          cost: product.buyingPrice || 0,
+          unit: customUnit || unit
+        };
+        return [...prevCart, newCartItem];
       }
-      const { price, unit } = getItemPriceAndUnit(product, newQty, customUnit || cart[existingIndex].unit);
-      
-      const updated = [...cart];
-      updated[existingIndex] = {
-        ...updated[existingIndex],
-        quantity: newQty,
-        price,
-        unit: customUnit || unit || updated[existingIndex].unit
-      };
-      setCart(updated);
-    } else {
-      const { price, unit } = getItemPriceAndUnit(product, newQty, customUnit);
-      
-      const trs = product.translations || { en: product.name || '', hi: '', mr: '', 'hi-en': '' };
-      const newCartItem: CartItem = {
-        id: product.id,
-        item: product,
-        name: trs[currentLang] || trs.en || product.name,
-        quantity: newQty,
-        price,
-        cost: product.buyingPrice || 0,
-        unit: customUnit || unit
-      };
-      setCart([...cart, newCartItem]);
-    }
+    });
 
     // Capture coordinates for tactile animation bubble feedback
     let clientX = window.innerWidth * 0.5;
@@ -1525,25 +1526,33 @@ export default function BillingScreen({
     const pName = trs[currentLang] || trs.en || product.name;
     const itemPrice = billingMode === 'wholesale' ? (product.wholesalePrice || product.retailPrice) : product.retailPrice;
 
-    setAdditionAnims(prev => [
-      ...prev,
-      {
-        id: Math.random().toString(36).substr(2, 9),
-        name: pName,
-        price: itemPrice || 0,
-        x: clientX,
-        y: clientY
-      }
-    ]);
+    // Defer secondary background tasks (bubble animations, audio chimes, recent search disk writes)
+    // so the cart state and UI frame update immediately with 0ms lag
+    const runDeferred = typeof window !== 'undefined' && 'requestIdleCallback' in window
+      ? (cb: () => void) => (window as any).requestIdleCallback(cb, { timeout: 120 })
+      : (cb: () => void) => setTimeout(cb, 0);
 
-    playFeedbackEvent('product_added', state.settings, { 
-      itemName: pName,
-      quantity: targetQty,
-      unit: customUnit || product.unit || 'piece'
+    runDeferred(() => {
+      setAdditionAnims(prev => [
+        ...prev.slice(-3),
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          name: pName,
+          price: itemPrice || 0,
+          x: clientX,
+          y: clientY
+        }
+      ]);
+
+      playFeedbackEvent('product_added', state.settings, { 
+        itemName: pName,
+        quantity: targetQty,
+        unit: customUnit || product.unit || 'piece'
+      });
+      const trsForRecent = product.translations || { en: product.name || '', hi: '', mr: '', 'hi-en': '' };
+      addRecentSearch(trsForRecent[currentLang] || trsForRecent.en || product.name);
     });
-    const trsForRecent = product.translations || { en: product.name || '', hi: '', mr: '', 'hi-en': '' };
-    addRecentSearch(trsForRecent[currentLang] || trsForRecent.en || product.name);
-  };
+  }, [billingMode, currentLang, state.settings]);
 
   // Sync kotTicketNo to localStorage
   useEffect(() => {
@@ -1727,25 +1736,25 @@ export default function BillingScreen({
     }, `KOT ${ticketStr} dispatched`);
   };
 
-  const updateCartQuantity = (id: string, newQty: number) => {
-    if (newQty <= 0) {
-      setCart(cart.filter(item => item.id !== id));
-      return;
-    }
-    
-    setCart(cart.map(item => {
-      if (item.id === id) {
-        const { price, unit } = getItemPriceAndUnit(item.item, newQty);
-        return { 
-          ...item, 
-          quantity: parseFloat(newQty.toFixed(3)),
-          price,
-          unit
-        };
+  const updateCartQuantity = useCallback((id: string, newQty: number) => {
+    setCart(prevCart => {
+      if (newQty <= 0) {
+        return prevCart.filter(item => item.id !== id);
       }
-      return item;
-    }));
-  };
+      return prevCart.map(item => {
+        if (item.id === id) {
+          const { price, unit } = getItemPriceAndUnit(item.item, newQty);
+          return { 
+            ...item, 
+            quantity: parseFloat(newQty.toFixed(3)),
+            price,
+            unit
+          };
+        }
+        return item;
+      });
+    });
+  }, []);
 
   // Auto pricing synchronization when mode changes
   useEffect(() => {
@@ -1846,7 +1855,7 @@ export default function BillingScreen({
   };
 
   const updateCartPrice = (id: string, newPrice: number) => {
-    setCart(cart.map(item => {
+    setCart(prev => prev.map(item => {
       if (item.id === id) {
         return { ...item, price: Math.max(0, newPrice) };
       }
@@ -1855,7 +1864,7 @@ export default function BillingScreen({
   };
 
   const removeFromCart = (id: string) => {
-    setCart(cart.filter(item => item.id !== id));
+    setCart(prev => prev.filter(item => item.id !== id));
   };
 
   const addManualItemToCart = () => {
@@ -5645,7 +5654,7 @@ export default function BillingScreen({
               const downloadLivePDF = () => {
                 const doc = new jsPDF();
                 doc.setFont("helvetica", "bold");
-                doc.text(state.settings.storeName || "TS PRICE MANAGER", 20, 20);
+                doc.text(state.settings.storeName || "TS BIZ MANAGER", 20, 20);
                 doc.setFontSize(10);
                 doc.text(`Customer: ${customerName || 'Unknown'}`, 20, 30);
                 doc.text(`Phone: ${customerPhone || 'N/A'}`, 20, 35);
@@ -5724,7 +5733,7 @@ export default function BillingScreen({
                           "font-black tracking-tight uppercase leading-none text-zinc-955 mb-1",
                           livePreviewTheme === 'laser' ? "text-sm text-[var(--primary)]" : "text-[11px]"
                         )}>
-                          {state.settings.storeName || 'TS Price Manager'}
+                          {state.settings.storeName || 'TS BIZ MANAGER'}
                         </h3>
                         <p className="opacity-70 text-[7.5px] uppercase tracking-wider font-extrabold text-zinc-600">
                           {state.settings.storeAddress || '101, Business Hub, Terminal C'}
@@ -5987,7 +5996,7 @@ export default function BillingScreen({
                 const downloadLivePDF = () => {
                   const doc = new jsPDF();
                   doc.setFont("helvetica", "bold");
-                  doc.text(state.settings.storeName || "TS PRICE MANAGER", 20, 20);
+                  doc.text(state.settings.storeName || "TS BIZ MANAGER", 20, 20);
                   doc.setFontSize(10);
                   doc.text(`Customer: ${customerName || 'Unknown'}`, 20, 30);
                   doc.text(`Phone: ${customerPhone || 'N/A'}`, 20, 35);
@@ -6067,7 +6076,7 @@ export default function BillingScreen({
                       {/* Store Header with Large, Prominent Branding */}
                       <div className="text-center space-y-1 pb-3 border-b-2 border-dashed border-zinc-300 select-none">
                         <h3 className="font-black uppercase leading-tight text-zinc-950 text-base sm:text-lg tracking-tight mb-1">
-                          {state.settings.storeName || 'TS Price Manager'}
+                          {state.settings.storeName || 'TS BIZ MANAGER'}
                         </h3>
                         <p className="text-[11px] sm:text-xs uppercase tracking-wider font-bold text-zinc-600">
                           {state.settings.storeAddress || '101, Business Hub, Terminal C'}
@@ -7152,7 +7161,7 @@ export default function BillingScreen({
                   className="w-40 bg-white text-black p-3.5 shadow-2xl rounded-t-lg z-10 flex flex-col justify-start text-left space-y-2 border-t border-b border-dashed border-zinc-300 font-mono text-[6px]"
                 >
                   <div className="text-center font-black uppercase text-[7px] leading-none mb-1">
-                    {printSettings.storeName || 'TS Price Manager'}
+                    {printSettings.storeName || 'TS BIZ MANAGER'}
                   </div>
                   <div className="flex justify-between border-b pb-1 font-bold">
                     <span>{previewBillData?.billNumber || 'INV-1024'}</span>

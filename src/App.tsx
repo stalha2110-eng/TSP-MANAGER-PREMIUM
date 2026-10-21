@@ -253,7 +253,7 @@ import { IOSPullToRefresh } from './components/IOSPullToRefresh';
 import { markItemsAsDeleted, unmarkItemsAsDeleted, isItemDeleted } from './utils/deletionTracker';
 
 // @ts-ignore
-import appLogo from './components/ui/premium(TsPrice).png';
+import appLogo from './components/ui/tsBizManagerLogo.png';
 
 const getLogoGlowFilter = (theme: string) => {
   switch (theme) {
@@ -1892,7 +1892,7 @@ export default function App() {
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(24);
       doc.setFont('helvetica', 'bold');
-      doc.text('TS PRICE MANAGER', 14, 18);
+      doc.text('TS BIZ MANAGER', 14, 18);
       
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
@@ -1982,7 +1982,7 @@ export default function App() {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(150);
-        doc.text(`Page ${i} of ${pageCount} | TS Price Manager Core System`, 14, doc.internal.pageSize.height - 10);
+        doc.text(`Page ${i} of ${pageCount} | TS BIZ MANAGER Core System`, 14, doc.internal.pageSize.height - 10);
       }
       setExportCompletedSteps(prev => [...prev, 'Computing multi-page flow and pagination...']);
 
@@ -2059,7 +2059,7 @@ export default function App() {
   const handleBackup = () => {
     const dataStr = JSON.stringify(state);
     const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-    const exportFileDefaultName = `TS_PRICE_MANAGER_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    const exportFileDefaultName = `TS_BIZ_MANAGER_Backup_${new Date().toISOString().split('T')[0]}.json`;
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
@@ -4263,7 +4263,7 @@ export default function App() {
                 {/* Custom multi-stage SVG drop-shadow filter for sharp outlines on any background */}
                 <img 
                   src={appLogo} 
-                  alt="TS App Logo" 
+                  alt="TS BIZ MANAGER Logo" 
                   className="h-9 sm:h-12 md:h-14 w-auto max-w-[80px] sm:max-w-[120px] md:max-w-[140px] object-contain transition-all duration-350"
                   style={{
                     filter: getLogoGlowFilter(state.settings.theme)
@@ -4285,7 +4285,7 @@ export default function App() {
                 TS <span 
                   className="text-[10px] sm:text-xs font-bold opacity-60 ml-1 sm:ml-1.5 tracking-[0.12em] sm:tracking-[0.3em] uppercase truncate hidden min-[360px]:inline mr-0 pr-1 pl-[3px]"
                   style={{ marginRight: '0px', paddingRight: '4px', paddingLeft: '3px' }}
-                >Price Manager</span>
+                >BIZ MANAGER</span>
               </h1>
               <div className="flex items-center gap-1.5 mt-1 sm:mt-1.5">
                 <button

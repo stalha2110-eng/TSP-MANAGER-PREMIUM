@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { 
   X, Search, LayoutGrid, PackagePlus, Eye, Plus, Minus, Check, 
   Sparkles, Filter, SlidersHorizontal, ArrowUpDown, CheckCircle2, 
@@ -13,6 +13,7 @@ import { cn, formatNumber } from '../lib/utils';
 import { cleanAndValidateText } from '../services/languageEngine';
 import { QuickWeightPresets, ItemHoldWeightModal } from './QuickWeightPresets';
 import { parseSearchInput, calculateWeightFromAmount, WeightPreset, formatQtyWithUnit } from '../utils/weightHelpers';
+import { triggerNavHaptic } from '../utils/haptics';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -93,6 +94,228 @@ const CatalogCardQuantityInput: React.FC<{
     </div>
   );
 };
+
+interface CatalogItemCardProps {
+  item: Item;
+  idx: number;
+  countInCart: number;
+  billingMode: 'auto' | 'retail' | 'wholesale';
+  currentLang: LanguageType;
+  precision: number;
+  minStockLevel: number;
+  catName: string;
+  onPointerDown: (item: Item, e: React.PointerEvent) => void;
+  onPointerUpOrCancel: () => void;
+  onHoldItem: (item: Item) => void;
+  onClick: (item: Item, e: React.MouseEvent) => void;
+  onOpenRateSelect?: (item: Item) => void;
+  onAddToCart: (item: Item, e?: React.MouseEvent, customQty?: number, replaceQty?: boolean, customUnit?: string) => void;
+  onUpdateCartQuantity?: (itemId: string, newQty: number) => void;
+  customPresets?: WeightPreset[];
+}
+
+const CatalogItemCard = React.memo(({
+  item,
+  idx,
+  countInCart,
+  billingMode,
+  currentLang,
+  precision,
+  minStockLevel,
+  catName,
+  onPointerDown,
+  onPointerUpOrCancel,
+  onHoldItem,
+  onClick,
+  onOpenRateSelect,
+  onAddToCart,
+  onUpdateCartQuantity,
+  customPresets
+}: CatalogItemCardProps) => {
+  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [isPressed, setIsPressed] = useState(false);
+
+  const qtyLimitValue = item.quantity;
+  const isLow = qtyLimitValue <= minStockLevel && qtyLimitValue > 0;
+  const isOut = qtyLimitValue <= 0;
+  const activePrice = billingMode === 'wholesale' ? (item.wholesalePrice || item.retailPrice) : item.retailPrice;
+  const activePriceUnit = billingMode === 'wholesale' ? (item.wholesalePriceUnit || item.unit || 'pcs') : (item.retailPriceUnit || item.unit || 'pcs');
+
+  const trs = item.translations || { en: item.name || '', hi: '', mr: '', 'hi-en': '' };
+  const primaryName = trs[currentLang] || trs.en || item.name;
+
+  const handleTouchDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // ⚡ Instant optimistic tactile response the microsecond thumb touches down
+    triggerNavHaptic(18);
+    setIsPressed(true);
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const rippleId = Date.now() + Math.random();
+    setRipples(prev => [...prev.slice(-1), { id: rippleId, x, y }]);
+    setTimeout(() => {
+      setRipples(prev => prev.filter(r => r.id !== rippleId));
+    }, 400);
+
+    onPointerDown(item, e);
+  };
+
+  const handleTouchRelease = () => {
+    setIsPressed(false);
+    onPointerUpOrCancel();
+  };
+
+  return (
+    <motion.div
+      id={`catalog-item-card-${idx}`}
+      onPointerDown={handleTouchDown}
+      onPointerUp={handleTouchRelease}
+      onPointerCancel={handleTouchRelease}
+      onPointerLeave={handleTouchRelease}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onHoldItem(item);
+      }}
+      onClick={(e) => onClick(item, e)}
+      onDoubleClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (onOpenRateSelect) onOpenRateSelect(item);
+      }}
+      whileHover={{ 
+        y: -1.5, 
+        scale: 1.015, 
+        borderColor: "var(--primary)",
+        boxShadow: "0 6px 16px -6px rgba(0, 0, 0, 0.12)"
+      }}
+      whileTap={{ scale: 0.94 }}
+      transition={{ type: "spring", stiffness: 500, damping: 25 }}
+      style={{ touchAction: 'manipulation' }}
+      className={cn(
+        "p-2 rounded-xl bg-[var(--card)] border cursor-pointer select-none transition-all duration-100 text-left flex flex-col justify-between min-h-[5.4rem] group relative overflow-hidden",
+        isPressed && "scale-[0.96] ring-2 ring-emerald-500/40",
+        countInCart > 0
+          ? "border-emerald-500 dark:border-emerald-400 ring-2 ring-emerald-500/30 dark:ring-emerald-400/30 bg-emerald-500/[0.07] dark:bg-emerald-950/25 shadow-xs"
+          : isOut 
+            ? "border-rose-500/20 bg-rose-500/[0.02]" 
+            : isLow 
+              ? "border-amber-500/20 bg-amber-500/[0.01]" 
+              : "border-[var(--border)] hover:border-[var(--primary)]/40"
+      )}
+      title="Tap to add | Double-click to Select Rate (दर बदलें) | Press & Hold for weight presets"
+    >
+      {/* Instant visual touch ripple effect */}
+      {ripples.map(r => (
+        <span
+          key={r.id}
+          className="absolute rounded-full pointer-events-none animate-ping bg-emerald-500/30 dark:bg-emerald-400/30"
+          style={{
+            left: r.x - 16,
+            top: r.y - 16,
+            width: 32,
+            height: 32,
+          }}
+        />
+      ))}
+
+      {/* Top Header inside Window Card */}
+      <div>
+        <div className="flex items-start justify-between gap-1">
+          <h4 className="font-extrabold text-[10px] sm:text-[10.5px] text-[var(--foreground)] truncate uppercase group-hover:text-[var(--primary)] flex-1 leading-tight">
+            {primaryName}
+          </h4>
+        </div>
+        
+        <div className="flex items-center justify-between text-[7px] font-bold text-[var(--foreground)]/50 uppercase tracking-wide mt-0.5">
+          <span className="truncate max-w-[70px]">
+            {catName}
+          </span>
+          {isOut ? (
+            <span className="px-1 py-0.2 rounded text-[6px] font-black uppercase bg-rose-500/15 text-rose-600 border border-rose-500/20 leading-none shrink-0 ml-auto">
+              Out
+            </span>
+          ) : isLow ? (
+            <span className="px-1 py-0.2 rounded text-[6px] font-black uppercase bg-amber-500/15 text-amber-600 border border-amber-500/20 leading-none shrink-0 ml-auto">
+              LOW
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Bottom Pricing & Action Section inside Window Card */}
+      <div className="flex items-end justify-between w-full mt-0.5 z-20">
+        <div
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            if (onOpenRateSelect) onOpenRateSelect(item);
+          }}
+          className="flex flex-col text-left group/rate p-0.5 -m-0.5 rounded transition-colors select-none"
+          title="Double-click to change rate / दर बदलने के लिए डबल क्लिक करें"
+        >
+          <div className="flex items-center gap-0.5">
+            <span className="text-[10.5px] sm:text-[11px] font-mono font-black text-[var(--foreground)] group-hover/rate:text-[var(--primary)] leading-none transition-colors">
+              ₹{formatNumber(activePrice, precision)}
+            </span>
+            <Coins size={9} className="text-[var(--primary)] opacity-40 group-hover/rate:opacity-100 transition-opacity shrink-0" />
+          </div>
+          <span className="text-[6.5px] font-black opacity-50 lowercase mt-0.5 group-hover/rate:opacity-80">
+            / {activePriceUnit}
+          </span>
+        </div>
+        
+        <div className="flex items-center gap-0.5">
+          {countInCart > 0 && (
+            <CatalogCardQuantityInput
+              quantity={countInCart}
+              unitPrice={activePrice}
+              unit={item.unit || 'pcs'}
+              precision={precision}
+              customPresets={customPresets}
+              onChange={(newQty) => {
+                if (onUpdateCartQuantity) {
+                  onUpdateCartQuantity(item.id, newQty);
+                } else {
+                  onAddToCart(item, undefined, newQty, true);
+                }
+              }}
+              onDecrement={() => {
+                const nextQty = Math.max(0, parseFloat((countInCart - 1).toFixed(3)));
+                if (onUpdateCartQuantity) {
+                  onUpdateCartQuantity(item.id, nextQty);
+                } else {
+                  onAddToCart(item, undefined, nextQty, true);
+                }
+              }}
+              onIncrement={() => {
+                const nextQty = parseFloat((countInCart + 1).toFixed(3));
+                if (onUpdateCartQuantity) {
+                  onUpdateCartQuantity(item.id, nextQty);
+                } else {
+                  onAddToCart(item, undefined, nextQty, true);
+                }
+              }}
+            />
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}, (prev, next) => {
+  return (
+    prev.item.id === next.item.id &&
+    prev.countInCart === next.countInCart &&
+    prev.billingMode === next.billingMode &&
+    prev.currentLang === next.currentLang &&
+    prev.precision === next.precision &&
+    prev.minStockLevel === next.minStockLevel &&
+    prev.catName === next.catName &&
+    prev.item.quantity === next.item.quantity &&
+    prev.item.retailPrice === next.item.retailPrice &&
+    prev.item.wholesalePrice === next.item.wholesalePrice &&
+    prev.item.name === next.item.name
+  );
+});
 
 export interface CatalogCartItem {
   id: string;
@@ -233,24 +456,24 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressRef = useRef(false);
 
-  const handlePointerDown = (item: Item) => {
+  const handlePointerDown = useCallback((item: Item, e: React.PointerEvent) => {
     isLongPressRef.current = false;
+    // Instant tactile haptic vibration the exact moment user's thumb touches the card
+    triggerNavHaptic(18);
     if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
     holdTimerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
       setHoldModalItem(item);
-    }, 380);
-  };
+    }, 450);
+  }, []);
 
-  const handlePointerUpOrCancel = () => {
+  const handlePointerUpOrCancel = useCallback(() => {
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
     }
-  };
+  }, []);
 
-  const lastItemClickRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
-  const singleClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isSearchActivated, setIsSearchActivated] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -265,15 +488,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    return () => {
-      if (singleClickTimeoutRef.current) {
-        clearTimeout(singleClickTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleItemCardClick = (item: Item, e: React.MouseEvent) => {
+  const handleItemCardClick = useCallback((item: Item, e: React.MouseEvent) => {
     if (isLongPressRef.current) {
       e.preventDefault();
       e.stopPropagation();
@@ -281,45 +496,21 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
       return;
     }
 
-    const now = Date.now();
-    // Check if double-clicked within 420ms on the same item card
-    if (lastItemClickRef.current.id === item.id && (now - lastItemClickRef.current.time) < 420) {
-      if (singleClickTimeoutRef.current) {
-        clearTimeout(singleClickTimeoutRef.current);
-        singleClickTimeoutRef.current = null;
-      }
-      lastItemClickRef.current = { id: '', time: 0 };
-      if (onOpenRateSelect) {
-        onOpenRateSelect(item);
-      }
-      return;
+    // ⚡ Instant add to cart (0ms delay - no artificial timer or double-click delay!)
+    const itemPrice = billingMode === 'wholesale' ? (item.wholesalePrice || item.retailPrice) : item.retailPrice;
+    let targetQty = 1;
+    if (parsedSearch.mode === 'target_budget' && parsedSearch.targetPrice) {
+      targetQty = calculateWeightFromAmount(parsedSearch.targetPrice, itemPrice || 1, 3);
+    } else if (parsedSearch.quantity) {
+      targetQty = parsedSearch.quantity;
     }
 
-    lastItemClickRef.current = { id: item.id, time: now };
-    if (singleClickTimeoutRef.current) {
-      clearTimeout(singleClickTimeoutRef.current);
+    onAddToCart(item, e, targetQty, parsedSearch.mode !== 'plain', parsedSearch.explicitUnit);
+    if (parsedSearch.mode !== 'plain') {
+      setSearchQuery('');
+      setIsSearchFocused(false);
     }
-
-    const clickEventTarget = { clientX: e.clientX, clientY: e.clientY };
-    const savedParsedSearch = { ...parsedSearch };
-
-    singleClickTimeoutRef.current = setTimeout(() => {
-      const itemPrice = billingMode === 'wholesale' ? (item.wholesalePrice || item.retailPrice) : item.retailPrice;
-      let targetQty = 1;
-      if (savedParsedSearch.mode === 'target_budget' && savedParsedSearch.targetPrice) {
-        targetQty = calculateWeightFromAmount(savedParsedSearch.targetPrice, itemPrice || 1, 3);
-      } else if (savedParsedSearch.quantity) {
-        targetQty = savedParsedSearch.quantity;
-      }
-
-      onAddToCart(item, clickEventTarget as any, targetQty, savedParsedSearch.mode !== 'plain', savedParsedSearch.explicitUnit);
-      if (savedParsedSearch.mode !== 'plain') {
-        setSearchQuery('');
-        setIsSearchFocused(false);
-      }
-      singleClickTimeoutRef.current = null;
-    }, 220);
-  };
+  }, [billingMode, onAddToCart, parsedSearch]);
 
   // Live Draft Invoice Preview Popup states inside catalog
   const [isDraftPreviewOpen, setIsDraftPreviewOpen] = useState(false);
@@ -398,7 +589,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
     try {
       const doc = new jsPDF();
       doc.setFont("helvetica", "bold");
-      doc.text(settings?.storeName || "TS PRICE MANAGER", 20, 20);
+      doc.text(settings?.storeName || "TS BIZ MANAGER", 20, 20);
       doc.setFontSize(10);
       doc.text(`Customer: ${customerName || 'Unknown'}`, 20, 30);
       doc.text(`Phone: ${customerPhone || 'N/A'}`, 20, 35);
@@ -1113,156 +1304,30 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                     : "grid-cols-2 min-[440px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8"
                 )}>
                   {filteredAndSortedItems.map((item, idx) => {
-                    const qtyLimitValue = item.quantity;
                     const minStock = item.minStockLevel ?? settings?.minStockLevel ?? 10;
-                    const isLow = qtyLimitValue <= minStock && qtyLimitValue > 0;
-                    const isOut = qtyLimitValue <= 0;
-                    const activePrice = billingMode === 'wholesale' ? (item.wholesalePrice || item.retailPrice) : item.retailPrice;
-                    const activePriceUnit = billingMode === 'wholesale' ? (item.wholesalePriceUnit || item.unit || 'pcs') : (item.retailPriceUnit || item.unit || 'pcs');
-                    
-                    const trs = item.translations || { en: item.name || '', hi: '', mr: '', 'hi-en': '' };
-                    const primaryName = trs[currentLang] || trs.en || item.name;
                     const catName = categories.find(c => c.id === item.categoryId)?.name || 'General';
-
                     const countInCart = cartMap.get(item.id) || 0;
 
                     return (
-                      <motion.div
-                        id={`catalog-item-card-${idx}`}
+                      <CatalogItemCard
                         key={`catalog-item-${item.id || 'item'}-${idx}`}
-                        onPointerDown={() => handlePointerDown(item)}
-                        onPointerUp={handlePointerUpOrCancel}
-                        onPointerLeave={handlePointerUpOrCancel}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          setHoldModalItem(item);
-                        }}
-                        onClick={(e) => handleItemCardClick(item, e)}
-                        onDoubleClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (singleClickTimeoutRef.current) {
-                            clearTimeout(singleClickTimeoutRef.current);
-                            singleClickTimeoutRef.current = null;
-                          }
-                          lastItemClickRef.current = { id: '', time: 0 };
-                          if (onOpenRateSelect) {
-                            onOpenRateSelect(item);
-                          }
-                        }}
-                        whileHover={{ 
-                          y: -2, 
-                          scale: 1.02, 
-                          borderColor: "var(--primary)",
-                          boxShadow: "0 8px 18px -6px rgba(0, 0, 0, 0.15), 0 0 10px 2px var(--primary)"
-                        }}
-                        whileTap={{ scale: 0.96 }}
-                        transition={{ type: "spring", stiffness: 450, damping: 22 }}
-                        className={cn(
-                          "p-2 rounded-xl bg-[var(--card)] border cursor-pointer active:scale-95 transition-all text-left flex flex-col justify-between min-h-[5.4rem] group relative overflow-hidden select-none",
-                          countInCart > 0
-                            ? "border-[var(--primary)] ring-2 ring-[var(--primary)]/25 bg-[var(--primary)]/[0.03]"
-                            : isOut 
-                              ? "border-rose-500/20 bg-rose-500/[0.02]" 
-                              : isLow 
-                                ? "border-amber-500/20 bg-amber-500/[0.01]" 
-                                : "border-[var(--border)]"
-                        )}
-                        title="Tap to add | Double-click to Select Rate (दर बदलें) | Press & Hold for weight presets"
-                      >
-                        {/* Top Header inside Window Card */}
-                        <div>
-                          <div className="flex items-start justify-between gap-1">
-                            <h4 className="font-extrabold text-[10px] sm:text-[10.5px] text-[var(--foreground)] truncate uppercase group-hover:text-[var(--primary)] flex-1 leading-tight">
-                              {primaryName}
-                            </h4>
-                            {countInCart > 0 && (
-                              <span className="px-1 py-0.2 rounded-full bg-[var(--primary)] text-white text-[7px] font-black shrink-0 shadow-xs leading-tight">
-                                x{countInCart}
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center justify-between text-[7px] font-bold text-[var(--foreground)]/50 uppercase tracking-wide mt-0.5">
-                            <span className="truncate max-w-[70px]">
-                              {catName}
-                            </span>
-                            {isOut ? (
-                              <span className="px-1 py-0.2 rounded text-[6px] font-black uppercase bg-rose-500/15 text-rose-600 border border-rose-500/20 leading-none shrink-0 ml-auto">
-                                Out
-                              </span>
-                            ) : isLow ? (
-                              <span className="px-1 py-0.2 rounded text-[6px] font-black uppercase bg-amber-500/15 text-amber-600 border border-amber-500/20 leading-none shrink-0 ml-auto">
-                                LOW
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-
-                        {/* Bottom Pricing & Action Section inside Window Card */}
-                        <div className="flex items-end justify-between w-full mt-0.5 z-20">
-                          <div
-                            onDoubleClick={(e) => {
-                              e.stopPropagation();
-                              if (singleClickTimeoutRef.current) {
-                                clearTimeout(singleClickTimeoutRef.current);
-                                singleClickTimeoutRef.current = null;
-                              }
-                              lastItemClickRef.current = { id: '', time: 0 };
-                              if (onOpenRateSelect) {
-                                onOpenRateSelect(item);
-                              }
-                            }}
-                            className="flex flex-col text-left group/rate p-0.5 -m-0.5 rounded transition-colors select-none"
-                            title="Double-click to change rate / दर बदलने के लिए डबल क्लिक करें"
-                          >
-                            <div className="flex items-center gap-0.5">
-                              <span className="text-[10.5px] sm:text-[11px] font-mono font-black text-[var(--foreground)] group-hover/rate:text-[var(--primary)] leading-none transition-colors">
-                                ₹{formatNumber(activePrice, settings?.pricePrecision || 0)}
-                              </span>
-                              <Coins size={9} className="text-[var(--primary)] opacity-40 group-hover/rate:opacity-100 transition-opacity shrink-0" />
-                            </div>
-                            <span className="text-[6.5px] font-black opacity-50 lowercase mt-0.5 group-hover/rate:opacity-80">
-                              / {activePriceUnit}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-0.5">
-                            {countInCart > 0 && (
-                              <CatalogCardQuantityInput
-                                quantity={countInCart}
-                                unitPrice={activePrice}
-                                unit={item.unit || 'pcs'}
-                                precision={settings?.pricePrecision || 0}
-                                customPresets={settings?.customWeightPresets}
-                                onChange={(newQty) => {
-                                  if (onUpdateCartQuantity) {
-                                    onUpdateCartQuantity(item.id, newQty);
-                                  } else {
-                                    onAddToCart(item, undefined, newQty, true);
-                                  }
-                                }}
-                                onDecrement={() => {
-                                  const nextQty = Math.max(0, parseFloat((countInCart - 1).toFixed(3)));
-                                  if (onUpdateCartQuantity) {
-                                    onUpdateCartQuantity(item.id, nextQty);
-                                  } else {
-                                    onAddToCart(item, undefined, nextQty, true);
-                                  }
-                                }}
-                                onIncrement={() => {
-                                  const nextQty = parseFloat((countInCart + 1).toFixed(3));
-                                  if (onUpdateCartQuantity) {
-                                    onUpdateCartQuantity(item.id, nextQty);
-                                  } else {
-                                    onAddToCart(item, undefined, nextQty, true);
-                                  }
-                                }}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </motion.div>
+                        item={item}
+                        idx={idx}
+                        countInCart={countInCart}
+                        billingMode={billingMode}
+                        currentLang={currentLang}
+                        precision={precision}
+                        minStockLevel={minStock}
+                        catName={catName}
+                        onPointerDown={handlePointerDown}
+                        onPointerUpOrCancel={handlePointerUpOrCancel}
+                        onHoldItem={setHoldModalItem}
+                        onClick={handleItemCardClick}
+                        onOpenRateSelect={onOpenRateSelect}
+                        onAddToCart={onAddToCart}
+                        onUpdateCartQuantity={onUpdateCartQuantity}
+                        customPresets={settings?.customWeightPresets}
+                      />
                     );
                   })}
                 </div>
@@ -1316,7 +1381,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                         "font-black tracking-tight uppercase leading-none text-zinc-900 mb-0.5",
                         livePreviewTheme === 'laser' ? "text-xs text-[var(--primary)]" : "text-[10px]"
                       )}>
-                        {settings?.storeName || 'TS PRICE MANAGER'}
+                        {settings?.storeName || 'TS BIZ MANAGER'}
                       </h3>
                       <p className="opacity-70 text-[6.5px] uppercase tracking-wider font-extrabold text-zinc-600 leading-tight">
                         {settings?.storeAddress || '101, Business Hub, Terminal C'}
@@ -1595,7 +1660,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                       {/* Store Header Info */}
                       <div className="text-center space-y-1 pb-3 border-b border-dashed border-zinc-300 select-none">
                         <h3 className="font-black uppercase leading-none text-zinc-900 text-xs mb-1">
-                          {settings?.storeName || 'TS PRICE MANAGER'}
+                          {settings?.storeName || 'TS BIZ MANAGER'}
                         </h3>
                         <p className="opacity-70 text-[7px] uppercase tracking-wider font-extrabold text-zinc-500">
                           {settings?.storeAddress || '101, Business Hub, Terminal C'}

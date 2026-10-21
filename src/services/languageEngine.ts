@@ -465,10 +465,10 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
     "hi-en": "Help aur Guide"
   },
   onboardingTitle: {
-    en: "Welcome to TS PRICE MANAGER!",
-    hi: "TS Price Manager में आपका स्वागत है!",
-    mr: "TS Price Manager मध्ये स्वागत आहे!",
-    "hi-en": "TS PRICE MANAGER mein Swagat hai!"
+    en: "Welcome to TS BIZ MANAGER!",
+    hi: "TS BIZ MANAGER में आपका स्वागत है!",
+    mr: "TS BIZ MANAGER मध्ये स्वागत आहे!",
+    "hi-en": "TS BIZ MANAGER mein Swagat hai!"
   },
   onboardingSub: {
     en: "set up your store in 30 seconds.",

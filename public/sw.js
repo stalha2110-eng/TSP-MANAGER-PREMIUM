@@ -1,9 +1,9 @@
-const CACHE_NAME = 'ts-price-manager-v7';
+const CACHE_NAME = 'ts-biz-manager-v8';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/logoTSPM.png'
+  '/logoBizManager.png'
 ];
 
 self.addEventListener('install', (event) => {

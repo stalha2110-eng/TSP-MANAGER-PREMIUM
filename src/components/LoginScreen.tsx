@@ -24,7 +24,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { AppSettings } from '../types';
-import logoTSPM from '../logoTSPM.png';
+import logoBizManager from '../logoBizManager.png';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -330,14 +330,14 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
           <div className="flex items-center gap-3">
             {/* Unconstrained logo with premium shadowless render */}
             <img 
-              src={logoTSPM} 
-              alt="TS Price Manager Logo" 
+              src={logoBizManager} 
+              alt="TS BIZ MANAGER Logo" 
               className="h-10 md:h-12 w-auto object-contain transition-transform duration-300 hover:scale-110" 
               referrerPolicy="no-referrer"
             />
             <div className="h-5 w-px bg-slate-200" />
             <h1 className="text-sm md:text-base font-black uppercase tracking-wider text-slate-900 leading-none">
-              TS Price Manager
+              TS BIZ MANAGER
             </h1>
           </div>
 
@@ -401,8 +401,8 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
                 {/* App Logo & Corporate Identity - Perfect display, unconstrained and with label below */}
                 <div className="flex flex-col items-center justify-center pt-2">
                   <motion.img 
-                    src={logoTSPM} 
-                    alt="TS Price Manager Logo" 
+                    src={logoBizManager} 
+                    alt="TS BIZ MANAGER Logo" 
                     className="h-24 w-auto object-contain select-none"
                     referrerPolicy="no-referrer"
                     whileHover={{ scale: 1.05, rotate: 2 }}
@@ -411,7 +411,7 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
                   
                   {/* Brand Identifier */}
                   <h2 className="text-2xl font-black uppercase tracking-tight text-slate-950 mt-4.5 leading-none">
-                    TS Price Manager
+                    TS BIZ MANAGER
                   </h2>
                   <p className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-widest mt-2">
                     Enterprise Suite
@@ -983,7 +983,7 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
         transition={{ delay: 0.6 }}
         className="relative z-10 w-full max-w-6xl mx-auto px-6 py-6 border-t border-slate-200/80 text-center flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 text-[10px] font-mono uppercase tracking-wider font-bold"
       >
-        <p>© 2026 TS Price Manager. Built for Professional Merchants.</p>
+        <p>© 2026 TS BIZ MANAGER. Built for Professional Merchants.</p>
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5"><ShieldCheck size={11.5} className="text-teal-600" /> Secure Cloud Guard</span>
           <span className="flex items-center gap-1.5">Offline-Capable SQL</span>

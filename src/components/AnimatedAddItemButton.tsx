@@ -46,8 +46,8 @@ export function AnimatedAddItemButton({
       whileHover={{ scale: 1.006, y: -1 }}
       whileTap={{ scale: 0.99, y: 0 }}
       transition={{ duration: 0.15 }}
-      style={{ height: '55px', marginLeft: '0px', paddingLeft: '7px' }}
-      className="w-full h-[55px] ml-0 pl-[7px] pr-4 sm:pr-5 rounded-2xl bg-indigo-950 text-white py-2.5 cursor-pointer group shadow-xl shadow-indigo-600/30 dark:shadow-indigo-950/60 hover:shadow-indigo-500/40 border border-indigo-400/30 hover:border-indigo-300/50 flex items-center justify-between gap-3 transition-all select-none relative overflow-hidden"
+      style={{ height: '58px', marginLeft: '0px', paddingLeft: '7px' }}
+      className="w-full h-[58px] ml-0 pl-[7px] pr-4 sm:pr-5 rounded-2xl bg-indigo-950 text-white py-2.5 cursor-pointer group shadow-xl shadow-indigo-600/30 dark:shadow-indigo-950/60 hover:shadow-indigo-500/40 border border-indigo-400/30 hover:border-indigo-300/50 flex items-center justify-between gap-3 transition-all select-none relative overflow-hidden"
       title="Open All Items Catalog to add products to bill"
       aria-label="Add Items to Bill"
     >

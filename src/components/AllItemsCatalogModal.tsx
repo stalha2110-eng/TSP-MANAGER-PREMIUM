@@ -908,7 +908,7 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
                   placeholder={
                     parsedSearch.mode !== 'plain'
                       ? "Item name (e.g. kaju, almond)..."
-                      : cleanAndValidateText("Search products by name, barcode, or category (e.g. '1.5 kaju' or '₹100 almond')...", currentLang, settings)
+                      : cleanAndValidateText("Search products by name (e.g. '1.5 kg kaju' or '₹100 almond')...", currentLang, settings)
                   }
                   className="w-full bg-transparent border-none text-sm text-[var(--foreground)] font-semibold placeholder:text-[var(--foreground)]/40 outline-none"
                 />

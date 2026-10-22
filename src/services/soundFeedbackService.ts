@@ -640,13 +640,30 @@ export function playTransactionSound(settings: AppSettings, isTestPreview: boole
   }
 }
 
+// Guard to guarantee the welcome voice announcement only plays once when entering the app
+let hasPlayedWelcomeThisSession = false;
+
 /**
  * Speaks the welcome announcement using the Web Speech Synthesis API.
  * Respects sound settings and quiet hours.
+ * Strictly plays only once when user opens or enters the app.
  */
-export function playWelcomeAnnouncement(settings: AppSettings) {
+export function playWelcomeAnnouncement(settings: AppSettings, force = false) {
   if (typeof window === 'undefined') return;
   
+  // Only play once per session
+  if (!force) {
+    if (hasPlayedWelcomeThisSession) return;
+    try {
+      if (sessionStorage.getItem('ts_biz_welcome_spoken') === 'true') {
+        hasPlayedWelcomeThisSession = true;
+        return;
+      }
+    } catch {
+      // In private browsing or restricted iframes, rely on module variable
+    }
+  }
+
   // Respect silent/vibrate settings
   const mode = settings.soundFeedbackMode || 'vibrate_sound';
   if (mode === 'silent' || mode === 'vibrate_only') return;
@@ -656,10 +673,16 @@ export function playWelcomeAnnouncement(settings: AppSettings) {
     const synth = window.speechSynthesis;
     if (!synth) return;
     
+    // Mark as played so subsequent setting changes never trigger it again
+    hasPlayedWelcomeThisSession = true;
+    try {
+      sessionStorage.setItem('ts_biz_welcome_spoken', 'true');
+    } catch {}
+
     // Cancel any ongoing speech to avoid overlap
     synth.cancel();
     
-    const text = "WELCOME IN PREMIUM TS BIZ MANAGER APP";
+    const text = "Welcome in TS Biz Manager app";
     const utterance = new SpeechSynthesisUtterance(text);
     
     // Choose a clean English voice if available

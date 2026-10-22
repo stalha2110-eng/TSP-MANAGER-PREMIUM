@@ -802,16 +802,24 @@ export default function App() {
     isOpen: boolean;
   } | null>(null);
 
-  // Welcome Speech Voice Announcement Effect
+  // Welcome Speech Voice Announcement Effect (only once when user enters/opens the app)
+  const hasTriggeredWelcomeRef = useRef(false);
+  const settingsRef = useRef(state.settings);
+  useEffect(() => {
+    settingsRef.current = state.settings;
+  }, [state.settings]);
+
   useEffect(() => {
     if (isInitializing) return;
+    if (hasTriggeredWelcomeRef.current) return;
+    hasTriggeredWelcomeRef.current = true;
     
     let spoken = false;
     const triggerSpeech = () => {
       if (spoken) return;
       spoken = true;
-      playWelcomeAnnouncement(state.settings);
       cleanup();
+      playWelcomeAnnouncement(settingsRef.current);
     };
 
     const cleanup = () => {
@@ -831,7 +839,7 @@ export default function App() {
     return () => {
       cleanup();
     };
-  }, [isInitializing, state.settings]);
+  }, [isInitializing]);
 
   // Daily cycle check Effect
   useEffect(() => {

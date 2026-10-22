@@ -1,8 +1,13 @@
-const CACHE_NAME = 'ts-biz-manager-v8';
+const CACHE_NAME = 'ts-biz-manager-v9';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/pwa-192x192.png',
+  '/pwa-512x512.png',
+  '/pwa-maskable-192x192.png',
+  '/pwa-maskable-512x512.png',
+  '/apple-touch-icon.png',
   '/logoBizManager.png'
 ];
 

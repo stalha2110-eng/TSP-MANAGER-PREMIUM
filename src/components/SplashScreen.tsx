@@ -25,14 +25,21 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="flex flex-col items-center"
       >
-        <div className="relative mb-8">
+        <div className="relative mb-6">
           <motion.div 
-            className="absolute inset-0 bg-amber-500 blur-[60px] opacity-20"
-            animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
-            transition={{ duration: 3, repeat: Infinity }}
+            className="absolute -inset-6 bg-gradient-to-tr from-amber-500/25 via-amber-400/10 to-transparent blur-3xl rounded-full pointer-events-none"
+            animate={{ scale: [1, 1.15, 1], opacity: [0.35, 0.65, 0.35] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
           />
-          <div className="relative h-40 w-40 rounded-[2.5rem] bg-gradient-to-br from-slate-800 to-slate-900 p-1 border border-white/10 shadow-2xl overflow-hidden">
-             <img src={appLogo} alt="TS BIZ MANAGER" className="h-full w-full object-contain" />
+          <div className="relative flex items-center justify-center p-2">
+            <motion.img 
+              src={appLogo} 
+              alt="TS BIZ MANAGER" 
+              className="w-48 h-48 sm:w-56 sm:h-56 object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.85)] filter select-none pointer-events-none" 
+              initial={{ scale: 0.9, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            />
           </div>
         </div>
 

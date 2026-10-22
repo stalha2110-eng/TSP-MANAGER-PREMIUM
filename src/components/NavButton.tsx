@@ -14,11 +14,11 @@ export interface NavButtonProps {
 export function NavButton({ active, icon, label, onClick, id }: NavButtonProps) {
   const handlePointerDown = () => {
     // Immediate tactile feedback the instant user's thumb touches the navigation button
-    triggerNavHaptic(28);
+    triggerNavHaptic(50);
   };
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    triggerNavHaptic(28);
+    triggerNavHaptic(50);
     onClick();
   };
 

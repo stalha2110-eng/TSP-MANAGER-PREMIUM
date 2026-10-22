@@ -7,10 +7,10 @@ let hapticAudioCtx: AudioContext | null = null;
  * Supports both the standard Vibration API (Android / PWA / Chrome)
  * and low-latency audio-tactile pulse for iOS Safari / WebKit.
  */
-export function triggerNavHaptic(duration: number = 28) {
+export function triggerNavHaptic(duration: number | number[] = 50) {
   const now = Date.now();
   // Prevent duplicate double-firing between pointerdown and click
-  if (now - lastHapticTime < 100) return;
+  if (now - lastHapticTime < 90) return;
   lastHapticTime = now;
 
   // 1. Hardware Vibration API (Android, Chrome, Firefox, PWA)
@@ -37,19 +37,19 @@ export function triggerNavHaptic(duration: number = 28) {
         const osc = hapticAudioCtx.createOscillator();
         const gain = hapticAudioCtx.createGain();
         
-        // Ultra-low frequency transient tick (simulates physical button click)
+        // Deep punchy tactile transient tick (simulates physical button click)
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(140, hapticAudioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(30, hapticAudioCtx.currentTime + 0.02);
+        osc.frequency.setValueAtTime(150, hapticAudioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(35, hapticAudioCtx.currentTime + 0.035);
         
-        gain.gain.setValueAtTime(0.06, hapticAudioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, hapticAudioCtx.currentTime + 0.02);
+        gain.gain.setValueAtTime(0.18, hapticAudioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, hapticAudioCtx.currentTime + 0.035);
         
         osc.connect(gain);
         gain.connect(hapticAudioCtx.destination);
         
         osc.start();
-        osc.stop(hapticAudioCtx.currentTime + 0.025);
+        osc.stop(hapticAudioCtx.currentTime + 0.04);
       }
     } catch {
       // Audio haptic fallback silently ignored

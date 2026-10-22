@@ -783,7 +783,7 @@ export default function App() {
   const [isTabLoading, setIsTabLoading] = useState(false);
 
   const handleTabChange = useCallback((tab: 'home' | 'billing' | 'analytics' | 'udhar' | 'notes' | 'shift' | 'goals' | 'history') => {
-    triggerNavHaptic(28);
+    triggerNavHaptic(50);
     if (tab === activeTab) return;
     if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();

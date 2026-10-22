@@ -4253,7 +4253,10 @@ export default function App() {
       >
         <div className="flex items-center justify-between w-full max-w-7xl mx-auto gap-2 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-4 select-none min-w-0 flex-1 overflow-hidden">
-            <div className="relative group shrink-0 overflow-visible flex items-center justify-center">
+            <div 
+              className="relative group shrink-0 overflow-visible flex items-center justify-center"
+              style={{ width: '35.5px', height: '35.5px' }}
+            >
               {/* Dynamic theme-specific sharp luminous premium core glow */}
               <div className={`absolute inset-x-0 inset-y-0 rounded-full blur-xl opacity-60 group-hover:opacity-90 transition-opacity duration-300 pointer-events-none ${getLogoBackplateClass(state.settings.theme).glow}`} />
               <div className={`absolute -inset-1.5 bg-gradient-to-r rounded-2xl blur-md opacity-30 group-hover:opacity-70 transition-opacity duration-500 pointer-events-none ${getLogoBackplateClass(state.settings.theme).gradient}`} />

@@ -43,6 +43,7 @@ import {
   Cloud,
   CheckCircle2,
   AlertCircle,
+  Info,
   Package,
   Weight,
   Hash,
@@ -1143,18 +1144,67 @@ export default function App() {
 
   // --- Beautiful Real-time Notification Popups State & Listeners ---
   const [popupNotifications, setPopupNotifications] = useState<InAppNotification[]>([]);
+  const activeTabRef = useRef(activeTab);
+  const deferredPopupsRef = useRef<InAppNotification[]>([]);
+  const alertedStockKeysRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+    if (activeTab === 'billing') {
+      // Clear visual popups immediately when entering the billing screen
+      setPopupNotifications([]);
+    } else {
+      // User navigated to a non-billing page (Home, Inventory, Analytics, Udhar, Notes, etc.)
+      // If any popups arrived while the user was on the billing screen, deliver them now!
+      if (deferredPopupsRef.current.length > 0) {
+        const toShow = [...deferredPopupsRef.current];
+        deferredPopupsRef.current = [];
+        toShow.forEach((p, idx) => {
+          setTimeout(() => {
+            if (activeTabRef.current !== 'billing') {
+              setPopupNotifications(prev => {
+                if (prev.some(item => item.id === p.id)) return prev;
+                const updated = [...prev, p];
+                return updated.length > 2 ? updated.slice(-2) : updated;
+              });
+              setTimeout(() => {
+                setPopupNotifications(prev => prev.filter(item => item.id !== p.id));
+              }, 5000);
+            }
+          }, idx * 600 + 300);
+        });
+      }
+    }
+  }, [activeTab]);
 
   const addPopupNotification = useCallback((notif: InAppNotification) => {
+    // 1. ALWAYS play notification sound and haptic feedback
+    if (state.settings.soundOn !== false) {
+      playNotificationChime(notif.priority || 'medium');
+    }
+    if (state.settings.vibrationOn !== false) {
+      triggerVibration(notif.priority || 'medium');
+    }
+
+    // 2. CONSTRAINT: Never display popup alert banner when user is on the billing screen
+    if (activeTabRef.current === 'billing') {
+      // Defer it so user sees it as soon as they leave billing
+      deferredPopupsRef.current = [...deferredPopupsRef.current, notif].slice(-3);
+      return;
+    }
+
+    // 3. User is on ANY other page: show the popup banner!
     setPopupNotifications(prev => {
       if (prev.some(p => p.id === notif.id)) return prev;
-      return [...prev, notif];
+      const updated = [...prev, notif];
+      return updated.length > 2 ? updated.slice(-2) : updated;
     });
 
-    // Remove automatically after 6 seconds
+    // Remove automatically after 5 seconds
     setTimeout(() => {
       setPopupNotifications(prev => prev.filter(p => p.id !== notif.id));
-    }, 6000);
-  }, []);
+    }, 5000);
+  }, [state.settings.soundOn, state.settings.vibrationOn]);
 
   const handlePopupNotificationClick = useCallback((notif: InAppNotification) => {
     // Dismiss the popup immediately
@@ -1168,15 +1218,18 @@ export default function App() {
           setActiveTab('home');
           setShowMenu(true);
           setMenuTab('settings');
-        } else {
-          setActiveTab(screen as any);
-          if (screen === 'udhar' && targetId) {
-            setSelectedUdharCustomerId(targetId);
-          } else if (screen === 'inventory' && targetId) {
+        } else if (screen === 'inventory') {
+          setActiveTab('home');
+          if (targetId) {
             const linkedItem = state.items.find(i => i.id === targetId);
             if (linkedItem) {
               setEditingItem(linkedItem);
             }
+          }
+        } else {
+          setActiveTab(screen as any);
+          if (screen === 'udhar' && targetId) {
+            setSelectedUdharCustomerId(targetId);
           }
         }
       }
@@ -1211,6 +1264,131 @@ export default function App() {
       window.removeEventListener('app-new-notification', handleNewNotification);
     };
   }, [addPopupNotification]);
+
+  // --- Low Stock Real-Time Alert Checker for Top Bar Popups ---
+  const lastStockAlertTimeRef = useRef<number>(0);
+  const prevTabRef = useRef<string>(activeTab);
+
+  useEffect(() => {
+    // Only check alerts when main app dashboard is active and visible
+    if (isInitializing || isAuthChecking || !state.user) return;
+    if (!state.items || state.items.length === 0) return;
+
+    const notificationsOn = state.settings.notificationsOn !== false;
+    const lowStockNotify = state.settings.lowStockNotify !== false;
+    if (!notificationsOn || !lowStockNotify) return;
+
+    const defaultMinStock = state.settings.minStockLevel ?? 5;
+    const dismissed = state.settings.dismissedNotifications || [];
+
+    // Find all items currently at or below minimum stock level
+    const lowStockItems = state.items.filter(item => {
+      const itemMin = item.minStockLevel ?? defaultMinStock;
+      const alertId = `low-stock-${item.id}`;
+      return item.quantity <= itemMin && !dismissed.includes(alertId);
+    });
+
+    if (lowStockItems.length === 0) return;
+
+    // Filter items not yet alerted for their current stock quantity
+    const unalertedItems = lowStockItems.filter(item => {
+      const key = `${item.id}_${item.quantity}`;
+      return !alertedStockKeysRef.current.has(key);
+    });
+
+    if (unalertedItems.length === 0) return;
+
+    // Mark current quantity as alerted to avoid duplicate alerts for unchanged stock
+    unalertedItems.forEach(item => {
+      alertedStockKeysRef.current.add(`${item.id}_${item.quantity}`);
+    });
+
+    // Stagger slightly so UI transition completes smoothly
+    const timer = setTimeout(() => {
+      if (unalertedItems.length <= 2) {
+        unalertedItems.forEach((item, index) => {
+          setTimeout(() => {
+            const itemMin = item.minStockLevel ?? defaultMinStock;
+            const isOut = item.quantity <= 0;
+            const itemName = (item.translations && (item.translations[state.settings.language] || item.translations.en || item.translations['hi-en'])) || item.name;
+
+            addPopupNotification({
+              id: `low-stock-${item.id}-${Date.now()}-${index}`,
+              title: isOut ? `Out of Stock: ${itemName}` : `Low Stock: ${itemName}`,
+              message: isOut
+                ? `0 ${item.unit || 'pcs'} left • Tap to restock`
+                : `${item.quantity} ${item.unit || 'pcs'} remaining (Min: ${itemMin}) • Restock soon`,
+              category: 'inventory',
+              priority: 'high',
+              timestamp: 'Just now',
+              isRead: false,
+              deepLink: { screen: 'inventory', targetId: item.id }
+            });
+          }, index * 400);
+        });
+      } else {
+        const criticalItem = unalertedItems.find(i => i.quantity <= 0) || unalertedItems[0];
+        const critName = (criticalItem.translations && (criticalItem.translations[state.settings.language] || criticalItem.translations.en || criticalItem.translations['hi-en'])) || criticalItem.name;
+
+        addPopupNotification({
+          id: `low-stock-summary-${Date.now()}`,
+          title: `${unalertedItems.length} Items Low in Stock`,
+          message: `${critName} & ${unalertedItems.length - 1} more items need restocking`,
+          category: 'inventory',
+          priority: 'high',
+          timestamp: 'Just now',
+          isRead: false,
+          deepLink: { screen: 'inventory', targetId: criticalItem.id }
+        });
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [activeTab, isInitializing, isAuthChecking, state.user, state.items, state.settings.minStockLevel, state.settings.notificationsOn, state.settings.lowStockNotify, state.settings.language, state.settings.dismissedNotifications, addPopupNotification]);
+
+  // Check due Udhar alerts for top bar popups
+  const alertedOtherKeysRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (isInitializing || isAuthChecking || !state.user) return;
+    if (!state.udharTransactions || state.udharTransactions.length === 0) return;
+    if (activeTab === 'billing') return;
+
+    const notificationsOn = state.settings.notificationsOn !== false;
+    const udharNotify = state.settings.udharNotify !== false;
+    if (!notificationsOn || !udharNotify) return;
+
+    const rawTransactions = state.udharTransactions || [];
+    const rawCustomers = state.udharCustomers || [];
+    const dismissed = state.settings.dismissedNotifications || [];
+
+    rawTransactions.forEach(tx => {
+      if (tx.dueDate && tx.type === 'given') {
+        const customer = rawCustomers.find(c => c.id === tx.customerId);
+        if (customer && customer.totalUdhar > 0) {
+          const isOverdueOrDueToday = new Date(tx.dueDate) <= new Date() || 
+            new Date(tx.dueDate).toDateString() === new Date().toDateString();
+          const alertId = `udhar-due-${tx.id}`;
+          if (isOverdueOrDueToday && !dismissed.includes(alertId) && !alertedOtherKeysRef.current.has(alertId)) {
+            alertedOtherKeysRef.current.add(alertId);
+            setTimeout(() => {
+              if (activeTabRef.current !== 'billing') {
+                addPopupNotification({
+                  id: alertId,
+                  title: `Udhar Due: ${customer.name}`,
+                  message: `₹${Math.abs(tx.amount)} is due • Tap to view ledger`,
+                  category: 'udhar',
+                  priority: 'high',
+                  timestamp: 'Just now',
+                  isRead: false,
+                  deepLink: { screen: 'udhar', targetId: customer.id }
+                });
+              }
+            }, 1200);
+          }
+        }
+      }
+    });
+  }, [activeTab, isInitializing, isAuthChecking, state.user, state.udharTransactions, state.udharCustomers, state.settings.notificationsOn, state.settings.udharNotify, addPopupNotification]);
 
   // --- Achievement Celebration State & Real-time Checkers ---
   const [activeCelebrationMilestone, setActiveCelebrationMilestone] = useState<Milestone | null>(null);
@@ -2531,7 +2709,7 @@ export default function App() {
     state.items.forEach(item => {
       const id = `low-stock-${item.id}`;
       const itemMinStock = item.minStockLevel ?? minStock;
-      if (item.quantity < itemMinStock && !dismissed.includes(id)) {
+      if (item.quantity <= itemMinStock && !dismissed.includes(id)) {
         list.push({
           id,
           type: 'stock',
@@ -3040,11 +3218,28 @@ export default function App() {
         }
       }
 
+      // If stock or threshold was adjusted, reset dismissed status and alerted key cache so fresh alerts can trigger
+      if (data.quantity !== undefined || data.minStockLevel !== undefined) {
+        alertedStockKeysRef.current.forEach(k => {
+          if (k.startsWith(`${id}_`)) alertedStockKeysRef.current.delete(k);
+        });
+      }
+
       // Optimistic update
-      setState(prev => ({
-        ...prev,
-        items: prev.items.map(item => item.id === id ? { ...item, ...updates } : item)
-      }));
+      setState(prev => {
+        const nextSettings = (data.quantity !== undefined || data.minStockLevel !== undefined) && prev.settings.dismissedNotifications
+          ? {
+              ...prev.settings,
+              dismissedNotifications: prev.settings.dismissedNotifications.filter(d => d !== `low-stock-${id}`)
+            }
+          : prev.settings;
+
+        return {
+          ...prev,
+          settings: nextSettings,
+          items: prev.items.map(item => item.id === id ? { ...item, ...updates } : item)
+        };
+      });
       setEditingItem(null);
 
       if (state.user && state.settings.autoCloudSync) {
@@ -3933,86 +4128,104 @@ export default function App() {
       </AnimatePresence>
 
       {/* 🔔 PREMIUM REAL-TIME NOTIFICATION POPUP PORTAL */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2.5 items-center pointer-events-none w-full max-w-md px-4">
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 items-center pointer-events-none w-full max-w-sm sm:max-w-md px-3.5">
         <AnimatePresence mode="popLayout">
           {popupNotifications.map((notif) => {
             const isHigh = notif.priority === 'high';
             
-            // Category-specific styles
-            let catColorClass = "bg-blue-500/10 text-blue-500 border-blue-500/20";
-            let catGlowClass = "shadow-blue-500/5";
-            let IconComp = <AlertCircle size={16} />;
+            // Minimalist category badge and styling: soft pastel backgrounds, vibrant icons
+            let catBadge = "Notice";
+            let catBadgeClass = "bg-slate-100 text-slate-700 border-slate-200/90";
+            let iconContainerClass = "bg-blue-50 text-blue-600 border-blue-100";
+            let IconComp = <Bell size={15} strokeWidth={2.2} />;
             
             if (notif.category === 'inventory') {
-              catColorClass = "bg-amber-500/10 text-amber-500 border-amber-500/20";
-              catGlowClass = "shadow-amber-500/5";
-              IconComp = <Package size={16} />;
+              const isOut = notif.title.toLowerCase().includes('out');
+              catBadge = isOut ? "Out of Stock" : "Low Stock";
+              catBadgeClass = isOut 
+                ? "bg-rose-50 text-rose-700 border-rose-200/80" 
+                : "bg-amber-50 text-amber-800 border-amber-200/80";
+              iconContainerClass = isOut 
+                ? "bg-rose-100/80 text-rose-600 border-rose-200/60" 
+                : "bg-amber-100/80 text-amber-600 border-amber-200/60";
+              IconComp = <Package size={15} strokeWidth={2.2} />;
             } else if (notif.category === 'udhar') {
-              catColorClass = "bg-rose-500/10 text-rose-500 border-rose-500/20";
-              catGlowClass = "shadow-rose-500/5";
-              IconComp = <MessageSquare size={16} />;
+              catBadge = "Udhar Alert";
+              catBadgeClass = "bg-rose-50 text-rose-700 border-rose-200/80";
+              iconContainerClass = "bg-rose-100/80 text-rose-600 border-rose-200/60";
+              IconComp = <CreditCard size={15} strokeWidth={2.2} />;
             } else if (notif.category === 'analytics') {
-              catColorClass = "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-              catGlowClass = "shadow-emerald-500/5";
-              IconComp = <TrendingUp size={16} />;
+              catBadge = "Analytics";
+              catBadgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200/80";
+              iconContainerClass = "bg-emerald-100/80 text-emerald-600 border-emerald-200/60";
+              IconComp = <TrendingUp size={15} strokeWidth={2.2} />;
             } else if (notif.category === 'broadcast') {
-              catColorClass = "bg-purple-500/10 text-purple-500 border-purple-500/20";
-              catGlowClass = "shadow-purple-500/5";
-              IconComp = <Sparkles size={16} />;
+              catBadge = "Announcement";
+              catBadgeClass = "bg-purple-50 text-purple-700 border-purple-200/80";
+              iconContainerClass = "bg-purple-100/80 text-purple-600 border-purple-200/60";
+              IconComp = <Sparkles size={15} strokeWidth={2.2} />;
             }
 
             return (
               <motion.div
                 key={notif.id}
-                initial={{ opacity: 0, y: -40, scale: 0.95 }}
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.65}
+                onDragEnd={(_, info) => {
+                  if (Math.abs(info.offset.x) > 55 || Math.abs(info.velocity.x) > 260) {
+                    if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+                      try { window.navigator.vibrate(18); } catch {}
+                    }
+                    setPopupNotifications(prev => prev.filter(p => p.id !== notif.id));
+                  }
+                }}
+                initial={{ opacity: 0, y: -24, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ type: 'spring', damping: 20, stiffness: 260 }}
+                exit={{ opacity: 0, y: -14, scale: 0.92, transition: { duration: 0.16 } }}
+                transition={{ type: 'spring', damping: 26, stiffness: 340 }}
                 onClick={() => handlePopupNotificationClick(notif)}
                 className={cn(
-                  "pointer-events-auto w-full p-4 rounded-2xl border bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-md text-white shadow-2xl flex gap-3 cursor-pointer select-none transition-all duration-200 hover:scale-[1.01] hover:border-white/10 active:scale-95",
-                  catGlowClass,
-                  isHigh ? "border-rose-500/30" : "border-slate-800"
+                  "pointer-events-auto w-full p-2.5 px-3.5 rounded-2xl border bg-white/98 backdrop-blur-xl text-slate-800 shadow-[0_12px_28px_-6px_rgba(15,23,42,0.14),0_2px_8px_rgba(15,23,42,0.06)] flex items-center gap-3 cursor-grab active:cursor-grabbing select-none transition-all duration-200 hover:shadow-lg touch-pan-x ring-1 ring-slate-900/5 group",
+                  isHigh ? "border-amber-400/70" : "border-slate-200/90"
                 )}
               >
-                {/* Dynamic Category Icon with glow */}
+                {/* Minimalist Soft Rounded Icon */}
                 <div className={cn(
-                  "h-9 w-9 rounded-xl flex items-center justify-center shrink-0 border",
-                  catColorClass
+                  "h-8 w-8 rounded-xl flex items-center justify-center shrink-0 border shadow-xs transition-transform group-hover:scale-105",
+                  iconContainerClass
                 )}>
                   {IconComp}
                 </div>
 
-                {/* Text Content */}
+                {/* Minimalist, Clean Text Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <h5 className="text-[11px] font-black uppercase tracking-tight text-white/95 truncate">
-                      {notif.title}
-                    </h5>
-                    <span className="text-[7.5px] font-mono text-white/40 shrink-0">
-                      {notif.timestamp}
+                  <div className="flex items-center justify-between gap-1.5 mb-0.5">
+                    <span className={cn(
+                      "text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border leading-none shrink-0",
+                      catBadgeClass
+                    )}>
+                      {catBadge}
+                    </span>
+                    <span className="text-[9.5px] font-medium text-slate-400 shrink-0">
+                      {notif.timestamp || 'Just now'}
                     </span>
                   </div>
-                  <p className="text-[10px] font-medium text-white/70 mt-1 leading-normal pr-1">
+                  <h5 className="text-[12px] font-bold text-slate-900 truncate leading-snug">
+                    {notif.title}
+                  </h5>
+                  <p className="text-[11px] font-medium text-slate-500 leading-tight truncate mt-0.5">
                     {notif.message}
                   </p>
-                  {notif.deepLink && (
-                    <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest text-[var(--primary)] mt-2 hover:underline">
-                      View details <ArrowRight size={8} />
-                    </span>
-                  )}
                 </div>
 
-                {/* Dismiss Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPopupNotifications(prev => prev.filter(p => p.id !== notif.id));
-                  }}
-                  className="p-1 h-6 w-6 rounded-lg hover:bg-white/10 active:scale-90 transition-all text-white/30 hover:text-white shrink-0 cursor-pointer flex items-center justify-center"
+                {/* Minimalist Swipe Dismiss Indicator (No 'x' button, pure swipe affordance) */}
+                <div 
+                  className="flex flex-col items-center justify-center pl-1 shrink-0 opacity-35 group-hover:opacity-70 transition-opacity" 
+                  title="Swipe left or right to dismiss"
                 >
-                  <X size={12} />
-                </button>
+                  <span className="w-1 h-4 rounded-full bg-slate-300" />
+                </div>
               </motion.div>
             );
           })}
@@ -4023,34 +4236,54 @@ export default function App() {
       <AnimatePresence>
         {toast && (
           <motion.div 
-            initial={{ opacity: 0, y: -45, scale: 0.95 }}
+            key="system-toast-pill"
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.65}
+            onDragEnd={(_, info) => {
+              if (Math.abs(info.offset.x) > 60 || Math.abs(info.velocity.x) > 280) {
+                if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+                  try { window.navigator.vibrate(18); } catch {}
+                }
+                setToast(null);
+              }
+            }}
+            initial={{ opacity: 0, y: -30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -25, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 22, stiffness: 300 }}
-            className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] p-3.5 px-5 bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-md rounded-2xl border border-slate-700/60 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-between gap-4 min-w-[300px] max-w-md text-xs select-none text-white font-sans ring-1 ring-white/10"
+            exit={{ opacity: 0, y: -16, scale: 0.92, transition: { duration: 0.16 } }}
+            transition={{ type: 'spring', damping: 25, stiffness: 340 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] px-3.5 py-2 rounded-full bg-white/98 backdrop-blur-xl border border-slate-200/90 shadow-[0_12px_28px_-6px_rgba(15,23,42,0.14),0_2px_8px_rgba(15,23,42,0.06)] flex items-center gap-2.5 min-w-[260px] max-w-[92vw] sm:max-w-md select-none cursor-grab active:cursor-grabbing text-slate-800 touch-pan-x ring-1 ring-slate-900/5 group"
+            style={{
+              paddingTop: 'max(8px, env(safe-area-inset-top))'
+            }}
           >
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "h-8 w-8 rounded-xl flex items-center justify-center shrink-0 border shadow-inner",
-                toast.type === 'success' ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-amber-500/15 text-amber-400 border-amber-500/30"
-              )}>
-                {toast.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[8px] font-black uppercase tracking-widest text-emerald-400/90 leading-none mb-1">
-                  System Notification
-                </span>
-                <p className="font-extrabold uppercase tracking-tight text-[11px] text-white/95 leading-tight">
-                  {toast.message}
-                </p>
-              </div>
+            {/* Status Icon Badge */}
+            <div className={cn(
+              "w-6 h-6 rounded-full flex items-center justify-center shrink-0 border shadow-xs transition-colors",
+              toast.type === 'success' && "bg-emerald-100 text-emerald-600 border-emerald-200",
+              toast.type === 'warning' && "bg-amber-100 text-amber-700 border-amber-200",
+              toast.type === 'info' && "bg-sky-100 text-sky-600 border-sky-200"
+            )}>
+              {toast.type === 'success' ? (
+                <Check size={12} strokeWidth={2.8} />
+              ) : toast.type === 'warning' ? (
+                <AlertCircle size={12} strokeWidth={2.4} />
+              ) : (
+                <Info size={12} strokeWidth={2.4} />
+              )}
             </div>
-            <button 
-              onClick={() => setToast(null)}
-              className="p-1.5 rounded-lg hover:bg-white/10 active:scale-90 transition-all text-white/40 hover:text-white shrink-0 cursor-pointer"
-            >
-              <X size={13} />
-            </button>
+
+            {/* Notification Text */}
+            <div className="flex-1 min-w-0 pr-1">
+              <p className="text-[12px] font-semibold leading-snug text-slate-800 tracking-tight line-clamp-1">
+                {toast.message}
+              </p>
+            </div>
+
+            {/* Subtle swipe affordance indicator pill (no X button) */}
+            <div className="flex items-center gap-1 shrink-0 opacity-35 group-hover:opacity-70 transition-opacity">
+              <span className="w-1 h-3 rounded-full bg-slate-300" />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -5689,6 +5922,7 @@ export default function App() {
             }}
             onSave={editingItem ? (data) => handleUpdateItem(editingItem.id, data) : handleAddItem}
             initialData={editingItem || undefined}
+            defaultMinStock={state.settings.minStockLevel ?? 5}
             categories={activeCategories}
             t={t}
             language={state.settings.language}

@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { AppState, AppSettings, ThemeType, LanguageType, CustomApiKeyItem } from '../types';
 import { 
+  NotificationService,
   playNotificationChime, 
   triggerVibration, 
   requestPushPermission 
@@ -1709,6 +1710,30 @@ export default function SettingsScreen({
                           )}
                         >
                           <div className={cn("absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all", state.settings.pushOn !== false ? "translate-x-8" : "")} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-6 border-t border-[var(--border)]">
+                        <div>
+                          <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">Test Notification Popup</h4>
+                          <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">Preview top bar notification alert banner</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            NotificationService.triggerNotification(state.user?.uid || null, {
+                              title: 'Low Stock: Parle-G Gold (₹10)',
+                              message: 'Only 2 packets left • Tap to inspect or restock',
+                              category: 'inventory',
+                              priority: 'high',
+                              timestamp: 'Just now',
+                              deepLink: { screen: 'inventory' }
+                            });
+                          }}
+                          className="px-3.5 py-1.5 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/25 active:scale-95 transition-all text-xs font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Bell size={13} />
+                          Trigger Test
                         </button>
                       </div>
 

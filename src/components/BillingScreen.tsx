@@ -2270,13 +2270,37 @@ export default function BillingScreen({
       });
     }
 
+    // Check if any items in cart reached or dropped below low stock threshold
+    const defaultMinStock = state.settings.minStockLevel ?? 5;
+    const newlyLowStockItems = finalItemsState.filter(item => {
+      const wasInCart = cart.some(ci => ci.id === item.id);
+      if (!wasInCart) return false;
+      const minStock = item.minStockLevel ?? defaultMinStock;
+      return item.quantity <= minStock;
+    });
+
+    // Un-dismiss any previously dismissed alerts for these items so alerts fire cleanly
+    let nextSettings = state.settings;
+    if (newlyLowStockItems.length > 0 && state.settings.dismissedNotifications?.length) {
+      const filteredDismissed = state.settings.dismissedNotifications.filter(
+        dId => !newlyLowStockItems.some(i => dId === `low-stock-${i.id}`)
+      );
+      if (filteredDismissed.length !== state.settings.dismissedNotifications.length) {
+        nextSettings = {
+          ...state.settings,
+          dismissedNotifications: filteredDismissed
+        };
+      }
+    }
+
     // Commit changes into shared App level state
     onUpdateState({
       items: finalItemsState,
       bills: nextBills,
       notes: [...notesToAppend, ...(state.notes || [])],
       udharCustomers: updatedCustomers,
-      udharTransactions: updatedTransactions
+      udharTransactions: updatedTransactions,
+      settings: nextSettings
     });
 
     // Trigger Billing Complete feedback

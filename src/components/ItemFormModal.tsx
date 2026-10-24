@@ -45,6 +45,7 @@ export interface ItemFormModalProps {
   language: LanguageType;
   onCreateCategory?: (name: string) => Promise<any> | any;
   onDeleteCategory?: (id: string) => Promise<any> | any;
+  defaultMinStock?: number;
 }
 
 type ItemFormData = Omit<
@@ -214,6 +215,7 @@ export function ItemFormModal({
   language,
   onCreateCategory,
   onDeleteCategory,
+  defaultMinStock = 5,
 }: ItemFormModalProps) {
   const [formData, setFormData] = useState<ItemFormData>(() => {
     if (initialData) {
@@ -227,7 +229,7 @@ export function ItemFormModal({
             : initialData.wholesalePrice,
         buyingPrice:
           initialData.buyingPrice === 0 ? ("" as any) : initialData.buyingPrice,
-        minStockLevel: initialData.minStockLevel ?? 10,
+        minStockLevel: initialData.minStockLevel ?? defaultMinStock,
       };
     }
     return {
@@ -244,7 +246,7 @@ export function ItemFormModal({
       profitMargin: 0,
       translations: { en: "", hi: "", mr: "", "hi-en": "" },
       notes: "",
-      minStockLevel: 10,
+      minStockLevel: defaultMinStock,
     };
   });
 
@@ -579,7 +581,7 @@ export function ItemFormModal({
           : Number(formData.buyingPrice),
       minStockLevel:
         formData.minStockLevel === "" || formData.minStockLevel === undefined
-          ? 10
+          ? defaultMinStock
           : Number(formData.minStockLevel),
     } as any);
     onClose();

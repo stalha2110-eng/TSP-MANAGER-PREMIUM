@@ -293,11 +293,15 @@ export class NotificationService {
     try {
       const notifsRef = collection(db, 'users', userId, 'notifications');
       const docRef = doc(notifsRef);
-      await setDoc(docRef, sanitizeForFirestore({
+      const fullNotif = {
         ...notif,
         id: docRef.id,
         isRead: false
-      }));
+      };
+      await setDoc(docRef, sanitizeForFirestore(fullNotif));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('app-new-notification', { detail: fullNotif }));
+      }
       return docRef.id;
     } catch (err) {
       console.warn('Network offline or database mismatch. Local caching notification.', err);
@@ -321,28 +325,25 @@ export class NotificationService {
     priority: 'high' | 'medium' | 'low' = 'medium',
     category: 'system' | 'broadcast' = 'broadcast'
   ) {
-    if (!userId || userId === 'guest_user') return;
-    try {
-      // Read all devices registered under the User profile in Firestore
-      const devicesRef = collection(db, 'users', userId, 'devices');
-      const snaps = await getDocs(devicesRef);
-      const devicesList: string[] = [];
-      snaps.forEach(s => {
-        devicesList.push(s.data().deviceName || s.id);
-      });
-
-      // Insert database notification
-      await this.triggerNotification(userId, {
-        title: title,
-        message: `${message} [Sent to ${devicesList.length || 1} Registered Devices]`,
-        priority: priority,
-        category: category,
-        timestamp: new Date().toISOString(),
-        deepLink: { screen: 'settings' }
-      });
-    } catch (err) {
-      console.error('Broadcast execution error', err);
+    let devCount = 1;
+    if (userId && userId !== 'guest_user' && db) {
+      try {
+        const devicesRef = collection(db, 'users', userId, 'devices');
+        const snaps = await getDocs(devicesRef);
+        devCount = snaps.size || 1;
+      } catch (err) {
+        console.warn('Could not read devices count', err);
+      }
     }
+
+    await this.triggerNotification(userId, {
+      title: title,
+      message: `${message} [Broadcast to ${devCount} Synced Channel${devCount > 1 ? 's' : ''}]`,
+      priority: priority,
+      category: category,
+      timestamp: new Date().toISOString(),
+      deepLink: { screen: 'settings' }
+    });
   }
 
   /**

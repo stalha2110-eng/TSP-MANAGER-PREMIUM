@@ -250,11 +250,11 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
                   "text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border select-none leading-none",
                   item.quantity <= 0
                     ? "text-red-500 bg-red-500/10 border-red-500/20"
-                    : item.quantity <= (item.minStockLevel ?? 10)
+                    : item.quantity <= (item.minStockLevel ?? 5)
                       ? "text-amber-500 bg-amber-500/10 border-amber-500/20 animate-pulse"
                       : "text-emerald-500 bg-emerald-500/10 border-emerald-500/15"
                 )}>
-                  Stock: {item.quantity} {item.unit === 'Chatak' ? 'Chatak (50gm)' : item.unit} {item.quantity <= (item.minStockLevel ?? 10) && "⚠️"}
+                  Stock: {item.quantity} {item.unit === 'Chatak' ? 'Chatak (50gm)' : item.unit} {item.quantity <= (item.minStockLevel ?? 5) && "⚠️"}
                 </span>
                 <span className="text-[8.5px] opacity-35 font-mono select-none" title={`${t.lastCheck}: ${new Date(item.lastUpdated).toLocaleDateString()}`}>
                   U: {new Date(item.lastUpdated).toLocaleDateString([], { month: '2-digit', day: '2-digit' })}

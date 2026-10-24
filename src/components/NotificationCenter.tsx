@@ -15,6 +15,7 @@ import {
   Bell,
   BellRing,
   Send,
+  ArrowLeft,
   ArrowRight,
   Clock,
   ChevronDown,
@@ -263,57 +264,80 @@ export default function NotificationCenter({
       setAdminTitle('');
       setAdminMsg('');
       setShowAdminPanel(false);
+      onClose();
       triggerHaptic(15);
     } catch (e) {
       console.error(e);
     }
   };
 
+  const handleQuickTestAlert = () => {
+    NotificationService.triggerNotification(state.user?.uid || null, {
+      title: 'Low Stock: Parle-G Gold (₹10)',
+      message: 'Only 2 packets left • Tap to inspect or restock',
+      category: 'inventory',
+      priority: 'high',
+      timestamp: 'Just now',
+      deepLink: { screen: 'inventory' }
+    });
+    onClose();
+    triggerHaptic(15);
+  };
+
   return (
     <>
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-[120] flex items-end sm:items-stretch sm:justify-end">
+          <div className="fixed inset-0 z-[120] flex justify-end overflow-hidden">
             
             {/* Luminous Blur Backdrop */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
+              transition={{ duration: 0.2 }}
               onClick={onClose}
-              className="fixed inset-0 bg-black/60 backdrop-blur-md"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm hidden sm:block"
             />
 
-            {/* Mobile Sheet / Desktop Right Drawer Shell */}
+            {/* Dedicated Full Page / Right-Slide Screen (Zero upper gap, seamless full height) */}
             <motion.div
-              initial={{ y: '100%', opacity: 0.5 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-              className="relative z-10 w-full sm:max-w-md bg-[var(--card)] text-[var(--foreground)] rounded-t-[2.2rem] sm:rounded-none sm:border-l border-[var(--border)] shadow-2xl flex flex-col h-[92vh] sm:h-full max-h-[100dvh] overflow-hidden"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 340 }}
+              className="relative z-10 w-full sm:max-w-xl bg-[var(--background)] text-[var(--foreground)] sm:border-l border-[var(--border)] shadow-2xl flex flex-col h-full min-h-[100dvh] max-h-[100dvh] overflow-hidden"
+              style={{
+                paddingTop: 'max(env(safe-area-inset-top), 0px)',
+                paddingBottom: 'max(env(safe-area-inset-bottom), 0px)',
+              }}
             >
-              {/* Native Mobile Swipe Grab Handle */}
-              <div 
-                onClick={onClose}
-                className="w-full pt-3 pb-1 flex justify-center items-center sm:hidden cursor-pointer touch-none"
-              >
-                <div className="w-12 h-1.5 rounded-full bg-stone-300 dark:bg-stone-700 active:scale-95 transition-transform" />
-              </div>
+              {/* 1. APP HEADER: Back Navigation, Title, Unread Beacon, Actions */}
+              <div className="px-3.5 py-3 sm:px-5 sm:py-3.5 border-b border-[var(--border)] bg-[var(--card)]/95 backdrop-blur-xl flex items-center justify-between gap-2 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  {/* Left Back Arrow Navigation Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic(6);
+                      onClose();
+                    }}
+                    title="Back to store"
+                    className="h-9 w-9 rounded-xl bg-[var(--foreground)]/[0.05] hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/80 hover:text-[var(--foreground)] flex items-center justify-center active:scale-95 transition-all cursor-pointer shrink-0"
+                  >
+                    <ArrowLeft size={19} />
+                  </button>
 
-              {/* 1. APP HEADER: Title, Unread Beacon, Actions */}
-              <div className="px-5 pt-3 pb-4 sm:p-5 border-b border-[var(--border)] bg-[var(--card)]/80 backdrop-blur-xl flex items-center justify-between gap-3 shrink-0">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0 shadow-xs">
+                  <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0 shadow-xs">
                     {unreadCount > 0 ? (
                       <motion.div
                         animate={{ rotate: [0, -10, 10, -10, 10, 0] }}
                         transition={{ repeat: Infinity, duration: 2.2, repeatDelay: 2 }}
                       >
-                        <BellRing size={20} className="text-amber-500 animate-pulse" />
+                        <BellRing size={18} className="text-amber-500 animate-pulse" />
                       </motion.div>
                     ) : (
-                      <Bell size={20} />
+                      <Bell size={18} />
                     )}
                   </div>
 
@@ -329,7 +353,7 @@ export default function NotificationCenter({
                         </span>
                       )}
                     </div>
-                    <p className="text-[9.5px] font-mono uppercase tracking-wider text-[var(--foreground)]/50 mt-0.5">
+                    <p className="text-[9px] font-mono uppercase tracking-wider text-[var(--foreground)]/50">
                       Live Business Feed
                     </p>
                   </div>
@@ -342,7 +366,7 @@ export default function NotificationCenter({
                       type="button"
                       onClick={() => setShowConfirmMarkAll(true)}
                       title="Mark All Read"
-                      className="h-9 px-3 rounded-xl bg-[var(--foreground)]/[0.05] hover:bg-[var(--foreground)]/10 text-[var(--foreground)] font-bold text-[10.5px] uppercase tracking-wider flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+                      className="h-9 px-2.5 sm:px-3 rounded-xl bg-[var(--foreground)]/[0.05] hover:bg-[var(--foreground)]/10 text-[var(--foreground)] font-bold text-[10.5px] uppercase tracking-wider flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
                     >
                       <CheckCheck size={14} className="text-emerald-500" />
                       <span className="hidden sm:inline">Read All</span>
@@ -446,12 +470,21 @@ export default function NotificationCenter({
                           </div>
                         </div>
 
-                        <button
-                          type="submit"
-                          className="py-1.5 px-4 rounded-xl bg-blue-600 text-white text-[9.5px] font-black uppercase tracking-wider hover:bg-blue-700 active:scale-95 transition-all cursor-pointer shadow-md"
-                        >
-                          Dispatch
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleQuickTestAlert}
+                            className="py-1.5 px-3 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9.5px] font-black uppercase tracking-wider hover:bg-amber-500/25 active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+                          >
+                            <Bell size={11} /> Test Popup Alert
+                          </button>
+                          <button
+                            type="submit"
+                            className="py-1.5 px-4 rounded-xl bg-blue-600 text-white text-[9.5px] font-black uppercase tracking-wider hover:bg-blue-700 active:scale-95 transition-all cursor-pointer shadow-md"
+                          >
+                            Dispatch
+                          </button>
+                        </div>
                       </div>
                     </form>
                   </motion.div>

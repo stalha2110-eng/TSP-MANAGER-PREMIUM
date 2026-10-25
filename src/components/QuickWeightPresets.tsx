@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Scale, IndianRupee, Sparkles, Plus, Minus, Check, X, Package, ShoppingCart } from 'lucide-react';
+import { Scale, IndianRupee, Sparkles, Plus, Minus, Check, X, Package, ShoppingCart, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { COMMON_WEIGHT_PRESETS, COMMON_BUDGET_PRESETS, calculateWeightFromAmount, isWeightBasedUnit, WeightPreset } from '../utils/weightHelpers';
+import { COMMON_WEIGHT_PRESETS, COMMON_BUDGET_PRESETS, calculateWeightFromAmount, isWeightBasedUnit, isLiquidUnit, getPresetsForUnit, WeightPreset } from '../utils/weightHelpers';
 import { cn, formatNumber } from '../lib/utils';
 import { Item } from '../types';
 
@@ -33,6 +33,9 @@ interface QuickWeightPresetsProps {
   customPresets?: WeightPreset[];
   className?: string;
   style?: React.CSSProperties;
+  onTogglePriceType?: () => void;
+  isWholesale?: boolean;
+  canTogglePrice?: boolean;
 }
 
 export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
@@ -46,7 +49,10 @@ export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
   label,
   customPresets,
   className,
-  style
+  style,
+  onTogglePriceType,
+  isWholesale,
+  canTogglePrice
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'weights' | 'amount'>('weights');
@@ -62,9 +68,8 @@ export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
   });
 
   const isWeightItem = isWeightBasedUnit(unit);
-  const activePresets = isWeightItem 
-    ? ((customPresets && customPresets.length > 0) ? customPresets : COMMON_WEIGHT_PRESETS)
-    : PIECE_PRESETS;
+  const isLiquid = isLiquidUnit(unit);
+  const activePresets = getPresetsForUnit(unit, customPresets);
 
   // Calculate coordinates relative to viewport for Portal rendering
   const updatePosition = useCallback(() => {
@@ -184,7 +189,7 @@ export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
         title="Quick Weight Presets & Rupee Converter"
       >
         <Scale size={compact ? 10 : 11} className={cn("shrink-0", isOpen ? "text-white" : "text-amber-500")} />
-        <span className="font-mono">{label || (isWeightItem ? 'Weight' : 'Qty')}</span>
+        <span className="font-mono">{label || (isLiquid ? 'Volume' : isWeightItem ? 'Weight' : (unit && unit.length <= 6 ? unit : 'Qty'))}</span>
       </button>
 
       {typeof document !== 'undefined' && createPortal(
@@ -217,7 +222,7 @@ export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header & Tabs */}
-                <div className="flex items-center justify-between border-b border-[var(--border)] pb-2 mb-2.5">
+                <div className="flex items-center justify-between border-b border-[var(--border)] pb-2 mb-2.5 gap-1.5 flex-wrap">
                   <div className="flex items-center gap-1 p-0.5 bg-[var(--foreground)]/5 rounded-xl border border-[var(--border)]">
                     <button
                       type="button"
@@ -230,7 +235,7 @@ export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
                       )}
                     >
                       <Scale size={11} />
-                      <span>{isWeightItem ? 'Weight Presets' : 'Quick Qty'}</span>
+                      <span>{isLiquid ? 'Volume' : isWeightItem ? 'Weight' : (unit || 'Qty')}</span>
                     </button>
 
                     <button
@@ -244,14 +249,39 @@ export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
                       )}
                     >
                       <IndianRupee size={11} />
-                      <span>₹ to Weight</span>
+                      <span>₹ to {unit || 'Weight'}</span>
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    <div className="text-right">
-                      <span className="text-[8.5px] opacity-60 font-medium block">₹{formatNumber(unitPrice, precision)}/{unit}</span>
-                      <span className="text-[10px] font-black font-mono text-[var(--primary)] block leading-none">
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    {/* Small Retail / Wholesale Exchange Button */}
+                    {onTogglePriceType && canTogglePrice !== false && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                            navigator.vibrate(12);
+                          }
+                          onTogglePriceType();
+                        }}
+                        className={cn(
+                          "h-5 px-1.5 py-0.5 rounded-md text-[7.5px] font-black uppercase tracking-wider transition-all flex items-center gap-1 border shadow-2xs active:scale-95 cursor-pointer shrink-0 select-none",
+                          isWholesale
+                            ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/35 hover:bg-amber-500/25 hover:border-amber-500/60"
+                            : "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/35 hover:bg-sky-500/25 hover:border-sky-500/60"
+                        )}
+                        title={`Current: ${isWholesale ? 'Wholesale' : 'Retail'} rate (₹${formatNumber(unitPrice, precision)}). Click to switch to ${isWholesale ? 'Retail' : 'Wholesale'}.`}
+                      >
+                        <RefreshCw size={7.5} className="shrink-0" />
+                        <span className="font-mono">{isWholesale ? 'Wholesale' : 'Retail'}</span>
+                      </button>
+                    )}
+
+                    <div className="text-right leading-tight">
+                      <span className="text-[8px] opacity-60 font-medium block">₹{formatNumber(unitPrice, precision)}/{unit}</span>
+                      <span className="text-[9.5px] font-black font-mono text-[var(--primary)] block leading-none">
                         {currentQty} {unit}
                       </span>
                     </div>
@@ -259,7 +289,7 @@ export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
                     <button
                       type="button"
                       onClick={() => setIsOpen(false)}
-                      className="h-5 w-5 rounded-full hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/60 hover:text-[var(--foreground)] flex items-center justify-center transition-colors cursor-pointer"
+                      className="h-5 w-5 rounded-full hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/60 hover:text-[var(--foreground)] flex items-center justify-center transition-colors cursor-pointer shrink-0"
                       title="Close"
                     >
                       <X size={12} />
@@ -267,13 +297,17 @@ export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
                   </div>
                 </div>
 
-                {/* TAB 1: QUICK WEIGHT CHIPS */}
+                {/* TAB 1: QUICK WEIGHT / QUANTITY CHIPS */}
                 {activeTab === 'weights' && (
                   <div className="space-y-2.5">
                     <div>
                       <div className="text-[8.5px] font-black uppercase tracking-wider opacity-50 mb-1.5 flex items-center justify-between">
-                        <span>1-Tap Exact Quantities</span>
-                        {isWeightItem && <span className="text-amber-500 font-bold">1.25kg, 1.5kg...</span>}
+                        <span>1-Tap Quantities ({unit})</span>
+                        {isWholesale ? (
+                          <span className="text-amber-500 font-bold text-[8px] uppercase">Wholesale Rate</span>
+                        ) : (
+                          isWeightItem && <span className="text-amber-500 font-bold">1.25kg, 1.5kg...</span>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-4 gap-1.5 max-h-48 overflow-y-auto pr-0.5 no-scrollbar">
@@ -294,8 +328,9 @@ export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
                                   ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-sm font-black ring-2 ring-[var(--primary)]/30"
                                   : "bg-[var(--foreground)]/5 hover:bg-[var(--primary)]/10 hover:border-[var(--primary)]/30 border-[var(--border)]"
                               )}
+                              title={preset.label}
                             >
-                              <span className="text-[10.5px] font-black font-mono leading-none">{preset.label}</span>
+                              <span className="text-[9.5px] sm:text-[10px] font-black font-mono leading-tight truncate max-w-full block px-0.5">{preset.label}</span>
                               <span className={cn(
                                 "text-[7.5px] font-mono mt-0.5 leading-none",
                                 isSelected ? "text-amber-200" : "opacity-60"
@@ -317,9 +352,11 @@ export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
 
                       <div className="grid grid-cols-4 gap-1.5">
                         {(isWeightItem ? [0.25, 0.5, 1.0, 2.0] : [1, 2, 5, 10]).map((step, idx) => {
-                          const stepLabel = isWeightItem 
-                            ? (step >= 1 ? `+${step}kg` : `+${step * 1000}g`)
-                            : `+${step}`;
+                          const stepLabel = isLiquid
+                            ? (step >= 1 ? `+${step}L` : `+${step * 1000}ml`)
+                            : isWeightItem 
+                              ? (step >= 1 ? `+${step}kg` : `+${step * 1000}g`)
+                              : `+${step}`;
                           return (
                             <button
                               key={`step-${step}-${idx}`}
@@ -349,7 +386,7 @@ export const QuickWeightPresets: React.FC<QuickWeightPresetsProps> = ({
                         <span>Customer Rupee Budget Mode</span>
                       </div>
                       <p className="text-[9.5px] opacity-75 leading-tight">
-                        Enter rupee budget (e.g. ₹100) to auto-calculate weight from ₹{formatNumber(unitPrice, precision)}/{unit}.
+                        Enter rupee budget (e.g. ₹100) to auto-calculate {unit || 'quantity'} from ₹{formatNumber(unitPrice, precision)}/{unit}.
                       </p>
                     </div>
 
@@ -442,11 +479,14 @@ interface ItemHoldWeightModalProps {
   item: Item | null;
   isOpen: boolean;
   onClose: () => void;
-  onSelectQty: (item: Item, qty: number) => void;
-  unitPrice: number;
+  onSelectQty: (item: Item, qty: number, price?: number, rateType?: 'retail' | 'wholesale', unit?: string) => void;
+  unitPrice?: number;
   currentQty?: number;
   customPresets?: WeightPreset[];
   precision?: number;
+  onTogglePriceType?: () => void;
+  isWholesale?: boolean;
+  canTogglePrice?: boolean;
 }
 
 export const ItemHoldWeightModal: React.FC<ItemHoldWeightModalProps> = ({
@@ -454,40 +494,83 @@ export const ItemHoldWeightModal: React.FC<ItemHoldWeightModalProps> = ({
   isOpen,
   onClose,
   onSelectQty,
-  unitPrice,
+  unitPrice = 0,
   currentQty = 1,
   customPresets,
-  precision = 2
+  precision = 2,
+  onTogglePriceType,
+  isWholesale: isWholesaleProp,
+  canTogglePrice = true
 }) => {
   const [activeTab, setActiveTab] = useState<'weights' | 'amount'>('weights');
   const [customAmount, setCustomAmount] = useState<string>('');
   const [manualQty, setManualQty] = useState<string>(currentQty.toString());
 
+  // Independent local state so clicking the toggle button immediately flips rate and recalculates
+  const [isWholesale, setIsWholesale] = useState<boolean>(() => {
+    if (isWholesaleProp !== undefined) return isWholesaleProp;
+    if (item && unitPrice && item.wholesalePrice) return unitPrice === item.wholesalePrice;
+    return false;
+  });
+
+  const prevOpenRef = useRef(false);
+  const prevItemIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (isOpen) {
-      setManualQty(currentQty.toString());
-      setCustomAmount('');
-      setActiveTab('weights');
+    if (isOpen && item) {
+      const isNewOpen = !prevOpenRef.current || prevItemIdRef.current !== item.id;
+      if (isNewOpen) {
+        setManualQty(currentQty.toString());
+        setCustomAmount('');
+        setActiveTab('weights');
+        const initialIsWholesale = isWholesaleProp !== undefined 
+          ? isWholesaleProp 
+          : (unitPrice && item.wholesalePrice ? unitPrice === item.wholesalePrice : false);
+        setIsWholesale(initialIsWholesale);
+      }
     }
-  }, [isOpen, currentQty]);
+    prevOpenRef.current = isOpen;
+    prevItemIdRef.current = item?.id || null;
+  }, [isOpen, item, isWholesaleProp, unitPrice, currentQty]);
 
   if (!item || !isOpen) return null;
 
-  const unit = item.unit || 'kg';
+  const effectiveUnitPrice = isWholesale
+    ? (item.wholesalePrice && item.wholesalePrice > 0 ? item.wholesalePrice : item.retailPrice || unitPrice || 0)
+    : (item.retailPrice || unitPrice || 0);
+
+  const effectiveUnit = isWholesale
+    ? (item.wholesalePriceUnit || item.unit || 'kg')
+    : (item.retailPriceUnit || item.unit || 'kg');
+
+  const unit = effectiveUnit;
   const isWeightItem = isWeightBasedUnit(unit);
-  const activePresets = isWeightItem 
-    ? ((customPresets && customPresets.length > 0) ? customPresets : COMMON_WEIGHT_PRESETS)
-    : PIECE_PRESETS;
+  const isLiquid = isLiquidUnit(unit);
+  const activePresets = getPresetsForUnit(unit, customPresets);
+
+  const handleToggleRate = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(12);
+    }
+    setIsWholesale(prev => !prev);
+    if (onTogglePriceType) {
+      onTogglePriceType();
+    }
+  };
 
   const handleApplyPreset = (qtyVal: number) => {
-    onSelectQty(item, qtyVal);
+    onSelectQty(item, qtyVal, effectiveUnitPrice, isWholesale ? 'wholesale' : 'retail', effectiveUnit);
     onClose();
   };
 
   const handleApplyRupeeAmount = (amountNum: number) => {
-    if (amountNum > 0 && unitPrice > 0) {
-      const calculatedQty = calculateWeightFromAmount(amountNum, unitPrice, 3);
-      onSelectQty(item, calculatedQty);
+    if (amountNum > 0 && effectiveUnitPrice > 0) {
+      const calculatedQty = calculateWeightFromAmount(amountNum, effectiveUnitPrice, 3);
+      onSelectQty(item, calculatedQty, effectiveUnitPrice, isWholesale ? 'wholesale' : 'retail', effectiveUnit);
       onClose();
     }
   };
@@ -495,7 +578,7 @@ export const ItemHoldWeightModal: React.FC<ItemHoldWeightModalProps> = ({
   const handleApplyManualQty = () => {
     const q = parseFloat(manualQty);
     if (!isNaN(q) && q > 0) {
-      onSelectQty(item, q);
+      onSelectQty(item, q, effectiveUnitPrice, isWholesale ? 'wholesale' : 'retail', effectiveUnit);
       onClose();
     }
   };
@@ -514,42 +597,62 @@ export const ItemHoldWeightModal: React.FC<ItemHoldWeightModalProps> = ({
           className="bg-[var(--card)] border border-[var(--border)] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden text-[var(--foreground)]"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Top Banner with Product Details */}
-          <div className="p-4 sm:p-5 bg-gradient-to-br from-[var(--primary)]/10 via-[var(--card)] to-[var(--background)] border-b border-[var(--border)] relative">
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute top-4 right-4 h-7 w-7 rounded-full bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 flex items-center justify-center text-[var(--foreground)]/60 hover:text-[var(--foreground)] transition-colors cursor-pointer"
-            >
-              <X size={15} />
-            </button>
-
-            <div className="flex items-start gap-3">
-              <div className="h-11 w-11 rounded-2xl bg-[var(--primary)] text-white flex items-center justify-center shadow-md shadow-[var(--primary)]/20 shrink-0">
-                <Scale size={22} />
-              </div>
-
-              <div className="flex-1 pr-6">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-[var(--primary)]/15 text-[var(--primary)]">
-                    Hold Quick Weight Card
-                  </span>
-                  <span className="text-[8px] font-bold opacity-50 uppercase">
-                    ({item.unit || 'pcs'})
-                  </span>
+          {/* Top Banner: Compact, Zero Wasted Space, Professional POS Grade */}
+          <div className="px-4 py-3 sm:px-5 sm:py-3.5 bg-gradient-to-r from-[var(--primary)]/10 via-[var(--card)] to-[var(--background)] border-b border-[var(--border)]">
+            <div className="flex items-center justify-between gap-2.5">
+              
+              {/* Left: Product Icon & Info */}
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="h-9 w-9 rounded-xl bg-[var(--primary)] text-white flex items-center justify-center shadow-sm shrink-0">
+                  <Scale size={18} />
                 </div>
-                <h3 className="text-base sm:text-lg font-black uppercase text-[var(--foreground)] truncate mt-0.5">
-                  {item.name}
-                </h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-sm font-black font-mono text-[var(--primary)]">
-                    ₹{formatNumber(unitPrice, precision)}
-                  </span>
-                  <span className="text-[9px] font-bold opacity-50">
-                    / {item.unit || 'kg'}
-                  </span>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm sm:text-base font-black uppercase text-[var(--foreground)] truncate leading-tight tracking-tight">
+                    {item.name}
+                  </h3>
+                  
+                  {/* Price & Unit Line */}
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-sm sm:text-base font-black font-mono text-[var(--primary)] leading-none">
+                      ₹{formatNumber(effectiveUnitPrice, precision)}
+                    </span>
+                    <span className="text-[10px] font-bold opacity-60">
+                      /{effectiveUnit}
+                    </span>
+                  </div>
                 </div>
               </div>
+
+              {/* Right: Actions Cluster (Exchange Toggle Button + Close Button) */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {canTogglePrice !== false && (
+                  <button
+                    type="button"
+                    onClick={handleToggleRate}
+                    className={cn(
+                      "h-7 px-2.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-150 flex items-center gap-1.5 border shadow-2xs active:scale-95 cursor-pointer select-none",
+                      isWholesale
+                        ? "bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border-amber-500/40"
+                        : "bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 border-sky-500/40"
+                    )}
+                    title={`Click to switch between Retail (₹${formatNumber(item.retailPrice || 0, precision)}) and Wholesale (₹${formatNumber(item.wholesalePrice || item.retailPrice || 0, precision)})`}
+                  >
+                    <RefreshCw size={10} className={cn("shrink-0 transition-transform duration-200", isWholesale ? "rotate-180 text-amber-600 dark:text-amber-400" : "text-sky-600 dark:text-sky-400")} />
+                    <span className="font-mono">{isWholesale ? 'Wholesale' : 'Retail'}</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="h-7 w-7 rounded-lg bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 flex items-center justify-center text-[var(--foreground)]/60 hover:text-[var(--foreground)] transition-colors cursor-pointer shrink-0"
+                  title="Close"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
             </div>
           </div>
 
@@ -568,7 +671,7 @@ export const ItemHoldWeightModal: React.FC<ItemHoldWeightModalProps> = ({
                 )}
               >
                 <Scale size={14} />
-                <span>{isWeightItem ? 'Weight Presets' : 'Quantity Presets'}</span>
+                <span>{isLiquid ? 'Volume Presets' : isWeightItem ? 'Weight Presets' : `${unit} Presets`}</span>
               </button>
 
               <button
@@ -582,7 +685,7 @@ export const ItemHoldWeightModal: React.FC<ItemHoldWeightModalProps> = ({
                 )}
               >
                 <IndianRupee size={14} />
-                <span>₹ to Weight</span>
+                <span>₹ to {unit || 'Weight'}</span>
               </button>
             </div>
 
@@ -590,15 +693,14 @@ export const ItemHoldWeightModal: React.FC<ItemHoldWeightModalProps> = ({
             {activeTab === 'weights' && (
               <div className="space-y-3.5">
                 <div>
-                  <div className="text-[9px] font-black uppercase tracking-wider opacity-50 mb-2 flex items-center justify-between">
-                    <span>1-Tap Weight Chips (Select to Add to Cart)</span>
-                    <span className="text-amber-500 font-bold">{activePresets.length} chips</span>
+                  <div className="text-[9px] font-black uppercase tracking-wider mb-2 flex items-center justify-between">
+                    <span className="opacity-60">1-Tap Chips ({unit})</span>
                   </div>
 
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-56 overflow-y-auto p-0.5 no-scrollbar">
                     {activePresets.map((preset, idx) => {
                       const isSelected = Math.abs(currentQty - preset.qty) < 0.001;
-                      const priceVal = preset.qty * unitPrice;
+                      const priceVal = preset.qty * effectiveUnitPrice;
                       return (
                         <button
                           key={`hold-preset-${preset.qty}-${preset.label}-${idx}`}
@@ -702,7 +804,7 @@ export const ItemHoldWeightModal: React.FC<ItemHoldWeightModalProps> = ({
                   </div>
                   <div className="grid grid-cols-5 gap-1.5">
                     {COMMON_BUDGET_PRESETS.map((amt, idx) => {
-                      const computedWeight = calculateWeightFromAmount(amt, unitPrice, 3);
+                      const computedWeight = calculateWeightFromAmount(amt, effectiveUnitPrice, 3);
                       return (
                         <button
                           key={`hold-budget-${amt}-${idx}`}
@@ -759,9 +861,9 @@ export const ItemHoldWeightModal: React.FC<ItemHoldWeightModalProps> = ({
                     </button>
                   </div>
 
-                  {parseFloat(customAmount) > 0 && unitPrice > 0 && (
+                  {parseFloat(customAmount) > 0 && effectiveUnitPrice > 0 && (
                     <div className="mt-2 text-center text-xs font-black font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 py-1.5 rounded-xl border border-emerald-500/20">
-                      ₹{customAmount} = {calculateWeightFromAmount(parseFloat(customAmount), unitPrice, 3)} {unit}
+                      ₹{customAmount} = {calculateWeightFromAmount(parseFloat(customAmount), effectiveUnitPrice, 3)} {unit}
                     </div>
                   )}
                 </div>

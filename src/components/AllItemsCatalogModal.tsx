@@ -109,7 +109,7 @@ interface CatalogItemCardProps {
   onHoldItem: (item: Item) => void;
   onClick: (item: Item, e: React.MouseEvent) => void;
   onOpenRateSelect?: (item: Item) => void;
-  onAddToCart: (item: Item, e?: React.MouseEvent, customQty?: number, replaceQty?: boolean, customUnit?: string) => void;
+  onAddToCart: (item: Item, e?: React.MouseEvent, customQty?: number, replaceQty?: boolean, customUnit?: string, explicitPrice?: number) => void;
   onUpdateCartQuantity?: (itemId: string, newQty: number) => void;
   customPresets?: WeightPreset[];
 }
@@ -333,7 +333,7 @@ export interface AllItemsCatalogModalProps {
   items: Item[];
   categories: Category[];
   cart: CatalogCartItem[];
-  onAddToCart: (item: Item, e?: React.MouseEvent, customQty?: number, replaceQty?: boolean, customUnit?: string) => void;
+  onAddToCart: (item: Item, e?: React.MouseEvent, customQty?: number, replaceQty?: boolean, customUnit?: string, explicitPrice?: number) => void;
   onUpdateCartQuantity?: (itemId: string, newQty: number) => void;
   billingMode: 'auto' | 'retail' | 'wholesale';
   onBillingModeChange?: (mode: 'retail' | 'wholesale' | 'auto') => void;
@@ -1793,13 +1793,15 @@ export const AllItemsCatalogModal: React.FC<AllItemsCatalogModalProps> = ({
           item={holdModalItem}
           isOpen={Boolean(holdModalItem)}
           onClose={() => setHoldModalItem(null)}
-          onSelectQty={(item, qty) => {
-            onAddToCart(item, undefined, qty, true);
+          onSelectQty={(item, qty, chosenPrice, rateType, chosenUnit) => {
+            onAddToCart(item, undefined, qty, true, chosenUnit, chosenPrice);
           }}
           unitPrice={holdModalItem ? (billingMode === 'wholesale' ? (holdModalItem.wholesalePrice || holdModalItem.retailPrice) : holdModalItem.retailPrice) : 0}
           currentQty={holdModalItem ? (cartMap.get(holdModalItem.id) || 1) : 1}
           customPresets={settings?.customWeightPresets}
           precision={settings?.pricePrecision || 0}
+          isWholesale={holdModalItem ? (cart.find(c => c.id === holdModalItem.id) ? (cart.find(c => c.id === holdModalItem.id)?.price === holdModalItem.wholesalePrice) : billingMode === 'wholesale') : false}
+          canTogglePrice={true}
         />
       )}
     </>

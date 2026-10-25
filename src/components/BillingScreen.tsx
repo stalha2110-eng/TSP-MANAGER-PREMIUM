@@ -170,7 +170,22 @@ const CartQuantityInput: React.FC<{
   onChange: (newQty: number) => void;
   onDecrement: () => void;
   onIncrement: () => void;
-}> = ({ quantity, unitPrice = 0, unit = 'Pcs', precision = 2, customPresets, onChange, onDecrement, onIncrement }) => {
+  onTogglePriceType?: () => void;
+  isWholesale?: boolean;
+  canTogglePrice?: boolean;
+}> = ({
+  quantity,
+  unitPrice = 0,
+  unit = 'Pcs',
+  precision = 2,
+  customPresets,
+  onChange,
+  onDecrement,
+  onIncrement,
+  onTogglePriceType,
+  isWholesale,
+  canTogglePrice
+}) => {
   const [localVal, setLocalVal] = React.useState<string>(quantity.toString());
 
   React.useEffect(() => {
@@ -234,6 +249,9 @@ const CartQuantityInput: React.FC<{
           compact={true}
           align="right"
           customPresets={customPresets}
+          onTogglePriceType={onTogglePriceType}
+          isWholesale={isWholesale}
+          canTogglePrice={canTogglePrice}
           style={{
             height: '25.4886px',
             paddingLeft: '6.25px',
@@ -252,7 +270,21 @@ const EditCartQuantityInput: React.FC<{
   onChange: (newQty: number) => void;
   onDecrement: () => void;
   onIncrement: () => void;
-}> = ({ quantity, unitPrice = 0, unit = 'Pcs', precision = 2, onChange, onDecrement, onIncrement }) => {
+  onTogglePriceType?: () => void;
+  isWholesale?: boolean;
+  canTogglePrice?: boolean;
+}> = ({
+  quantity,
+  unitPrice = 0,
+  unit = 'Pcs',
+  precision = 2,
+  onChange,
+  onDecrement,
+  onIncrement,
+  onTogglePriceType,
+  isWholesale,
+  canTogglePrice
+}) => {
   const [localVal, setLocalVal] = React.useState<string>(quantity.toString());
 
   React.useEffect(() => {
@@ -313,6 +345,9 @@ const EditCartQuantityInput: React.FC<{
           onSelectQty={onChange}
           compact={true}
           align="center"
+          onTogglePriceType={onTogglePriceType}
+          isWholesale={isWholesale}
+          canTogglePrice={canTogglePrice}
           style={{
             height: '25.4886px',
             paddingLeft: '6.25px',
@@ -1469,9 +1504,16 @@ export default function BillingScreen({
     return { price: rawPrice, unit: customUnit };
   };
 
-  const addToCart = useCallback((product: Item, e?: React.MouseEvent | any, customQty?: number, replaceQty?: boolean, customUnit?: string) => {
+  const addToCart = useCallback((product: Item, e?: React.MouseEvent | any, customQty?: number, replaceQty?: boolean, customUnit?: string, explicitPrice?: number) => {
     const targetQty = (typeof customQty === 'number' && !isNaN(customQty) && customQty > 0) ? customQty : 1;
     
+    // Calculate total quantity for speech announcement (announces e.g. 2 kg if 1 kg was already present and 1 kg added)
+    const existingCartItem = cart.find(c => c.id === product.id);
+    const totalAnnounceQty = existingCartItem
+      ? (replaceQty ? targetQty : parseFloat((existingCartItem.quantity + targetQty).toFixed(3)))
+      : targetQty;
+    const announceUnit = customUnit || (existingCartItem ? existingCartItem.unit : product.unit) || 'piece';
+
     // Functional updater guarantees that rapid sequential taps on multiple cards NEVER drop items
     setCart(prevCart => {
       const existingIndex = prevCart.findIndex(c => c.id === product.id);
@@ -1483,17 +1525,19 @@ export default function BillingScreen({
           newQty = parseFloat((prevCart[existingIndex].quantity + targetQty).toFixed(3));
         }
         const { price, unit } = getItemPriceAndUnit(product, newQty, customUnit || prevCart[existingIndex].unit);
+        const finalPrice = (explicitPrice !== undefined && explicitPrice > 0) ? explicitPrice : price;
         
         const updated = [...prevCart];
         updated[existingIndex] = {
           ...updated[existingIndex],
           quantity: newQty,
-          price,
+          price: finalPrice,
           unit: customUnit || unit || updated[existingIndex].unit
         };
         return updated;
       } else {
         const { price, unit } = getItemPriceAndUnit(product, newQty, customUnit);
+        const finalPrice = (explicitPrice !== undefined && explicitPrice > 0) ? explicitPrice : price;
         
         const trs = product.translations || { en: product.name || '', hi: '', mr: '', 'hi-en': '' };
         const newCartItem: CartItem = {
@@ -1501,7 +1545,7 @@ export default function BillingScreen({
           item: product,
           name: trs[currentLang] || trs.en || product.name,
           quantity: newQty,
-          price,
+          price: finalPrice,
           cost: product.buyingPrice || 0,
           unit: customUnit || unit
         };
@@ -1546,13 +1590,13 @@ export default function BillingScreen({
 
       playFeedbackEvent('product_added', state.settings, { 
         itemName: pName,
-        quantity: targetQty,
-        unit: customUnit || product.unit || 'piece'
+        quantity: totalAnnounceQty,
+        unit: announceUnit
       });
       const trsForRecent = product.translations || { en: product.name || '', hi: '', mr: '', 'hi-en': '' };
       addRecentSearch(trsForRecent[currentLang] || trsForRecent.en || product.name);
     });
-  }, [billingMode, currentLang, state.settings]);
+  }, [cart, billingMode, currentLang, state.settings]);
 
   // Sync kotTicketNo to localStorage
   useEffect(() => {
@@ -1737,6 +1781,7 @@ export default function BillingScreen({
   };
 
   const updateCartQuantity = useCallback((id: string, newQty: number) => {
+    const targetItem = cart.find(item => item.id === id);
     setCart(prevCart => {
       if (newQty <= 0) {
         return prevCart.filter(item => item.id !== id);
@@ -1754,7 +1799,16 @@ export default function BillingScreen({
         return item;
       });
     });
-  }, []);
+
+    if (targetItem && newQty > 0) {
+      const cleanQty = parseFloat(newQty.toFixed(3));
+      playFeedbackEvent('product_added', state.settings, {
+        itemName: targetItem.name,
+        quantity: cleanQty,
+        unit: targetItem.unit || 'piece'
+      });
+    }
+  }, [cart, state.settings]);
 
   // Auto pricing synchronization when mode changes
   useEffect(() => {
@@ -5261,6 +5315,9 @@ export default function BillingScreen({
                             unitPrice={ci.price}
                             unit={ci.unit || 'pcs'}
                             precision={precision}
+                            onTogglePriceType={() => togglePriceType(ci.id)}
+                            isWholesale={isWholesale}
+                            canTogglePrice={!ci.item.isManual && !!itemObj}
                           />
 
                           {/* Trash */}
@@ -6548,6 +6605,15 @@ export default function BillingScreen({
                       {editCart.map((eci, ecIdx) => {
                         const itemInDb = state.items.find(i => i.id === eci.id);
                         const attachedImage = eci.item?.imageUrl || itemInDb?.imageUrl;
+                        const isWholesale = itemInDb && itemInDb.wholesalePrice ? (eci.price === itemInDb.wholesalePrice) : false;
+                        const canToggleRate = !!(itemInDb && itemInDb.wholesalePrice);
+                        const toggleEditRate = () => {
+                          if (!itemInDb) return;
+                          const isCurrentlyWholesale = eci.price === itemInDb.wholesalePrice;
+                          const newPrice = isCurrentlyWholesale ? itemInDb.retailPrice : (itemInDb.wholesalePrice || itemInDb.retailPrice);
+                          const newUnit = isCurrentlyWholesale ? (itemInDb.retailPriceUnit || itemInDb.unit) : (itemInDb.wholesalePriceUnit || itemInDb.unit);
+                          setEditCart(editCart.map(c => c.id === eci.id ? { ...c, price: newPrice, unit: newUnit } : c));
+                        };
                         return (
                         <div key={`edit-cart-item-${eci.id || 'eci'}-${ecIdx}`} className="p-2.5 grid grid-cols-12 gap-2 text-xs items-center">
                           <div 
@@ -6580,6 +6646,9 @@ export default function BillingScreen({
                               unitPrice={eci.price}
                               unit={eci.unit || 'pcs'}
                               precision={precision}
+                              onTogglePriceType={toggleEditRate}
+                              isWholesale={isWholesale}
+                              canTogglePrice={canToggleRate}
                             />
                           </div>
                           
@@ -8077,13 +8146,15 @@ export default function BillingScreen({
         item={holdWeightItem}
         isOpen={Boolean(holdWeightItem)}
         onClose={() => setHoldWeightItem(null)}
-        onSelectQty={(item, qty) => {
-          addToCart(item, undefined, qty, true);
+        onSelectQty={(item, qty, chosenPrice, rateType, chosenUnit) => {
+          addToCart(item, undefined, qty, true, chosenUnit, chosenPrice);
         }}
         unitPrice={holdWeightItem ? (billingMode === 'wholesale' ? (holdWeightItem.wholesalePrice || holdWeightItem.retailPrice) : holdWeightItem.retailPrice) : 0}
         currentQty={holdWeightItem ? (cart.find(c => c.id === holdWeightItem.id)?.quantity || 1) : 1}
         customPresets={state.settings?.customWeightPresets}
         precision={state.settings?.pricePrecision || 0}
+        isWholesale={holdWeightItem ? (cart.find(c => c.id === holdWeightItem.id) ? (cart.find(c => c.id === holdWeightItem.id)?.price === holdWeightItem.wholesalePrice) : billingMode === 'wholesale') : false}
+        canTogglePrice={true}
       />
 
       {/* Floating Sparkle Micro-animation Particles trigger */}

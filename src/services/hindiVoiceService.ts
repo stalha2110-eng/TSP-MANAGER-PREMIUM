@@ -273,6 +273,12 @@ export function speakItemAddedConfirmation(
     return `${grams} gram`;
   });
 
+  // Strip trailing quantity from product name if we are announcing an explicit dynamic quantity
+  // e.g. if item is named "Sugar 1kg" and new total quantity is 2 kg, strip "1kg" so it announces "Sugar 2 kg"
+  if (quantity !== undefined && quantity > 0) {
+    cleanName = cleanName.replace(/\s+\d+(?:\.\d+)?\s*(?:kg|kgs|kilo|kilos|kilogram|kilograms|gm|g|grams?|ltr|l|litres?|liter|liters?|ml|pcs|pc|pieces?|bottles?|box|boxes|pkts?|packets?|bags?)$/i, '').trim();
+  }
+
   // Format quantity & unit
   let qtyUnitText = '';
   if (quantity !== undefined && quantity !== null && !isNaN(quantity) && quantity > 0) {

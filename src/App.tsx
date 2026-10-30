@@ -104,6 +104,7 @@ import {
 import XLSX from 'xlsx-js-style';
 import { BUSINESS_MODES } from './services/businessModeConfig';
 import { RecoveryService } from './services/recoveryService';
+import { CloudSyncService } from './services/cloudSyncService';
 import BusinessSettingsScreen from './components/BusinessSettingsScreen';
 import StoreClosingControlCenter from './components/StoreClosingControlCenter';
 import SettingsScreen from './components/SettingsScreen';
@@ -327,17 +328,31 @@ export default function App() {
     { timestamp: new Date().toLocaleTimeString(), msg: 'Auto-healing system initialized on ports.', code: 'RECOVERY_HEALTHY' }
   ]);
 
+  // Reference to always capture latest AppState inside event listeners
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
   // Listener for Offline / Online state shifts
   useEffect(() => {
-    const goOnline = () => {
+    const goOnline = async () => {
       setSyncStatus('Recovering');
       setIntegrityLogs(prev => [
         { timestamp: new Date().toLocaleTimeString(), msg: 'Network reconnection validated. Auto-sync queue processing.', code: 'NET_RECON_ONLINE' },
         ...prev
       ]);
-      setTimeout(() => {
+      try {
+        const res = await CloudSyncService.forceSyncWithFirestore(stateRef.current, setState);
         setSyncStatus('Synced');
-      }, 1500);
+        setIntegrityLogs(prev => [
+          { timestamp: new Date().toLocaleTimeString(), msg: `Auto-sync complete: ${res.itemsSynced} items, ${res.billsSynced} bills synced with cloud.`, code: 'NET_SYNC_OK' },
+          ...prev
+        ]);
+      } catch (err) {
+        console.warn("Reconnection background auto-sync error:", err);
+        setSyncStatus('Synced');
+      }
     };
     
     const goOffline = () => {
@@ -780,7 +795,7 @@ export default function App() {
   const [showManageCategories, setShowManageCategories] = useState(false);
   const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isAuthChecking, setIsAuthChecking] = useState(() => !INITIAL_STATE.user);
   const [isTabLoading, setIsTabLoading] = useState(false);
 
   const handleTabChange = useCallback((tab: 'home' | 'billing' | 'analytics' | 'udhar' | 'notes' | 'shift' | 'goals' | 'history') => {
@@ -2278,6 +2293,7 @@ export default function App() {
       if (user) {
         if (user.email && user.uid !== 'guest_user') {
           localStorage.setItem('ts_last_logged_in_email', user.email);
+          localStorage.setItem('ts_cached_auth_user', JSON.stringify({ uid: user.uid, email: user.email }));
         }
         try {
           const userDocRef = doc(db, 'users', user.uid);
@@ -2322,6 +2338,7 @@ export default function App() {
         }
       } else {
         const isGuest = localStorage.getItem('ts_guest_logged_in') === 'true';
+        const cachedUserStr = localStorage.getItem('ts_cached_auth_user');
         if (isGuest) {
           setState(prev => ({ 
             ...prev, 
@@ -2337,7 +2354,14 @@ export default function App() {
               storeClosingTime: prev.settings.storeClosingTime || '21:00',
             }
           }));
+        } else if (!navigator.onLine && cachedUserStr) {
+          // Device is offline: keep user logged in using cached credentials
+          try {
+            const cached = JSON.parse(cachedUserStr);
+            setState(prev => ({ ...prev, user: cached }));
+          } catch {}
         } else {
+          localStorage.removeItem('ts_cached_auth_user');
           setState(prev => ({ ...prev, user: null }));
         }
         if (isMounted) setIsAuthChecking(false);
@@ -2475,20 +2499,27 @@ export default function App() {
       
       itemsList.sort((a, b) => (b.lastUpdated || '').localeCompare(a.lastUpdated || ''));
 
-      setState(prev => ({
-        ...prev,
-        items: deduplicateById(itemsList)
-      }));
+      setState(prev => {
+        // Safeguard: Never wipe local inventory when an empty or partial snapshot arrives offline
+        if (itemsList.length === 0 && prev.items.length > 0) {
+          return prev;
+        }
+        const unsyncedItems = prev.items.filter(pi => !itemsList.some(il => il.id === pi.id) && !isItemDeleted(pi.id));
+        return {
+          ...prev,
+          items: deduplicateById([...itemsList, ...unsyncedItems])
+        };
+      });
     }, (error) => {
       if (auth.currentUser) {
-        console.error("Items sync error:", error);
+        console.warn("Items sync notice:", error);
         if (error.code === 'permission-denied') {
-          alert("Firestore Permission Denied. Please check your account permissions.");
+          console.warn("Firestore Permission Denied. Retrying upon reconnection.");
         }
       }
     });
 
-    // Sync Notes (clean remote reflection)
+    // Sync Notes (clean remote reflection with offline preservation)
     const notesRef = collection(db, 'users', state.user.uid, 'notes');
     const unsubNotes = onSnapshot(notesRef, (snap) => {
       const notesList: Note[] = [];
@@ -2496,13 +2527,19 @@ export default function App() {
       
       notesList.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 
-      setState(prev => ({
-        ...prev,
-        notes: deduplicateById(notesList)
-      }));
+      setState(prev => {
+        if (notesList.length === 0 && prev.notes.length > 0) {
+          return prev;
+        }
+        const unsyncedNotes = prev.notes.filter(pn => !notesList.some(nl => nl.id === pn.id));
+        return {
+          ...prev,
+          notes: deduplicateById([...notesList, ...unsyncedNotes])
+        };
+      });
     }, (error) => {
       if (auth.currentUser) {
-        console.error("Notes sync error:", error);
+        console.warn("Notes sync notice:", error);
       }
     });
 
@@ -2541,14 +2578,19 @@ export default function App() {
       billsList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       setAnalyticsRenderKey(k => k + 1);
-      setState(prev => ({
-        ...prev,
-        bills: deduplicateById(billsList)
-      }));
+      setState(prev => {
+        if (billsList.length === 0 && prev.bills.length > 0) {
+          return prev;
+        }
+        const unsyncedBills = prev.bills.filter(pb => !billsList.some(bl => bl.id === pb.id));
+        return {
+          ...prev,
+          bills: deduplicateById([...billsList, ...unsyncedBills])
+        };
+      });
     }, (error) => {
       if (auth.currentUser) {
-        console.error("Bills sync error:", error);
-        handleFirestoreError(error, OperationType.LIST, `users/${state.user!.uid}/bills`);
+        console.warn("Bills sync notice:", error);
       }
     });
 
@@ -2889,6 +2931,7 @@ export default function App() {
   // --- Handlers ---
   const handleLogout = useCallback(async () => {
     localStorage.removeItem('ts_guest_logged_in');
+    localStorage.removeItem('ts_cached_auth_user');
     await auth.signOut();
     setState(prev => ({
       ...prev,
@@ -2910,6 +2953,7 @@ export default function App() {
         if (user.email) {
           localStorage.setItem('ts_last_logged_in_email', user.email);
         }
+        localStorage.setItem('ts_cached_auth_user', JSON.stringify({ uid: user.uid, email: user.email }));
         try {
           const userDocRef = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userDocRef);

@@ -265,12 +265,25 @@ export const getInitialState = (): AppState => {
     }
   }
 
+  // Restore authenticated user from offline cache so inventory and dashboards load immediately without internet
+  let cachedUser: { uid: string; email: string | null } | null = null;
+  try {
+    const savedUser = localStorage.getItem('ts_cached_auth_user');
+    if (savedUser) {
+      cachedUser = JSON.parse(savedUser);
+    } else if (localStorage.getItem('ts_guest_logged_in') === 'true') {
+      cachedUser = { uid: 'guest_user', email: 'Guest Merchant' };
+    }
+  } catch (e) {
+    console.warn("Failed to parse cached auth user", e);
+  }
+
   return {
     items: deduplicateById(items.filter((item: any) => item && !isItemDeleted(item.id))),
     notes: deduplicateById(notes),
     categories: DEFAULT_CATEGORIES,
     settings,
-    user: null,
+    user: cachedUser,
     bills: deduplicateById(bills),
     udharCustomers: deduplicateById(udharCustomers),
     udharTransactions: deduplicateById(udharTransactions),

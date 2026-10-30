@@ -2,6 +2,9 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User } from 'firebase/auth';
 import { 
   getFirestore, 
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   doc, 
   setDoc, 
   onSnapshot, 
@@ -35,10 +38,20 @@ export const getMessagingInstance = async () => {
   return null;
 };
 
-// Initialize Firestore with configured database ID
-export const db = safeConfig?.firestoreDatabaseId 
-  ? getFirestore(app, safeConfig.firestoreDatabaseId)
-  : getFirestore(app);
+// Initialize Firestore with configured database ID and multi-tab persistent IndexedDB local cache
+export const db = (() => {
+  const dbId = safeConfig?.firestoreDatabaseId;
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    }, dbId || undefined);
+  } catch (err) {
+    console.warn("Using fallback for Firestore initialization:", err);
+    return dbId ? getFirestore(app, dbId) : getFirestore(app);
+  }
+})();
 
 export const googleProvider = new GoogleAuthProvider();
 
@@ -85,8 +98,20 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errMsg = error instanceof Error ? error.message : String(error);
+  const isOffline = !navigator.onLine || 
+    (error as any)?.code === 'unavailable' || 
+    errMsg.includes('offline') || 
+    errMsg.includes('unavailable') || 
+    errMsg.includes('network');
+
+  if (isOffline) {
+    console.info(`[Firestore Offline Cache] Action '${operationType}' at '${path}' stored in local offline queue.`);
+    return;
+  }
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errMsg,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -96,7 +121,7 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
       providerInfo: auth.currentUser?.providerData?.map(provider => ({
         providerId: provider.providerId,
         email: provider.email,
-          })) || []
+      })) || []
     },
     operationType,
     path

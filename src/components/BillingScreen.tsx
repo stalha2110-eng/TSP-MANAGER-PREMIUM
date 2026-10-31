@@ -3363,7 +3363,7 @@ export default function BillingScreen({
                       title="Open clean cash register checkout draft"
                     >
                       <Plus size={12} className="shrink-0" />
-                      + New Bill
+                       New Bill
                     </button>
                   </div>
                 </motion.div>

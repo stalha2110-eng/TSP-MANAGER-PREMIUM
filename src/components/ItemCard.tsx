@@ -22,6 +22,8 @@ export interface ItemCardProps {
   onPeek?: (preview: { type: 'item' | 'customer' | 'bill' | 'notification' | 'analytics'; payload: any }) => void;
 }
 
+const HOLD_DURATION_MS = 1000;
+
 export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdit, onDelete, t, onUpdateItem, isSelected, anyItemsSelected, onSelect, onPeek }: ItemCardProps) => {
 
   const category = DEFAULT_CATEGORIES.find(c => c.id === item.categoryId);
@@ -62,7 +64,7 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
     setIsHolding(true);
     setHoldProgress(0);
     
-    const duration = 1500;
+    const duration = HOLD_DURATION_MS;
     const intervalTime = 50;
     let elapsed = 0;
     
@@ -183,7 +185,7 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
       {isHolding && (
         <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center z-45 select-none pointer-events-none">
           <div className="text-white text-[10px] font-black uppercase tracking-wider mb-2 flex items-center gap-1.5 animate-pulse">
-            <Clock size={11} /> Hold to select ({((1500 - (holdProgress / 100 * 1500)) / 1000).toFixed(1)}s)
+            <Clock size={11} /> Hold to select ({((HOLD_DURATION_MS - (holdProgress / 100 * HOLD_DURATION_MS)) / 1000).toFixed(1)}s)
           </div>
           <div className="w-1/2 h-1.5 rounded-full bg-white/20 overflow-hidden border border-white/10 shadow-inner">
             <div className="h-full bg-[var(--primary)] transition-all duration-75" style={{ width: `${holdProgress}%` }} />

@@ -4794,14 +4794,19 @@ export default function BillingScreen({
                 <button
                   type="button"
                   onClick={() => setManualCustomerOpen(true)}
-                  className="w-full h-10 px-4 rounded-xl bg-indigo-50/90 hover:bg-indigo-100 active:bg-indigo-200/80 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200/90 dark:border-indigo-800/70 font-bold text-xs flex items-center justify-center gap-2 shadow-xs hover:shadow-sm active:scale-[0.98] transition-all cursor-pointer select-none"
+                  className="w-full h-8 px-3 rounded-lg border border-dashed border-[var(--border)] hover:border-[var(--primary)]/50 bg-[var(--card)] hover:bg-[var(--foreground)]/[0.02] text-[var(--foreground)]/70 hover:text-[var(--foreground)] text-[11px] font-medium flex items-center justify-between transition-all cursor-pointer group select-none shadow-2xs active:scale-[0.99]"
                 >
-                  <UserPlus size={15} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
-                  <span className="tracking-wide">
-                    + Add Customer Info
-                  </span>
-                  <span className="text-[10px] font-normal opacity-75 hidden sm:inline">
-                    ({cleanAndValidateText("ग्राहक विवरण", currentLang, state.settings)})
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <UserPlus size={13} className="text-[var(--foreground)]/45 group-hover:text-[var(--primary)] shrink-0 transition-colors" />
+                    <span className="font-bold text-[10.5px] uppercase tracking-wide text-[var(--foreground)]/70 group-hover:text-[var(--foreground)] truncate">
+                      Customer Info
+                    </span>
+                    <span className="text-[9px] font-semibold text-[var(--foreground)]/40 hidden sm:inline">
+                      (Optional)
+                    </span>
+                  </div>
+                  <span className="text-[9.5px] font-black uppercase tracking-wider text-[var(--primary)] bg-[var(--primary)]/10 group-hover:bg-[var(--primary)]/15 px-2 py-0.5 rounded-md shrink-0 transition-colors flex items-center gap-0.5">
+                    <span>+ Add</span>
                   </span>
                 </button>
               )

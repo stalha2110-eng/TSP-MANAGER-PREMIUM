@@ -4796,17 +4796,17 @@ export default function BillingScreen({
                   onClick={() => setManualCustomerOpen(true)}
                   className="w-full h-8 px-3 rounded-lg border border-dashed border-[var(--border)] hover:border-[var(--primary)]/50 bg-[var(--card)] hover:bg-[var(--foreground)]/[0.02] text-[var(--foreground)]/70 hover:text-[var(--foreground)] text-[11px] font-medium flex items-center justify-between transition-all cursor-pointer group select-none shadow-2xs active:scale-[0.99]"
                 >
-                  <div className="flex items-center gap-1.5 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
                     <UserPlus size={13} className="text-[var(--foreground)]/45 group-hover:text-[var(--primary)] shrink-0 transition-colors" />
-                    <span className="font-bold text-[10.5px] uppercase tracking-wide text-[var(--foreground)]/70 group-hover:text-[var(--foreground)] truncate">
+                    <span className="font-bold text-[10.5px] uppercase tracking-wide text-[var(--foreground)]/75 group-hover:text-[var(--foreground)] truncate">
                       Customer Info
                     </span>
-                    <span className="text-[9px] font-semibold text-[var(--foreground)]/40 hidden sm:inline">
-                      (Optional)
+                    <span className="text-[9px] font-black uppercase tracking-wider text-[var(--primary)] bg-[var(--primary)]/10 group-hover:bg-[var(--primary)]/20 px-1.5 py-0.5 rounded-md shrink-0 transition-colors flex items-center gap-0.5 leading-none">
+                      + Add
                     </span>
                   </div>
-                  <span className="text-[9.5px] font-black uppercase tracking-wider text-[var(--primary)] bg-[var(--primary)]/10 group-hover:bg-[var(--primary)]/15 px-2 py-0.5 rounded-md shrink-0 transition-colors flex items-center gap-0.5">
-                    <span>+ Add</span>
+                  <span className="text-[9px] font-semibold text-[var(--foreground)]/40 hidden sm:inline">
+                    (Optional)
                   </span>
                 </button>
               )

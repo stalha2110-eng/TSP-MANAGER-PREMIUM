@@ -78,7 +78,6 @@ export default function NotificationCenter({
   const [showConfirmMarkAll, setShowConfirmMarkAll] = useState(false);
   const [showConfirmDeleteAll, setShowConfirmDeleteAll] = useState(false);
   const [localDeletedIds, setLocalDeletedIds] = useState<string[]>([]);
-  const [swipedNotificationId, setSwipedNotificationId] = useState<string | null>(null);
   
   // Custom Admin Notification Broadcast sandbox
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -608,7 +607,6 @@ export default function NotificationCenter({
                   <AnimatePresence mode="popLayout">
                     {filteredList.map((notif, idx) => {
                       const isHigh = notif.priority === 'high';
-                      const isSwiped = swipedNotificationId === notif.id;
                       const relTime = formatRelativeTime(notif.timestamp);
 
                       // Category Aura & Color mapping
@@ -640,51 +638,39 @@ export default function NotificationCenter({
                           key={`${notif.category || 'cat'}-${notif.isDynamicAlert ? 'dyn' : 'cloud'}-${notif.id || idx}`}
                           initial={{ opacity: 0, y: 12 }}
                           animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, x: -100, transition: { duration: 0.2 } }}
+                          exit={{ opacity: 0, scale: 0.9, height: 0, marginBottom: 0, transition: { duration: 0.22 } }}
                           transition={{ type: "spring", stiffness: 400, damping: 30 }}
                           className="group relative overflow-hidden rounded-2xl"
                         >
-                          {/* Swipe-to-delete Action Reveal (Behind the card) */}
-                          <div className="absolute inset-0 bg-rose-500/15 rounded-2xl border border-rose-500/20 flex items-center justify-end overflow-hidden">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteNotification(notif.id, notif.isDynamicAlert);
-                              }}
-                              className="h-full w-20 bg-rose-500 hover:bg-rose-600 text-white flex flex-col items-center justify-center gap-1 cursor-pointer active:scale-95 transition-all shadow-md"
-                              title="Delete notification"
-                            >
+                          {/* Underlying Swipe-to-Dismiss Background (reveals when user drags left or right) */}
+                          <div className="absolute inset-0 bg-rose-500 rounded-2xl flex items-center justify-between px-5 text-white select-none pointer-events-none">
+                            <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
                               <Trash2 size={16} />
-                              <span className="text-[8.5px] font-black uppercase tracking-wider">Delete</span>
-                            </button>
+                              <span>Delete</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
+                              <span>Delete</span>
+                              <Trash2 size={16} />
+                            </div>
                           </div>
 
-                          {/* Interactive Card Surface */}
+                          {/* Interactive Card Surface with Swipe-to-Delete */}
                           <motion.div
                             drag="x"
-                            dragConstraints={{ left: -80, right: 0 }}
-                            dragElastic={0.12}
-                            animate={{ x: isSwiped ? -80 : 0 }}
+                            dragConstraints={{ left: 0, right: 0 }}
+                            dragElastic={0.65}
                             transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                            onDragEnd={(event, info) => {
-                              if (info.offset.x < -35) {
-                                setSwipedNotificationId(notif.id);
-                                triggerHaptic(8);
-                              } else if (info.offset.x > 25) {
-                                setSwipedNotificationId(null);
+                            onDragEnd={(_, info) => {
+                              if (Math.abs(info.offset.x) > 55 || Math.abs(info.velocity.x) > 280) {
+                                triggerHaptic(18);
+                                handleDeleteNotification(notif.id, notif.isDynamicAlert);
                               }
                             }}
-                            onClick={(e) => {
-                              if (isSwiped) {
-                                e.stopPropagation();
-                                setSwipedNotificationId(null);
-                              } else {
-                                handleCardClick(notif);
-                              }
+                            onClick={() => {
+                              handleCardClick(notif);
                             }}
                             className={cn(
-                              "relative z-10 p-3.5 sm:p-4 rounded-2xl border bg-[var(--card)] hover:border-[var(--primary)]/40 transition-all select-none flex items-start gap-3 cursor-pointer active:scale-[0.98]",
+                              "relative z-10 p-3.5 sm:p-4 rounded-2xl border bg-[var(--card)] hover:border-[var(--primary)]/40 transition-all select-none flex items-start gap-3 cursor-grab active:cursor-grabbing touch-pan-y",
                               !notif.isRead 
                                 ? "border-[var(--primary)]/25 shadow-sm" 
                                 : "border-[var(--border)] opacity-65 hover:opacity-100"

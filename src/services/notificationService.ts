@@ -502,7 +502,14 @@ export class NotificationService {
 
       // 2. Calculate store closing time and target notification time (10 minutes BEFORE store closing)
       const closingTimeStr = settings?.storeClosingTime || settings?.dailySummaryTime || "21:00";
-      const [chour, cmin] = closingTimeStr.includes(':') ? closingTimeStr.split(':').map(Number) : [21, 0];
+      const isPM = /pm/i.test(closingTimeStr);
+      const isAM = /am/i.test(closingTimeStr);
+      const cleanClosing = closingTimeStr.replace(/[^\d:]/g, '');
+      const parts = cleanClosing.includes(':') ? cleanClosing.split(':').map(Number) : [21, 0];
+      let chour = !isNaN(parts[0]) ? parts[0] : 21;
+      const cmin = !isNaN(parts[1]) ? parts[1] : 0;
+      if (isPM && chour < 12) chour += 12;
+      if (isAM && chour === 12) chour = 0;
 
       let targetHour = chour;
       let targetMin = cmin - 10;

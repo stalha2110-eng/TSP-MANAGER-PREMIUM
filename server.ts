@@ -2,6 +2,9 @@ import express from "express";
 import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
 import { z } from "zod";
+import cloudinarySignHandler from "./api/cloudinary/sign";
+import cloudinaryDeleteHandler from "./api/cloudinary/delete";
+import cloudinaryCleanupHandler from "./api/cloudinary/cleanup-pending";
 
 // ==========================================
 // 10. Environment Variable Boot Validation
@@ -13,6 +16,10 @@ const serverEnvSchema = z.object({
   GEMINI_API_KEY_FALLBACK: z.string().optional(),
   GEMINI_API_KEYS: z.string().optional(),
   VITE_GEMINI_API_KEY: z.string().optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
   PORT: z.string().or(z.number()).default(3000),
 });
 
@@ -479,6 +486,11 @@ Ensure correct spelling corrections of typical Indian speech recognition typos:
       timestamp: new Date().toISOString(),
     });
   });
+
+  // Cloudinary Signed Upload & Safe Deletion Endpoints (Parity with Vercel Serverless Functions)
+  app.post("/api/cloudinary/sign", (req, res) => cloudinarySignHandler(req, res));
+  app.post("/api/cloudinary/delete", (req, res) => cloudinaryDeleteHandler(req, res));
+  app.all("/api/cloudinary/cleanup-pending", (req, res) => cloudinaryCleanupHandler(req, res));
 
   // App Version Check (Used by iOS/Safari pull-to-refresh to detect new features & updates)
   const APP_BUILD_TAG = "v2.5.0-ios-sync";

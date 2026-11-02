@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   User, Mail, LogOut, LogIn, ShieldCheck, Lock, CheckCircle, XCircle, 
-  EyeOff, Eye, Download, ChevronRight, MessageSquare, RefreshCw, 
+  EyeOff, Eye, Download, ChevronRight, RefreshCw, 
   Store, Cloud, Database, Phone, MapPin, Clock, Sun, Moon, Bell, Save,
-  Monitor, Smartphone, Check, Minimize2, Type, Maximize2
+  Monitor, Smartphone, Check, Minimize2, Type, Maximize2, X, Sparkles
 } from 'lucide-react';
 import { AndroidIcon, AppleIcon } from './DeviceIcons';
 import { currentDevice, DeviceInfo } from '../utils/device';
@@ -264,6 +264,405 @@ export function PasswordLinkManager({ user, settings }: { user: any; settings: a
   );
 }
 
+export function parseTo12Hour(
+  timeStr?: string, 
+  defaultHour = 8, 
+  defaultPeriod: 'AM' | 'PM' = 'AM'
+): { hours: number; minutes: number; period: 'AM' | 'PM' } {
+  if (!timeStr) {
+    return { hours: defaultHour, minutes: 0, period: defaultPeriod };
+  }
+  const isPM = /pm/i.test(timeStr);
+  const isAM = /am/i.test(timeStr);
+  const clean = timeStr.replace(/[^\d:]/g, '');
+  const parts = clean.split(':').map(Number);
+  let h = !isNaN(parts[0]) ? parts[0] : defaultHour;
+  const m = !isNaN(parts[1]) ? parts[1] : 0;
+
+  if (isPM || isAM) {
+    const period: 'AM' | 'PM' = isPM ? 'PM' : 'AM';
+    let hours12 = h % 12;
+    if (hours12 === 0) hours12 = 12;
+    return { hours: hours12, minutes: m, period };
+  } else {
+    // 24-hour fallback
+    const period: 'AM' | 'PM' = h >= 12 ? 'PM' : 'AM';
+    let hours12 = h % 12;
+    if (hours12 === 0) hours12 = 12;
+    return { hours: hours12, minutes: m, period };
+  }
+}
+
+export function formatTo12Hour(hours: number, minutes: number, period: 'AM' | 'PM'): string {
+  const padH = String(hours).padStart(2, '0');
+  const padM = String(minutes).padStart(2, '0');
+  return `${padH}:${padM} ${period}`;
+}
+
+export function Modern12HourTimePickerModal({
+  isOpen,
+  onClose,
+  type,
+  currentTimeStr,
+  onConfirm
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  type: 'opening' | 'closing';
+  currentTimeStr: string;
+  onConfirm: (val: string) => void;
+}) {
+  const isOpening = type === 'opening';
+  const parsed = parseTo12Hour(currentTimeStr, isOpening ? 8 : 9, isOpening ? 'AM' : 'PM');
+  const [hours, setHours] = useState(parsed.hours);
+  const [minutes, setMinutes] = useState(parsed.minutes);
+  const [period, setPeriod] = useState<'AM' | 'PM'>(parsed.period);
+  const [mode, setMode] = useState<'hour' | 'minute'>('hour');
+  const [isDragging, setIsDragging] = useState(false);
+  const dialRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      const p = parseTo12Hour(currentTimeStr, isOpening ? 8 : 9, isOpening ? 'AM' : 'PM');
+      setHours(p.hours);
+      setMinutes(p.minutes);
+      setPeriod(p.period);
+      setMode('hour');
+      setIsDragging(false);
+    }
+  }, [isOpen, currentTimeStr, isOpening]);
+
+  if (!isOpen) return null;
+
+  const currentFormatted = formatTo12Hour(hours, minutes, period);
+
+  const updateFromPointer = (clientX: number, clientY: number) => {
+    if (!dialRef.current) return;
+    const rect = dialRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = clientX - centerX;
+    const dy = clientY - centerY;
+
+    // Angle clockwise from 12 o'clock in degrees
+    const deg = (Math.atan2(dx, -dy) * (180 / Math.PI) + 360) % 360;
+
+    if (mode === 'hour') {
+      let rawHour = Math.round(deg / 30) % 12;
+      if (rawHour === 0) rawHour = 12;
+      if (rawHour !== hours) {
+        setHours(rawHour);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(8);
+        }
+      }
+    } else {
+      const rawMin = Math.round(deg / 6) % 60;
+      if (rawMin !== minutes) {
+        setMinutes(rawMin);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(6);
+        }
+      }
+    }
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+    updateFromPointer(e.clientX, e.clientY);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    updateFromPointer(e.clientX, e.clientY);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDragging) {
+      setIsDragging(false);
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+      if (mode === 'hour') {
+        setTimeout(() => {
+          setMode('minute');
+        }, 220);
+      }
+    }
+  };
+
+  const handleConfirm = () => {
+    onConfirm(currentFormatted);
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(15);
+      }
+    } catch {
+      // ignore
+    }
+    onClose();
+  };
+
+  // Dial geometry
+  const dialRadius = 92;
+  const dialCenter = 125;
+
+  const hourNumbers = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+  const minuteNumbers = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+
+  const currentAngleRad = mode === 'hour'
+    ? (hours * 30) * (Math.PI / 180)
+    : (minutes * 6) * (Math.PI / 180);
+
+  const nodeX = dialCenter + dialRadius * Math.sin(currentAngleRad);
+  const nodeY = dialCenter - dialRadius * Math.cos(currentAngleRad);
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {/* Backdrop */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+        />
+
+        {/* Material Style Circular Clock Dialog */}
+        <motion.div
+          initial={{ scale: 0.92, opacity: 0, y: 12 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.92, opacity: 0, y: 12 }}
+          transition={{ type: 'spring', damping: 26, stiffness: 320 }}
+          className="relative w-full max-w-[310px] bg-[#f4f5f1] dark:bg-[#181d19] border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4 z-10 select-none"
+        >
+          {/* Top Label */}
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold tracking-widest text-slate-500/80 dark:text-slate-400 uppercase">
+              SELECT TIME
+            </span>
+            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+              {isOpening ? 'Store Opening' : 'Store Closing'}
+            </span>
+          </div>
+
+          {/* Digital Time Display Header (matching attachment) */}
+          <div className="flex items-center justify-center pt-1 pb-1">
+            <div className="flex items-center">
+              {/* Hour Box */}
+              <button
+                type="button"
+                onClick={() => setMode('hour')}
+                className={cn(
+                  "w-[76px] h-[68px] rounded-2xl flex items-center justify-center cursor-pointer transition-all",
+                  mode === 'hour'
+                    ? "bg-[#bbf7d0] dark:bg-emerald-950 text-[#14532d] dark:text-emerald-300 ring-2 ring-emerald-500/30"
+                    : "bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200/90"
+                )}
+              >
+                <span className="text-4xl sm:text-5xl font-mono font-medium tracking-tight">
+                  {String(hours).padStart(2, '0')}
+                </span>
+              </button>
+
+              {/* Colon */}
+              <span className="text-3xl sm:text-4xl font-bold text-slate-700 dark:text-slate-300 mx-1.5 font-mono">
+                :
+              </span>
+
+              {/* Minute Box */}
+              <button
+                type="button"
+                onClick={() => setMode('minute')}
+                className={cn(
+                  "w-[76px] h-[68px] rounded-2xl flex items-center justify-center cursor-pointer transition-all",
+                  mode === 'minute'
+                    ? "bg-[#bbf7d0] dark:bg-emerald-950 text-[#14532d] dark:text-emerald-300 ring-2 ring-emerald-500/30"
+                    : "bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200/90"
+                )}
+              >
+                <span className="text-4xl sm:text-5xl font-mono font-medium tracking-tight">
+                  {String(minutes).padStart(2, '0')}
+                </span>
+              </button>
+
+              {/* AM / PM Toggle Box */}
+              <div className="border border-slate-300 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col ml-3 shadow-2xs bg-slate-100/60 dark:bg-slate-850">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPeriod('AM');
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10);
+                  }}
+                  className={cn(
+                    "px-3 py-2 text-xs transition-all cursor-pointer",
+                    period === 'AM'
+                      ? "bg-[#cffafe] dark:bg-cyan-950 text-[#0e7490] dark:text-cyan-300 font-black shadow-2xs"
+                      : "text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-200/50"
+                  )}
+                >
+                  AM
+                </button>
+                <div className="h-[1px] bg-slate-300 dark:bg-slate-700 w-full" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPeriod('PM');
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10);
+                  }}
+                  className={cn(
+                    "px-3 py-2 text-xs transition-all cursor-pointer",
+                    period === 'PM'
+                      ? "bg-[#cffafe] dark:bg-cyan-950 text-[#0e7490] dark:text-cyan-300 font-black shadow-2xs"
+                      : "text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-200/50"
+                  )}
+                >
+                  PM
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Mode Sub-indicator */}
+          <div className="text-center">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              {mode === 'hour' ? 'Tap or drag to select hour' : 'Tap or drag to select minute'}
+            </span>
+          </div>
+
+          {/* Circular Clock Dial Face */}
+          <div className="flex justify-center py-1">
+            <div
+              ref={dialRef}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              style={{ width: '250px', height: '250px' }}
+              className="rounded-full relative select-none touch-none bg-[#e2e8f0]/80 dark:bg-slate-800/80 shadow-inner cursor-pointer"
+            >
+              {/* SVG Hand & Nodes */}
+              <svg className="absolute inset-0 pointer-events-none w-full h-full" width="250" height="250">
+                {/* Pointer Hand Line */}
+                <line
+                  x1={dialCenter}
+                  y1={dialCenter}
+                  x2={nodeX}
+                  y2={nodeY}
+                  stroke="#15803d"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                {/* Center Pivot Dot */}
+                <circle cx={dialCenter} cy={dialCenter} r="4" fill="#15803d" />
+                {/* Selected Node Solid Circle */}
+                <circle cx={nodeX} cy={nodeY} r="18" fill="#15803d" />
+              </svg>
+
+              {/* Dial Numbers */}
+              {mode === 'hour' ? (
+                hourNumbers.map((num) => {
+                  const angle = (num * 30) * (Math.PI / 180);
+                  const nx = dialCenter + dialRadius * Math.sin(angle);
+                  const ny = dialCenter - dialRadius * Math.cos(angle);
+                  const isSelected = hours === num;
+
+                  return (
+                    <div
+                      key={num}
+                      style={{
+                        left: `${nx}px`,
+                        top: `${ny}px`,
+                        transform: 'translate(-50%, -50%)',
+                      }}
+                      className={cn(
+                        "absolute w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm pointer-events-none transition-colors",
+                        isSelected
+                          ? "text-white z-10 font-black"
+                          : "text-slate-700 dark:text-slate-300"
+                      )}
+                    >
+                      {num}
+                    </div>
+                  );
+                })
+              ) : (
+                <>
+                  {minuteNumbers.map((num) => {
+                    const angle = (num * 6) * (Math.PI / 180);
+                    const nx = dialCenter + dialRadius * Math.sin(angle);
+                    const ny = dialCenter - dialRadius * Math.cos(angle);
+                    const isSelected = minutes === num;
+
+                    return (
+                      <div
+                        key={num}
+                        style={{
+                          left: `${nx}px`,
+                          top: `${ny}px`,
+                          transform: 'translate(-50%, -50%)',
+                        }}
+                        className={cn(
+                          "absolute w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs pointer-events-none transition-colors",
+                          isSelected
+                            ? "text-white z-10 font-black"
+                            : "text-slate-700 dark:text-slate-300"
+                        )}
+                      >
+                        {String(num).padStart(2, '0')}
+                      </div>
+                    );
+                  })}
+
+                  {/* If custom minute not exactly on 5-min step, render value inside node */}
+                  {minutes % 5 !== 0 && (
+                    <div
+                      style={{
+                        left: `${nodeX}px`,
+                        top: `${nodeY}px`,
+                        transform: 'translate(-50%, -50%)',
+                      }}
+                      className="absolute w-8 h-8 rounded-full flex items-center justify-center font-black text-xs pointer-events-none text-white z-10"
+                    >
+                      {String(minutes).padStart(2, '0')}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Bottom Action Row (matching attachment with CANCEL & OK) */}
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 py-1.5 text-xs font-black uppercase tracking-wider text-[#15803d] dark:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all cursor-pointer"
+            >
+              CANCEL
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              className="px-4 py-1.5 text-xs font-black uppercase tracking-wider text-[#15803d] dark:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all cursor-pointer"
+            >
+              OK
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+}
+
 export function StoreCredentialsSection({ 
   state, 
   onUpdate 
@@ -275,8 +674,18 @@ export function StoreCredentialsSection({
   const [storeOwnerName, setStoreOwnerName] = useState(state.settings.storeOwnerName || "");
   const [storePhone, setStorePhone] = useState(formatPhoneNumber(state.settings.storePhone || ""));
   const [storeAddress, setStoreAddress] = useState(state.settings.storeAddress || "");
-  const [storeOpeningTime, setStoreOpeningTime] = useState(state.settings.storeOpeningTime || "08:00");
-  const [storeClosingTime, setStoreClosingTime] = useState(state.settings.storeClosingTime || "21:00");
+
+  // Initialize with 12-hour format
+  const [storeOpeningTime, setStoreOpeningTime] = useState(() => {
+    const p = parseTo12Hour(state.settings.storeOpeningTime, 8, 'AM');
+    return formatTo12Hour(p.hours, p.minutes, p.period);
+  });
+  const [storeClosingTime, setStoreClosingTime] = useState(() => {
+    const p = parseTo12Hour(state.settings.storeClosingTime, 9, 'PM');
+    return formatTo12Hour(p.hours, p.minutes, p.period);
+  });
+  const [activeTimePicker, setActiveTimePicker] = useState<'opening' | 'closing' | null>(null);
+
   const [reminderTimeBeforeMinutes, setReminderTimeBeforeMinutes] = useState(
     state.settings.reminderTimeBeforeMinutes !== undefined ? state.settings.reminderTimeBeforeMinutes : 15
   );
@@ -289,8 +698,13 @@ export function StoreCredentialsSection({
     setStoreOwnerName(state.settings.storeOwnerName || "");
     setStorePhone(formatPhoneNumber(state.settings.storePhone || ""));
     setStoreAddress(state.settings.storeAddress || "");
-    setStoreOpeningTime(state.settings.storeOpeningTime || "08:00");
-    setStoreClosingTime(state.settings.storeClosingTime || "21:00");
+    
+    const pOpen = parseTo12Hour(state.settings.storeOpeningTime, 8, 'AM');
+    setStoreOpeningTime(formatTo12Hour(pOpen.hours, pOpen.minutes, pOpen.period));
+
+    const pClose = parseTo12Hour(state.settings.storeClosingTime, 9, 'PM');
+    setStoreClosingTime(formatTo12Hour(pClose.hours, pClose.minutes, pClose.period));
+
     if (state.settings.reminderTimeBeforeMinutes !== undefined) {
       setReminderTimeBeforeMinutes(state.settings.reminderTimeBeforeMinutes);
     }
@@ -335,44 +749,55 @@ export function StoreCredentialsSection({
     storePhone.replace(/\D/g, "").length >= 10
   );
 
+  const initialOpening = formatTo12Hour(
+    parseTo12Hour(state.settings.storeOpeningTime, 8, 'AM').hours,
+    parseTo12Hour(state.settings.storeOpeningTime, 8, 'AM').minutes,
+    parseTo12Hour(state.settings.storeOpeningTime, 8, 'AM').period
+  );
+  const initialClosing = formatTo12Hour(
+    parseTo12Hour(state.settings.storeClosingTime, 9, 'PM').hours,
+    parseTo12Hour(state.settings.storeClosingTime, 9, 'PM').minutes,
+    parseTo12Hour(state.settings.storeClosingTime, 9, 'PM').period
+  );
+
   const hasUnsavedChanges = 
     storeName.trim() !== (state.settings.storeName || "").trim() ||
     storeOwnerName.trim() !== (state.settings.storeOwnerName || "").trim() ||
     formatPhoneNumber(storePhone).trim() !== formatPhoneNumber(state.settings.storePhone || "").trim() ||
     storeAddress.trim() !== (state.settings.storeAddress || "").trim() ||
-    storeOpeningTime !== (state.settings.storeOpeningTime || "08:00") ||
-    storeClosingTime !== (state.settings.storeClosingTime || "21:00") ||
+    storeOpeningTime !== initialOpening ||
+    storeClosingTime !== initialClosing ||
     reminderTimeBeforeMinutes !== (state.settings.reminderTimeBeforeMinutes !== undefined ? state.settings.reminderTimeBeforeMinutes : 15);
 
   const isButtonDim = !saveSuccess && (!isFormComplete || !hasUnsavedChanges || isSaving);
 
   const isCloudActive = !!(state.user && state.user.uid !== 'guest_user' && state.settings.autoCloudSync !== false);
 
+  const openingParsed = parseTo12Hour(storeOpeningTime, 8, 'AM');
+  const closingParsed = parseTo12Hour(storeClosingTime, 9, 'PM');
+
   return (
-    <div className="bg-[var(--card)] border border-[var(--border)] rounded-[2.5rem] p-6 sm:p-8 space-y-6 shadow-sm">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border)] pb-5">
-        <div>
-          <h3 className="text-lg font-black uppercase tracking-tight text-[var(--foreground)] flex items-center gap-2">
-            <Store size={22} className="text-[var(--primary)] shrink-0" /> 
-            {cleanAndValidateText("Store Info (दुकान की जानकारी)", state.settings.language, state.settings)}
-          </h3>
-        
+    <div className="bg-[var(--card)] border border-[var(--border)] rounded-3xl p-4 sm:p-6 space-y-4 shadow-xs select-none">
+      {/* Mobile-first Header */}
+      <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="h-8 w-8 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0">
+            <Store size={16} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-sm font-black uppercase tracking-tight text-[var(--foreground)] leading-tight truncate">
+              Store Info
+            </h3>
+            <p className="text-[9px] font-bold opacity-45 uppercase tracking-wider truncate">
+              Identity & Timing
+            </p>
+          </div>
         </div>
 
-        <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--background)] border border-[var(--border)] w-fit">
-          <div className={`h-2 w-2 rounded-full ${isCloudActive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-          <span className="text-[9.5px] font-black uppercase tracking-wider opacity-80 flex items-center gap-1">
-            {isCloudActive ? (
-              <>
-                <Cloud size={11} className="text-emerald-500" />
-                <span>Cloud & Local Sync Active</span>
-              </>
-            ) : (
-              <>
-                <Database size={11} className="text-amber-500" />
-                <span>Local Storage Persistence</span>
-              </>
-            )}
+        <div className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--background)] border border-[var(--border)]">
+          <div className={`h-1.5 w-1.5 rounded-full ${isCloudActive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+          <span className="text-[8.5px] font-black uppercase tracking-wider opacity-75">
+            {isCloudActive ? 'Cloud Synced' : 'Local Only'}
           </span>
         </div>
       </div>
@@ -380,176 +805,253 @@ export function StoreCredentialsSection({
       <AnimatePresence>
         {saveSuccess && (
           <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
-            className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-between gap-3 text-emerald-600 dark:text-emerald-400"
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-between gap-2.5 text-emerald-600 dark:text-emerald-400"
           >
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
-                <CheckCircle size={18} className="text-emerald-500" />
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="h-7 w-7 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
+                <CheckCircle size={15} className="text-emerald-500" />
               </div>
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide">
-                  Store Credentials Saved Successfully!
-                </p>
-                <p className="text-[10px] opacity-80 font-medium">
-                  {isCloudActive 
-                    ? "Updated and synced in real-time to your Firestore Cloud Database and Local Storage."
-                    : "Saved securely to Local Device Storage."}
-                </p>
-              </div>
+              <p className="text-[11px] font-bold uppercase tracking-tight truncate">
+                Store Credentials Saved!
+              </p>
             </div>
-            <span className="text-[9px] font-black uppercase px-2 py-1 rounded bg-emerald-500/20 border border-emerald-500/20">
-              Verified
+            <span className="text-[8.5px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/20 shrink-0">
+              Saved
             </span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <form onSubmit={handleSaveStoreCredentials} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="space-y-1.5">
-            <label className="text-[9.5px] font-black uppercase tracking-wider opacity-70 flex items-center gap-1.5">
-              <Store size={13} className="text-[var(--primary)] shrink-0" /> 
-              {cleanAndValidateText("Shop / Store Name (दुकान का नाम)", state.settings.language, state.settings)}
-            </label>
-            <input 
-              type="text" 
-              value={storeName} 
-              onChange={e => setStoreName(e.target.value)}
-              className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl px-4 py-3 text-xs font-bold placeholder:opacity-30 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all"
-              placeholder="e.g. Ramesh General Store"
-            />
+      <form onSubmit={handleSaveStoreCredentials} className="space-y-4">
+        <div className="space-y-3">
+          {/* Store Name & Owner Name */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="space-y-1">
+              <label className="text-[9px] font-black uppercase tracking-wider opacity-65 flex items-center gap-1.5">
+                <Store size={11} className="text-[var(--primary)] shrink-0" /> 
+                <span>Store Name</span>
+              </label>
+              <input 
+                type="text" 
+                value={storeName} 
+                onChange={e => setStoreName(e.target.value)}
+                className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs font-semibold placeholder:opacity-30 outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/20 transition-all shadow-2xs"
+                placeholder="e.g. Ramesh General Store"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[9px] font-black uppercase tracking-wider opacity-65 flex items-center gap-1.5">
+                <User size={11} className="text-[var(--primary)] shrink-0" /> 
+                <span>Owner Name</span>
+              </label>
+              <input 
+                type="text" 
+                value={storeOwnerName} 
+                onChange={e => setStoreOwnerName(e.target.value)}
+                className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs font-semibold placeholder:opacity-30 outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/20 transition-all shadow-2xs"
+                placeholder="e.g. Ramesh Kumar"
+              />
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[9.5px] font-black uppercase tracking-wider opacity-70 flex items-center gap-1.5">
-              <User size={13} className="text-[var(--primary)] shrink-0" /> 
-              {cleanAndValidateText("Store Owner Name (मालिक का नाम)", state.settings.language, state.settings)}
-            </label>
-            <input 
-              type="text" 
-              value={storeOwnerName} 
-              onChange={e => setStoreOwnerName(e.target.value)}
-              className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl px-4 py-3 text-xs font-bold placeholder:opacity-30 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all"
-              placeholder="e.g. Ramesh Kumar"
-            />
+          {/* Phone & Address */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="space-y-1">
+              <label className="text-[9px] font-black uppercase tracking-wider opacity-65 flex items-center gap-1.5">
+                <Phone size={11} className="text-[var(--primary)] shrink-0" /> 
+                <span>Phone Number</span>
+              </label>
+              <input 
+                type="text" 
+                value={storePhone} 
+                onChange={e => setStorePhone(formatPhoneNumber(e.target.value))}
+                className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs font-mono font-semibold placeholder:opacity-30 outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/20 transition-all tracking-wide shadow-2xs"
+                placeholder="+91 98765 43210"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[9px] font-black uppercase tracking-wider opacity-65 flex items-center gap-1.5">
+                <MapPin size={11} className="text-[var(--primary)] shrink-0" /> 
+                <span>Address</span>
+              </label>
+              <input 
+                type="text" 
+                value={storeAddress} 
+                onChange={e => setStoreAddress(e.target.value)}
+                className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs font-semibold placeholder:opacity-30 outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/20 transition-all shadow-2xs"
+                placeholder="e.g. Main Chowk, Sector 5"
+              />
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[9.5px] font-black uppercase tracking-wider opacity-70 flex items-center gap-1.5">
-              <Phone size={13} className="text-[var(--primary)] shrink-0" /> 
-              {cleanAndValidateText("Phone Number (फोन नंबर)", state.settings.language, state.settings)}
-            </label>
-            <input 
-              type="text" 
-              value={storePhone} 
-              onChange={e => setStorePhone(formatPhoneNumber(e.target.value))}
-              className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl px-4 py-3 text-xs font-bold placeholder:opacity-30 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all font-mono tracking-wide"
-              placeholder="+91 45623 32654"
-            />
+          {/* Store Timing Header */}
+          <div className="pt-2 border-t border-[var(--border)] flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)] flex items-center gap-1.5">
+              <Clock size={12} className="shrink-0" />
+              <span>Store Timing</span>
+            </span>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[9.5px] font-black uppercase tracking-wider opacity-70 flex items-center gap-1.5">
-              <MapPin size={13} className="text-[var(--primary)] shrink-0" /> 
-              {cleanAndValidateText("Shop Address (दुकान का पता)", state.settings.language, state.settings)}
-            </label>
-            <input 
-              type="text" 
-              value={storeAddress} 
-              onChange={e => setStoreAddress(e.target.value)}
-              className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl px-4 py-3 text-xs font-bold placeholder:opacity-30 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all"
-              placeholder="e.g. Main Chowk, Sector 5, New Delhi"
-            />
-          </div>
-
-          <div className="space-y-1.5 md:col-span-2 pt-4 border-t border-[var(--border)] mt-2">
-            <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--primary)] flex items-center gap-2">
-              <Clock size={14} className="text-[var(--primary)] shrink-0" /> 
-              {cleanAndValidateText("Store Timing (दुकान खुलने और बंद होने का समय)", state.settings.language, state.settings)}
-            </h4>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[9.5px] font-black uppercase tracking-wider opacity-70 flex items-center gap-1.5">
-              <Sun size={13} className="text-amber-500 shrink-0" /> 
-              {cleanAndValidateText("Store Opening Time (दुकान खुलने का समय)", state.settings.language, state.settings)}
-            </label>
-            <input 
-              type="time" 
-              value={storeOpeningTime} 
-              onChange={e => setStoreOpeningTime(e.target.value)}
-              className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl px-4 py-3 text-xs font-bold outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[9.5px] font-black uppercase tracking-wider opacity-70 flex items-center gap-1.5">
-              <Moon size={13} className="text-indigo-400 shrink-0" /> 
-              {cleanAndValidateText("Store Closing Time (दुकान बंद होने का समय)", state.settings.language, state.settings)}
-            </label>
-            <input 
-              type="time" 
-              value={storeClosingTime} 
-              onChange={e => setStoreClosingTime(e.target.value)}
-              className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl px-4 py-3 text-xs font-bold outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all"
-            />
-          </div>
-
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-[9.5px] font-black uppercase tracking-wider opacity-70 flex items-center gap-1.5">
-              <Bell size={13} className="text-[var(--primary)] shrink-0" /> 
-              {cleanAndValidateText("Closing Reminder Alert (दुकान बंद होने से कितने पहले अलर्ट दें?)", state.settings.language, state.settings)}
-            </label>
-            <select 
-              value={String(reminderTimeBeforeMinutes)} 
-              onChange={e => setReminderTimeBeforeMinutes(parseInt(e.target.value) || 0)}
-              className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl px-4 py-3 text-xs font-bold shadow-sm outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all cursor-pointer"
+          {/* Opening & Closing side-by-side interactive 12-Hour cards */}
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* Opening Card */}
+            <button
+              type="button"
+              onClick={() => setActiveTimePicker('opening')}
+              className="group text-left p-2.5 bg-[var(--background)] hover:bg-[var(--foreground)]/5 border border-[var(--border)] hover:border-amber-500/50 focus:border-amber-500 rounded-xl transition-all shadow-2xs cursor-pointer active:scale-[0.98] outline-none"
             >
-              <option value="0">{cleanAndValidateText("Exactly at Closing Time (बिल्कुल बंद होने के समय)", state.settings.language, state.settings)}</option>
-              <option value="5">{cleanAndValidateText("5 Minutes Before Closing (बंद होने से 5 मिनट पहले)", state.settings.language, state.settings)}</option>
-              <option value="10">{cleanAndValidateText("10 Minutes Before Closing (बंद होने से 10 मिनट पहले)", state.settings.language, state.settings)}</option>
-              <option value="15">{cleanAndValidateText("15 Minutes Before Closing (बंद होने से 15 मिनट पहले)", state.settings.language, state.settings)}</option>
-              <option value="30">{cleanAndValidateText("30 Minutes Before Closing (बंद होने से 30 मिनट पहले)", state.settings.language, state.settings)}</option>
-              <option value="60">{cleanAndValidateText("1 Hour Before Closing (बंद होने से 1 घंटा पहले)", state.settings.language, state.settings)}</option>
-            </select>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-black uppercase tracking-wider opacity-70 flex items-center gap-1 group-hover:text-amber-500 transition-colors">
+                  <Sun size={12} className="text-amber-500 shrink-0" />
+                  <span>Opening</span>
+                </span>
+                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  {openingParsed.period}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between mt-0.5">
+                <span className="text-sm font-black font-mono tracking-tight text-[var(--foreground)]">
+                  {String(openingParsed.hours).padStart(2, '0')}:{String(openingParsed.minutes).padStart(2, '0')}
+                </span>
+                <span className="text-[var(--primary)] opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
+                  <ChevronRight size={12} />
+                </span>
+              </div>
+            </button>
+
+            {/* Closing Card */}
+            <button
+              type="button"
+              onClick={() => setActiveTimePicker('closing')}
+              className="group text-left p-2.5 bg-[var(--background)] hover:bg-[var(--foreground)]/5 border border-[var(--border)] hover:border-indigo-500/50 focus:border-indigo-500 rounded-xl transition-all shadow-2xs cursor-pointer active:scale-[0.98] outline-none"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-black uppercase tracking-wider opacity-70 flex items-center gap-1 group-hover:text-indigo-400 transition-colors">
+                  <Moon size={12} className="text-indigo-400 shrink-0" />
+                  <span>Closing</span>
+                </span>
+                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20">
+                  {closingParsed.period}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between mt-0.5">
+                <span className="text-sm font-black font-mono tracking-tight text-[var(--foreground)]">
+                  {String(closingParsed.hours).padStart(2, '0')}:{String(closingParsed.minutes).padStart(2, '0')}
+                </span>
+                <span className="text-[var(--primary)] opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
+                  <ChevronRight size={12} />
+                </span>
+              </div>
+            </button>
+          </div>
+
+          {/* Closing Reminder Alert */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-[9px] font-black uppercase tracking-wider opacity-65 flex items-center gap-1.5">
+                <Bell size={11} className="text-[var(--primary)] shrink-0" /> 
+                <span>Closing Reminder</span>
+              </label>
+              <span className="text-[9px] font-bold text-[var(--primary)] font-mono">
+                {reminderTimeBeforeMinutes === 0
+                  ? 'At closing time'
+                  : reminderTimeBeforeMinutes === 60
+                  ? '1 hr before'
+                  : `${reminderTimeBeforeMinutes}m before`}
+              </span>
+            </div>
+
+            {/* Minimalist 1-Tap Segmented Control */}
+            <div className="grid grid-cols-6 gap-1 p-1 bg-[var(--background)] border border-[var(--border)] rounded-xl">
+              {[
+                { label: '0m', val: 0 },
+                { label: '5m', val: 5 },
+                { label: '10m', val: 10 },
+                { label: '15m', val: 15 },
+                { label: '30m', val: 30 },
+                { label: '1h', val: 60 }
+              ].map((opt) => {
+                const isSelected = reminderTimeBeforeMinutes === opt.val;
+                return (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => {
+                      setReminderTimeBeforeMinutes(opt.val);
+                      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                        navigator.vibrate(8);
+                      }
+                    }}
+                    className={cn(
+                      "py-1.5 rounded-lg text-xs font-mono font-bold transition-all text-center cursor-pointer",
+                      isSelected
+                        ? "bg-[var(--primary)] text-white shadow-2xs font-black scale-102"
+                        : "text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:bg-[var(--card)]"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        <div className="pt-4 border-t border-[var(--border)] flex items-center justify-end">
+        {/* Mobile Bottom Save Action */}
+        <div className="pt-2">
           <button
             type="submit"
             disabled={isButtonDim}
             className={cn(
-              "w-full sm:w-auto px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2.5 transition-all shadow-md",
+              "w-full py-2.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-xs active:scale-[0.98]",
               saveSuccess
-                ? "bg-emerald-600 text-white shadow-emerald-500/25 ring-2 ring-emerald-400 cursor-default"
+                ? "bg-emerald-600 text-white shadow-emerald-500/20 cursor-default"
                 : isButtonDim
                 ? "opacity-35 bg-[var(--foreground)]/10 text-[var(--foreground)]/40 border border-[var(--border)] cursor-not-allowed shadow-none"
-                : "bg-[var(--primary)] hover:opacity-95 text-white shadow-lg shadow-[var(--primary)]/25 cursor-pointer active:scale-95"
+                : "bg-[var(--primary)] hover:opacity-95 text-white shadow-sm shadow-[var(--primary)]/20 cursor-pointer"
             )}
           >
             {isSaving ? (
               <>
-                <RefreshCw size={16} className="animate-spin" />
-                <span>Saving to Database...</span>
+                <RefreshCw size={14} className="animate-spin" />
+                <span>Saving...</span>
               </>
             ) : saveSuccess ? (
               <>
-                <CheckCircle size={16} className="animate-bounce" />
-                <span>✓ Credentials Saved!</span>
+                <CheckCircle size={14} />
+                <span>Saved Successfully!</span>
               </>
             ) : (
               <>
-                <Save size={16} />
-                <span>Save Store Details</span>
+                <Save size={14} />
+                <span>Save Store Info</span>
               </>
             )}
           </button>
         </div>
       </form>
+
+      {/* Modern 12-Hour Time Picker Modal */}
+      {activeTimePicker && (
+        <Modern12HourTimePickerModal
+          isOpen={!!activeTimePicker}
+          onClose={() => setActiveTimePicker(null)}
+          type={activeTimePicker}
+          currentTimeStr={activeTimePicker === 'opening' ? storeOpeningTime : storeClosingTime}
+          onConfirm={(newTime) => {
+            if (activeTimePicker === 'opening') {
+              setStoreOpeningTime(newTime);
+            } else {
+              setStoreClosingTime(newTime);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -570,8 +1072,8 @@ export function ProfileScreen({
   t: any; 
   deferredPrompt: any; 
   onInstall: () => void;
-  onShareProductList: () => void;
-  isSharing: boolean;
+  onShareProductList?: () => void;
+  isSharing?: boolean;
   onUpdate: (updates: Partial<AppSettings>) => void;
   onLogout: () => Promise<void>;
   isDesktopSize?: boolean;
@@ -763,27 +1265,7 @@ export function ProfileScreen({
            </button>
          )}
 
-          <div>
-            <button 
-              disabled={isSharing}
-              onClick={onShareProductList}
-              className="w-full flex items-center justify-between p-6 bg-[var(--card)] border border-[var(--border)] rounded-[2rem] hover:border-green-500/30 hover:bg-green-500/5 transition-all group disabled:opacity-50 cursor-pointer"
-            >
-               <div className="flex items-center gap-4">
-                  <div className={cn(
-                    "h-12 w-12 rounded-2xl flex items-center justify-center transition-colors group-hover:bg-green-500 group-hover:text-white",
-                    isSharing ? "bg-green-500 text-white" : "bg-green-500/10 text-green-500"
-                  )}>
-                     {isSharing ? <RefreshCw size={22} className="animate-spin" /> : <MessageSquare size={22} />}
-                  </div>
-                  <div className="text-left">
-                     <p className="text-sm font-black uppercase group-hover:text-green-500 transition-colors">Share Product List</p>
-                     <p className="text-[8px] font-bold opacity-40 uppercase tracking-widest">{t.whatsappBroadcast || "WhatsApp Broadcast"}</p>
-                  </div>
-               </div>
-               <ChevronRight size={16} className="opacity-20 group-hover:translate-x-1 transition-transform" />
-            </button>
-         </div>
+
 
          {/* ========================================================================= */}
          {/* DEVICE PLATFORM: ANDROID & IOS BUTTONS                                    */}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   User, Mail, LogOut, LogIn, ShieldCheck, Lock, CheckCircle, XCircle, 
-  EyeOff, Eye, Download, ChevronRight, MessageSquare, RefreshCw, 
+  EyeOff, Eye, Download, ChevronRight, RefreshCw, 
   Store, Cloud, Database, Phone, MapPin, Clock, Sun, Moon, Bell, Save,
   Monitor, Smartphone, Check, Minimize2, Type, Maximize2
 } from 'lucide-react';
@@ -570,8 +570,8 @@ export function ProfileScreen({
   t: any; 
   deferredPrompt: any; 
   onInstall: () => void;
-  onShareProductList: () => void;
-  isSharing: boolean;
+  onShareProductList?: () => void;
+  isSharing?: boolean;
   onUpdate: (updates: Partial<AppSettings>) => void;
   onLogout: () => Promise<void>;
   isDesktopSize?: boolean;
@@ -763,27 +763,7 @@ export function ProfileScreen({
            </button>
          )}
 
-          <div>
-            <button 
-              disabled={isSharing}
-              onClick={onShareProductList}
-              className="w-full flex items-center justify-between p-6 bg-[var(--card)] border border-[var(--border)] rounded-[2rem] hover:border-green-500/30 hover:bg-green-500/5 transition-all group disabled:opacity-50 cursor-pointer"
-            >
-               <div className="flex items-center gap-4">
-                  <div className={cn(
-                    "h-12 w-12 rounded-2xl flex items-center justify-center transition-colors group-hover:bg-green-500 group-hover:text-white",
-                    isSharing ? "bg-green-500 text-white" : "bg-green-500/10 text-green-500"
-                  )}>
-                     {isSharing ? <RefreshCw size={22} className="animate-spin" /> : <MessageSquare size={22} />}
-                  </div>
-                  <div className="text-left">
-                     <p className="text-sm font-black uppercase group-hover:text-green-500 transition-colors">Share Product List</p>
-                     <p className="text-[8px] font-bold opacity-40 uppercase tracking-widest">{t.whatsappBroadcast || "WhatsApp Broadcast"}</p>
-                  </div>
-               </div>
-               <ChevronRight size={16} className="opacity-20 group-hover:translate-x-1 transition-transform" />
-            </button>
-         </div>
+
 
          {/* ========================================================================= */}
          {/* DEVICE PLATFORM: ANDROID & IOS BUTTONS                                    */}

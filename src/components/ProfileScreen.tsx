@@ -895,9 +895,6 @@ export function StoreCredentialsSection({
               <Clock size={12} className="shrink-0" />
               <span>Store Timing</span>
             </span>
-            <span className="text-[8.5px] font-bold uppercase tracking-wider opacity-45">
-              12-Hour (AM / PM)
-            </span>
           </div>
 
           {/* Opening & Closing side-by-side interactive 12-Hour cards */}
@@ -921,8 +918,8 @@ export function StoreCredentialsSection({
                 <span className="text-sm font-black font-mono tracking-tight text-[var(--foreground)]">
                   {String(openingParsed.hours).padStart(2, '0')}:{String(openingParsed.minutes).padStart(2, '0')}
                 </span>
-                <span className="text-[9px] font-bold text-[var(--primary)] opacity-60 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                  Change <ChevronRight size={10} />
+                <span className="text-[var(--primary)] opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
+                  <ChevronRight size={12} />
                 </span>
               </div>
             </button>
@@ -946,31 +943,62 @@ export function StoreCredentialsSection({
                 <span className="text-sm font-black font-mono tracking-tight text-[var(--foreground)]">
                   {String(closingParsed.hours).padStart(2, '0')}:{String(closingParsed.minutes).padStart(2, '0')}
                 </span>
-                <span className="text-[9px] font-bold text-[var(--primary)] opacity-60 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                  Change <ChevronRight size={10} />
+                <span className="text-[var(--primary)] opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
+                  <ChevronRight size={12} />
                 </span>
               </div>
             </button>
           </div>
 
           {/* Closing Reminder Alert */}
-          <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-wider opacity-70 flex items-center gap-1.5">
-              <Bell size={11} className="text-[var(--primary)] shrink-0" /> 
-              <span>Closing Reminder</span>
-            </label>
-            <select 
-              value={String(reminderTimeBeforeMinutes)} 
-              onChange={e => setReminderTimeBeforeMinutes(parseInt(e.target.value) || 0)}
-              className="w-full bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs font-semibold shadow-2xs outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/20 transition-all cursor-pointer"
-            >
-              <option value="0">At Closing Time (0 min)</option>
-              <option value="5">5 Minutes Before Closing</option>
-              <option value="10">10 Minutes Before Closing</option>
-              <option value="15">15 Minutes Before Closing</option>
-              <option value="30">30 Minutes Before Closing</option>
-              <option value="60">1 Hour Before Closing</option>
-            </select>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-[9px] font-black uppercase tracking-wider opacity-65 flex items-center gap-1.5">
+                <Bell size={11} className="text-[var(--primary)] shrink-0" /> 
+                <span>Closing Reminder</span>
+              </label>
+              <span className="text-[9px] font-bold text-[var(--primary)] font-mono">
+                {reminderTimeBeforeMinutes === 0
+                  ? 'At closing time'
+                  : reminderTimeBeforeMinutes === 60
+                  ? '1 hr before'
+                  : `${reminderTimeBeforeMinutes}m before`}
+              </span>
+            </div>
+
+            {/* Minimalist 1-Tap Segmented Control */}
+            <div className="grid grid-cols-6 gap-1 p-1 bg-[var(--background)] border border-[var(--border)] rounded-xl">
+              {[
+                { label: '0m', val: 0 },
+                { label: '5m', val: 5 },
+                { label: '10m', val: 10 },
+                { label: '15m', val: 15 },
+                { label: '30m', val: 30 },
+                { label: '1h', val: 60 }
+              ].map((opt) => {
+                const isSelected = reminderTimeBeforeMinutes === opt.val;
+                return (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => {
+                      setReminderTimeBeforeMinutes(opt.val);
+                      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                        navigator.vibrate(8);
+                      }
+                    }}
+                    className={cn(
+                      "py-1.5 rounded-lg text-xs font-mono font-bold transition-all text-center cursor-pointer",
+                      isSelected
+                        ? "bg-[var(--primary)] text-white shadow-2xs font-black scale-102"
+                        : "text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:bg-[var(--card)]"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 

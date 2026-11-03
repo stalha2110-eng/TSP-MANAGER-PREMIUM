@@ -893,7 +893,7 @@ export function StoreCredentialsSection({
           <div className="pt-2 border-t border-[var(--border)] flex items-center justify-between">
             <span className="text-[10px] font-black uppercase tracking-wider text-[var(--primary)] flex items-center gap-1.5">
               <Clock size={12} className="shrink-0" />
-              <span>Store Timing</span>
+              <span>Store Timing:</span>
             </span>
           </div>
 
@@ -910,14 +910,16 @@ export function StoreCredentialsSection({
                   <Sun size={12} className="text-amber-500 shrink-0" />
                   <span>Opening</span>
                 </span>
-                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  {openingParsed.period}
-                </span>
               </div>
-              <div className="flex items-baseline justify-between mt-0.5">
-                <span className="text-sm font-black font-mono tracking-tight text-[var(--foreground)]">
-                  {String(openingParsed.hours).padStart(2, '0')}:{String(openingParsed.minutes).padStart(2, '0')}
-                </span>
+              <div className="flex items-center justify-between mt-0.5">
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                  <span className="text-sm font-black font-mono tracking-tight text-[var(--foreground)]">
+                    {String(openingParsed.hours).padStart(2, '0')}:{String(openingParsed.minutes).padStart(2, '0')}
+                  </span>
+                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    {openingParsed.period}
+                  </span>
+                </div>
                 <span className="text-[var(--primary)] opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
                   <ChevronRight size={12} />
                 </span>
@@ -935,14 +937,16 @@ export function StoreCredentialsSection({
                   <Moon size={12} className="text-indigo-400 shrink-0" />
                   <span>Closing</span>
                 </span>
-                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20">
-                  {closingParsed.period}
-                </span>
               </div>
-              <div className="flex items-baseline justify-between mt-0.5">
-                <span className="text-sm font-black font-mono tracking-tight text-[var(--foreground)]">
-                  {String(closingParsed.hours).padStart(2, '0')}:{String(closingParsed.minutes).padStart(2, '0')}
-                </span>
+              <div className="flex items-center justify-between mt-0.5">
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                  <span className="text-sm font-black font-mono tracking-tight text-[var(--foreground)]">
+                    {String(closingParsed.hours).padStart(2, '0')}:{String(closingParsed.minutes).padStart(2, '0')}
+                  </span>
+                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20">
+                    {closingParsed.period}
+                  </span>
+                </div>
                 <span className="text-[var(--primary)] opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
                   <ChevronRight size={12} />
                 </span>

@@ -740,19 +740,19 @@ export default function PremiumInteractiveChart({
       {/* 3. LEGEND & ACTIVE DATE HEADER ROW */}
       <div className="flex items-center justify-between gap-3 pt-3 pb-2 px-1">
         <div className="flex items-center gap-3 sm:gap-6">
-          {/* Sales Curve Legend */}
+          {/* Sales Legend */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             <span className="w-5 sm:w-6 h-2 rounded-full bg-[#3b82f6] shadow-xs" />
             <span className="text-[#2563eb] font-black tracking-wider text-[10px] sm:text-[11px] uppercase">
-              SALES CURVE
+              SALES
             </span>
           </div>
 
-          {/* Profit Curve Legend */}
+          {/* Profit Legend */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             <span className="w-5 sm:w-6 h-2 rounded-full bg-[#10b981] shadow-xs" />
             <span className="text-[#059669] dark:text-emerald-400 font-black tracking-wider text-[10px] sm:text-[11px] uppercase">
-              PROFIT CURVE
+              PROFIT
             </span>
           </div>
         </div>

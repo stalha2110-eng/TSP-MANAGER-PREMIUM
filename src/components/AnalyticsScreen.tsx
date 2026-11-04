@@ -34,47 +34,28 @@ interface ChartBucket {
   bills: number;
 }
 
-// Custom animated counter using requestAnimationFrame with quadratic ease-out
-function AnimatedNumber({ value, formatter }: { value: number; formatter?: (v: number) => string }) {
-  const numVal = Number(value);
-  const safeVal = Number.isFinite(numVal) ? numVal : 0;
-  const [displayValue, setDisplayValue] = useState(safeVal);
-  const prevValueRef = React.useRef(safeVal);
+import { ScrambleNumber } from './ScrambleNumber';
 
-  useEffect(() => {
-    const startValue = prevValueRef.current;
-    const endValue = safeVal;
-    if (startValue === endValue) return;
-
-    const startTime = performance.now();
-    const duration = 280; // Snappy micro duration for extremely responsive UI
-    let rAF: number;
-
-    const update = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      // Easing: easeOutQuad
-      const ease = progress * (2 - progress);
-      const current = startValue + (endValue - startValue) * ease;
-      setDisplayValue(current);
-
-      if (progress < 1) {
-        rAF = requestAnimationFrame(update);
-      } else {
-        setDisplayValue(endValue);
-        prevValueRef.current = endValue;
-      }
-    };
-
-    rAF = requestAnimationFrame(update);
-    return () => {
-      cancelAnimationFrame(rAF);
-      prevValueRef.current = endValue;
-    };
-  }, [safeVal]);
-
-  const finalVal = (typeof displayValue === 'number' && !isNaN(displayValue)) ? displayValue : 0;
-  return <span>{formatter ? formatter(finalVal) : Math.round(finalVal).toLocaleString()}</span>;
+// Custom animated digital ticker counter with digit scrambling and rolling animation
+function AnimatedNumber({ 
+  value, 
+  formatter, 
+  triggerKey, 
+  duration = 460 
+}: { 
+  value: number; 
+  formatter?: (v: number) => string; 
+  triggerKey?: any; 
+  duration?: number; 
+}) {
+  return (
+    <ScrambleNumber 
+      value={value} 
+      formatter={formatter} 
+      triggerKey={triggerKey} 
+      duration={duration} 
+    />
+  );
 }
 
 // Utility to calculate local date bounds for current and previous intervals
@@ -797,11 +778,11 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
           <div className="mt-2 flex items-baseline gap-1">
             <span className="text-lg font-extrabold text-[var(--foreground)] font-mono">₹</span>
             <span className="text-xl font-black text-[var(--foreground)] font-mono tracking-tight">
-              <AnimatedNumber value={currentMetrics.totalSales} formatter={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })} />
+              <AnimatedNumber value={currentMetrics.totalSales} triggerKey={timePeriod} formatter={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })} />
             </span>
           </div>
           <p className="text-[8.5px] opacity-40 font-bold uppercase tracking-wider mt-1.5 font-mono">
-            {currentMetrics.totalBills} {t.billsRegistered || "bills registered"}
+            <AnimatedNumber value={currentMetrics.totalBills} triggerKey={timePeriod} /> {t.billsRegistered || "bills registered"}
           </p>
         </div>
 
@@ -818,11 +799,11 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
           <div className="mt-2 flex items-baseline gap-1">
             <span className="text-lg font-extrabold text-[#10b981] font-mono">₹</span>
             <span className="text-xl font-black text-[#10b981] font-mono tracking-tight">
-              <AnimatedNumber value={currentMetrics.totalProfit} formatter={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })} />
+              <AnimatedNumber value={currentMetrics.totalProfit} triggerKey={timePeriod} formatter={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })} />
             </span>
           </div>
           <p className="text-[8.5px] opacity-40 font-bold uppercase tracking-wider mt-1.5 font-mono text-[var(--foreground)]">
-            {t.profitMargin || "Margin"}: {currentMetrics.totalSales > 0 ? ((currentMetrics.totalProfit / currentMetrics.totalSales) * 100).toFixed(0) : '0'}%
+            {t.profitMargin || "Margin"}: <AnimatedNumber value={currentMetrics.totalSales > 0 ? ((currentMetrics.totalProfit / currentMetrics.totalSales) * 100) : 0} triggerKey={timePeriod} formatter={(v) => v.toFixed(0)} />%
           </p>
         </div>
 
@@ -838,7 +819,7 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
           </div>
           <div className="mt-2">
             <span className="text-xl font-black text-[var(--foreground)] font-mono tracking-tight">
-              <AnimatedNumber value={currentMetrics.totalBills} />
+              <AnimatedNumber value={currentMetrics.totalBills} triggerKey={timePeriod} />
             </span>
           </div>
           <p className="text-[8.5px] opacity-40 font-bold uppercase tracking-wider mt-1.5 font-mono">
@@ -858,7 +839,7 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
           </div>
           <div className="mt-2">
             <span className="text-xl font-black text-[var(--foreground)] font-mono tracking-tight">
-              <AnimatedNumber value={currentMetrics.totalPrints} />
+              <AnimatedNumber value={currentMetrics.totalPrints} triggerKey={timePeriod} />
             </span>
           </div>
           <p className="text-[8.5px] opacity-40 font-bold uppercase tracking-wider mt-1.5 font-mono">
@@ -882,11 +863,11 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
           </div>
           <div className="mt-2">
             <span className="text-xl font-black text-[var(--foreground)] font-mono tracking-tight">
-              <AnimatedNumber value={warehouseMetrics.uniqueItemsCount} />
+              <AnimatedNumber value={warehouseMetrics.uniqueItemsCount} triggerKey={timePeriod} />
             </span>
           </div>
           <p className="text-[8.5px] opacity-40 font-bold uppercase tracking-wider mt-1.5 truncate">
-            {warehouseMetrics.totalItemsStock.toLocaleString()} {t.stockUnits || "stock units"}
+            <AnimatedNumber value={warehouseMetrics.totalItemsStock} triggerKey={timePeriod} /> {t.stockUnits || "stock units"}
           </p>
         </div>
 
@@ -905,11 +886,11 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
           <div className="mt-2 flex items-baseline gap-0.5">
             <span className="text-sm font-extrabold text-[var(--foreground)] font-mono">₹</span>
             <span className="text-xl font-black text-[var(--foreground)] font-mono tracking-tight truncate">
-              <AnimatedNumber value={warehouseMetrics.potentialRetailValue} formatter={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })} />
+              <AnimatedNumber value={warehouseMetrics.potentialRetailValue} triggerKey={timePeriod} formatter={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })} />
             </span>
           </div>
           <p className="text-[8.5px] opacity-40 font-bold uppercase tracking-wider mt-1.5 truncate font-mono">
-            {t.capCost || "Cap"}: ₹{warehouseMetrics.capitalTiedUp.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            {t.capCost || "Cap"}: ₹<AnimatedNumber value={warehouseMetrics.capitalTiedUp} triggerKey={timePeriod} formatter={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })} />
           </p>
         </div>
       </div>
@@ -1039,7 +1020,9 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
           <div className="p-3.5 bg-[var(--foreground)]/[0.02] border border-[var(--border)] rounded-2xl flex items-center justify-between">
             <div className="space-y-0.5">
               <span className="text-[9px] font-black opacity-45 uppercase tracking-widest block leading-none">{t.capitalInvestment || "Catalog Investment Cost"}</span>
-              <span className="text-lg font-black text-rose-500 font-mono">₹{Math.round(warehouseMetrics.capitalTiedUp).toLocaleString()}</span>
+              <span className="text-lg font-black text-rose-500 font-mono">
+                ₹<AnimatedNumber value={warehouseMetrics.capitalTiedUp} triggerKey={timePeriod} formatter={(v) => Math.round(v).toLocaleString()} />
+              </span>
               <span className="text-[8px] opacity-40 block">{t.lockedCapitalInside || "Locked capital inside warehouses"}</span>
             </div>
             <div className="text-right">
@@ -1052,12 +1035,14 @@ export default function AnalyticsScreen({ state, t, onUpdateSettings, isLocked, 
           <div className="p-3.5 bg-[var(--foreground)]/[0.02] border border-[var(--border)] rounded-2xl flex items-center justify-between">
             <div className="space-y-0.5">
               <span className="text-[9px] font-black opacity-45 uppercase tracking-widest block leading-none">{t.estimatedMargin || "Potential Revenue value"}</span>
-              <span className="text-lg font-black text-emerald-500 font-mono">₹{Math.round(warehouseMetrics.potentialRetailValue).toLocaleString()}</span>
+              <span className="text-lg font-black text-emerald-500 font-mono">
+                ₹<AnimatedNumber value={warehouseMetrics.potentialRetailValue} triggerKey={timePeriod} formatter={(v) => Math.round(v).toLocaleString()} />
+              </span>
               <span className="text-[8px] opacity-40 block">{t.estimatedRetailLiquidity || "Estimated retail liquidity complete"}</span>
             </div>
             <div className="text-right">
               <span className="px-2 py-1 rounded text-[8.5px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-mono">
-                +{warehouseMetrics.marginPercentage.toFixed(0)}% {t.profitMargin || "Margin"}
+                +<AnimatedNumber value={warehouseMetrics.marginPercentage} triggerKey={timePeriod} formatter={(v) => v.toFixed(0)} />% {t.profitMargin || "Margin"}
               </span>
             </div>
           </div>

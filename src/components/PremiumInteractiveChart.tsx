@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ScrambleNumber } from './ScrambleNumber';
 import { AppState, Bill, UnbilledEntry } from '../types';
 import { calculateBillProfit, parseTimestamp } from '../lib/utils';
 
@@ -532,6 +533,28 @@ export default function PremiumInteractiveChart({
     };
   }, [coordPoints, paddingTop, drawableHeight]);
 
+  const peakSalesPoint = useMemo(() => {
+    if (coordPoints.length === 0) return null;
+    let highest = coordPoints[0];
+    for (const p of coordPoints) {
+      if (p.original.sales > highest.original.sales) {
+        highest = p;
+      }
+    }
+    return highest.original.sales > 0 ? highest : null;
+  }, [coordPoints]);
+
+  const peakProfitPoint = useMemo(() => {
+    if (coordPoints.length === 0) return null;
+    let highest = coordPoints[0];
+    for (const p of coordPoints) {
+      if (p.original.profit > highest.original.profit) {
+        highest = p;
+      }
+    }
+    return highest.original.profit > 0 ? highest : null;
+  }, [coordPoints]);
+
   // Thumb-friendly Scrubbing Handler with Haptic Feedback
   const updateScrubFromClientX = useCallback((clientX: number) => {
     if (!containerRef.current || coordPoints.length === 0) return;
@@ -691,12 +714,12 @@ export default function PremiumInteractiveChart({
             </div>
 
             <span className="text-[8.5px] sm:text-[10px] font-bold uppercase tracking-wider text-[#3b82f6] font-mono shrink-0">
-              {displayedBills} INV
+              <ScrambleNumber value={displayedBills} triggerKey={`${timeRange}-${activePoint ? activePoint.index : 'all'}`} /> INV
             </span>
           </div>
 
           <div className="mt-1.5 text-xl sm:text-2xl lg:text-3xl font-extrabold font-mono text-[#0f172a] dark:text-slate-100 tracking-tight truncate">
-            ₹{Math.round(displayedSales).toLocaleString('en-IN')}
+            ₹<ScrambleNumber value={displayedSales} triggerKey={`${timeRange}-${activePoint ? activePoint.index : 'all'}`} formatter={(v) => Math.round(v).toLocaleString('en-IN')} />
           </div>
         </motion.div>
 
@@ -715,13 +738,13 @@ export default function PremiumInteractiveChart({
 
             {/* Margin Badge */}
             <span className="inline-flex items-center text-[8.5px] sm:text-[10px] bg-[#d1fae5] dark:bg-emerald-950/80 text-[#047857] dark:text-emerald-300 font-black px-1.5 py-0.5 rounded font-mono shrink-0 border border-[#a7f3d0] dark:border-emerald-800/60">
-              {displayedMargin.toFixed(1)}%
+              <ScrambleNumber value={displayedMargin} triggerKey={`${timeRange}-${activePoint ? activePoint.index : 'all'}`} formatter={(v) => v.toFixed(1)} />%
             </span>
           </div>
 
           <div className="mt-1.5 flex items-baseline justify-between gap-1">
             <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold font-mono text-[#059669] dark:text-emerald-400 tracking-tight truncate">
-              ₹{Math.round(displayedProfit).toLocaleString('en-IN')}
+              ₹<ScrambleNumber value={displayedProfit} triggerKey={`${timeRange}-${activePoint ? activePoint.index : 'all'}`} formatter={(v) => Math.round(v).toLocaleString('en-IN')} />
             </div>
 
             {/* Quick Micro Reset Button */}
@@ -884,23 +907,32 @@ export default function PremiumInteractiveChart({
               className="text-[#8a877d] dark:text-stone-700"
             />
 
-            {/* 1. Area Fills */}
+            {/* 1. Area Fills with Organic Fade & Slide-Up from underneath */}
             {salesFillPath && (
-              <path
+              <motion.path
+                key={`sales-fill-${timeRange}-${coordPoints.length}`}
                 d={salesFillPath}
                 fill="url(#curveSalesFill)"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
               />
             )}
             {profitFillPath && (
-              <path
+              <motion.path
+                key={`profit-fill-${timeRange}-${coordPoints.length}`}
                 d={profitFillPath}
                 fill="url(#curveProfitFill)"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.32, ease: [0.16, 1, 0.3, 1] }}
               />
             )}
 
-            {/* 2. Sales Spline Curve (Dark Pine Green) */}
+            {/* 2. Sales Spline Curve (Smooth Drawing Line from Left to Right) */}
             {salesLinePath && (
-              <path
+              <motion.path
+                key={`sales-line-${timeRange}-${coordPoints.length}`}
                 d={salesLinePath}
                 fill="none"
                 stroke="#2e4a42"
@@ -908,12 +940,19 @@ export default function PremiumInteractiveChart({
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className="dark:stroke-emerald-400"
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 1 }}
+                transition={{
+                  pathLength: { duration: 0.95, ease: [0.2, 0.8, 0.2, 1] },
+                  opacity: { duration: 0.2 }
+                }}
               />
             )}
 
-            {/* 3. Profit Spline Curve (Warm Olive / Bronze) */}
+            {/* 3. Profit Spline Curve (Smooth Drawing Line Staggered) */}
             {profitLinePath && (
-              <path
+              <motion.path
+                key={`profit-line-${timeRange}-${coordPoints.length}`}
                 d={profitLinePath}
                 fill="none"
                 stroke="#8a7251"
@@ -921,7 +960,110 @@ export default function PremiumInteractiveChart({
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className="dark:stroke-amber-400"
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 1 }}
+                transition={{
+                  pathLength: { duration: 0.95, delay: 0.12, ease: [0.2, 0.8, 0.2, 1] },
+                  opacity: { duration: 0.2, delay: 0.12 }
+                }}
               />
+            )}
+
+            {/* 3b. Data Points along the Spline Curves (Fade & Slide Up Organically) */}
+            {coordPoints.map((pt, i) => {
+              const isPeak = peakSalesPoint && peakSalesPoint.original.index === pt.original.index;
+              return (
+                <motion.circle
+                  key={`sales-pt-${timeRange}-${i}`}
+                  cx={pt.x}
+                  cy={pt.ySales}
+                  r={isPeak ? 4.2 : 2.5}
+                  fill="#2e4a42"
+                  stroke="#ffffff"
+                  strokeWidth={isPeak ? 2 : 1}
+                  className="dark:fill-emerald-400 dark:stroke-stone-900 pointer-events-none"
+                  initial={{ opacity: 0, scale: 0, y: 12 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{
+                    delay: 0.2 + (i / Math.max(1, coordPoints.length)) * 0.55,
+                    duration: 0.35,
+                    ease: 'easeOut'
+                  }}
+                />
+              );
+            })}
+
+            {coordPoints.map((pt, i) => {
+              const isPeak = peakProfitPoint && peakProfitPoint.original.index === pt.original.index;
+              return (
+                <motion.circle
+                  key={`profit-pt-${timeRange}-${i}`}
+                  cx={pt.x}
+                  cy={pt.yProfit}
+                  r={isPeak ? 3.5 : 2}
+                  fill="#8a7251"
+                  stroke="#ffffff"
+                  strokeWidth={1}
+                  className="dark:fill-amber-400 dark:stroke-stone-900 pointer-events-none"
+                  initial={{ opacity: 0, scale: 0, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{
+                    delay: 0.28 + (i / Math.max(1, coordPoints.length)) * 0.55,
+                    duration: 0.35,
+                    ease: 'easeOut'
+                  }}
+                />
+              );
+            })}
+
+            {/* 3c. Peaks - Fade and Slide Up Organically Into Place */}
+            {peakSalesPoint && (
+              <motion.g
+                key={`peak-badge-sales-${timeRange}-${peakSalesPoint.original.index}`}
+                initial={{ opacity: 0, y: 14, scale: 0.85 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 0.75, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="pointer-events-none select-none"
+              >
+                {/* Organic pulse halo around the peak sales point */}
+                <circle
+                  cx={peakSalesPoint.x}
+                  cy={peakSalesPoint.ySales}
+                  r={10}
+                  fill="none"
+                  stroke="#2e4a42"
+                  strokeWidth={1.5}
+                  strokeDasharray="2 2"
+                  className="dark:stroke-emerald-400 opacity-60 animate-pulse"
+                />
+
+                {/* Floating Peak Pill Badge */}
+                <g transform={`translate(${peakSalesPoint.x}, ${Math.max(16, peakSalesPoint.ySales - 18)})`}>
+                  <rect
+                    x={-26}
+                    y={-9}
+                    width={52}
+                    height={16}
+                    rx={8}
+                    fill="#1c2e24"
+                    className="dark:fill-emerald-950 shadow-md"
+                    stroke="rgba(255,255,255,0.25)"
+                    strokeWidth={1}
+                  />
+                  <text
+                    x={0}
+                    y={1}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={8}
+                    fontWeight="900"
+                    fill="#ffffff"
+                    className="font-mono tracking-wider dark:fill-emerald-200"
+                  >
+                    ★ PEAK
+                  </text>
+                </g>
+              </motion.g>
             )}
 
             {/* 4. Bottom X-Axis Ticks & Labels */}

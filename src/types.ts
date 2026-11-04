@@ -56,6 +56,9 @@ export interface Item {
   aiAdvice?: string;
   minStockLevel?: number;
   imageUrl?: string;
+  cloudinaryPublicId?: string;
+  imageMigrationStatus?: 'local' | 'migrating' | 'synced' | 'failed';
+  imageUpdatedAt?: string;
 }
 
 export interface WeightPreset {

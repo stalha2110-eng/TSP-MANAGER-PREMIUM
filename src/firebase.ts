@@ -130,6 +130,21 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
+/**
+ * Strict Cloudinary HTTPS URL validator.
+ * Accepts only secure URLs strictly hosted on res.cloudinary.com.
+ * Rejects base64 data URLs, insecure HTTP, and external or spoofed hosts.
+ */
+export function isValidCloudinaryUrl(url: any): boolean {
+  if (typeof url !== 'string' || !url.trim()) return false;
+  try {
+    const parsed = new URL(url.trim());
+    return parsed.protocol === 'https:' && parsed.hostname === 'res.cloudinary.com';
+  } catch {
+    return false;
+  }
+}
+
 export function sanitizeForFirestore<T>(obj: T): T {
   if (obj === undefined) return null as any;
   if (obj === null || typeof obj !== 'object') {
@@ -140,11 +155,15 @@ export function sanitizeForFirestore<T>(obj: T): T {
   }
   const result: any = {};
   for (const key of Object.keys(obj)) {
-    // Explicitly exclude product images from Cloud Firestore - stored strictly in device local storage!
+    const val = (obj as any)[key];
     if (key === 'imageUrl') {
+      // Allow only authentic, verified Cloudinary HTTPS URLs in Firestore.
+      // Strictly reject and strip base64 data URLs and arbitrary external hosts.
+      if (isValidCloudinaryUrl(val)) {
+        result[key] = val.trim();
+      }
       continue;
     }
-    const val = (obj as any)[key];
     if (val !== undefined) {
       result[key] = sanitizeForFirestore(val);
     }

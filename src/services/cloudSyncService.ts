@@ -9,7 +9,7 @@ import {
   orderBy, 
   query 
 } from 'firebase/firestore';
-import { db, sanitizeForFirestore, auth } from '../firebase';
+import { db, sanitizeForFirestore, auth, isValidCloudinaryUrl } from '../firebase';
 import { AppState, Item, Bill, Note, UnbilledEntry } from '../types';
 import { RecoveryService } from './recoveryService';
 import { deduplicateById } from '../constants/initialState';
@@ -29,6 +29,26 @@ export interface SyncResult {
   unbilledSynced: number;
   message: string;
   timestamp: string;
+}
+
+/**
+ * Pure image reconciliation helper.
+ * Determines the canonical image URL for a product during cloud sync:
+ * 1. An authentic res.cloudinary.com HTTPS URL from Firestore takes top priority across devices.
+ * 2. If no valid remote Cloudinary URL exists, preserves the existing local fallback image.
+ * 3. Returns undefined if neither exists.
+ */
+export function reconcileProductImageUrl(
+  remoteImageUrl?: string,
+  localImageUrl?: string
+): string | undefined {
+  if (isValidCloudinaryUrl(remoteImageUrl)) {
+    return remoteImageUrl.trim();
+  }
+  if (localImageUrl) {
+    return localImageUrl;
+  }
+  return undefined;
 }
 
 export class CloudSyncService {
@@ -155,11 +175,14 @@ export class CloudSyncService {
       const localImages = getAllLocalProductImages();
       snap.forEach(docSnap => {
         const data = docSnap.data();
-        const localImg = localImages[docSnap.id] || localItems.find(li => li.id === docSnap.id)?.imageUrl;
+        const remoteImageUrl = data?.imageUrl;
+        const localImg = localImages[docSnap.id] || (currentState.items || []).find(li => li.id === docSnap.id)?.imageUrl;
+
+        const resolvedImageUrl = reconcileProductImageUrl(remoteImageUrl, localImg);
         itemsList.push({
           ...data,
           id: docSnap.id,
-          imageUrl: localImg || undefined,
+          imageUrl: resolvedImageUrl,
           translations: {
             en: data.name || '',
             hi: '',

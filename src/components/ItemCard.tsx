@@ -22,7 +22,7 @@ export interface ItemCardProps {
   onPeek?: (preview: { type: 'item' | 'customer' | 'bill' | 'notification' | 'analytics'; payload: any }) => void;
 }
 
-const HOLD_DURATION_MS = 1000;
+const HOLD_DURATION_MS = 500;
 
 export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdit, onDelete, t, onUpdateItem, isSelected, anyItemsSelected, onSelect, onPeek }: ItemCardProps) => {
 
@@ -65,7 +65,7 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
     setHoldProgress(0);
     
     const duration = HOLD_DURATION_MS;
-    const intervalTime = 50;
+    const intervalTime = 25;
     let elapsed = 0;
     
     holdTimerRef.current = setTimeout(() => {

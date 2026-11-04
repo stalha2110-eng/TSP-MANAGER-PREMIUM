@@ -432,7 +432,7 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
     en: "Compare",
     hi: "तुलना करें",
     mr: "तुलना करा",
-    "hi-en": "Compare Karo"
+    "hi-en": "Compare"
   },
   items: {
     en: "Items",
@@ -450,7 +450,7 @@ export const TRANSLATION_DB: Record<string, Record<LanguageType, string>> = {
     en: "Clear",
     hi: "साफ़ करें",
     mr: "साफ करा",
-    "hi-en": "Hatao"
+    "hi-en": "cancel"
   },
   lastChanged: {
     en: "Last Updated",

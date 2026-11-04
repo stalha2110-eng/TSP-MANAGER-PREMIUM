@@ -482,6 +482,31 @@ export default function App() {
   useBackModal(quickPeek !== null, () => setQuickPeek(null), 'quick_peek');
   useBackModal(showRecoveryCenter, () => setShowRecoveryCenter(false), 'recovery_center');
 
+  // Auto-dismiss More Menu & Action popups on background scroll or touch/wheel interaction
+  useEffect(() => {
+    if (!showMoreMenu && !showPlusActionMenu) return;
+
+    const handleBackgroundDismiss = () => {
+      if (showMoreMenu) {
+        setShowMoreMenu(false);
+        setMoreMenuView('main');
+      }
+      if (showPlusActionMenu) {
+        setShowPlusActionMenu(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleBackgroundDismiss, { capture: true, passive: true });
+    window.addEventListener('touchmove', handleBackgroundDismiss, { passive: true });
+    window.addEventListener('wheel', handleBackgroundDismiss, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleBackgroundDismiss, { capture: true });
+      window.removeEventListener('touchmove', handleBackgroundDismiss);
+      window.removeEventListener('wheel', handleBackgroundDismiss);
+    };
+  }, [showMoreMenu, showPlusActionMenu]);
+
   // Request browser Notification permissions on launch
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -4667,9 +4692,17 @@ export default function App() {
               <AnimatePresence>
                 {showMoreMenu && (
                   <>
-                    {/* Fixed invisible backdrop for outside click */}
+                    {/* Fixed invisible backdrop for outside click & tap */}
                     <div 
                       className="fixed inset-0 z-[110]" 
+                      onPointerDown={() => {
+                        setShowMoreMenu(false);
+                        setMoreMenuView('main');
+                      }}
+                      onTouchStart={() => {
+                        setShowMoreMenu(false);
+                        setMoreMenuView('main');
+                      }}
                       onClick={() => {
                         setShowMoreMenu(false);
                         setMoreMenuView('main');
@@ -5486,69 +5519,92 @@ export default function App() {
         </div>
       </nav>
 
-      {/* Comparison Bottom Bar - Enhanced Visibility */}
+      {/* Comparison Bottom Bar - Enhanced Minimalist & Mobile-Friendly */}
       <AnimatePresence>
         {selectedItemIds.length > 0 && activeTab === 'home' && (
           <motion.div 
-            initial={{ y: 200, opacity: 0 }}
-            animate={{ y: -20, opacity: 1 }}
-            exit={{ y: 200, opacity: 0 }}
-            className="fixed left-4 right-4 z-[60] bottom-20 md:bottom-8"
+            initial={{ y: 100, opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 100, opacity: 0, scale: 0.95 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            className="fixed left-3 right-3 sm:left-4 sm:right-4 z-[60] bottom-[76px] md:bottom-6 pointer-events-auto"
           >
-            <div className="mx-auto max-w-2xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex flex-col md:flex-row items-center justify-between border border-white/20 backdrop-blur-3xl gap-4">
-               <div className="flex items-center gap-6">
-                  <div className="flex -space-x-4">
-                    {selectedItemIds.slice(0, 4).map((id, index) => {
-                      const it = state.items.find(i => i.id === id);
-                      const cat = DEFAULT_CATEGORIES.find(c => c.id === it?.categoryId);
-                      return (
-                        <motion.div 
-                          key={`sel-item-id-${id}-${index}`} 
-                          initial={{ x: -20, opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="h-14 w-14 rounded-2xl bg-white/10 border-2 border-white/20 flex items-center justify-center text-2xl backdrop-blur-md shadow-lg"
-                        >
-                          {cat?.icon || '📦'}
-                        </motion.div>
-                      );
-                    })}
-                    {selectedItemIds.length > 4 && (
-                      <div className="h-14 w-14 rounded-2xl bg-black/40 border-2 border-white/20 flex items-center justify-center text-xs font-black">
-                        +{selectedItemIds.length - 4}
-                      </div>
-                    )}
-                  </div>
-                  <div className="border-l border-white/10 pl-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 leading-none mb-1">Comparative Intel</p>
-                    <p className="text-xl font-black tracking-tight">{selectedItemIds.length} {t.items || "Items"} {t.selected || "Selected"}</p>
-                  </div>
+            <div className="mx-auto max-w-lg bg-[var(--card-solid,#111a2e)] text-[var(--foreground)] p-3 sm:p-4 rounded-2xl border border-[var(--border)] shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl space-y-2.5">
+               {/* Top Status Row */}
+               <div className="flex items-center justify-between gap-2">
+                 <div className="flex items-center gap-2.5 min-w-0">
+                   {/* Stacked Category Icons */}
+                   <div className="flex -space-x-2 shrink-0">
+                     {selectedItemIds.slice(0, 3).map((id, index) => {
+                       const it = state.items.find(i => i.id === id);
+                       const cat = DEFAULT_CATEGORIES.find(c => c.id === it?.categoryId);
+                       return (
+                         <div 
+                           key={`sel-item-id-${id}-${index}`} 
+                           className="h-7 w-7 rounded-lg bg-[var(--primary)]/15 border border-[var(--primary)]/30 flex items-center justify-center text-xs shadow-xs"
+                         >
+                           {cat?.icon || '📦'}
+                         </div>
+                       );
+                     })}
+                     {selectedItemIds.length > 3 && (
+                       <div className="h-7 w-7 rounded-lg bg-[var(--foreground)]/10 border border-[var(--border)] flex items-center justify-center text-[10px] font-black">
+                         +{selectedItemIds.length - 3}
+                       </div>
+                     )}
+                   </div>
+                   
+                   <div className="min-w-0">
+                     <span className="text-[9px] font-black uppercase tracking-wider text-[var(--primary)] block leading-none">
+                       Comparative Intel
+                     </span>
+                     <p className="text-xs font-black tracking-tight truncate mt-0.5">
+                       {selectedItemIds.length} {t.items || "Items"} {t.selected || "Selected"}
+                     </p>
+                   </div>
+                 </div>
+
+                 {/* Quick Deselect All (X) */}
+                 <button
+                   type="button"
+                   onClick={() => setSelectedItemIds([])}
+                   className="h-7 w-7 rounded-lg bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/60 hover:text-[var(--foreground)] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                   title="Clear selection"
+                 >
+                   <X size={14} />
+                 </button>
                </div>
-               <div className="flex items-center gap-3 w-full md:w-auto">
+
+               {/* Bottom Actions: 3-column equal grid so buttons never overflow */}
+               <div className="grid grid-cols-3 gap-2 w-full">
+                 {/* Cancel / Clear */}
                  <Button 
                    variant="ghost" 
                    onClick={() => setSelectedItemIds([])}
-                   className="text-white hover:bg-white/10 rounded-2xl px-6 font-black uppercase text-[10px] tracking-widest h-12 flex-1 md:flex-none"
+                   className="h-9 px-2 rounded-xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/80 hover:text-[var(--foreground)] font-bold text-xs uppercase tracking-wider border border-[var(--border)] flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
                  >
-                   {t.clear || "Clear"}
+                   <X size={13} className="shrink-0" />
+                   <span className="truncate">{t.clear || "Cancel"}</span>
                  </Button>
 
+                 {/* Delete */}
                  <Button 
                    variant="ghost"
                    onClick={() => setDeleteConfirmation({ show: true, type: 'multiple' })}
-                   className="text-white hover:bg-red-500/20 hover:text-red-300 rounded-2xl px-6 font-black uppercase text-[10px] tracking-widest h-12 flex-1 md:flex-none"
+                   className="h-9 px-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 hover:text-rose-400 font-bold text-xs uppercase tracking-wider border border-rose-500/20 flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
                  >
-                   <Trash2 size={18} className="mr-2" />
-                   Delete
+                   <Trash2 size={13} className="shrink-0" />
+                   <span className="truncate">Delete</span>
                  </Button>
                  
+                 {/* Compare */}
                  <Button 
                    onClick={() => setShowComparison(true)}
                    disabled={selectedItemIds.length < 2}
-                   className="bg-white text-[var(--primary)] hover:scale-105 active:scale-95 transition-all rounded-2xl px-10 h-12 text-xs font-black uppercase tracking-[0.1em] shadow-xl flex-1 md:flex-none disabled:opacity-50"
+                   className="h-9 px-2 rounded-xl bg-[var(--primary)] hover:opacity-95 text-white font-black text-xs uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                  >
-                   <TrendingUp size={18} className="mr-2" />
-                   {t.compare || "Compare"}
+                   <TrendingUp size={13} className="shrink-0" />
+                   <span className="truncate">{t.compare || "Compare"}</span>
                  </Button>
                </div>
             </div>
@@ -5868,6 +5924,8 @@ export default function App() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
+                onPointerDown={() => setShowPlusActionMenu(false)}
+                onTouchStart={() => setShowPlusActionMenu(false)}
                 onClick={() => setShowPlusActionMenu(false)}
                 className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[90] cursor-pointer"
               />

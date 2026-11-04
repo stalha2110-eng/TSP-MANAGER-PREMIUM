@@ -5872,9 +5872,21 @@ export default function App() {
         }}
       />
 
-      {/* Floating Action Buttons */}
+      {/* Floating Action Buttons: Attached smoothly to screen corner above Comparative Intel card during multi-selection */}
       {activeTab === 'home' && !isAnyModalOpen && (
-        <div className="fixed bottom-24 right-6 z-[100] flex flex-col items-center gap-3 select-none overflow-visible">
+        <motion.div 
+          animate={selectedItemIds.length > 0 ? {
+            bottom: 200,
+            right: 12,
+            scale: 0.88
+          } : {
+            bottom: 96,
+            right: 24,
+            scale: 1
+          }}
+          transition={{ type: "spring", stiffness: 400, damping: 28 }}
+          className="fixed z-[100] flex flex-col items-center gap-2.5 select-none overflow-visible origin-bottom-right"
+        >
           {/* 1. Dedicated Animated Voice Assistant Mic Button positioned directly ABOVE the Plus button */}
           <AnimatedVoiceAssistantButton
             id="floating-voice-product-assistant-mic-btn"
@@ -6002,7 +6014,7 @@ export default function App() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
       )}
       {activeTab === 'notes' && !isAnyModalOpen && (
         <Button 

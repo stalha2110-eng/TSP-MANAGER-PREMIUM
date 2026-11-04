@@ -49,6 +49,20 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
   const progressIntervalRef = React.useRef<any>(null);
   const pointerStartRef = React.useRef<{ x: number, y: number } | null>(null);
   const hasMovedRef = React.useRef<boolean>(false);
+  const justCompletedHoldRef = React.useRef<boolean>(false);
+
+  const cancelHold = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    setIsHolding(false);
+    setHoldProgress(0);
+  };
 
   const startHold = (e: React.PointerEvent) => {
     if (e.button !== 0) return; // Only process left click/primary touch
@@ -56,7 +70,9 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
     
     pointerStartRef.current = { x: e.clientX, y: e.clientY };
     hasMovedRef.current = false;
+    justCompletedHoldRef.current = false;
     
+    // When multi-selection mode is already active, tap selects immediately via onClick (no hold required)
     if (anyItemsSelected) {
       return;
     }
@@ -69,8 +85,12 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
     let elapsed = 0;
     
     holdTimerRef.current = setTimeout(() => {
+      // Mark that this hold succeeded. This flag will be consumed by the release click event!
+      justCompletedHoldRef.current = true;
       onSelect();
-      if (navigator.vibrate) navigator.vibrate(100);
+      if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+        try { window.navigator.vibrate(80); } catch {}
+      }
       cancelHold();
     }, duration);
 
@@ -79,13 +99,6 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
       const pct = Math.min((elapsed / duration) * 100, 100);
       setHoldProgress(pct);
     }, intervalTime);
-  };
-
-  const cancelHold = () => {
-    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
-    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-    setIsHolding(false);
-    setHoldProgress(0);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -101,22 +114,36 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
   const handlePointerUp = (e: React.PointerEvent) => {
     cancelHold();
     
-    if (pointerStartRef.current && !hasMovedRef.current) {
-      const dx = e.clientX - pointerStartRef.current.x;
-      const dy = e.clientY - pointerStartRef.current.y;
-      if (Math.abs(dx) <= 10 && Math.abs(dy) <= 10) {
-        if (anyItemsSelected) {
-          onSelect();
-        }
-      }
+    // If the hold succeeded, we do NOT reset justCompletedHoldRef here!
+    // We let handleCardClick consume it so the mouse-up/click doesn't deselect the card.
+    // As a failsafe, schedule an auto-clear in case the browser doesn't dispatch a click.
+    if (justCompletedHoldRef.current) {
+      setTimeout(() => {
+        justCompletedHoldRef.current = false;
+      }, 500);
     }
+
     pointerStartRef.current = null;
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Falls back/stops propagation
+    e.stopPropagation();
+
+    // If this click is the release of a hold gesture that just selected the card,
+    // consume it and NEVER deselect the card!
+    if (justCompletedHoldRef.current) {
+      justCompletedHoldRef.current = false;
+      e.preventDefault();
+      return;
+    }
+
+    // When selection mode is active, any tap on the card immediately toggles selection
     if (anyItemsSelected) {
-      e.stopPropagation();
+      e.preventDefault();
+      onSelect();
+      if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+        try { window.navigator.vibrate(30); } catch {}
+      }
     }
   };
 
@@ -126,7 +153,7 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
       initial={{ opacity: 0, scale: 0.95 }}
       animate={isSelected ? {
         opacity: 1,
-        scale: justSelected ? [1, 1.05, 1.01] : 1.01,
+        scale: 1.015,
         boxShadow: justSelected 
           ? "0 0 25px var(--primary), 0 10px 25px rgba(var(--primary-rgb), 0.3)" 
           : "0 10px 25px rgba(var(--primary-rgb), 0.15)",
@@ -193,10 +220,19 @@ export const ItemCard = React.memo(({ item, isLocked, language, precision, onEdi
         </div>
 
       )}
-      {/* Selection Badge */}
-      {isSelected && (
+      {/* Selection Badge: Solid checkmark when selected, or clear selectable circle ring when multi-select mode is active */}
+      {anyItemsSelected && (
+        <div className={`absolute top-3 right-3 z-30 p-1 rounded-full shadow-lg border transition-all ${
+          isSelected 
+            ? 'bg-[var(--primary)] text-white border-white/20 scale-100' 
+            : 'bg-black/35 dark:bg-white/10 text-transparent border-white/40 hover:border-white scale-90'
+        }`}>
+          <Check size={14} strokeWidth={4} className={isSelected ? 'opacity-100 text-white' : 'opacity-0'} />
+        </div>
+      )}
+      {!anyItemsSelected && isSelected && (
         <div className="absolute top-3 right-3 z-30 bg-[var(--primary)] text-white p-1 rounded-full shadow-lg border border-white/20">
-          <Check size={16} strokeWidth={4} />
+          <Check size={14} strokeWidth={4} />
         </div>
       )}
 

@@ -31,18 +31,24 @@ export const DASHBOARD_LOCAL_KEYS = [
   'bizHubCardsOrder'
 ] as const;
 
+/**
+ * Keys strictly local to this specific device hardware (e.g., animations/hardware prefs)
+ */
+export const DEVICE_SPECIFIC_LOCAL_KEYS = [
+  'bizHubCardsOrder'
+] as const;
+
 export type DashboardLocalKey = typeof DASHBOARD_LOCAL_KEYS[number];
 
 /**
  * Check if a given settings key is strictly local to this device
  */
 export const isDashboardLocalKey = (key: string): boolean => {
-  return (DASHBOARD_LOCAL_KEYS as readonly string[]).includes(key);
+  return (DEVICE_SPECIFIC_LOCAL_KEYS as readonly string[]).includes(key);
 };
 
 /**
- * Check if an update object contains ONLY dashboard local keys.
- * If so, we do NOT need any Firestore network call.
+ * Check if an update object contains ONLY local hardware keys.
  */
 export const isOnlyDashboardUpdate = (updates: Record<string, any>): boolean => {
   const keys = Object.keys(updates);
@@ -51,8 +57,7 @@ export const isOnlyDashboardUpdate = (updates: Record<string, any>): boolean => 
 };
 
 /**
- * Extract and remove all dashboard card / local layout keys from an object
- * before sending to Firestore.
+ * Clean settings object before sending to Firestore
  */
 export const stripDashboardSettingsFromCloud = <T extends Record<string, any>>(obj: T): Partial<T> => {
   if (!obj || typeof obj !== 'object') return obj;
@@ -180,36 +185,70 @@ export const saveLocalDashboardStorage = (updates: Partial<AppSettings>): void =
 
 /**
  * Merge incoming cloud Firestore settings into local settings, ensuring
- * that local dashboard card selections are NEVER overwritten by cloud data.
+ * that custom dashboard card selections are synchronized across devices without data loss.
  */
 export const mergeCloudSettingsWithLocal = (
   cloudSettings: Partial<AppSettings>,
   currentLocalSettings: AppSettings
 ): AppSettings => {
-  const cleanCloud = stripDashboardSettingsFromCloud(cloudSettings);
   const localDashboard = getLocalDashboardStorage();
+
+  // If cloud settings has custom dashboard cards configured, merge them intelligently!
+  const cloudCards = Array.isArray(cloudSettings.dashboardCards) ? cloudSettings.dashboardCards : null;
+  const localCards = Array.isArray(localDashboard.dashboardCards) ? localDashboard.dashboardCards : null;
+
+  let mergedCards = localCards || currentLocalSettings.dashboardCards || INITIAL_SETTINGS.dashboardCards;
+
+  if (cloudCards && cloudCards.length > 0) {
+    const hasLocalCustomizations = localCards?.some(c => c.visible && c.id !== 'inventory_value');
+    if (!hasLocalCustomizations) {
+      mergedCards = cloudCards;
+      saveLocalDashboardStorage({
+        dashboardCards: cloudCards,
+        dashboardCardsConfig: cloudSettings.dashboardCardsConfig || localDashboard.dashboardCardsConfig,
+        dashboardCardsVersion: 2
+      });
+    } else {
+      // Both have data: merge so that cards active on either device stay active
+      const cardMap = new Map((mergedCards || []).map(c => [c.id, { ...c }]));
+      cloudCards.forEach(cc => {
+        const existing = cardMap.get(cc.id);
+        if (existing) {
+          if (cc.visible) existing.visible = true;
+        } else {
+          cardMap.set(cc.id, { ...cc });
+        }
+      });
+      mergedCards = Array.from(cardMap.values());
+      saveLocalDashboardStorage({
+        dashboardCards: mergedCards,
+        dashboardCardsVersion: 2
+      });
+    }
+  }
+
+  const mergedConfig = cloudSettings.dashboardCardsConfig || localDashboard.dashboardCardsConfig || currentLocalSettings.dashboardCardsConfig || INITIAL_SETTINGS.dashboardCardsConfig;
 
   return {
     ...currentLocalSettings,
-    ...cleanCloud,
-    // Ensure dashboard cards & preferences strictly come from local device storage
-    dashboardCards: localDashboard.dashboardCards || currentLocalSettings.dashboardCards || INITIAL_SETTINGS.dashboardCards,
-    dashboardCardsConfig: localDashboard.dashboardCardsConfig || currentLocalSettings.dashboardCardsConfig || INITIAL_SETTINGS.dashboardCardsConfig,
+    ...cloudSettings,
+    dashboardCards: mergedCards,
+    dashboardCardsConfig: mergedConfig,
     dashboardCardsVersion: 2,
-    dashboardProfiles: localDashboard.dashboardProfiles || currentLocalSettings.dashboardProfiles,
-    activeDashboardProfile: localDashboard.activeDashboardProfile || currentLocalSettings.activeDashboardProfile,
-    dashboardMode: localDashboard.dashboardMode || currentLocalSettings.dashboardMode || 'hybrid',
-    dashboardAutoHideEmptyCards: localDashboard.dashboardAutoHideEmptyCards ?? currentLocalSettings.dashboardAutoHideEmptyCards ?? false,
-    dashboardPriorityHighlightEffects: localDashboard.dashboardPriorityHighlightEffects ?? currentLocalSettings.dashboardPriorityHighlightEffects ?? true,
-    dashboardShowRecentActivity: localDashboard.dashboardShowRecentActivity ?? currentLocalSettings.dashboardShowRecentActivity ?? true,
-    dashboardShowBusinessHealth: localDashboard.dashboardShowBusinessHealth ?? currentLocalSettings.dashboardShowBusinessHealth ?? true,
-    dashboardShowPrinterStatus: localDashboard.dashboardShowPrinterStatus ?? currentLocalSettings.dashboardShowPrinterStatus ?? true,
-    dashboardShowCloudSync: localDashboard.dashboardShowCloudSync ?? currentLocalSettings.dashboardShowCloudSync ?? true,
-    dashboardShowBackupStatus: localDashboard.dashboardShowBackupStatus ?? currentLocalSettings.dashboardShowBackupStatus ?? true,
-    dashboardShowBusinessJourney: localDashboard.dashboardShowBusinessJourney ?? currentLocalSettings.dashboardShowBusinessJourney ?? true,
-    dashboardShowGoalsProgress: localDashboard.dashboardShowGoalsProgress ?? currentLocalSettings.dashboardShowGoalsProgress ?? true,
-    dashboardEnableAnimations: localDashboard.dashboardEnableAnimations ?? currentLocalSettings.dashboardEnableAnimations ?? true,
-    dashboardSmoothCardMovement: localDashboard.dashboardSmoothCardMovement ?? currentLocalSettings.dashboardSmoothCardMovement ?? true,
-    bizHubCardsOrder: localDashboard.bizHubCardsOrder || currentLocalSettings.bizHubCardsOrder
+    dashboardProfiles: cloudSettings.dashboardProfiles || localDashboard.dashboardProfiles || currentLocalSettings.dashboardProfiles,
+    activeDashboardProfile: cloudSettings.activeDashboardProfile || localDashboard.activeDashboardProfile || currentLocalSettings.activeDashboardProfile,
+    dashboardMode: cloudSettings.dashboardMode || localDashboard.dashboardMode || currentLocalSettings.dashboardMode || 'hybrid',
+    dashboardAutoHideEmptyCards: cloudSettings.dashboardAutoHideEmptyCards ?? localDashboard.dashboardAutoHideEmptyCards ?? currentLocalSettings.dashboardAutoHideEmptyCards ?? false,
+    dashboardPriorityHighlightEffects: cloudSettings.dashboardPriorityHighlightEffects ?? localDashboard.dashboardPriorityHighlightEffects ?? currentLocalSettings.dashboardPriorityHighlightEffects ?? true,
+    dashboardShowRecentActivity: cloudSettings.dashboardShowRecentActivity ?? localDashboard.dashboardShowRecentActivity ?? currentLocalSettings.dashboardShowRecentActivity ?? true,
+    dashboardShowBusinessHealth: cloudSettings.dashboardShowBusinessHealth ?? localDashboard.dashboardShowBusinessHealth ?? currentLocalSettings.dashboardShowBusinessHealth ?? true,
+    dashboardShowPrinterStatus: cloudSettings.dashboardShowPrinterStatus ?? localDashboard.dashboardShowPrinterStatus ?? currentLocalSettings.dashboardShowPrinterStatus ?? true,
+    dashboardShowCloudSync: cloudSettings.dashboardShowCloudSync ?? localDashboard.dashboardShowCloudSync ?? currentLocalSettings.dashboardShowCloudSync ?? true,
+    dashboardShowBackupStatus: cloudSettings.dashboardShowBackupStatus ?? localDashboard.dashboardShowBackupStatus ?? currentLocalSettings.dashboardShowBackupStatus ?? true,
+    dashboardShowBusinessJourney: cloudSettings.dashboardShowBusinessJourney ?? localDashboard.dashboardShowBusinessJourney ?? currentLocalSettings.dashboardShowBusinessJourney ?? true,
+    dashboardShowGoalsProgress: cloudSettings.dashboardShowGoalsProgress ?? localDashboard.dashboardShowGoalsProgress ?? currentLocalSettings.dashboardShowGoalsProgress ?? true,
+    dashboardEnableAnimations: cloudSettings.dashboardEnableAnimations ?? localDashboard.dashboardEnableAnimations ?? currentLocalSettings.dashboardEnableAnimations ?? true,
+    dashboardSmoothCardMovement: cloudSettings.dashboardSmoothCardMovement ?? localDashboard.dashboardSmoothCardMovement ?? currentLocalSettings.dashboardSmoothCardMovement ?? true,
+    bizHubCardsOrder: cloudSettings.bizHubCardsOrder || localDashboard.bizHubCardsOrder || currentLocalSettings.bizHubCardsOrder
   };
 };

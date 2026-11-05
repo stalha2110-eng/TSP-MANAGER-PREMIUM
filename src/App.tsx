@@ -2331,8 +2331,7 @@ export default function App() {
               ...prev, 
               user: { uid: user.uid, email: user.email },
               settings: {
-                ...prev.settings,
-                ...cloudSettings,
+                ...mergeCloudSettingsWithLocal(cloudSettings, prev.settings),
                 autoCloudSync: true
               }
             }));
@@ -3080,11 +3079,14 @@ export default function App() {
       // Cloud Persistence: Strip out all local dashboard card keys so they are NEVER sent to Firestore
       const cloudUpdates = stripDashboardSettingsFromCloud(updates);
 
-      if (Object.keys(cloudUpdates).length > 0 && state.user && state.user.uid !== 'guest_user' && (updates.autoCloudSync ?? state.settings.autoCloudSync)) {
-        try {
-          await setDoc(doc(db, 'users', state.user.uid), sanitizeForFirestore(cloudUpdates), { merge: true });
-        } catch (e) {
-          handleFirestoreError(e, OperationType.WRITE, `users/${state.user.uid}`);
+      if (Object.keys(cloudUpdates).length > 0 && state.user && state.user.uid !== 'guest_user') {
+        const hasDashboardCards = 'dashboardCards' in cloudUpdates || 'dashboardCardsConfig' in cloudUpdates;
+        if (hasDashboardCards || (updates.autoCloudSync ?? state.settings.autoCloudSync)) {
+          try {
+            await setDoc(doc(db, 'users', state.user.uid), sanitizeForFirestore(cloudUpdates), { merge: true });
+          } catch (e) {
+            handleFirestoreError(e, OperationType.WRITE, `users/${state.user.uid}`);
+          }
         }
       }
 

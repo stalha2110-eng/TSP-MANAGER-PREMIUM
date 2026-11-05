@@ -400,12 +400,11 @@ export default function DynamicStoreDashboard({
         if (cfg.hidden || cfg.id !== 'inventory_value') return false;
       }
 
-      // Auto Hide empty cards triggers (only when explicitly enabled)
-      if (settings.dashboardAutoHideEmptyCards === true) {
+      // Auto Hide empty cards triggers (only applies to cards NOT explicitly enabled in the user's custom deck)
+      if (settings.dashboardAutoHideEmptyCards === true && (!deckConfig || !deckConfig.visible)) {
         if (cfg.id === 'low_stock' && lowStockItems.length === 0) return false;
         if (cfg.id === 'out_of_stock' && outOfStockItems.length === 0) return false;
         if (cfg.id === 'notifications' && unreadNotifications.length === 0) return false;
-        if (cfg.id === 'pending_udhar' && pendingUdharTotal === 0) return false;
         if (cfg.id === 'printer_status' && !simulatedPrinterOffline) return false;
       }
 
@@ -695,8 +694,12 @@ export default function DynamicStoreDashboard({
                         )}
                         {cardId === 'pending_udhar' && (
                           <div>
-                            <p className="text-2xl font-black tracking-tight text-rose-500">{formatCurrency(pendingUdharTotal, settings.currency, precision)}</p>
-                            <p className="text-[10px] opacity-45 uppercase font-bold tracking-wider">{overdueUdharCount} accounts overdue payment</p>
+                            <p className={cn("text-2xl font-black tracking-tight", pendingUdharTotal > 0 ? "text-rose-500" : "text-emerald-500")}>
+                              {formatCurrency(pendingUdharTotal, settings.currency, precision)}
+                            </p>
+                            <p className="text-[10px] opacity-60 uppercase font-black tracking-wider">
+                              {pendingUdharTotal === 0 ? "0 Pending Accounts • All Clear" : `${overdueUdharCount} accounts overdue payment`}
+                            </p>
                           </div>
                         )}
                         {cardId === 'printer_status' && (
@@ -889,14 +892,27 @@ export default function DynamicStoreDashboard({
                         {cardId === 'pending_udhar' && (
                           <div className="space-y-2">
                             <p className="text-[10px] uppercase font-black opacity-50 tracking-wider">Top outstanding credit accounts:</p>
-                            <div className="space-y-1">
-                              {(state.udharCustomers || []).slice(0, 2).map((c, idx) => (
-                                <div key={`udhar-preview-${c.id || 'cust'}-${idx}`} className="p-2 bg-rose-500/5 border border-rose-500/15 rounded-xl flex justify-between items-center">
-                                  <span className="text-[10px] font-black uppercase truncate max-w-[120px]">{c.name}</span>
-                                  <span className="text-[10px] font-black font-mono text-rose-500">₹{c.totalUdhar}</span>
+                            {((state.udharCustomers || []).filter(c => (c.totalUdhar || 0) > 0)).length === 0 ? (
+                              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-2.5">
+                                <CheckCircle className="text-emerald-400 shrink-0" size={16} />
+                                <div>
+                                  <p className="text-[10px] font-black uppercase text-emerald-400">All Accounts Settled</p>
+                                  <p className="text-[9px] opacity-65 font-bold">0 pending khata credit • ₹0 total outstanding</p>
                                 </div>
-                              ))}
-                            </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-1">
+                                {(state.udharCustomers || [])
+                                  .filter(c => (c.totalUdhar || 0) > 0)
+                                  .slice(0, 2)
+                                  .map((c, idx) => (
+                                    <div key={`udhar-preview-${c.id || 'cust'}-${idx}`} className="p-2 bg-rose-500/5 border border-rose-500/15 rounded-xl flex justify-between items-center">
+                                      <span className="text-[10px] font-black uppercase truncate max-w-[120px]">{c.name}</span>
+                                      <span className="text-[10px] font-black font-mono text-rose-500">₹{c.totalUdhar}</span>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -1204,17 +1220,25 @@ export default function DynamicStoreDashboard({
                 {detailedCard === 'pending_udhar' && (
                   <div className="space-y-3">
                     <p className="text-xs opacity-70 uppercase font-black">Active outstanding ledger debt accounts:</p>
-                    <div className="space-y-1.5 max-h-[185px] overflow-y-auto no-scrollbar">
-                      {state.udharCustomers.map((cust, idx) => (
-                        <div key={`udhar-modal-${cust.id || 'cust'}-${idx}`} className="p-3 bg-rose-500/5 rounded-2xl border border-rose-500/15 flex justify-between items-center text-xs">
-                          <div>
-                            <span className="font-black uppercase">{cust.name}</span>
-                            <p className="text-[8px] opacity-45">Phone No: {cust.phone || 'N/A'}</p>
+                    {state.udharCustomers.length === 0 || pendingUdharTotal === 0 ? (
+                      <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-center space-y-1">
+                        <CheckCircle size={28} className="mx-auto text-emerald-500" />
+                        <p className="text-xs font-black uppercase text-emerald-500">All Accounts Settled</p>
+                        <p className="text-[10px] opacity-60">0 pending khata credit • ₹0 total outstanding</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5 max-h-[185px] overflow-y-auto no-scrollbar">
+                        {state.udharCustomers.map((cust, idx) => (
+                          <div key={`udhar-modal-${cust.id || 'cust'}-${idx}`} className="p-3 bg-rose-500/5 rounded-2xl border border-rose-500/15 flex justify-between items-center text-xs">
+                            <div>
+                              <span className="font-black uppercase">{cust.name}</span>
+                              <p className="text-[8px] opacity-45">Phone No: {cust.phone || 'N/A'}</p>
+                            </div>
+                            <span className="font-black text-rose-500 font-mono">₹{cust.totalUdhar}</span>
                           </div>
-                          <span className="font-black text-rose-500 font-mono">₹{cust.totalUdhar}</span>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                     <Button variant="primary" onClick={() => { setDetailedCard(null); setActiveTab('udhar'); }} className="w-full h-11 rounded-2xl uppercase font-black text-xs tracking-wider">
                       Launch Khata Udhar Ledger Desk
                     </Button>

@@ -2972,21 +2972,16 @@ export default function BusinessSettingsScreen({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleDashboardCard(statCard.id);
-                    }}
+                  <div
                     className={cn(
-                      "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shrink-0",
+                      "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all pointer-events-none shrink-0 select-none",
                       isVisible 
-                        ? "bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)]/20 border border-[var(--primary)]/25" 
-                        : "bg-[var(--foreground)]/5 text-[var(--foreground)]/60 hover:bg-[var(--foreground)]/10 border border-[var(--border)]"
+                        ? "bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/25" 
+                        : "bg-[var(--foreground)]/5 text-[var(--foreground)]/60 border border-[var(--border)]"
                     )}
                   >
                     {isVisible ? "Active" : "Enable"}
-                  </button>
+                  </div>
                 </div>
               );
             })}

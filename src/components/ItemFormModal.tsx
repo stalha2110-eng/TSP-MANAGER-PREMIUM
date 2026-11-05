@@ -28,7 +28,7 @@ import { trackRecentUnit, useRecentUnits } from "../lib/unitUtils";
 import { translateItemName } from "../services/translationService";
 import { Item, Category, LanguageType } from "../types";
 import { cn } from "../lib/utils";
-import { compressImageFile } from "../utils/imageUtils";
+import { compressImageFile, validateImageFile } from "../utils/imageUtils";
 import {
   getCategoryUsageMap,
   trackCategoryUsage,
@@ -460,6 +460,18 @@ export function ItemFormModal({
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validate file format, magic bytes, and 5MB size limit
+    const validation = await validateImageFile(file);
+    if (!validation.valid) {
+      alert(
+        validation.error ||
+          "Invalid image file. Please select a valid JPEG, PNG, or WebP image under 5MB.",
+      );
+      if (galleryInputRef.current) galleryInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
+      return;
+    }
 
     try {
       setIsUploadingImage(true);

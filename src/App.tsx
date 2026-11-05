@@ -5586,23 +5586,13 @@ export default function App() {
                  </button>
                </div>
 
-               {/* Bottom Actions: 3-column equal grid so buttons never overflow */}
-               <div className="grid grid-cols-3 gap-2 w-full">
-                 {/* Cancel / Clear */}
-                 <Button 
-                   variant="ghost" 
-                   onClick={() => setSelectedItemIds([])}
-                   className="h-9 px-2 rounded-xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/80 hover:text-[var(--foreground)] font-bold text-xs uppercase tracking-wider border border-[var(--border)] flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
-                 >
-                   <X size={13} className="shrink-0" />
-                   <span className="truncate">{t.clear || "Cancel"}</span>
-                 </Button>
-
+               {/* Bottom Actions: 2-column grid */}
+               <div className="grid grid-cols-2 gap-2 w-full">
                  {/* Delete */}
                  <Button 
                    variant="ghost"
                    onClick={() => setDeleteConfirmation({ show: true, type: 'multiple' })}
-                   className="h-9 px-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 hover:text-rose-400 font-bold text-xs uppercase tracking-wider border border-rose-500/20 flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                   className="h-9 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 hover:text-rose-400 font-bold text-xs uppercase tracking-wider border border-rose-500/20 flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
                  >
                    <Trash2 size={13} className="shrink-0" />
                    <span className="truncate">Delete</span>
@@ -5612,7 +5602,7 @@ export default function App() {
                  <Button 
                    onClick={() => setShowComparison(true)}
                    disabled={selectedItemIds.length < 2}
-                   className="h-9 px-2 rounded-xl bg-[var(--primary)] hover:opacity-95 text-white font-black text-xs uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                   className="h-9 px-3 rounded-xl bg-[var(--primary)] hover:opacity-95 text-white font-black text-xs uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                  >
                    <TrendingUp size={13} className="shrink-0" />
                    <span className="truncate">{t.compare || "Compare"}</span>
@@ -6215,6 +6205,8 @@ export default function App() {
             language={state.settings.language}
             precision={precision}
             hideBuyingPrice={state.settings.hideBuyingPriceByDefault}
+            isLocked={state.settings.isLocked}
+            currency={state.settings.currency}
           />
         )}
       </AnimatePresence>

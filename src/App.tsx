@@ -27,6 +27,7 @@ import {
   ArrowLeft,
   Trash2,
   Edit2,
+  ChevronLeft,
   ChevronRight,
   Sun,
   Moon,
@@ -3988,6 +3989,14 @@ export default function App() {
 
   // --- Filtered Items ---
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const [isSelectionFabExpanded, setIsSelectionFabExpanded] = useState(false);
+
+  useEffect(() => {
+    if (selectedItemIds.length === 0) {
+      setIsSelectionFabExpanded(false);
+    }
+  }, [selectedItemIds.length]);
+
   const [showComparison, setShowComparison] = useState(false);
   const [showTour, setShowTour] = useState(false);
 
@@ -5872,149 +5881,237 @@ export default function App() {
         }}
       />
 
-      {/* Floating Action Buttons: Attached smoothly to screen corner above Comparative Intel card during multi-selection */}
+      {/* Floating Action Buttons: Sticks to screen edge during multi-selection, expands into position when tapped */}
       {activeTab === 'home' && !isAnyModalOpen && (
-        <motion.div 
-          animate={selectedItemIds.length > 0 ? {
-            bottom: 200,
-            right: 12,
-            scale: 0.88
-          } : {
-            bottom: 96,
-            right: 24,
-            scale: 1
-          }}
-          transition={{ type: "spring", stiffness: 400, damping: 28 }}
-          className="fixed z-[100] flex flex-col items-center gap-2.5 select-none overflow-visible origin-bottom-right"
-        >
-          {/* 1. Dedicated Animated Voice Assistant Mic Button positioned directly ABOVE the Plus button */}
-          <AnimatedVoiceAssistantButton
-            id="floating-voice-product-assistant-mic-btn"
-            onClick={() => {
-              setShowVoiceAssistant(true);
-              try {
-                playFeedbackEvent('notification', state.settings);
-              } catch (e) {
-                // Fallback
-              }
-            }}
-          />
-
-          {/* 2. Main Animated Plus Button (Click to open menu: Smart Entry / Full Entry) */}
-          <motion.div
-            onClick={() => {
-              setShowPlusActionMenu(prev => !prev);
-            }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            className={`h-14 w-14 rounded-full z-20 cursor-pointer outline-none select-none relative flex items-center justify-center transition-all duration-200 ${
-              showPlusActionMenu ? 'bg-rose-500 shadow-lg shadow-rose-500/50 text-white' : ''
-            }`}
-          >
-            {/* Real-time scaling color overlay beneath button */}
-            <motion.div 
-              className={`absolute inset-0 rounded-full transition-all duration-300 ${
-                showPlusActionMenu
-                  ? 'bg-rose-600 shadow-xl shadow-rose-500/50'
-                  : 'bg-transparent'
-              }`}
-            />
-            {/* Standard Animated plus icon / Close Icon when menu is open */}
-            {showPlusActionMenu ? (
-              <X size={26} className="text-white font-black z-20" />
-            ) : (
-              <AnimatedPlusIcon size={26} />
-            )}
-          </motion.div>
-
-          {/* Backdrop Overlay to close menu when clicking anywhere on background */}
+        <>
+          {/* 1. DOCKED STATE: When user is selecting items and hasn't tapped to expand, stick to edge of screen */}
           <AnimatePresence>
-            {showPlusActionMenu && (
+            {selectedItemIds.length > 0 && !isSelectionFabExpanded && (
+              <motion.button
+                key="selection-docked-edge-tab"
+                initial={{ x: 60, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 60, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 450, damping: 26 }}
+                whileHover={{ x: -4 }}
+                whileTap={{ scale: 0.94 }}
+                onClick={() => {
+                  setIsSelectionFabExpanded(true);
+                  if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+                    try { window.navigator.vibrate(25); } catch {}
+                  }
+                }}
+                className="fixed right-0 z-[100] flex items-center gap-1.5 py-3 pl-2.5 pr-1.5 rounded-l-2xl bg-slate-900/95 hover:bg-slate-900 text-white shadow-2xl border-l-2 border-y border-[var(--primary)]/60 backdrop-blur-md cursor-pointer select-none group transition-all"
+                style={{ bottom: 180 }}
+                title="Tap to reveal Mic & Add actions"
+                aria-label="Expand actions"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <ChevronLeft size={16} className="text-[var(--primary)] group-hover:-translate-x-0.5 transition-transform animate-pulse" />
+                  <div className="w-5 h-5 rounded-full bg-violet-600/40 border border-violet-400/60 flex items-center justify-center text-violet-200 shadow-sm">
+                    <Mic size={10} />
+                  </div>
+                  <div className="w-5 h-5 rounded-full bg-emerald-600/40 border border-emerald-400/60 flex items-center justify-center text-emerald-200 shadow-sm">
+                    <Plus size={10} />
+                  </div>
+                </div>
+              </motion.button>
+            )}
+          </AnimatePresence>
+
+          {/* 2. Backdrop when expanded in selection mode (allows user to tap anywhere to tuck back to edge) */}
+          <AnimatePresence>
+            {selectedItemIds.length > 0 && isSelectionFabExpanded && (
               <motion.div
-                key="plus-menu-backdrop"
+                key="selection-fab-backdrop"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                onPointerDown={() => setShowPlusActionMenu(false)}
-                onTouchStart={() => setShowPlusActionMenu(false)}
-                onClick={() => setShowPlusActionMenu(false)}
-                className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[90] cursor-pointer"
+                onClick={() => {
+                  setIsSelectionFabExpanded(false);
+                  setShowPlusActionMenu(false);
+                }}
+                className="fixed inset-0 z-[95] bg-black/15 backdrop-blur-[0.5px] cursor-pointer"
               />
             )}
           </AnimatePresence>
 
-          {/* Plus Action Menu Options */}
+          {/* 3. EXPANDED / NORMAL FLOATING ACTION BUTTONS */}
           <AnimatePresence>
-            {showPlusActionMenu && (
-              <motion.div
-                key="plus-action-menu-content"
-                initial={{ opacity: 0, scale: 0.85, y: 12 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 8 }}
-                transition={{ type: "spring", stiffness: 420, damping: 28 }}
-                className="absolute bottom-[68px] right-0 flex flex-col gap-2.5 z-[101] min-w-[210px] items-end pointer-events-auto text-zinc-950 font-sans"
+            {(selectedItemIds.length === 0 || isSelectionFabExpanded) && (
+              <motion.div 
+                key="main-floating-action-buttons"
+                initial={selectedItemIds.length > 0 ? { x: 80, opacity: 0, scale: 0.85 } : { opacity: 0, scale: 0.9 }}
+                animate={selectedItemIds.length > 0 ? {
+                  bottom: 180,
+                  right: 16,
+                  x: 0,
+                  opacity: 1,
+                  scale: 0.92
+                } : {
+                  bottom: 96,
+                  right: 24,
+                  x: 0,
+                  opacity: 1,
+                  scale: 1
+                }}
+                exit={{ x: 80, opacity: 0, scale: 0.85 }}
+                transition={{ type: "spring", stiffness: 420, damping: 26 }}
+                className="fixed z-[100] flex flex-col items-center gap-2.5 select-none overflow-visible origin-bottom-right"
               >
-                {/* Smart Entry Button with Animated Color Motion Border (Electric Purple / Violet Theme) */}
-                <div className="relative p-[2px] rounded-[18px] overflow-hidden w-full shadow-xl shadow-purple-600/35 group">
-                  {/* Rotating Color Motion Gradient Border */}
-                  <motion.div
-                    className="absolute -inset-[150%] pointer-events-none"
-                    style={{
-                      background: 'conic-gradient(from 0deg, #8b5cf6, #d946ef, #06b6d4, #10b981, #f59e0b, #8b5cf6)',
-                    }}
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
-                  />
-
+                {/* Tuck to edge button when in selection mode */}
+                {selectedItemIds.length > 0 && (
                   <motion.button
-                    initial={{ opacity: 0, x: 20, scale: 0.9 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 15, scale: 0.9 }}
-                    transition={{ type: "spring", stiffness: 450, damping: 25, delay: 0.01 }}
+                    type="button"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.92 }}
                     onClick={() => {
-                      setShowSmartBulkEntry(true);
+                      setIsSelectionFabExpanded(false);
                       setShowPlusActionMenu(false);
+                      if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+                        try { window.navigator.vibrate(20); } catch {}
+                      }
                     }}
-                    whileHover={{ scale: 1.02, x: -1 }}
-                    whileTap={{ scale: 0.96 }}
-                    className="relative z-10 flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-black text-[12px] tracking-wider uppercase transition-all w-full justify-start whitespace-nowrap cursor-pointer select-none"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900/95 hover:bg-slate-800 text-slate-300 hover:text-white text-[10px] font-black tracking-wider uppercase border border-slate-700/80 shadow-lg cursor-pointer transition-all mb-0.5"
+                    title="Stick back to edge"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0 shadow-inner">
-                      <Zap size={16} className="fill-amber-300 text-amber-300" />
-                    </div>
-                    <div className="flex flex-col items-start leading-tight">
-                      <span className="font-black tracking-wide text-white text-[12px]">SMART ENTRY</span>
-                    </div>
+                    <span>Dock</span>
+                    <ChevronRight size={12} className="text-[var(--primary)]" />
                   </motion.button>
-                </div>
+                )}
 
-                {/* Full Entry Button (Radiant Emerald / Teal Theme) */}
-                <motion.button
-                  initial={{ opacity: 0, x: 20, scale: 0.9 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: 15, scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 450, damping: 25, delay: 0.05 }}
+                {/* Dedicated Animated Voice Assistant Mic Button positioned directly ABOVE the Plus button */}
+                <AnimatedVoiceAssistantButton
+                  id="floating-voice-product-assistant-mic-btn"
                   onClick={() => {
-                    setShowAddItem(true);
-                    setShowPlusActionMenu(false);
+                    setShowVoiceAssistant(true);
+                    try {
+                      playFeedbackEvent('notification', state.settings);
+                    } catch (e) {
+                      // Fallback
+                    }
                   }}
-                  whileHover={{ scale: 1.02, x: -1 }}
-                  whileTap={{ scale: 0.96 }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 hover:from-emerald-500 hover:to-cyan-600 text-white font-black text-[12px] tracking-wider uppercase border border-emerald-400/50 shadow-xl shadow-emerald-600/30 hover:shadow-emerald-600/50 transition-all w-full justify-start whitespace-nowrap cursor-pointer group select-none"
+                />
+
+                {/* Main Animated Plus Button (Click to open menu: Smart Entry / Full Entry) */}
+                <motion.div
+                  onClick={() => {
+                    setShowPlusActionMenu(prev => !prev);
+                  }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`h-14 w-14 rounded-full z-20 cursor-pointer outline-none select-none relative flex items-center justify-center transition-all duration-200 ${
+                    showPlusActionMenu ? 'bg-rose-500 shadow-lg shadow-rose-500/50 text-white' : ''
+                  }`}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0 shadow-inner">
-                    <FileText size={16} className="fill-emerald-200/30 text-emerald-100" />
-                  </div>
-                  <div className="flex flex-col items-start leading-tight">
-                    <span className="font-black tracking-wide text-white text-[12px]">FULL ENTRY</span>
-                    <span className="text-[9px] font-medium text-emerald-100 normal-case tracking-normal mt-0.5">detailed form with all fields</span>
-                  </div>
-                </motion.button>
+                  {/* Real-time scaling color overlay beneath button */}
+                  <motion.div 
+                    className={`absolute inset-0 rounded-full transition-all duration-300 ${
+                      showPlusActionMenu
+                        ? 'bg-rose-600 shadow-xl shadow-rose-500/50'
+                        : 'bg-transparent'
+                    }`}
+                  />
+                  {/* Standard Animated plus icon / Close Icon when menu is open */}
+                  {showPlusActionMenu ? (
+                    <X size={26} className="text-white font-black z-20" />
+                  ) : (
+                    <AnimatedPlusIcon size={26} />
+                  )}
+                </motion.div>
+
+                {/* Backdrop Overlay to close menu when clicking anywhere on background */}
+                <AnimatePresence>
+                  {showPlusActionMenu && (
+                    <motion.div
+                      key="plus-menu-backdrop"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      onPointerDown={() => setShowPlusActionMenu(false)}
+                      onTouchStart={() => setShowPlusActionMenu(false)}
+                      onClick={() => setShowPlusActionMenu(false)}
+                      className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[90] cursor-pointer"
+                    />
+                  )}
+                </AnimatePresence>
+
+                {/* Plus Action Menu Options */}
+                <AnimatePresence>
+                  {showPlusActionMenu && (
+                    <motion.div
+                      key="plus-action-menu-content"
+                      initial={{ opacity: 0, scale: 0.85, y: 12 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: 8 }}
+                      transition={{ type: "spring", stiffness: 420, damping: 28 }}
+                      className="absolute bottom-[68px] right-0 flex flex-col gap-2.5 z-[101] min-w-[210px] items-end pointer-events-auto text-zinc-950 font-sans"
+                    >
+                      {/* Smart Entry Button with Animated Color Motion Border (Electric Purple / Violet Theme) */}
+                      <div className="relative p-[2px] rounded-[18px] overflow-hidden w-full shadow-xl shadow-purple-600/35 group">
+                        {/* Rotating Color Motion Gradient Border */}
+                        <motion.div
+                          className="absolute -inset-[150%] pointer-events-none"
+                          style={{
+                            background: 'conic-gradient(from 0deg, #8b5cf6, #d946ef, #06b6d4, #10b981, #f59e0b, #8b5cf6)',
+                          }}
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
+                        />
+
+                        <motion.button
+                          initial={{ opacity: 0, x: 20, scale: 0.9 }}
+                          animate={{ opacity: 1, x: 0, scale: 1 }}
+                          exit={{ opacity: 0, x: 15, scale: 0.9 }}
+                          transition={{ type: "spring", stiffness: 450, damping: 25, delay: 0.01 }}
+                          onClick={() => {
+                            setShowSmartBulkEntry(true);
+                            setShowPlusActionMenu(false);
+                          }}
+                          whileHover={{ scale: 1.02, x: -1 }}
+                          whileTap={{ scale: 0.96 }}
+                          className="relative z-10 flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-black text-[12px] tracking-wider uppercase transition-all w-full justify-start whitespace-nowrap cursor-pointer select-none"
+                        >
+                          <div className="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0 shadow-inner">
+                            <Zap size={16} className="fill-amber-300 text-amber-300" />
+                          </div>
+                          <div className="flex flex-col items-start leading-tight">
+                            <span className="font-black tracking-wide text-white text-[12px]">SMART ENTRY</span>
+                          </div>
+                        </motion.button>
+                      </div>
+
+                      {/* Full Entry Button (Radiant Emerald / Teal Theme) */}
+                      <motion.button
+                        initial={{ opacity: 0, x: 20, scale: 0.9 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: 15, scale: 0.9 }}
+                        transition={{ type: "spring", stiffness: 450, damping: 25, delay: 0.05 }}
+                        onClick={() => {
+                          setShowAddItem(true);
+                          setShowPlusActionMenu(false);
+                        }}
+                        whileHover={{ scale: 1.02, x: -1 }}
+                        whileTap={{ scale: 0.96 }}
+                        className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 hover:from-emerald-500 hover:to-cyan-600 text-white font-black text-[12px] tracking-wider uppercase border border-emerald-400/50 shadow-xl shadow-emerald-600/30 hover:shadow-emerald-600/50 transition-all w-full justify-start whitespace-nowrap cursor-pointer group select-none"
+                      >
+                        <div className="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0 shadow-inner">
+                          <FileText size={16} className="fill-emerald-200/30 text-emerald-100" />
+                        </div>
+                        <div className="flex flex-col items-start leading-tight">
+                          <span className="font-black tracking-wide text-white text-[12px]">FULL ENTRY</span>
+                          <span className="text-[9px] font-medium text-emerald-100 normal-case tracking-normal mt-0.5">detailed form with all fields</span>
+                        </div>
+                      </motion.button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>
+        </>
       )}
       {activeTab === 'notes' && !isAnyModalOpen && (
         <Button 

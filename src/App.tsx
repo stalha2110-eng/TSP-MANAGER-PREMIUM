@@ -168,7 +168,8 @@ import {
   User as FirebaseUser,
   handleFirestoreError,
   OperationType,
-  sanitizeForFirestore
+  sanitizeForFirestore,
+  isValidCloudinaryUrl
 } from './firebase';
 import { EmailAuthProvider, linkWithCredential, updatePassword } from 'firebase/auth';
 import { LoginScreen } from './components/LoginScreen';
@@ -2480,12 +2481,12 @@ export default function App() {
       snap.forEach(docSnap => {
         const data = docSnap.data();
         if (!isItemDeleted(docSnap.id)) {
-          // Attached product images are stored strictly in device local storage, never in Firestore
+          // Prefer authentic remote Cloudinary URL; fallback to local device storage
           const localImg = localImages[docSnap.id];
           itemsList.push({
             ...data,
             id: docSnap.id,
-            imageUrl: localImg || undefined,
+            imageUrl: isValidCloudinaryUrl(data.imageUrl) ? data.imageUrl : (localImg || undefined),
             translations: {
               en: data.name || '',
               hi: '',
@@ -3253,13 +3254,24 @@ export default function App() {
         updates.lastChangedBy = state.settings.deviceName;
       }
 
-      // Handle product image updates strictly on device local storage
-      if (data.imageUrl !== undefined) {
-        if (data.imageUrl) {
-          saveLocalProductImage(id, data.imageUrl);
-        } else {
-          removeLocalProductImage(id);
+      // Track intentional image removal
+      const isImageExplicitlyRemoved =
+        ('imageUrl' in data && Boolean(existingItem?.imageUrl) && !data.imageUrl) ||
+        data.imageUrl === null ||
+        data.imageUrl === '';
+
+      if (isImageExplicitlyRemoved) {
+        updates.imageUrl = undefined;
+        if (existingItem?.cloudinaryPublicId) {
+          updates.cloudinaryPublicId = undefined;
         }
+      }
+
+      // Handle product image updates on device local storage
+      if (data.imageUrl) {
+        saveLocalProductImage(id, data.imageUrl);
+      } else if (isImageExplicitlyRemoved) {
+        removeLocalProductImage(id);
       }
 
       // If stock or threshold was adjusted, reset dismissed status and alerted key cache so fresh alerts can trigger
@@ -3288,11 +3300,16 @@ export default function App() {
 
       if (state.user && state.settings.autoCloudSync) {
         try {
-          // Never save imageUrl to Firestore, and explicitly deleteField if an old field exists in Firestore
-          const firestorePayload = {
-            ...sanitizeForFirestore(updates),
-            imageUrl: deleteField()
-          };
+          const sanitizedUpdates = sanitizeForFirestore(updates);
+          const firestorePayload: any = { ...sanitizedUpdates };
+
+          // Explicitly delete Cloudinary image in Firestore only on intentional image removal
+          if (isImageExplicitlyRemoved) {
+            firestorePayload.imageUrl = deleteField();
+            if (existingItem?.cloudinaryPublicId) {
+              firestorePayload.cloudinaryPublicId = deleteField();
+            }
+          }
           await setDoc(doc(db, 'users', state.user.uid, 'items', id), firestorePayload, { merge: true });
         } catch (e) {
           handleFirestoreError(e, OperationType.UPDATE, `users/${state.user.uid}/items/${id}`);

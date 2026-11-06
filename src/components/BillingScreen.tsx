@@ -4794,19 +4794,31 @@ export default function BillingScreen({
                 <button
                   type="button"
                   onClick={() => setManualCustomerOpen(true)}
-                  className="w-full h-8 px-3 rounded-lg border border-dashed border-[var(--border)] hover:border-[var(--primary)]/50 bg-[var(--card)] hover:bg-[var(--foreground)]/[0.02] text-[var(--foreground)]/70 hover:text-[var(--foreground)] text-[11px] font-medium flex items-center justify-between transition-all cursor-pointer group select-none shadow-2xs active:scale-[0.99]"
+                  className="w-full h-10 px-3 rounded-xl border border-[var(--border)] hover:border-[var(--primary)]/60 bg-[var(--card)] hover:bg-[var(--primary)]/[0.04] text-[var(--foreground)] flex items-center justify-between transition-all duration-200 cursor-pointer group select-none shadow-xs hover:shadow-sm active:scale-[0.98]"
+                  title="Add customer name and phone to bill"
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <UserPlus size={13} className="text-[var(--foreground)]/45 group-hover:text-[var(--primary)] shrink-0 transition-colors" />
-                    <span className="font-bold text-[10.5px] uppercase tracking-wide text-[var(--foreground)]/75 group-hover:text-[var(--foreground)] truncate">
-                      Customer Info
-                    </span>
-                    <span className="text-[9px] font-black uppercase tracking-wider text-[var(--primary)] bg-[var(--primary)]/10 group-hover:bg-[var(--primary)]/20 px-1.5 py-0.5 rounded-md shrink-0 transition-colors flex items-center gap-0.5 leading-none">
-                      + Add
-                    </span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="h-6 w-6 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-[var(--primary)]/20 transition-all">
+                      <UserPlus size={13} />
+                    </div>
+                    <div className="text-left min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-xs tracking-tight text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors truncate">
+                          Customer Info
+                        </span>
+                        <span className="text-[9px] font-semibold text-[var(--foreground)]/40 hidden sm:inline">
+                          (Optional)
+                        </span>
+                      </div>
+                      <span className="text-[9px] text-[var(--foreground)]/50 font-medium leading-none block truncate">
+                        Add name & phone for invoice
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-[9px] font-semibold text-[var(--foreground)]/40 hidden sm:inline">
-                    (Optional)
+
+                  <span className="px-2.5 py-1 rounded-lg bg-[var(--primary)] text-white text-[10px] font-black uppercase tracking-wider shadow-xs flex items-center gap-1 group-hover:brightness-105 transition-all shrink-0">
+                    <Plus size={11} strokeWidth={3} />
+                    Add
                   </span>
                 </button>
               )
@@ -5344,25 +5356,32 @@ export default function BillingScreen({
           </div>
 
           {/* Checkout Section & Totals */}
-          <div className="mt-4 pt-3 border-t border-[var(--border)] space-y-3 shrink-0">
+          <div className="mt-2.5 pt-2 border-t border-[var(--border)] space-y-2 shrink-0">
             
-            {/* Parameters layout summary */}
-            <div className="space-y-2 bg-[var(--foreground)]/5 p-2.5 rounded-xl border border-[var(--border)] select-none">
-              <div className="grid grid-cols-2 gap-2">
-                {/* Discount Section with Dual-Mode (Rupees Default & Percentage) */}
-                <div>
-                  <div className="flex items-center gap-1.5 mb-1 h-6">
-                    <label className="text-[8px] font-black uppercase opacity-70">
+            {/* Parameters layout summary: High-Density Compact Discount & GST Row */}
+            <div className="bg-[var(--foreground)]/[0.03] p-1.5 rounded-xl border border-[var(--border)] select-none">
+              <div className="grid grid-cols-2 gap-1.5">
+                {/* 1. Compact Discount Cell */}
+                <div className={cn(
+                  "flex items-center justify-between rounded-lg px-2 h-8 border transition-all duration-200 shadow-2xs",
+                  discountPercent > 0 
+                    ? "bg-emerald-500/[0.08] dark:bg-emerald-950/40 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 ring-1 ring-emerald-500/15" 
+                    : "bg-[var(--card)] border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)]/40"
+                )}>
+                  {/* Left: Label + Mode toggle */}
+                  <div className="flex items-center gap-1 min-w-0">
+                    <span className="text-[9px] font-black uppercase tracking-tight opacity-75 shrink-0">
                       {getTranslation('discountLabel')}
-                    </label>
-                    {/* Dual-Mode Rupees & Percentage Buttons placed directly next to the word Discount */}
-                    <div className="flex items-center bg-[var(--foreground)]/7 p-0.5 rounded-md border border-[var(--border)] shrink-0">
+                    </span>
+
+                    {/* Mode switcher ₹ / % */}
+                    <div className="flex items-center bg-[var(--foreground)]/[0.08] p-0.5 rounded-md border border-[var(--border)] shrink-0 ml-0.5">
                       <button
                         type="button"
                         onClick={() => handleDiscountModeChange('rupees')}
                         title="Rupees Discount (₹)"
                         className={cn(
-                          "px-2 py-0.5 rounded text-[9.5px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
+                          "px-1.5 py-0.5 rounded text-[8.5px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
                           discountMode === 'rupees' 
                             ? "bg-[var(--primary)] text-white shadow-xs" 
                             : "text-[var(--foreground)]/50 hover:text-[var(--foreground)]"
@@ -5375,7 +5394,7 @@ export default function BillingScreen({
                         onClick={() => handleDiscountModeChange('percent')}
                         title="Percentage Discount (%)"
                         className={cn(
-                          "px-2 py-0.5 rounded text-[9.5px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
+                          "px-1.5 py-0.5 rounded text-[8.5px] font-black transition-all flex items-center justify-center cursor-pointer select-none leading-none",
                           discountMode === 'percent' 
                             ? "bg-[var(--primary)] text-white shadow-xs" 
                             : "text-[var(--foreground)]/50 hover:text-[var(--foreground)]"
@@ -5386,64 +5405,74 @@ export default function BillingScreen({
                     </div>
                   </div>
 
-                  <div className="space-y-0.5">
-                    {/* Discount Input field with clean prefix indicator */}
-                    <div className="relative">
-                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black opacity-35 select-none pointer-events-none font-mono">
-                        {discountMode === 'rupees' ? '₹' : '%'}
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        max={discountMode === 'percent' ? "100" : undefined}
-                        placeholder="0"
-                        value={discountMode === 'rupees' ? discountRupeesInput : (discountPercent || '')}
-                        onChange={(e) => {
-                          if (discountMode === 'rupees') {
-                            handleRupeesDiscountChange(e.target.value);
-                          } else {
-                            handlePercentDiscountChange(e.target.value);
-                          }
-                        }}
-                        className="w-full h-[30px] rounded-lg bg-[var(--card)] border border-[var(--border)] px-2 py-1 pl-6 text-[10px] text-[var(--foreground)] font-bold outline-none font-mono focus:border-[var(--primary)] text-right"
-                      />
-                    </div>
-
-                    <div className="h-3.5 text-[7.5px] font-mono text-emerald-600 dark:text-emerald-400 font-bold text-right truncate">
-                      {discountPercent > 0 ? (
-                        discountMode === 'rupees' 
-                          ? `≈ ${Number(discountPercent.toFixed(2))}% off` 
-                          : `≈ ₹${discountAmount.toFixed(2)} off`
-                      ) : null}
-                    </div>
+                  {/* Right: Input field & quick clear button */}
+                  <div className="flex items-center gap-1 shrink-0 ml-1">
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      max={discountMode === 'percent' ? "100" : undefined}
+                      placeholder="0"
+                      value={discountMode === 'rupees' ? discountRupeesInput : (discountPercent || '')}
+                      onChange={(e) => {
+                        if (discountMode === 'rupees') {
+                          handleRupeesDiscountChange(e.target.value);
+                        } else {
+                          handlePercentDiscountChange(e.target.value);
+                        }
+                      }}
+                      className="w-12 sm:w-16 h-6 rounded-md bg-[var(--background)] border border-[var(--border)] px-1.5 text-[10.5px] text-[var(--foreground)] font-bold outline-none font-mono focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/20 text-right"
+                    />
+                    {discountPercent > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => { setDiscountPercent(0); setDiscountRupeesInput(''); }}
+                        className="h-4 w-4 rounded-full bg-rose-500/15 text-rose-500 hover:bg-rose-500/25 flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                        title="Clear discount"
+                      >
+                        <X size={9} strokeWidth={3} />
+                      </button>
+                    )}
                   </div>
                 </div>
-                
-                {/* Tax Section */}
-                <div>
-                  <div className="flex items-center justify-between mb-1 h-6">
-                    <label className="text-[8px] font-black uppercase opacity-70">
-                      {getTranslation('taxLabel')}
-                    </label>
-                    <span className="text-[7.5px] font-bold opacity-40 uppercase font-mono">(%)</span>
+
+                {/* 2. Compact GST Tax Cell */}
+                <div className={cn(
+                  "flex items-center justify-between rounded-lg px-2 h-8 border transition-all duration-200 shadow-2xs",
+                  taxPercent > 0 
+                    ? "bg-rose-500/[0.08] dark:bg-rose-950/40 border-rose-500/40 text-rose-800 dark:text-rose-300 ring-1 ring-rose-500/15" 
+                    : "bg-[var(--card)] border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)]/40"
+                )}>
+                  {/* Left: Label */}
+                  <div className="flex items-center gap-1 min-w-0">
+                    <span className="text-[9px] font-black uppercase tracking-tight opacity-75 shrink-0 flex items-center gap-0.5">
+                      <ReceiptCent size={11} className="opacity-60 shrink-0" />
+                      <span>{getTranslation('taxLabel')}</span>
+                    </span>
+                    <span className="text-[7.5px] font-bold opacity-40 uppercase font-mono shrink-0">(%)</span>
                   </div>
-                  <div className="space-y-0.5">
-                    <div className="relative">
-                      <Percent className="absolute left-2 top-1/2 -translate-y-1/2 opacity-30" size={10} />
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        placeholder="0"
-                        value={taxPercent || ''}
-                        onChange={(e) => setTaxPercent(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
-                        className="w-full h-[30px] rounded-lg bg-[var(--card)] border border-[var(--border)] px-2 py-1 pl-6 text-[10px] text-[var(--foreground)] font-bold outline-none font-mono focus:border-[var(--primary)] text-right"
-                      />
-                    </div>
-                    <div className="h-3.5 text-[7.5px] font-mono text-rose-500 font-bold text-right truncate">
-                      {taxPercent > 0 ? `+₹${taxAmount.toFixed(2)}` : null}
-                    </div>
+
+                  {/* Right: Input field & quick clear button */}
+                  <div className="flex items-center gap-1 shrink-0 ml-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      placeholder="0"
+                      value={taxPercent || ''}
+                      onChange={(e) => setTaxPercent(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                      className="w-12 sm:w-16 h-6 rounded-md bg-[var(--background)] border border-[var(--border)] px-1.5 text-[10.5px] text-[var(--foreground)] font-bold outline-none font-mono focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/20 text-right"
+                    />
+                    {taxPercent > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setTaxPercent(0)}
+                        className="h-4 w-4 rounded-full bg-rose-500/15 text-rose-500 hover:bg-rose-500/25 flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                        title="Clear GST tax"
+                      >
+                        <X size={9} strokeWidth={3} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

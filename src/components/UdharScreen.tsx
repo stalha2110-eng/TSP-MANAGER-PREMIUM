@@ -17,6 +17,7 @@ interface UdharScreenProps {
   onUpdateState: (updates: Partial<AppState>) => void;
   selectedCustomerId?: string | null;
   onSelectCustomerId?: (id: string | null) => void;
+  onEditBillInCounter?: (bill: Bill) => void;
 }
 
 export default function UdharScreen({ 
@@ -24,7 +25,8 @@ export default function UdharScreen({
   t, 
   onUpdateState,
   selectedCustomerId: propSelectedCustomerId,
-  onSelectCustomerId: propOnSelectCustomerId
+  onSelectCustomerId: propOnSelectCustomerId,
+  onEditBillInCounter
 }: UdharScreenProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
@@ -64,16 +66,6 @@ export default function UdharScreen({
   // Bill viewing state
   const [viewingBill, setViewingBill] = useState<Bill | null>(null);
 
-  // Bill editing states
-  const [isEditingBill, setIsEditingBill] = useState(false);
-  const [editingBillData, setEditingBillData] = useState<Bill | null>(null);
-  
-  // New item form inside bill editor
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemQty, setNewItemQty] = useState('');
-  const [newItemPrice, setNewItemPrice] = useState('');
-  const [newItemUnit, setNewItemUnit] = useState('');
-
   // Android/PWA Back Navigation Registrations for Udhar Screen
   useBackModal(Boolean(selectedCustomerId), () => setSelectedCustomerId(null), 'udhar_customer_detail_view');
   useBackModal(showAddCustomerModal, () => setShowAddCustomerModal(false), 'udhar_add_customer_modal');
@@ -81,174 +73,6 @@ export default function UdharScreen({
   useBackModal(editingCustomer !== null, () => setEditingCustomer(null), 'udhar_edit_customer_modal');
   useBackModal(editingTransaction !== null, () => setEditingTransaction(null), 'udhar_edit_transaction_modal');
   useBackModal(viewingBill !== null, () => setViewingBill(null), 'udhar_viewing_bill_modal');
-  useBackModal(isEditingBill, () => setIsEditingBill(false), 'udhar_editing_bill_modal');
-
-  // Recalculate bill subtotals/totals helper
-  const recalculateBill = (items: any[], discount: number, tax: number) => {
-    const subtotal = items.reduce((acc, it) => acc + (parseFloat(it.quantity || 0) * parseFloat(it.price || 0)), 0);
-    const discountAmt = (subtotal * discount) / 100;
-    const subtotalAfterDiscount = subtotal - discountAmt;
-    const taxAmt = (subtotalAfterDiscount * tax) / 100;
-    const total = parseFloat((subtotalAfterDiscount + taxAmt).toFixed(2));
-    return {
-      subtotal: parseFloat(subtotal.toFixed(2)),
-      total: total
-    };
-  };
-
-  const updateItemQty = (index: number, newQty: number) => {
-    if (!editingBillData) return;
-    const updatedItems = editingBillData.items.map((it, idx) => {
-      if (idx === index) {
-        return { ...it, quantity: Math.max(0, newQty) };
-      }
-      return it;
-    });
-    const calculations = recalculateBill(updatedItems, editingBillData.discount, editingBillData.tax);
-    setEditingBillData({
-      ...editingBillData,
-      items: updatedItems,
-      ...calculations
-    });
-  };
-
-  const updateItemPrice = (index: number, newPrice: number) => {
-    if (!editingBillData) return;
-    const updatedItems = editingBillData.items.map((it, idx) => {
-      if (idx === index) {
-        return { ...it, price: Math.max(0, newPrice) };
-      }
-      return it;
-    });
-    const calculations = recalculateBill(updatedItems, editingBillData.discount, editingBillData.tax);
-    setEditingBillData({
-      ...editingBillData,
-      items: updatedItems,
-      ...calculations
-    });
-  };
-
-  const updateItemName = (index: number, newName: string) => {
-    if (!editingBillData) return;
-    const updatedItems = editingBillData.items.map((it, idx) => {
-      if (idx === index) {
-        return { ...it, name: newName };
-      }
-      return it;
-    });
-    setEditingBillData({
-      ...editingBillData,
-      items: updatedItems
-    });
-  };
-
-  const deleteItemFromBill = (index: number) => {
-    if (!editingBillData) return;
-    const updatedItems = editingBillData.items.filter((_, idx) => idx !== index);
-    const calculations = recalculateBill(updatedItems, editingBillData.discount, editingBillData.tax);
-    setEditingBillData({
-      ...editingBillData,
-      items: updatedItems,
-      ...calculations
-    });
-  };
-
-  const handleAddNewItemToBill = () => {
-    if (!editingBillData) return;
-    const qty = parseFloat(newItemQty);
-    const prc = parseFloat(newItemPrice);
-    if (!newItemName.trim() || isNaN(qty) || isNaN(prc)) {
-      alert("Please fill item name, valid quantity and price to add.");
-      return;
-    }
-    if (qty <= 0 || prc < 0) {
-      alert("Quantity must be positive and price must be 0 or more.");
-      return;
-    }
-    const newItem = {
-      itemId: 'it_' + Math.random().toString(36).substring(2, 11),
-      name: newItemName.trim(),
-      quantity: qty,
-      price: prc,
-      cost: parseFloat((prc * 0.7).toFixed(2)),
-      unit: newItemUnit.trim() || 'pcs'
-    };
-    const updatedItems = [...editingBillData.items, newItem];
-    const calculations = recalculateBill(updatedItems, editingBillData.discount, editingBillData.tax);
-    setEditingBillData({
-      ...editingBillData,
-      items: updatedItems,
-      ...calculations
-    });
-    // Reset fields
-    setNewItemName('');
-    setNewItemQty('');
-    setNewItemPrice('');
-    setNewItemUnit('');
-  };
-
-  const handleUpdateDiscountTax = (disc: number, txPercent: number) => {
-    if (!editingBillData) return;
-    const calculations = recalculateBill(editingBillData.items, disc, txPercent);
-    setEditingBillData({
-      ...editingBillData,
-      discount: disc,
-      tax: txPercent,
-      ...calculations
-    });
-  };
-
-  const handleSaveEditedBill = () => {
-    if (!editingBillData || !viewingBill) return;
-    if (editingBillData.items.length === 0) {
-      alert("A bill must contain at least one item.");
-      return;
-    }
-
-    const originalTotal = viewingBill.total;
-    const newTotal = editingBillData.total;
-    const difference = parseFloat((newTotal - originalTotal).toFixed(2));
-
-    // 1. Update bills collection
-    const updatedBills = (state.bills || []).map(b => b.id === viewingBill.id ? editingBillData : b);
-
-    // 2. Update associated transaction
-    let updatedTransactions = [...rawTransactions];
-    const tx = rawTransactions.find(t => t.note && t.note.toLowerCase().includes(`reference #${viewingBill.billNumber.toLowerCase()}`));
-    if (tx) {
-      updatedTransactions = rawTransactions.map(t => t.id === tx.id ? {
-        ...t,
-        amount: newTotal,
-        lastUpdated: new Date().toISOString()
-      } : t);
-    }
-
-    // 3. Update customer outstanding balance
-    const customer = rawCustomers.find(c => 
-      (tx && c.id === tx.customerId) || 
-      c.name.toLowerCase() === viewingBill.customerName.toLowerCase() || 
-      (viewingBill.customerPhone && c.phone === viewingBill.customerPhone)
-    );
-
-    let updatedCustomers = [...rawCustomers];
-    if (customer) {
-      updatedCustomers = rawCustomers.map(c => c.id === customer.id ? {
-        ...c,
-        totalUdhar: parseFloat((c.totalUdhar + difference).toFixed(2)),
-        lastUpdated: new Date().toISOString()
-      } : c);
-    }
-
-    onUpdateState({
-      bills: updatedBills,
-      udharTransactions: updatedTransactions,
-      udharCustomers: updatedCustomers
-    });
-
-    setViewingBill(editingBillData);
-    setIsEditingBill(false);
-    setEditingBillData(null);
-  };
 
   // Handle saving customer edits
   const handleSaveEditCustomer = (e: React.FormEvent) => {
@@ -1550,7 +1374,7 @@ export default function UdharScreen({
         )}
 
         {/* MODAL 5: DETAILED BILL INVOICE PREVIEW */}
-        {viewingBill && !isEditingBill && (
+        {viewingBill && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
@@ -1565,20 +1389,20 @@ export default function UdharScreen({
                   </h4>
                   <button
                     onClick={() => {
-                      setIsEditingBill(true);
-                      setEditingBillData(JSON.parse(JSON.stringify(viewingBill)));
+                      if (onEditBillInCounter && viewingBill) {
+                        onEditBillInCounter(viewingBill);
+                        setViewingBill(null);
+                      }
                     }}
-                    className="px-2 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-all border border-rose-500/15"
-                    title="Edit entire bill items, quantity, prices, discount and tax"
+                    className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[9.5px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-all border border-rose-500/20 active:scale-95 shadow-2xs"
+                    title="Open and edit this bill directly in the Billing Counter"
                   >
-                    <Edit size={10} /> Edit Bill
+                    <Edit size={11} /> Edit in Billing Counter
                   </button>
                 </div>
                 <button 
                   onClick={() => {
                     setViewingBill(null);
-                    setIsEditingBill(false);
-                    setEditingBillData(null);
                   }} 
                   className="text-[var(--foreground)]/50 hover:text-white cursor-pointer"
                 >
@@ -1657,8 +1481,6 @@ export default function UdharScreen({
                 <button
                   onClick={() => {
                     setViewingBill(null);
-                    setIsEditingBill(false);
-                    setEditingBillData(null);
                   }}
                   type="button"
                   className="w-full py-2.5 bg-[var(--primary)] text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:opacity-90 active:scale-95 transition-all cursor-pointer"
@@ -1667,265 +1489,6 @@ export default function UdharScreen({
                 </button>
               </div>
             </motion.div>
-          </div>
-        )}
-
-        {/* FULL SIZE PAGE: DETAILED BILL INVOICE EDITOR */}
-        {isEditingBill && editingBillData && (
-          <div className="fixed inset-0 z-[200] bg-[var(--background)] text-[var(--foreground)] flex flex-col overflow-y-auto">
-            <div className="w-full max-w-5xl mx-auto p-4 sm:p-8 space-y-6">
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
-                <div>
-                  <h3 className="text-xl font-black uppercase tracking-tight text-rose-500 flex items-center gap-2">
-                    <Receipt size={22} /> Bill Invoice Editor
-                  </h3>
-                  <p className="text-[10px] text-[var(--foreground)]/60 font-mono mt-1">
-                    Invoice: #{editingBillData.billNumber} &bull; {new Date(editingBillData.timestamp).toLocaleString()}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setIsEditingBill(false);
-                    setEditingBillData(null);
-                  }}
-                  className="h-10 w-10 flex items-center justify-center rounded-full bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/60 hover:text-[var(--foreground)] cursor-pointer border border-[var(--border)] transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* Customer Hero Card */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-[var(--card)] border border-[var(--border)] rounded-2xl">
-                <div>
-                  <span className="text-[9px] font-black uppercase tracking-wider opacity-50 block">Customer Name</span>
-                  <span className="text-sm font-bold uppercase">{editingBillData.customerName}</span>
-                </div>
-                {editingBillData.customerPhone && (
-                  <div>
-                    <span className="text-[9px] font-black uppercase tracking-wider opacity-50 block">Contact Phone</span>
-                    <span className="text-sm font-mono font-bold">{editingBillData.customerPhone}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Grid content */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Left Side: Products Listing and Add Form */}
-                <div className="lg:col-span-7 space-y-4">
-                  <div className="p-5 bg-[var(--card)] border border-[var(--border)] rounded-3xl space-y-4">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-rose-500">
-                      Product Items List ({editingBillData.items.length})
-                    </h4>
-
-                    <div className="space-y-3 max-h-[50vh] overflow-y-auto no-scrollbar pr-1">
-                      {editingBillData.items.map((it, idx) => (
-                        <div key={it.itemId || idx} className="p-4 bg-[var(--background)] border border-[var(--border)] rounded-2xl space-y-3 relative group transition-all hover:border-[var(--border)]/80">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black uppercase text-rose-500">Item #{idx + 1}</span>
-                            <button
-                              type="button"
-                              onClick={() => deleteItemFromBill(idx)}
-                              className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg cursor-pointer transition-colors"
-                              title="Remove Item"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                          
-                          <div className="grid grid-cols-12 gap-3">
-                            {/* Name */}
-                            <div className="col-span-12">
-                              <label className="text-[9px] font-bold opacity-50 uppercase block mb-1">Product / Item Name</label>
-                              <input
-                                type="text"
-                                value={it.name}
-                                onChange={(e) => updateItemName(idx, e.target.value)}
-                                className="w-full text-xs font-black uppercase border border-[var(--border)] rounded-xl bg-[var(--foreground)]/[0.02] px-3 py-2 focus:border-rose-500 focus:outline-none text-[var(--foreground)]"
-                              />
-                            </div>
-
-                            {/* Qty */}
-                            <div className="col-span-4">
-                              <label className="text-[9px] font-bold opacity-50 uppercase block mb-1">Qty</label>
-                              <input
-                                type="number"
-                                step="any"
-                                value={it.quantity}
-                                onChange={(e) => updateItemQty(idx, parseFloat(e.target.value) || 0)}
-                                className="w-full text-xs font-mono font-bold border border-[var(--border)] rounded-xl bg-[var(--foreground)]/[0.02] px-3 py-2 focus:border-rose-500 focus:outline-none text-[var(--foreground)]"
-                              />
-                            </div>
-
-                            {/* Unit */}
-                            <div className="col-span-3">
-                              <label className="text-[9px] font-bold opacity-50 uppercase block mb-1">Unit</label>
-                              <input
-                                type="text"
-                                placeholder="pcs"
-                                value={it.unit || ''}
-                                onChange={(e) => {
-                                  const updated = editingBillData.items.map((item, i) => i === idx ? { ...item, unit: e.target.value } : item);
-                                  setEditingBillData({ ...editingBillData, items: updated });
-                                }}
-                                className="w-full text-xs font-bold uppercase border border-[var(--border)] rounded-xl bg-[var(--foreground)]/[0.02] px-3 py-2 focus:border-rose-500 focus:outline-none text-[var(--foreground)]"
-                              />
-                            </div>
-
-                            {/* Price */}
-                            <div className="col-span-5">
-                              <label className="text-[9px] font-bold opacity-50 uppercase block mb-1">Price (₹)</label>
-                              <input
-                                type="number"
-                                step="any"
-                                value={it.price}
-                                onChange={(e) => updateItemPrice(idx, parseFloat(e.target.value) || 0)}
-                                className="w-full text-xs font-mono font-bold border border-[var(--border)] rounded-xl bg-[var(--foreground)]/[0.02] px-3 py-2 focus:border-rose-500 focus:outline-none text-[var(--foreground)]"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Add Item form */}
-                  <div className="p-5 bg-[var(--card)] border border-dashed border-rose-500/30 rounded-3xl bg-rose-500/[0.01] space-y-3">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-rose-500 flex items-center gap-1">
-                      <span>➕ Add New Product Item to Bill</span>
-                    </h4>
-                    <div className="grid grid-cols-12 gap-3">
-                      <div className="col-span-12">
-                        <input
-                          type="text"
-                          placeholder="New Item Name"
-                          value={newItemName}
-                          onChange={(e) => setNewItemName(e.target.value)}
-                          className="w-full text-xs font-bold uppercase border border-[var(--border)] rounded-xl bg-[var(--foreground)]/[0.02] px-3 py-2.5 focus:border-rose-500 focus:outline-none text-[var(--foreground)]"
-                        />
-                      </div>
-                      <div className="col-span-4">
-                        <input
-                          type="number"
-                          step="any"
-                          placeholder="Qty"
-                          value={newItemQty}
-                          onChange={(e) => setNewItemQty(e.target.value)}
-                          className="w-full text-xs font-mono font-bold border border-[var(--border)] rounded-xl bg-[var(--foreground)]/[0.02] px-3 py-2.5 focus:border-rose-500 focus:outline-none text-[var(--foreground)]"
-                        />
-                      </div>
-                      <div className="col-span-3">
-                        <input
-                          type="text"
-                          placeholder="Unit"
-                          value={newItemUnit}
-                          onChange={(e) => setNewItemUnit(e.target.value)}
-                          className="w-full text-xs font-bold uppercase border border-[var(--border)] rounded-xl bg-[var(--foreground)]/[0.02] px-3 py-2.5 focus:border-rose-500 focus:outline-none text-[var(--foreground)]"
-                        />
-                      </div>
-                      <div className="col-span-5 flex gap-2">
-                        <input
-                          type="number"
-                          step="any"
-                          placeholder="Price"
-                          value={newItemPrice}
-                          onChange={(e) => setNewItemPrice(e.target.value)}
-                          className="w-full text-xs font-mono font-bold border border-[var(--border)] rounded-xl bg-[var(--foreground)]/[0.02] px-3 py-2.5 focus:border-rose-500 focus:outline-none text-[var(--foreground)]"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleAddNewItemToBill}
-                          className="px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl flex items-center justify-center cursor-pointer active:scale-95 transition-transform shrink-0 shadow"
-                          title="Add Item to List"
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Side: Calculations & CTA */}
-                <div className="lg:col-span-5 space-y-4">
-                  <div className="p-5 bg-[var(--card)] border border-[var(--border)] rounded-3xl space-y-4">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-rose-500">
-                      Taxes, Promo & Net Due
-                    </h4>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[9px] font-bold opacity-50 uppercase block mb-1">Discount (%)</label>
-                        <input
-                          type="number"
-                          step="any"
-                          min="0"
-                          max="100"
-                          value={editingBillData.discount}
-                          onChange={(e) => handleUpdateDiscountTax(parseFloat(e.target.value) || 0, editingBillData.tax)}
-                          className="w-full text-xs font-mono font-bold border border-[var(--border)] rounded-xl bg-[var(--foreground)]/[0.02] px-3 py-2 focus:border-rose-500 focus:outline-none text-[var(--foreground)]"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-bold opacity-50 uppercase block mb-1">Tax (%)</label>
-                        <input
-                          type="number"
-                          step="any"
-                          min="0"
-                          max="100"
-                          value={editingBillData.tax}
-                          onChange={(e) => handleUpdateDiscountTax(editingBillData.discount, parseFloat(e.target.value) || 0)}
-                          className="w-full text-xs font-mono font-bold border border-[var(--border)] rounded-xl bg-[var(--foreground)]/[0.02] px-3 py-2 focus:border-rose-500 focus:outline-none text-[var(--foreground)]"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="p-4 border border-[var(--border)] rounded-2xl bg-[var(--foreground)]/[0.02] space-y-2.5 text-xs">
-                      <div className="flex justify-between text-[11px] opacity-80">
-                        <span>Basket Subtotal:</span>
-                        <span className="font-mono">₹{editingBillData.subtotal.toFixed(2)}</span>
-                      </div>
-                      {editingBillData.discount > 0 && (
-                        <div className="flex justify-between text-[11px] text-emerald-500">
-                          <span>Promo Deduction ({editingBillData.discount}%):</span>
-                          <span className="font-mono">-₹{((editingBillData.subtotal * editingBillData.discount) / 100).toFixed(2)}</span>
-                        </div>
-                      )}
-                      {editingBillData.tax > 0 && (
-                        <div className="flex justify-between text-[11px] text-rose-500">
-                          <span>SGST/CGST Tax ({editingBillData.tax}%):</span>
-                          <span className="font-mono">+₹{(((editingBillData.subtotal - (editingBillData.subtotal * editingBillData.discount / 100)) * editingBillData.tax) / 100).toFixed(2)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-sm font-black pt-2 border-t border-[var(--border)]">
-                        <span className="uppercase tracking-wider text-rose-500">New Net Due:</span>
-                        <span className="text-rose-500 font-mono text-base">₹{editingBillData.total.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions buttons */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => {
-                        setIsEditingBill(false);
-                        setEditingBillData(null);
-                      }}
-                      type="button"
-                      className="py-3.5 bg-zinc-500/15 hover:bg-zinc-500/25 text-zinc-400 text-xs font-black uppercase tracking-wider rounded-2xl transition-all cursor-pointer text-center"
-                    >
-                      Cancel / Cancel Edit
-                    </button>
-                    <button
-                      onClick={handleSaveEditedBill}
-                      type="button"
-                      className="py-3.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-black uppercase tracking-wider rounded-2xl shadow-lg active:scale-95 transition-all cursor-pointer text-center"
-                    >
-                      Save / Save Changes
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </AnimatePresence>

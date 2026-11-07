@@ -159,6 +159,8 @@ interface BillingScreenProps {
   isSyncing?: boolean;
   onSyncBills?: (incomingBills: Bill[]) => Promise<void>;
   onPeek?: (preview: { type: 'item' | 'customer' | 'bill' | 'notification' | 'analytics'; payload: any } | null) => void;
+  billToEdit?: Bill | null;
+  onClearBillToEdit?: () => void;
 }
 
 const CartQuantityInput: React.FC<{
@@ -493,7 +495,9 @@ export default function BillingScreen({
   onOpenHistoryDrawer,
   isSyncing,
   onSyncBills,
-  onPeek
+  onPeek,
+  billToEdit,
+  onClearBillToEdit
 }: BillingScreenProps) {
   const { t: transT, currentLang: activeLang, version: langVersion } = useTranslation();
   const currentLang = state.settings.language || activeLang || 'hi-en';
@@ -848,6 +852,68 @@ export default function BillingScreen({
       setBillingMode('auto');
     }
   }, [state.settings.businessMode]);
+
+  // Active bill being edited in counter (e.g. redirected from Udhar Section)
+  const [editingOriginalBill, setEditingOriginalBill] = useState<Bill | null>(null);
+
+  useEffect(() => {
+    if (billToEdit) {
+      setEditingOriginalBill(billToEdit);
+      setBillingSubTab('billing');
+
+      const mappedCart: CartItem[] = (billToEdit.items || []).map((ti, index) => {
+        const dbItem = state.items.find(i => i.id === ti.itemId || i.name.toLowerCase() === ti.name.toLowerCase());
+        return {
+          id: dbItem ? dbItem.id : (ti.itemId || `item-edit-${index}-${Date.now()}`),
+          item: dbItem || {
+            id: ti.itemId || `item-custom-${Date.now()}-${index}`,
+            name: ti.name,
+            retailPrice: ti.price,
+            wholesalePrice: ti.price,
+            buyingPrice: ti.cost || 0,
+            unit: ti.unit || 'Pcs',
+            isManual: true
+          },
+          name: ti.name,
+          quantity: ti.quantity,
+          price: ti.price,
+          cost: ti.cost || 0,
+          unit: ti.unit || 'Pcs'
+        };
+      });
+
+      setCart(mappedCart);
+      setCustomerName(billToEdit.customerName || '');
+      setCustomerPhone(billToEdit.customerPhone || '');
+      setDiscountPercent(billToEdit.discount || 0);
+      setTaxPercent(billToEdit.tax || 0);
+      setPaymentMethod(billToEdit.paymentMethod === 'Credit' ? 'Credit' : 'Cash');
+
+      if (billToEdit.discount && billToEdit.discount > 0) {
+        const sub = mappedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const rVal = (sub * billToEdit.discount) / 100;
+        setDiscountRupeesInput(rVal > 0 ? (rVal % 1 === 0 ? rVal.toString() : rVal.toFixed(2)) : '');
+        setDiscountMode('percent');
+      } else {
+        setDiscountRupeesInput('');
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [billToEdit]);
+
+  const handleCancelEditBill = useCallback(() => {
+    setEditingOriginalBill(null);
+    onClearBillToEdit?.();
+    setCart([]);
+    setCustomerName('');
+    setCustomerPhone('');
+    setDiscountPercent(0);
+    setDiscountRupeesInput('');
+    setDiscountMode('rupees');
+    setTaxPercent(0);
+    setPaymentMethod('Cash');
+  }, [onClearBillToEdit]);
 
   // Synchronize drafts state elements to localStorage (debounced & deferred off the critical touch path)
   useEffect(() => {
@@ -2196,9 +2262,13 @@ export default function BillingScreen({
     });
 
     // Step 2: Build checkout invoice schema
+    const targetBillId = editingOriginalBill ? editingOriginalBill.id : `bill-${Date.now()}`;
+    const targetBillNumber = editingOriginalBill ? editingOriginalBill.billNumber : billNumber;
+    const targetTimestamp = editingOriginalBill ? editingOriginalBill.timestamp : new Date().toISOString();
+
     const newBill: Bill = {
-      id: `bill-${Date.now()}`,
-      billNumber,
+      id: targetBillId,
+      billNumber: targetBillNumber,
       customerName: cName,
       customerPhone: cPhone,
       items: finalCartItems,
@@ -2207,7 +2277,7 @@ export default function BillingScreen({
       subtotal,
       total,
       paymentMethod,
-      timestamp: new Date().toISOString(),
+      timestamp: targetTimestamp,
       deviceId: state.settings?.deviceId,
       deviceName: state.settings?.deviceName
     };
@@ -2268,7 +2338,21 @@ export default function BillingScreen({
     });
 
     // STEP 2: Stocks deduction
-    const finalItemsState = convertedItemsList.map(item => {
+    // If editing an existing bill, restore original bill items first, then deduct new cart items
+    const baseItemsList = editingOriginalBill
+      ? convertedItemsList.map(item => {
+          const origItem = editingOriginalBill.items.find(bi => bi.itemId === item.id);
+          if (origItem) {
+            return {
+              ...item,
+              quantity: parseFloat((item.quantity + origItem.quantity).toFixed(3))
+            };
+          }
+          return item;
+        })
+      : convertedItemsList;
+
+    const finalItemsState = baseItemsList.map(item => {
       const idxInCart = cart.findIndex(ci => ci.id === item.id);
       if (idxInCart !== -1) {
         return {
@@ -2280,13 +2364,98 @@ export default function BillingScreen({
     });
 
     // STEP 3: Bills tracking
-    const nextBills = [previewBillData, ...(state.bills || [])];
+    const nextBills = editingOriginalBill
+      ? (state.bills || []).map(b => b.id === editingOriginalBill.id ? previewBillData : b)
+      : [previewBillData, ...(state.bills || [])];
 
     // STEP 4: Ledger compliance for Udhar Mode
     let updatedCustomers = [...(state.udharCustomers || [])];
     let updatedTransactions = [...(state.udharTransactions || [])];
 
-    if (previewBillData.paymentMethod === 'Credit' && previewBillData.customerPhone) {
+    if (editingOriginalBill) {
+      const prevTx = updatedTransactions.find(t => 
+        t.note && (
+          t.note.includes(editingOriginalBill.billNumber) ||
+          t.note.toLowerCase().includes(`reference #${editingOriginalBill.billNumber.toLowerCase()}`)
+        )
+      );
+
+      if (prevTx) {
+        if (previewBillData.paymentMethod === 'Credit') {
+          const diff = parseFloat((previewBillData.total - editingOriginalBill.total).toFixed(2));
+          updatedTransactions = updatedTransactions.map(t => {
+            if (t.id === prevTx.id) {
+              return {
+                ...t,
+                amount: previewBillData.total,
+                note: `Automatic bill generation billing reference #${previewBillData.billNumber} (Updated)`,
+                dueDate: udharDueDate
+              };
+            }
+            return t;
+          });
+
+          updatedCustomers = updatedCustomers.map(c => {
+            if (c.id === prevTx.customerId) {
+              return {
+                ...c,
+                totalUdhar: Math.max(0, parseFloat((c.totalUdhar + diff).toFixed(2))),
+                lastUpdated: new Date().toISOString()
+              };
+            }
+            return c;
+          });
+        } else {
+          // Changed from Credit to Cash
+          updatedTransactions = updatedTransactions.filter(t => t.id !== prevTx.id);
+          updatedCustomers = updatedCustomers.map(c => {
+            if (c.id === prevTx.customerId) {
+              return {
+                ...c,
+                totalUdhar: Math.max(0, parseFloat((c.totalUdhar - prevTx.amount).toFixed(2))),
+                lastUpdated: new Date().toISOString()
+              };
+            }
+            return c;
+          });
+        }
+      } else if (previewBillData.paymentMethod === 'Credit' && previewBillData.customerPhone) {
+        let currCust = updatedCustomers.find(cu => cu.phone === previewBillData.customerPhone);
+        if (!currCust) {
+          currCust = {
+            id: `cust-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: previewBillData.customerName,
+            phone: previewBillData.customerPhone,
+            totalUdhar: 0,
+            lastUpdated: new Date().toISOString()
+          };
+          updatedCustomers.push(currCust);
+        }
+
+        const creditTx = {
+          id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          customerId: currCust.id,
+          amount: previewBillData.total,
+          type: 'given' as const,
+          timestamp: new Date().toISOString(),
+          dueDate: udharDueDate,
+          note: `Automatic bill generation billing reference #${previewBillData.billNumber} (Updated)`
+        };
+
+        updatedTransactions.push(creditTx);
+
+        updatedCustomers = updatedCustomers.map(c => {
+          if (c.id === currCust?.id) {
+            return {
+              ...c,
+              totalUdhar: parseFloat((c.totalUdhar + previewBillData.total).toFixed(2)),
+              lastUpdated: new Date().toISOString()
+            };
+          }
+          return c;
+        });
+      }
+    } else if (previewBillData.paymentMethod === 'Credit' && previewBillData.customerPhone) {
       let currCust = updatedCustomers.find(cu => cu.phone === previewBillData.customerPhone);
       if (!currCust) {
         currCust = {
@@ -2369,6 +2538,11 @@ export default function BillingScreen({
     setDiscountMode('rupees');
     setTaxPercent(0);
     setPaymentMethod('Cash');
+
+    if (editingOriginalBill) {
+      setEditingOriginalBill(null);
+      onClearBillToEdit?.();
+    }
 
     const billToPrint = previewBillData;
     setCompletedBill(billToPrint);
@@ -3051,6 +3225,41 @@ export default function BillingScreen({
       {/* MAIN BILLING DASHBOARD SUB-TAB VIEW */}
       {billingSubTab === 'billing' && (
         <>
+          {/* ✏️ EDITING INVOICE ALERT BANNER (When redirected from Udhar/History) */}
+          {editingOriginalBill && (
+            <div 
+              style={{ marginBottom: '12px' }}
+              className="p-3 sm:p-3.5 bg-amber-500/10 border-2 border-amber-500/35 rounded-2xl flex items-center justify-between gap-3 shadow-xs animate-in fade-in duration-200"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-9 w-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+                  <Edit2 size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                      Editing Bill #{editingOriginalBill.billNumber}
+                    </span>
+                    <span className="text-[10.5px] sm:text-xs font-bold text-[var(--foreground)] truncate">
+                      Customer: {editingOriginalBill.customerName}
+                    </span>
+                  </div>
+                  <p className="text-[9px] sm:text-[10px] opacity-70 mt-0.5 truncate">
+                    Modify cart items, quantities, or discount/tax. Tap &quot;UPDATE BILL #{editingOriginalBill.billNumber}&quot; when done.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelEditBill}
+                className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 active:scale-95 flex items-center gap-1"
+              >
+                <X size={12} />
+                <span>Cancel Edit</span>
+              </button>
+            </div>
+          )}
+
           {/* 📁 MULTI BILLS DROPDOWN BUTTON & COLLAPSIBLE REGISTER DECK */}
           <div 
             style={{ marginBottom: '12px' }}
@@ -5563,11 +5772,18 @@ export default function BillingScreen({
                   fontSize: '15px',
                   lineHeight: '16px',
                   fontFamily: "'Hind Vadodara', sans-serif",
-                  backgroundColor: '#0006bc'
+                  backgroundColor: editingOriginalBill ? '#d97706' : '#0006bc'
                 }}
-                className="w-full rounded-xl hover:opacity-90 active:scale-[0.99] disabled:opacity-35 disabled:cursor-not-allowed text-white font-black uppercase tracking-wider cursor-pointer shadow-lg transition-all flex items-center justify-center"
+                className="w-full rounded-xl hover:opacity-90 active:scale-[0.99] disabled:opacity-35 disabled:cursor-not-allowed text-white font-black uppercase tracking-wider cursor-pointer shadow-lg transition-all flex items-center justify-center gap-2"
               >
-                SAVE BILL
+                {editingOriginalBill ? (
+                  <>
+                    <Save size={16} />
+                    <span>UPDATE BILL #{editingOriginalBill.billNumber}</span>
+                  </>
+                ) : (
+                  <span>SAVE BILL</span>
+                )}
               </button>
 
               {/* Smart Cash Calculator (Below SAVE BILL button) */}
@@ -5968,10 +6184,13 @@ export default function BillingScreen({
                     </button>
                     <button
                       onClick={handleCheckout}
-                      className="flex-1 py-1.5 text-[8.5px] font-black uppercase tracking-wider bg-[var(--primary)] hover:opacity-90 text-white rounded-lg flex items-center justify-center gap-1 cursor-pointer select-none"
+                      className={cn(
+                        "flex-1 py-1.5 text-[8.5px] font-black uppercase tracking-wider text-white rounded-lg flex items-center justify-center gap-1 cursor-pointer select-none",
+                        editingOriginalBill ? "bg-amber-600 hover:bg-amber-700" : "bg-[var(--primary)] hover:opacity-90"
+                      )}
                     >
-                      <Printer size={10} />
-                      <span>Spool Checkout</span>
+                      {editingOriginalBill ? <Save size={10} /> : <Printer size={10} />}
+                      <span>{editingOriginalBill ? `Update #${editingOriginalBill.billNumber}` : "Spool Checkout"}</span>
                     </button>
                   </div>
                 </div>
@@ -6312,10 +6531,13 @@ export default function BillingScreen({
                       </button>
                       <button 
                         onClick={() => { setMobilePreviewOpen(false); handleCheckout(); }} 
-                        className="flex-1 py-2.5 sm:py-3 text-xs sm:text-sm font-black uppercase tracking-wider bg-[var(--primary)] hover:opacity-90 text-white rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer min-h-[42px] active:scale-98 transition-transform"
+                        className={cn(
+                          "flex-1 py-2.5 sm:py-3 text-xs sm:text-sm font-black uppercase tracking-wider text-white rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer min-h-[42px] active:scale-98 transition-transform",
+                          editingOriginalBill ? "bg-amber-600 hover:bg-amber-700" : "bg-[var(--primary)] hover:opacity-90"
+                        )}
                       >
-                        <Printer size={14} />
-                        <span>Invoice Finish</span>
+                        {editingOriginalBill ? <Save size={14} /> : <Printer size={14} />}
+                        <span>{editingOriginalBill ? `Update Bill #${editingOriginalBill.billNumber}` : "Invoice Finish"}</span>
                       </button>
                     </div>
                   </div>

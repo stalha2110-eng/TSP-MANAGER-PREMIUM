@@ -311,6 +311,17 @@ const getLogoBackplateClass = (theme: string) => {
 export default function App() {
   const [state, setState] = useState<AppState>(INITIAL_STATE);
   const [activeTab, setActiveTab] = useState<'home' | 'billing' | 'analytics' | 'udhar' | 'notes' | 'shift' | 'goals' | 'history'>('home');
+  const [billToEditInCounter, setBillToEditInCounter] = useState<Bill | null>(null);
+
+  const handleEditBillInCounter = useCallback((bill: Bill) => {
+    setBillToEditInCounter(bill);
+    setActiveTab('billing');
+  }, []);
+
+  const handleClearBillToEditInCounter = useCallback(() => {
+    setBillToEditInCounter(null);
+  }, []);
+
   const [showPlusActionMenu, setShowPlusActionMenu] = useState(false);
   const [showSmartBulkEntry, setShowSmartBulkEntry] = useState(false);
   const rawCategories = state.settings.customCategories || state.categories;
@@ -5473,6 +5484,8 @@ export default function App() {
               isSyncing={isSyncing}
               onSyncBills={syncBillHistoryWithLocalAndCloud}
               onPeek={setQuickPeek}
+              billToEdit={billToEditInCounter}
+              onClearBillToEdit={handleClearBillToEditInCounter}
             />
           </motion.div>
         )}
@@ -5509,6 +5522,7 @@ export default function App() {
               onUpdateState={handleUpdateComponentState}
               selectedCustomerId={selectedUdharCustomerId}
               onSelectCustomerId={setSelectedUdharCustomerId}
+              onEditBillInCounter={handleEditBillInCounter}
             />
           </motion.div>
         )}

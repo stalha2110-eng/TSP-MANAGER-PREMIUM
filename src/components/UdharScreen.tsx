@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Users, Plus, Trash2, ArrowUpRight, ArrowDownRight, Phone, 
   MessageSquare, Search, Landmark, Receipt, Calendar, Info, 
-  CheckCircle2, AlertCircle, RefreshCw, ChevronRight, X, Sparkles, UserMinus, Edit
+  CheckCircle2, AlertCircle, RefreshCw, ChevronRight, X, Sparkles, UserMinus, Edit, ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppState, UdharCustomer, UdharTransaction, Bill } from '../types';
@@ -496,17 +496,21 @@ export default function UdharScreen({
   const kpis = useMemo(() => {
     let totalOutstanding = 0;
     let debtorCount = 0;
+    let settledCount = 0;
 
     rawCustomers.forEach(cust => {
       if (cust.totalUdhar > 0) {
         totalOutstanding += cust.totalUdhar;
         debtorCount++;
+      } else {
+        settledCount++;
       }
     });
 
     return {
       totalOutstanding,
-      debtorCount
+      debtorCount,
+      settledCount
     };
   }, [rawCustomers]);
 
@@ -697,163 +701,152 @@ export default function UdharScreen({
   };
 
   return (
-    <div className="space-y-6 pb-32 max-w-7xl mx-auto text-[var(--foreground)]">
+    <div className="space-y-4 sm:space-y-5 pb-32 max-w-7xl mx-auto text-[var(--foreground)]">
       
-      {/* Header Row */}
-      <div className="flex items-center justify-between border-b border-[var(--border)] pb-3 flex-wrap gap-4">
-        <div>
-          <h2 className="text-2xl font-black text-[var(--foreground)] tracking-tighter uppercase mb-1 flex items-center gap-2">
-            <Landmark className="text-rose-500" size={24} /> Udhar <span className="text-rose-500">Book Ledger</span>
-          </h2>
-          <p className="text-[10px] font-bold opacity-50 uppercase tracking-[0.2em]">Manage regular customer credit and payments (उधार खाता डायरी)</p>
-        </div>
-
-        <button 
-          onClick={() => setShowAddCustomerModal(true)}
-          className="px-5 py-2.5 rounded-xl text-[10px] bg-rose-500 text-white hover:bg-rose-600 font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95"
-        >
-          <Plus size={14} /> Open New Khata (नया खाता)
-        </button>
-      </div>
-
-      {/* KPIs Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        
-        {/* Metric Card 1: Total Outstanding */}
-        <div className="card p-6 bg-[var(--card)] border border-[var(--border)] relative overflow-hidden group rounded-2xl shadow-sm">
-          <div className="absolute top-0 right-0 h-16 w-16 bg-rose-500/5 rounded-full blur-xl group-hover:scale-150 transition-transform" />
-          <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest leading-none flex items-center gap-1.5">
-            <Landmark size={11} /> Total Outstanding Credit (कुल उधार)
-          </p>
-          <div className="flex items-baseline gap-1 mt-2.5">
-            <span className="text-2xl font-black text-rose-500 font-mono">₹{kpis.totalOutstanding.toLocaleString(undefined, {maximumFractionDigits: 1})}</span>
-            <span className="text-[8px] text-rose-500 font-bold flex items-center gap-0.5 leading-none bg-rose-500/10 px-1.5 py-0.5 rounded ml-2">
-              Receivable
-            </span>
-          </div>
-          <div className="text-[8px] font-medium opacity-40 uppercase tracking-wider mt-3 font-mono">
-            Outstanding debt across all registers
-          </div>
-        </div>
-
-        {/* Metric Card 2: Active Debt Customers */}
-        <div className="card p-6 bg-[var(--card)] border border-[var(--border)] relative overflow-hidden group rounded-2xl shadow-sm">
-          <div className="absolute top-0 right-0 h-16 w-16 bg-amber-500/5 rounded-full blur-xl group-hover:scale-150 transition-transform" />
-          <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest leading-none flex items-center gap-1.5">
-            <Users size={11} /> Active Debt Accounts (बाकी खाता ग्राहक)
-          </p>
-          <div className="flex items-baseline gap-1 mt-2.5">
-            <span className="text-2xl font-black text-[var(--foreground)] font-mono">{kpis.debtorCount} Users</span>
-            <span className="text-[8px] text-amber-500 font-bold flex items-center gap-0.5 leading-none bg-amber-500/10 px-1.5 py-0.5 rounded ml-2">
-              Due settle
-            </span>
-          </div>
-          <div className="text-[8px] font-medium opacity-40 uppercase tracking-wider mt-3 font-mono">
-            Customers with pending payment defaults
-          </div>
-        </div>
-
-        {/* Metric Card 3: Secure digital ledger */}
-        <div className="card p-5 bg-[var(--card)] border border-[var(--border)] rounded-2xl relative overflow-hidden shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-[10px] font-black opacity-50 uppercase tracking-widest flex items-center gap-1.5">
-              <Sparkles className="text-green-500 animate-pulse" size={12} /> Double-Entry Security
-            </p>
-            <p className="text-[11px] opacity-40 leading-snug max-w-[200px]">
-              Offline cryptographic ledger guarantees balances won't overwrite.
+      {/* Top Header & Metrics: On mobile screens, only shown when on the Directory list */}
+      <div className={cn(
+        "space-y-3 sm:space-y-4",
+        selectedCustomer ? "hidden lg:block" : "block"
+      )}>
+        {/* Header Row */}
+        <div className="flex items-center justify-between border-b border-[var(--border)] pb-2.5 sm:pb-3 gap-2">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-black text-[var(--foreground)] tracking-tight uppercase flex items-center gap-2 truncate">
+              <Landmark className="text-rose-500 shrink-0" size={22} />
+              <span>Udhar <span className="text-rose-500">Book Ledger</span></span>
+            </h2>
+            <p className="text-[9px] sm:text-[10px] font-bold opacity-50 uppercase tracking-widest truncate">
+              Manage regular customer credit & payments (उधार खाता डायरी)
             </p>
           </div>
-          <div className="h-12 w-12 bg-green-500/10 rounded-full border border-green-500/20 flex items-center justify-center text-green-500">
-            <CheckCircle2 size={24} />
+
+          <button 
+            type="button"
+            onClick={() => setShowAddCustomerModal(true)}
+            className="px-3.5 sm:px-4 py-2 rounded-xl text-[10px] sm:text-[11px] bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 shrink-0"
+          >
+            <Plus size={14} />
+            <span>Open Khata</span>
+          </button>
+        </div>
+
+        {/* High-Density Quick Pulse Strip: Replaces 3 bulky cards with a single compact ~50px row */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          {/* Metric 1: Total Outstanding */}
+          <div className="p-2.5 sm:p-3 rounded-xl bg-rose-500/[0.06] border border-rose-500/20 flex flex-col justify-between shadow-2xs">
+            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-rose-500 truncate flex items-center gap-1">
+              <Landmark size={10} className="shrink-0" />
+              <span>Total Due</span>
+            </span>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-xs sm:text-base font-black text-rose-500 font-mono truncate">
+                ₹{kpis.totalOutstanding.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </span>
+            </div>
+          </div>
+
+          {/* Metric 2: Active Accounts */}
+          <div className="p-2.5 sm:p-3 rounded-xl bg-amber-500/[0.06] border border-amber-500/20 flex flex-col justify-between shadow-2xs">
+            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-amber-500 truncate flex items-center gap-1">
+              <Users size={10} className="shrink-0" />
+              <span>Due Accounts</span>
+            </span>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-xs sm:text-base font-black text-[var(--foreground)] font-mono truncate">
+                {kpis.debtorCount} Users
+              </span>
+            </div>
+          </div>
+
+          {/* Metric 3: Settled Accounts */}
+          <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-500/[0.06] border border-emerald-500/20 flex flex-col justify-between shadow-2xs">
+            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-emerald-500 truncate flex items-center gap-1">
+              <CheckCircle2 size={10} className="shrink-0" />
+              <span>Settled</span>
+            </span>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-xs sm:text-base font-black text-emerald-500 font-mono truncate">
+                {kpis.settledCount} Clear
+              </span>
+            </div>
           </div>
         </div>
 
+        {/* 30+ Days Overdue Alert Pill / Bar */}
+        {overdue30DaysCustomers.length > 0 && (
+          <div className="p-2.5 sm:p-3 bg-rose-500/[0.05] border border-rose-500/20 rounded-xl space-y-2 select-none">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-xs font-black text-rose-500 uppercase tracking-tight truncate">
+                <AlertCircle size={13} className="shrink-0 animate-pulse" />
+                <span>30+ Days Overdue Dues ({overdue30DaysCustomers.length})</span>
+              </div>
+              <span className="text-[8px] font-black uppercase bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded border border-rose-500/30 shrink-0">
+                Action Suggested
+              </span>
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+              {overdue30DaysCustomers.map(({ customer, tx, days }) => (
+                <div 
+                  key={customer.id + '-' + tx.id}
+                  className="p-2 rounded-lg bg-[var(--card)] border border-[var(--border)] shrink-0 flex items-center gap-2.5 text-xs shadow-2xs"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-[10.5px] uppercase truncate max-w-[95px] text-[var(--foreground)]">{customer.name}</span>
+                      <span className="text-[7.5px] font-black uppercase text-rose-400 bg-rose-500/10 px-1 rounded">{days}d</span>
+                    </div>
+                    <p className="text-[9.5px] font-mono font-black text-rose-500 mt-0.5">₹{Math.abs(tx.amount).toLocaleString()}</p>
+                  </div>
+                  {customer.phone && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const message = generateWhatsAppReminderText(customer.name, customer.phone, customer.totalUdhar, tx.timestamp, days, tx.note);
+                        const url = `https://wa.me/91${customer.phone}?text=${encodeURIComponent(message)}`;
+                        window.open(url, '_blank');
+                      }}
+                      className="h-6 px-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[8px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs cursor-pointer"
+                      title="Send WhatsApp reminder"
+                    >
+                      <MessageSquare size={10} />
+                      <span>Remind</span>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* 30+ Days Outstanding Customers Automatic Recommendations */}
-      {overdue30DaysCustomers.length > 0 && (
-         <div className="card p-5 bg-rose-500/5 border border-rose-500/20 rounded-2xl space-y-3">
-             <div className="flex items-center justify-between flex-wrap gap-2">
-                 <div className="flex items-center gap-2">
-                     <AlertCircle className="text-rose-500 animate-pulse" size={16} />
-                     <p className="text-xs font-black uppercase tracking-wider text-rose-500">Exceeded 30 Days Unpaid Dues (30+ दिन पुराना बकाया उधार)</p>
-                 </div>
-                 <span className="text-[9px] font-black uppercase bg-rose-500/25 text-rose-400 px-2 py-0.5 rounded border border-rose-500/30">
-                     Action Suggested ({overdue30DaysCustomers.length})
-                 </span>
-             </div>
-             <p className="text-[10px] opacity-70">
-                 The following customer accounts have credit entries with no payment recorded for over 30 days. Recommend sending professional WhatsApp reminders below:
-             </p>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
-                 {overdue30DaysCustomers.map(({ customer, tx, days }) => (
-                     <div key={customer.id + '-' + tx.id} className="p-3 bg-[var(--card)] rounded-xl border border-[var(--border)] flex flex-col justify-between gap-3 text-xs">
-                         <div className="space-y-1">
-                             <div className="flex justify-between items-start gap-2">
-                                 <div>
-                                     <p className="font-extrabold uppercase text-[11px] text-[var(--foreground)] tracking-tight">{customer.name}</p>
-                                     <p className="text-[9px] opacity-45 font-mono">{customer.phone ? `+91 ${customer.phone}` : 'No phone phone'}</p>
-                                 </div>
-                                 <span className="text-[8px] font-black uppercase text-rose-400 bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded">
-                                     {days} Days Old
-                                 </span>
-                             </div>
-                             <div className="pt-1 flex items-baseline justify-between select-none">
-                                 <span className="text-[8px] opacity-50 uppercase tracking-widest font-black">Due Amount:</span>
-                                 <span className="text-xs font-black text-rose-500 font-mono">₹{Math.abs(tx.amount).toLocaleString()}</span>
-                             </div>
-                             {tx.note && (
-                                 <p className="text-[9px] opacity-60 leading-tight truncate">📝 Note: {tx.note}</p>
-                             )}
-                             <p className="text-[8px] opacity-35 font-mono">Date: {new Date(tx.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                         </div>
-                         <div className="flex gap-2">
-                             <button
-                                 onClick={() => setSelectedCustomerId(customer.id)}
-                                 className="flex-1 py-1 px-2 rounded-lg border border-[var(--border)] hover:border-rose-505/30 text-[9px] font-bold uppercase tracking-wider text-center transition-all bg-transparent hover:bg-rose-500/5 cursor-pointer text-[var(--foreground)]"
-                             >
-                                 Open Ledger
-                             </button>
-                             {customer.phone ? (
-                                 <button
-                                     onClick={() => {
-                                         const message = generateWhatsAppReminderText(customer.name, customer.phone, customer.totalUdhar, tx.timestamp, days, tx.note);
-                                         const url = `https://wa.me/91${customer.phone}?text=${encodeURIComponent(message)}`;
-                                         window.open(url, '_blank');
-                                     }}
-                                     className="px-2.5 py-1 rounded-lg bg-green-600 hover:bg-green-700 text-white text-[9px] font-extrabold uppercase tracking-widest text-center transition-all flex items-center justify-center gap-1 cursor-pointer shadow"
-                                     title="Send Professional WhatsApp Reminder"
-                                 >
-                                     <MessageSquare size={10} className="shrink-0" />
-                                     <span>Request</span>
-                                 </button>
-                             ) : (
-                                 <span className="px-2.5 py-1 rounded-lg bg-white/5 text-zinc-500 text-[8px] font-bold uppercase tracking-wider text-center select-none">
-                                     No Phone
-                                 </span>
-                             )}
-                         </div>
-                     </div>
-                 ))}
-             </div>
-         </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* Main Content Area: Master-Detail Architecture */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
         
-        {/* Customer Directory List */}
-        <div className="lg:col-span-5 card p-5 bg-[var(--card)] border border-[var(--border)] rounded-3xl space-y-4 shadow-sm">
-          {/* Professional Language Selector Pill Box */}
-          <div className="bg-[var(--foreground)]/[0.02] border border-[var(--border)]/60 rounded-2xl p-2.5 flex items-center justify-between gap-2 select-none">
-            <span className="text-[9px] font-black uppercase tracking-wider text-[var(--foreground)]/50 pl-1 flex items-center gap-1 shrink-0">
-              🌐 Language / भाषा:
-            </span>
+        {/* Customer Directory List: Visible on Desktop ALWAYS, on Mobile ONLY when NO customer is selected */}
+        <div className={cn(
+          "lg:col-span-5 card p-3.5 sm:p-4 bg-[var(--card)] border border-[var(--border)] rounded-2xl sm:rounded-3xl space-y-3 shadow-xs",
+          selectedCustomer ? "hidden lg:block" : "block"
+        )}>
+          {/* Header & Language selector */}
+          <div className="flex items-center justify-between pb-2 border-b border-[var(--border)] gap-2">
+            <div>
+              <h4 className="font-black text-[var(--foreground)] text-xs uppercase tracking-tight flex items-center gap-1.5">
+                <Users size={14} className="text-rose-500" />
+                <span>Customer Directory</span>
+              </h4>
+              <p className="text-[8.5px] opacity-40 font-bold uppercase tracking-wider">
+                {filteredCustomers.length} {filteredCustomers.length === 1 ? 'Account' : 'Accounts'}
+              </p>
+            </div>
+
+            {/* Language Selector Pills */}
             <div className="flex gap-1 overflow-x-auto no-scrollbar">
               {[
-                { id: 'en', label: 'EN', emoji: '🇬🇧', title: 'English' },
-                { id: 'hi-en', label: 'HING', emoji: '🇮🇳', title: 'Hinglish' },
-                { id: 'hi', label: 'हिन्दी', emoji: '🇮🇳', title: 'हिन्दी' },
-                { id: 'mr', label: 'मराठी', emoji: '🇮🇳', title: 'मराठी' }
+                { id: 'en', label: 'EN', title: 'English' },
+                { id: 'hi-en', label: 'HING', title: 'Hinglish' },
+                { id: 'hi', label: 'हिन्दी', title: 'हिन्दी' },
+                { id: 'mr', label: 'मराठी', title: 'मराठी' }
               ].map(lang => {
                 const isActive = state.settings.language === lang.id;
                 return (
@@ -869,45 +862,50 @@ export default function UdharScreen({
                     }}
                     title={lang.title}
                     type="button"
-                    className={`px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-all ${
+                    className={cn(
+                      "px-2 py-0.5 rounded-lg text-[8.5px] font-black uppercase tracking-wider transition-all cursor-pointer",
                       isActive 
-                        ? 'bg-rose-500 text-white shadow-sm' 
-                        : 'bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:border-rose-500/20'
-                    }`}
+                        ? "bg-rose-500 text-white shadow-2xs" 
+                        : "bg-[var(--foreground)]/5 border border-[var(--border)] text-[var(--foreground)]/60 hover:text-[var(--foreground)]"
+                    )}
                   >
-                    <span>{lang.emoji}</span>
-                    <span>{lang.label}</span>
+                    {lang.label}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-b border-[var(--border)] pb-2">
-            <div>
-              <h4 className="font-bold text-[var(--foreground)] text-sm">Customer Accounts Directory</h4>
-              <p className="text-[9px] opacity-40 font-bold uppercase tracking-wider">Select customer to view digital ledger</p>
-            </div>
-          </div>
-
-          {/* Search bar inside ledger directory */}
+          {/* Search bar inside customer directory */}
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-35" size={13} />
             <input 
               type="text" 
-              placeholder="Search customer name or phone..." 
+              placeholder="Search name or phone..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-xs font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.03] py-3 pl-11 pr-4 focus:outline-none focus:border-rose-500/40 focus:ring-1 focus:ring-rose-500/30 shadow-inner"
+              className="w-full text-xs font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.03] py-2 pl-8 pr-7 focus:outline-none focus:border-rose-500/40 focus:ring-1 focus:ring-rose-500/30 text-[var(--foreground)] placeholder:text-[var(--foreground)]/40"
             />
+            {searchQuery && (
+              <button 
+                type="button" 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--foreground)]/40 hover:text-rose-500 p-1 cursor-pointer"
+              >
+                <X size={11} />
+              </button>
+            )}
           </div>
 
-          <div className="space-y-2 overflow-y-auto max-h-[50vh] no-scrollbar pr-1">
+          {/* Customer Accounts List */}
+          <div className="space-y-1.5 overflow-y-auto max-h-[60vh] lg:max-h-[52vh] no-scrollbar pr-0.5">
             {filteredCustomers.length === 0 ? (
-              <div className="py-20 text-center border border-dashed border-[var(--border)] rounded-2xl opacity-40 space-y-2">
-                <Users size={32} className="mx-auto opacity-30 text-rose-500" />
+              <div className="py-14 text-center border border-dashed border-[var(--border)] rounded-2xl opacity-40 space-y-1.5 select-none">
+                <Users size={28} className="mx-auto opacity-30 text-rose-500" />
                 <p className="text-xs font-black uppercase tracking-wider">No Khata Records Found</p>
-                <p className="text-[10px] max-w-[200px] mx-auto opacity-60">Click Open New Khata to add your first customer credit book!</p>
+                <p className="text-[9.5px] max-w-[200px] mx-auto opacity-70">
+                  Click "Open Khata" above to create your first credit customer account!
+                </p>
               </div>
             ) : (
               filteredCustomers.map((cust, cIdx) => {
@@ -919,36 +917,43 @@ export default function UdharScreen({
                   <div 
                     key={`udhar-cust-${cust.id || 'cust'}-${cIdx}`}
                     onClick={() => setSelectedCustomerId(cust.id)}
-                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
+                    className={cn(
+                      "flex items-center justify-between p-2.5 sm:p-3 rounded-xl border transition-all duration-150 cursor-pointer select-none active:scale-[0.99] group shadow-2xs",
                       isSelected 
-                        ? 'border-rose-500/30 bg-rose-500/5 shadow-md' 
-                        : 'border-[var(--border)] hover:border-rose-500/20 hover:bg-[var(--foreground)]/[0.01]'
-                    }`}
+                        ? "border-rose-500/50 bg-rose-500/10 shadow-xs ring-1 ring-rose-500/20" 
+                        : "border-[var(--border)] bg-[var(--card)] hover:border-rose-500/30 hover:bg-[var(--foreground)]/[0.02]"
+                    )}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-xs font-black uppercase ${
-                        outstanding > 0 ? "bg-rose-500/10 text-rose-500" : "bg-green-500/10 text-green-500"
-                      }`}>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={cn(
+                        "h-8 w-8 rounded-lg flex items-center justify-center text-xs font-black uppercase shrink-0 border",
+                        outstanding > 0 
+                          ? "bg-rose-500/15 text-rose-500 border-rose-500/25" 
+                          : "bg-emerald-500/15 text-emerald-500 border-emerald-500/25"
+                      )}>
                         {cust.name.substring(0, 2)}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-black truncate max-w-[130px] uppercase tracking-tight text-[var(--foreground)]">{cust.name}</p>
+                        <p className="text-xs font-black truncate max-w-[140px] uppercase tracking-tight text-[var(--foreground)] group-hover:text-rose-500 transition-colors">
+                          {cust.name}
+                        </p>
                         {cust.phone ? (
-                          <p className="text-[9px] font-mono opacity-50 mt-0.5">{cust.phone}</p>
+                          <p className="text-[9px] font-mono opacity-50 truncate">{cust.phone}</p>
                         ) : (
-                          <p className="text-[9px] italic opacity-30 mt-0.5">No contact link</p>
+                          <p className="text-[8.5px] italic opacity-35 truncate">No phone linked</p>
                         )}
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <p className={`text-xs font-mono font-black ${
-                        outstanding > 0 ? 'text-rose-500' : 'text-green-500 font-extrabold'
-                      }`}>
+                    <div className="text-right shrink-0 ml-2">
+                      <p className={cn(
+                        "text-xs font-mono font-black",
+                        outstanding > 0 ? "text-rose-500" : "text-emerald-500"
+                      )}>
                         {isSettled ? "Settled ✓" : `₹${outstanding.toLocaleString()}`}
                       </p>
-                      <p className="text-[8px] opacity-30 uppercase mt-1 leading-none">
-                        {outstanding > 0 ? 'Due (बाकी है)' : 'Equal (बराबर)'}
+                      <p className="text-[8px] opacity-40 uppercase tracking-wider font-semibold">
+                        {outstanding > 0 ? "Due Balance" : "All Clear"}
                       </p>
                     </div>
                   </div>
@@ -958,114 +963,154 @@ export default function UdharScreen({
           </div>
         </div>
 
-        {/* Selected Customer Transactions Ledger */}
-        <div className="lg:col-span-7 card p-5 bg-[var(--card)] border border-[var(--border)] rounded-3xl space-y-6 shadow-sm min-h-[400px]">
+        {/* Selected Customer Transactions Ledger: Visible on Desktop ALWAYS, on Mobile ONLY when a customer is selected */}
+        <div className={cn(
+          "lg:col-span-7 card p-3 sm:p-5 bg-[var(--card)] border border-[var(--border)] rounded-2xl sm:rounded-3xl space-y-3.5 shadow-xs min-h-[420px]",
+          selectedCustomer ? "block" : "hidden lg:block"
+        )}>
           {selectedCustomer ? (
-            <div className="space-y-6">
+            <div className="space-y-3.5">
               
-              {/* Ledger Summary and controls */}
-              <div className="flex items-center justify-between border-b border-[var(--border)] pb-4 flex-wrap gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 text-xs font-black bg-rose-500/10 text-rose-500 flex items-center justify-center rounded-xl uppercase">
+              {/* Ledger Header with Back Button (Mobile) & Actions Toolbar */}
+              <div className="flex items-center justify-between border-b border-[var(--border)] pb-3 gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  {/* Mobile Back Button: Returns to Customer Directory */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCustomerId(null)}
+                    className="h-8 w-8 rounded-lg bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 border border-[var(--border)] flex items-center justify-center text-[var(--foreground)]/80 hover:text-[var(--foreground)] lg:hidden shrink-0 cursor-pointer active:scale-95 transition-all"
+                    title="Back to Customers Directory"
+                  >
+                    <ArrowLeft size={15} />
+                  </button>
+
+                  <div className="h-8 w-8 text-xs font-black bg-rose-500/10 text-rose-500 flex items-center justify-center rounded-lg uppercase shrink-0 border border-rose-500/20">
                     {selectedCustomer.name.substring(0, 2)}
                   </div>
-                  <div className="flex flex-col">
+                  <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <h3 className="text-sm font-black uppercase tracking-tight text-[var(--foreground)]">{selectedCustomer.name}</h3>
+                      <h3 className="text-xs sm:text-sm font-black uppercase tracking-tight text-[var(--foreground)] truncate">
+                        {selectedCustomer.name}
+                      </h3>
                       <button
+                        type="button"
                         onClick={() => {
                           setEditingCustomer(selectedCustomer);
                           setEditCustName(selectedCustomer.name);
                           setEditCustPhone(selectedCustomer.phone || '');
                         }}
-                        className="p-1 hover:bg-[var(--foreground)]/5 text-[var(--foreground)]/45 hover:text-rose-500 rounded transition-colors cursor-pointer flex items-center justify-center"
+                        className="p-1 hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/45 hover:text-rose-500 rounded transition-colors cursor-pointer"
                         title="Edit Customer Profile"
                       >
                         <Edit size={12} />
                       </button>
                     </div>
-                    <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest mt-0.5">Account Khata Diary Ledger</p>
+                    {selectedCustomer.phone ? (
+                      <p className="text-[9px] font-mono opacity-60 truncate">📞 {selectedCustomer.phone}</p>
+                    ) : (
+                      <p className="text-[8.5px] opacity-40 uppercase tracking-widest font-bold">Khata Ledger</p>
+                    )}
                   </div>
                 </div>
 
-                {/* Quick actions for Contact */}
-                <div className="flex gap-1.5">
+                {/* Quick actions for Contact (Call, WhatsApp, Delete) */}
+                <div className="flex items-center gap-1 shrink-0">
                   {selectedCustomer.phone && (
                     <>
                       <a 
                         href={`tel:${selectedCustomer.phone}`}
-                        className="h-9 w-9 bg-[var(--foreground)]/5 hover:bg-rose-500/10 border border-[var(--border)] hover:border-rose-500/30 rounded-xl flex items-center justify-center text-[var(--foreground)] hover:text-rose-500 transition-all shadow-sm"
+                        className="h-8 w-8 bg-[var(--foreground)]/5 hover:bg-rose-500/10 border border-[var(--border)] hover:border-rose-500/30 rounded-lg flex items-center justify-center text-[var(--foreground)]/75 hover:text-rose-500 transition-all cursor-pointer shadow-2xs"
                         title="Voice Call"
                       >
-                        <Phone size={14} />
+                        <Phone size={13} />
                       </a>
                       <button 
+                        type="button"
                         onClick={() => handleWhatsAppReminder(selectedCustomer)}
-                        className="h-9 font-bold px-3 text-[10px] uppercase tracking-wider bg-emerald-500/10 hover:bg-emerald-500/20 text-green-500 border border-green-500/20 hover:border-green-500/40 rounded-xl flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-                        title="WhatsApp Remind"
+                        className="h-8 px-2 sm:px-2.5 text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                        title="Send WhatsApp Payment Link / Reminder"
                       >
-                        <MessageSquare size={13} /> Settle Pay link
+                        <MessageSquare size={12} />
+                        <span className="hidden sm:inline">WhatsApp</span>
                       </button>
                     </>
                   )}
                   <button
+                    type="button"
                     onClick={() => handleDeleteCustomer(selectedCustomer.id)}
-                    className="h-9 w-9 bg-red-500/5 hover:bg-red-500/20 border border-red-500/20 rounded-xl flex items-center justify-center text-red-500 transition-all shadow-sm cursor-pointer ml-2"
+                    className="h-8 w-8 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 rounded-lg flex items-center justify-center text-rose-500 transition-all cursor-pointer shadow-2xs"
                     title="Delete Customer Account"
                   >
-                    <UserMinus size={14} />
+                    <UserMinus size={13} />
                   </button>
                 </div>
               </div>
 
-              {/* Outstanding large banner */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-rose-500/5 rounded-2xl border border-rose-500/10 p-4 space-y-1">
-                  <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest block leading-none">Customer owes you</span>
-                  <span className="text-xl font-mono font-black text-rose-500">
-                    ₹{Math.max(0, selectedCustomer.totalUdhar).toLocaleString()}
+              {/* Outstanding Balance & Action Card */}
+              <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[var(--foreground)]/[0.04] to-[var(--foreground)]/[0.01] border border-[var(--border)] space-y-2.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[8.5px] font-black text-rose-500 uppercase tracking-widest block leading-none">
+                      Customer Owes You (कुल बाकी)
+                    </span>
+                    <span className="text-xl sm:text-2xl font-mono font-black text-rose-500 mt-1 block">
+                      ₹{Math.max(0, selectedCustomer.totalUdhar).toLocaleString()}
+                    </span>
+                  </div>
+                  <span className={cn(
+                    "text-[8.5px] font-black uppercase px-2 py-0.5 rounded-md border",
+                    selectedCustomer.totalUdhar > 0 
+                      ? "bg-rose-500/15 text-rose-500 border-rose-500/30" 
+                      : "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
+                  )}>
+                    {selectedCustomer.totalUdhar > 0 ? "Pending Credit" : "All Clear"}
                   </span>
-                  <span className="text-[8px] opacity-40 block">Credits recorded to date</span>
                 </div>
 
-                {/* Floating Payment actions */}
-                <div className="flex gap-2 items-center">
+                {/* Give / Receive Transaction Action Buttons */}
+                <div className="grid grid-cols-2 gap-2 pt-0.5">
                   <button
+                    type="button"
                     onClick={() => setShowTransactionModal('given')}
-                    className="flex-1 py-4 px-3 rounded-2xl bg-rose-500 text-white font-black text-[10px] uppercase tracking-wider hover:bg-rose-600 transition-all shadow-md hover:shadow-lg active:scale-95 text-center cursor-pointer"
+                    className="h-9 px-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-[10.5px] uppercase tracking-wider transition-all shadow-xs active:scale-[0.98] flex items-center justify-center gap-1 cursor-pointer text-center truncate"
                   >
-                    Give Udhar <br/> (उधार दिया -)
+                    <ArrowUpRight size={13} strokeWidth={3} className="shrink-0" />
+                    <span className="truncate">Give Udhar (-)</span>
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShowTransactionModal('received')}
-                    className="flex-1 py-4 px-3 rounded-2xl bg-green-500 text-white font-black text-[10px] uppercase tracking-wider hover:bg-green-600 transition-all shadow-md hover:shadow-lg active:scale-95 text-center cursor-pointer"
+                    className="h-9 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10.5px] uppercase tracking-wider transition-all shadow-xs active:scale-[0.98] flex items-center justify-center gap-1 cursor-pointer text-center truncate"
                   >
-                    Received Repay <br/> (भुगतान मिला +)
+                    <ArrowDownRight size={13} strokeWidth={3} className="shrink-0" />
+                    <span className="truncate">Received Pay (+)</span>
                   </button>
                 </div>
               </div>
 
               {/* Transactions Diary List view */}
-              <div className="space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-[var(--border)]/40">
-                  <h4 className="text-[10px] font-black uppercase opacity-40 tracking-wider">Chronological Entry Log</h4>
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between gap-2 pb-1 border-b border-[var(--border)]/40">
+                  <h4 className="text-[9px] font-black uppercase opacity-50 tracking-wider">
+                    Ledger Log ({filteredLedger.length})
+                  </h4>
                   
                   {/* Ledger search bar */}
                   {selectedLedger.length > 0 && (
-                    <div className="relative w-full sm:w-64">
-                      <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-rose-500" />
+                    <div className="relative w-44 sm:w-56">
+                      <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-rose-500 opacity-60" />
                       <input 
                         type="text"
                         value={ledgerSearchQuery}
                         onChange={(e) => setLedgerSearchQuery(e.target.value)}
-                        placeholder="Search entries (amount, note, date)..."
-                        className="w-full text-[10px] font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.03] pl-8 pr-8 py-1.5 focus:outline-none focus:border-rose-500 text-[var(--foreground)] placeholder:text-[var(--foreground)]/40"
+                        placeholder="Search entries..."
+                        className="w-full text-[10px] font-bold rounded-lg border border-[var(--border)] bg-[var(--foreground)]/[0.03] pl-7 pr-6 py-1 focus:outline-none focus:border-rose-500 text-[var(--foreground)] placeholder:text-[var(--foreground)]/40"
                       />
                       {ledgerSearchQuery && (
                         <button 
                           type="button"
                           onClick={() => setLedgerSearchQuery('')}
-                          className="absolute right-2 text-zinc-400 hover:text-rose-500 top-1/2 -translate-y-1/2 p-1 cursor-pointer"
+                          className="absolute right-1.5 text-zinc-400 hover:text-rose-500 top-1/2 -translate-y-1/2 p-0.5 cursor-pointer"
                         >
                           <X size={10} />
                         </button>
@@ -1074,80 +1119,93 @@ export default function UdharScreen({
                   )}
                 </div>
 
-                <div className="divide-y divide-[var(--border)] overflow-hidden">
+                <div className="divide-y divide-[var(--border)] overflow-hidden max-h-[46vh] overflow-y-auto no-scrollbar pr-0.5">
                   {selectedLedger.length === 0 ? (
-                    <div className="py-16 text-center opacity-30 text-[10px] uppercase tracking-wider font-extrabold font-mono border border-dashed border-[var(--border)] rounded-2xl">
-                      Empty ledger book history
+                    <div className="py-12 text-center opacity-35 text-[9.5px] uppercase tracking-wider font-extrabold font-mono border border-dashed border-[var(--border)] rounded-xl space-y-1 select-none">
+                      <p>Empty ledger book history</p>
+                      <p className="text-[8px] opacity-70">Use Give Udhar or Received Pay to add entries</p>
                     </div>
                   ) : filteredLedger.length === 0 ? (
-                    <div className="py-16 text-center opacity-30 text-[10px] uppercase tracking-wider font-extrabold font-mono border border-dashed border-[var(--border)] rounded-2xl">
-                      No matching records found for "{ledgerSearchQuery}"
+                    <div className="py-12 text-center opacity-35 text-[9.5px] uppercase tracking-wider font-extrabold font-mono border border-dashed border-[var(--border)] rounded-xl select-none">
+                      No matching records for "{ledgerSearchQuery}"
                     </div>
                   ) : (
                     filteredLedger.map((tx, tIdx) => {
                       const isGiven = tx.type === 'given';
+                      const billObj = getBillForTransaction(tx.note);
+
                       return (
-                        <div key={`udhar-tx-${tx.id || 'tx'}-${tIdx}`} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 font-medium">
-                          <div className="flex items-center gap-3">
-                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center font-mono text-center shrink-0 ${
-                              isGiven ? 'bg-rose-500/10 text-rose-500' : 'bg-green-500/10 text-green-500'
-                            }`}>
-                              {isGiven ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                        <div key={`udhar-tx-${tx.id || 'tx'}-${tIdx}`} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0 font-medium gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={cn(
+                              "h-7 w-7 rounded-lg flex items-center justify-center shrink-0 border",
+                              isGiven 
+                                ? "bg-rose-500/15 text-rose-500 border-rose-500/25" 
+                                : "bg-emerald-500/15 text-emerald-500 border-emerald-500/25"
+                            )}>
+                              {isGiven ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
                             </div>
-                            <div>
-                              <p className="text-xs font-bold uppercase tracking-tight text-[var(--foreground)]">
-                                {isGiven ? 'CREDIT GIVEN' : 'REPAYMENT RECEIVED'}
+                            <div className="min-w-0">
+                              <p className="text-[11px] font-black uppercase tracking-tight text-[var(--foreground)] truncate">
+                                {isGiven ? 'CREDIT GIVEN' : 'PAYMENT RECEIVED'}
                               </p>
-                              <p className="text-[9px] opacity-45 font-mono mt-0.5 leading-snug">
+                              <p className="text-[8.5px] opacity-45 font-mono leading-tight">
                                 {new Date(tx.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                {tx.note && <span className="text-[var(--primary)] font-bold block mt-1 uppercase text-[8px] tracking-wide">☞ {tx.note}</span>}
+                              </p>
+                              {tx.note && (
+                                <p className="text-[8px] font-bold text-[var(--primary)] truncate mt-0.5">
+                                  ☞ {tx.note}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                                 {tx.dueDate && (
-                                  <span className="text-amber-500 font-black block mt-1.5 uppercase text-[7.5px] tracking-widest bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded w-max select-none">
-                                    ⏳ DUE BY: {new Date(tx.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  <span className="text-amber-500 font-bold uppercase text-[7px] tracking-wider bg-amber-500/10 border border-amber-500/20 px-1 py-0.2 rounded select-none">
+                                    ⏳ Due: {new Date(tx.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                                   </span>
                                 )}
-                                {getBillForTransaction(tx.note) && (
+                                {billObj && (
                                   <button
-                                    onClick={() => setViewingBill(getBillForTransaction(tx.note))}
+                                    onClick={() => setViewingBill(billObj)}
                                     type="button"
-                                    className="mt-1.5 px-2 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[8.5px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer w-max select-none"
+                                    className="px-1.5 py-0.2 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[7.5px] font-black uppercase tracking-wider flex items-center gap-0.5 cursor-pointer select-none"
                                   >
-                                    <Receipt size={10} /> View Invoice
+                                    <Receipt size={9} /> Bill #{billObj.billNumber}
                                   </button>
                                 )}
-                              </p>
+                              </div>
                             </div>
                           </div>
 
-                          <div className="text-right flex items-center gap-2">
-                            <div className="font-mono text-xs">
-                              <p className={`font-black ${isGiven ? 'text-rose-500' : 'text-green-500'}`}>
-                                {isGiven ? '-' : '+'} ₹{Math.abs(tx.amount).toLocaleString()}
-                              </p>
+                          <div className="text-right flex items-center gap-1.5 shrink-0">
+                            <span className={cn(
+                              "font-mono text-xs font-black",
+                              isGiven ? "text-rose-500" : "text-emerald-500"
+                            )}>
+                              {isGiven ? '-' : '+'}₹{Math.abs(tx.amount).toLocaleString()}
+                            </span>
+                            <div className="flex items-center gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingTransaction(tx);
+                                  setEditTxAmount(String(Math.abs(tx.amount)));
+                                  setEditTxNote(tx.note || '');
+                                  setEditTxDueDate(tx.dueDate || '');
+                                }}
+                                className="h-6 w-6 rounded-md hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/40 hover:text-rose-500 flex items-center justify-center transition-colors cursor-pointer"
+                                title="Edit Entry"
+                              >
+                                <Edit size={11} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTransaction(tx.id)}
+                                className="h-6 w-6 rounded-md hover:bg-rose-500/10 text-[var(--foreground)]/40 hover:text-rose-500 flex items-center justify-center transition-colors cursor-pointer"
+                                title="Delete Entry"
+                              >
+                                <Trash2 size={11} />
+                              </button>
                             </div>
-                            <Button
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => {
-                                setEditingTransaction(tx);
-                                setEditTxAmount(String(Math.abs(tx.amount)));
-                                setEditTxNote(tx.note || '');
-                                setEditTxDueDate(tx.dueDate || '');
-                              }}
-                              className="h-8 w-8 rounded-full hover:bg-rose-500/10 hover:text-rose-500 opacity-20 hover:opacity-100 transition-opacity"
-                              title="Edit Entry"
-                            >
-                              <Edit size={13} />
-                            </Button>
-                            <Button
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => handleDeleteTransaction(tx.id)}
-                              className="h-8 w-8 rounded-full hover:bg-red-500/10 hover:text-red-500 opacity-20 hover:opacity-100 transition-opacity"
-                              title="Delete Entry"
-                            >
-                              <Trash2 size={13} />
-                            </Button>
                           </div>
                         </div>
                       );
@@ -1158,12 +1216,12 @@ export default function UdharScreen({
 
             </div>
           ) : (
-            <div className="py-24 text-center space-y-4 opacity-30 select-none">
-              <Landmark size={64} className="mx-auto opacity-20 text-rose-500 animate-pulse" />
+            <div className="py-24 text-center space-y-3 opacity-30 select-none">
+              <Landmark size={48} className="mx-auto opacity-25 text-rose-500" />
               <div>
-                <p className="font-black uppercase tracking-wider text-xs">Zero Client Highlighted</p>
+                <p className="font-black uppercase tracking-wider text-xs">No Customer Selected</p>
                 <p className="text-[9px] max-w-[200px] mx-auto mt-1 uppercase tracking-widest leading-relaxed">
-                  Select a kirana customer account card from the left panel to display outstanding credits audit logs.
+                  Select an account from the left directory to display their digital khata ledger.
                 </p>
               </div>
             </div>

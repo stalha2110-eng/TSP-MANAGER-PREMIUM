@@ -10,20 +10,20 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
+import {
   TrendingUp,
   ArrowRight,
   Bell,
   BellRing,
   RefreshCw,
   Sparkles,
-  Search, 
-  Settings as SettingsIcon, 
-  Plus, 
-  Home, 
-  User, 
-  Lock, 
-  Unlock, 
+  Search,
+  Settings as SettingsIcon,
+  Plus,
+  Home,
+  User,
+  Lock,
+  Unlock,
   ArrowLeft,
   Trash2,
   Edit2,
@@ -105,6 +105,7 @@ import XLSX from 'xlsx-js-style';
 import { BUSINESS_MODES } from './services/businessModeConfig';
 import { RecoveryService } from './services/recoveryService';
 import { CloudSyncService } from './services/cloudSyncService';
+import { uploadProductImage } from './services/cloudinaryService';
 import BusinessSettingsScreen from './components/BusinessSettingsScreen';
 import StoreClosingControlCenter from './components/StoreClosingControlCenter';
 import SettingsScreen from './components/SettingsScreen';
@@ -116,14 +117,14 @@ import { PINScreen } from './components/ui/PINScreen';
 import { UnitSelectorModal } from './components/ui/UnitSelectorModal';
 import { AddCategoryModal } from './components/ui/AddCategoryModal';
 import { ManageCategoriesModal } from './components/ui/ManageCategoriesModal';
-import { 
-  Skeleton, 
-  SkeletonText, 
-  SkeletonCatalog, 
-  SkeletonPOS, 
-  SkeletonAnalytics, 
-  SkeletonUdhar, 
-  AppFullSkeleton 
+import {
+  Skeleton,
+  SkeletonText,
+  SkeletonCatalog,
+  SkeletonPOS,
+  SkeletonAnalytics,
+  SkeletonUdhar,
+  AppFullSkeleton
 } from './components/ui/SkeletonLoader';
 import { SmartBulkEntryModal } from './components/SmartBulkEntryModal';
 import { Settings2, Receipt, PackagePlus, Printer, Sliders } from 'lucide-react';
@@ -148,11 +149,11 @@ import { AnimatedVoiceAssistantButton } from './components/AnimatedVoiceAssistan
 import { playFeedbackEvent, playSynthesizedSound, playWelcomeAnnouncement } from './services/soundFeedbackService';
 import { getCalculatedAchievements, Milestone, downloadCertificateOfMilestone, ensureIsoString } from './lib/achievementUtils';
 import { getUnbilledEntries, saveUnbilledEntries } from './lib/unbilledStorage';
-import { 
-  saveLocalProductImage, 
-  removeLocalProductImage, 
-  removeMultipleLocalProductImages, 
-  getAllLocalProductImages 
+import {
+  saveLocalProductImage,
+  removeLocalProductImage,
+  removeMultipleLocalProductImages,
+  getAllLocalProductImages
 } from './utils/localImageStorage';
 import {
   saveLocalDashboardStorage,
@@ -160,10 +161,10 @@ import {
   mergeCloudSettingsWithLocal,
   isOnlyDashboardUpdate
 } from './utils/localDashboardStorage';
-import { 
-  db, 
-  auth, 
-  loginWithGoogle, 
+import {
+  db,
+  auth,
+  loginWithGoogle,
   onAuthStateChanged,
   User as FirebaseUser,
   handleFirestoreError,
@@ -174,28 +175,28 @@ import {
 import { EmailAuthProvider, linkWithCredential, updatePassword } from 'firebase/auth';
 import { LoginScreen } from './components/LoginScreen';
 import { OnboardingForm } from './components/OnboardingForm';
-import { 
-  doc, 
+import {
+  doc,
   getDoc,
-  setDoc, 
-  onSnapshot, 
-  collection, 
-  query, 
-  orderBy, 
-  limit, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
+  setDoc,
+  onSnapshot,
+  collection,
+  query,
+  orderBy,
+  limit,
+  addDoc,
+  updateDoc,
+  deleteDoc,
   deleteField,
   Timestamp,
-  serverTimestamp 
+  serverTimestamp
 } from 'firebase/firestore';
-import { 
-  AppState, 
-  Item, 
-  Category, 
-  AppSettings, 
-  LanguageType, 
+import {
+  AppState,
+  Item,
+  Category,
+  AppSettings,
+  LanguageType,
   ThemeType,
   Translations,
   Note,
@@ -207,22 +208,22 @@ import {
   BusinessShift,
   UnbilledEntry
 } from './types';
-import { 
-  NotificationService, 
-  playNotificationChime, 
-  triggerVibration, 
-  requestPushPermission 
+import {
+  NotificationService,
+  playNotificationChime,
+  triggerVibration,
+  requestPushPermission
 } from './services/notificationService';
-import { 
-  DEFAULT_CATEGORIES, 
-  THEMES, 
-  LANGUAGES, 
-  UI_TEXT, 
-  UNITS 
+import {
+  DEFAULT_CATEGORIES,
+  THEMES,
+  LANGUAGES,
+  UI_TEXT,
+  UNITS
 } from './constants';
-import { 
-  cn, 
-  formatCurrency, 
+import {
+  cn,
+  formatCurrency,
   formatNumber,
   formatPhoneNumber,
   parseTimestamp
@@ -315,7 +316,7 @@ export default function App() {
   const [showSmartBulkEntry, setShowSmartBulkEntry] = useState(false);
   const rawCategories = state.settings.customCategories || state.categories;
   const activeCategories = rawCategories.filter((cat, idx, arr) => arr.findIndex(c => c.id === cat.id) === idx);
-  
+
   // --- FUTURISTIC INTELLIGENT DOWNTIME RECOVERY SYSTEM ---
   const [syncStatus, setSyncStatus] = useState<'Synced' | 'Saving' | 'Recovering' | 'Offline'>(() => {
     return typeof window !== 'undefined' && navigator.onLine ? 'Synced' : 'Offline';
@@ -334,6 +335,17 @@ export default function App() {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  // Per-item upload request token map: itemId → unique upload request token.
+  // Used to discard stale Cloudinary responses when a newer upload starts,
+  // or when an image is explicitly removed or replaced before upload completes.
+  const cloudinaryUploadTokensRef = useRef<Map<string, string>>(new Map());
+
+  // Per-item serialized Firestore image-write chain: itemId → Promise<void>.
+  // Each new Cloudinary upload's Firestore write is chained off the previous write for that item.
+  // This ensures writes execute in registration order so an older in-flight write can never
+  // overwrite a newer image, even when network responses arrive out of order.
+  const cloudinaryWriteChainRef = useRef<Map<string, Promise<void>>>(new Map());
 
   // Listener for Offline / Online state shifts
   useEffect(() => {
@@ -355,7 +367,7 @@ export default function App() {
         setSyncStatus('Synced');
       }
     };
-    
+
     const goOffline = () => {
       setSyncStatus('Offline');
       setIntegrityLogs(prev => [
@@ -378,7 +390,7 @@ export default function App() {
     if (cached) {
       setShowRecoveryOverlay(true);
       setSyncStatus('Recovering');
-      
+
       let p = 0;
       const tm = setInterval(() => {
         p += 5;
@@ -397,7 +409,7 @@ export default function App() {
           setRecoveryProgress(p);
         }
       }, 40);
-      
+
       return () => clearInterval(tm);
     }
   }, []);
@@ -408,7 +420,7 @@ export default function App() {
   const [lastActionLabel, setLastActionLabel] = useState<string>('');
   const [showUndoToast, setShowUndoToast] = useState(false);
   const [undoToastTimer, setUndoToastTimer] = useState<any>(null);
-  
+
   const [quickPeek, setQuickPeek] = useState<{
     type: 'item' | 'customer' | 'bill' | 'notification' | 'analytics';
     payload: any;
@@ -518,18 +530,18 @@ export default function App() {
       const now = new Date();
       const currentHrsMin = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
       const targetTime = state.settings.scheduledBackupTime || '21:00';
-      
+
       if (currentHrsMin === targetTime) {
         const todayStr = now.toISOString().split('T')[0];
         const lastRun = (state.settings as any).lastScheduledBackupDate;
-        
+
         if (lastRun !== todayStr) {
-          const backupTypeDesc = state.settings.externalStorageProvider === 'google_drive' 
-            ? 'Google Drive Sync' 
-            : state.settings.externalStorageProvider === 'dropbox' 
-            ? 'Dropbox Personal Vault' 
-            : 'Firebase Cloud Vault';
-            
+          const backupTypeDesc = state.settings.externalStorageProvider === 'google_drive'
+            ? 'Google Drive Sync'
+            : state.settings.externalStorageProvider === 'dropbox'
+              ? 'Dropbox Personal Vault'
+              : 'Firebase Cloud Vault';
+
           const emailDest = state.settings.scheduledBackupEmail || 'stalha2110@gmail.com';
           const destinationDesc = `destination email dispatch (${emailDest}) and external cloud storage (${backupTypeDesc})`;
 
@@ -566,7 +578,7 @@ export default function App() {
               gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
               osc.start();
               osc.stop(audioCtx.currentTime + 0.15);
-              
+
               setTimeout(() => {
                 const osc2 = audioCtx.createOscillator();
                 const gain2 = audioCtx.createGain();
@@ -624,11 +636,11 @@ export default function App() {
       // Skip interactive and scroll-active sections like horizontal graphs and scroll elements
       if (
         !target ||
-        target.closest('input') || 
-        target.closest('button') || 
-        target.closest('select') || 
-        target.closest('textarea') || 
-        target.closest('.cart-item') || 
+        target.closest('input') ||
+        target.closest('button') ||
+        target.closest('select') ||
+        target.closest('textarea') ||
+        target.closest('.cart-item') ||
         target.closest('.no-swipe') ||
         target.closest('.overflow-x-auto') ||
         target.closest('.chart-scroll') ||
@@ -668,11 +680,11 @@ export default function App() {
       // Skip interactive workflows so we don't disrupt drawing canvases or button presses
       if (
         !target ||
-        target.closest('input') || 
-        target.closest('button') || 
-        target.closest('select') || 
-        target.closest('textarea') || 
-        target.closest('.cart-item') || 
+        target.closest('input') ||
+        target.closest('button') ||
+        target.closest('select') ||
+        target.closest('textarea') ||
+        target.closest('.cart-item') ||
         target.closest('.no-swipe') ||
         target.closest('.overflow-x-auto') ||
         target.closest('.chart-scroll') ||
@@ -723,10 +735,10 @@ export default function App() {
       const active = document.activeElement;
       if (!active) return;
 
-      const isInput = active.tagName === 'INPUT' || 
-                      active.tagName === 'TEXTAREA' || 
-                      active.tagName === 'SELECT' || 
-                      active.hasAttribute('data-navigable');
+      const isInput = active.tagName === 'INPUT' ||
+        active.tagName === 'TEXTAREA' ||
+        active.tagName === 'SELECT' ||
+        active.hasAttribute('data-navigable');
 
       if (!isInput) return;
 
@@ -743,12 +755,12 @@ export default function App() {
       }
 
       // Find nearest active contextual container (dialog, drawer, tab, or cards)
-      const container = active.closest('[role="dialog"]') || 
-                        active.closest('.modal-content') || 
-                        active.closest('.drawer') || 
-                        active.closest('[role="tabpanel"]') || 
-                        active.closest('.card') || 
-                        document.body;
+      const container = active.closest('[role="dialog"]') ||
+        active.closest('.modal-content') ||
+        active.closest('.drawer') ||
+        active.closest('[role="tabpanel"]') ||
+        active.closest('.card') ||
+        document.body;
 
       // Selector for all navigable elements
       const selector = 'input:not([type="hidden"]):not([type="file"]):not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly]), select:not([disabled]), button[data-navigable="true"], [data-navigable="true"]';
@@ -764,10 +776,10 @@ export default function App() {
       if (currentIndex !== -1 && currentIndex < visibleElements.length - 1) {
         // Prevent default browser/form submission/newline behavior
         e.preventDefault();
-        
+
         const nextEl = visibleElements[currentIndex + 1];
         nextEl.focus();
-        
+
         if (nextEl.tagName === 'INPUT' || nextEl.tagName === 'TEXTAREA') {
           try {
             (nextEl as any).select();
@@ -830,7 +842,7 @@ export default function App() {
     if (isInitializing) return;
     if (hasTriggeredWelcomeRef.current) return;
     hasTriggeredWelcomeRef.current = true;
-    
+
     let spoken = false;
     const triggerSpeech = () => {
       if (spoken) return;
@@ -1032,7 +1044,7 @@ export default function App() {
     if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
       try {
         window.navigator.vibrate(type === 'error' ? [30, 50, 30] : 15);
-      } catch {}
+      } catch { }
     }
     setToast({ message, type: type === 'error' ? 'warning' : type });
     const t = setTimeout(() => {
@@ -1381,7 +1393,7 @@ export default function App() {
       if (tx.dueDate && tx.type === 'given') {
         const customer = rawCustomers.find(c => c.id === tx.customerId);
         if (customer && customer.totalUdhar > 0) {
-          const isOverdueOrDueToday = new Date(tx.dueDate) <= new Date() || 
+          const isOverdueOrDueToday = new Date(tx.dueDate) <= new Date() ||
             new Date(tx.dueDate).toDateString() === new Date().toDateString();
           const alertId = `udhar-due-${tx.id}`;
           if (isOverdueOrDueToday && !dismissed.includes(alertId) && !alertedOtherKeysRef.current.has(alertId)) {
@@ -1416,7 +1428,7 @@ export default function App() {
 
   useEffect(() => {
     if (!calculatedAchievements?.milestones) return;
-    
+
     calculatedAchievements.milestones.forEach(m => {
       if (m.isUnlocked && m.unlockedAt) {
         if (prevCelebratedIdsRef.current.has(m.id)) {
@@ -1454,7 +1466,7 @@ export default function App() {
           }
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     return defaults;
   });
 
@@ -1510,7 +1522,7 @@ export default function App() {
     return (
       <div className="flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
         {index > 0 && (
-          <button 
+          <button
             type="button"
             onClick={() => moveWidget(index, 'up')}
             className="p-1 rounded-lg hover:bg-[var(--foreground)]/5 text-[var(--foreground)]/65 hover:text-[var(--foreground)] transition-all cursor-pointer"
@@ -1520,7 +1532,7 @@ export default function App() {
           </button>
         )}
         {index < widgetOrder.length - 1 && (
-          <button 
+          <button
             type="button"
             onClick={() => moveWidget(index, 'down')}
             className="p-1 rounded-lg hover:bg-[var(--foreground)]/5 text-[var(--foreground)]/65 hover:text-[var(--foreground)] transition-all cursor-pointer"
@@ -1529,7 +1541,7 @@ export default function App() {
             <ChevronDown size={14} />
           </button>
         )}
-        <div 
+        <div
           draggable
           onDragStart={(e) => handleDragStart(e, index)}
           onDragEnd={handleDragEnd}
@@ -1555,7 +1567,7 @@ export default function App() {
     let totalProfit = 0;
     let totalBills = shiftBills.length;
     let pendingUdhar = 0;
-    
+
     const customerPhones = new Set<string>();
     const itemQuantities: { [name: string]: number } = {};
 
@@ -1631,7 +1643,7 @@ export default function App() {
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    
+
     window.addEventListener('appinstalled', () => {
       setDeferredPrompt(null);
       localStorage.setItem('ts_install_seen', 'true');
@@ -1677,7 +1689,7 @@ export default function App() {
           const today = new Date();
           const yesterday = new Date();
           yesterday.setDate(today.getDate() - 1);
-          
+
           if (d.toDateString() === today.toDateString()) {
             dateLabel = 'Today';
           } else if (d.toDateString() === yesterday.toDateString()) {
@@ -1736,7 +1748,7 @@ export default function App() {
       });
 
       const ws = XLSX.utils.json_to_sheet(billsExcelData);
-      
+
       // Force cell selection and scroll focus to cell A1 (top-left) to prevent mobile Excel from opening on row 12 or the bottom empty rows
       ws['!views'] = [
         {
@@ -1747,7 +1759,7 @@ export default function App() {
           sqref: "A1"
         }
       ];
-      
+
       // Expand columns beautifully to fit textual data
       ws['!cols'] = [
         { wch: 15 }, // Invoice No
@@ -1769,12 +1781,12 @@ export default function App() {
       const wb = XLSX.utils.book_new();
       const sheetName = `POS Bills ${new Date().toISOString().split('T')[0]}`;
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
-      
+
       XLSX.writeFile(wb, `TS_BILL_HISTORY_BACKUP_${new Date().toISOString().split('T')[0]}.xlsx`);
-      
+
       // Successfully downloaded the backup. Now flush history!
       handleUpdateComponentState({ bills: [] });
-      
+
       alert("Shift Cycle Complete: Active POS Billing History backed up as Excel & cleared successfully.");
       return true;
     } catch (e) {
@@ -1791,7 +1803,7 @@ export default function App() {
     setExportProgress(10);
     setExportStatus('Initializing export engine...');
     setExportCompletedSteps([]);
-    
+
     try {
       if (state.items.length === 0) {
         alert("No products available to export!");
@@ -1817,12 +1829,12 @@ export default function App() {
       setExportProgress(steps[0].progress);
       setExportStatus(steps[0].status);
       await new Promise(resolve => setTimeout(resolve, steps[0].delay));
-      
+
       // Sort items by Category first, and then by Product Name for highlighted grouping
       const sortedItems = [...state.items].sort((a, b) => {
         const catA = (state.settings.customCategories || state.categories || []).find(c => c.id === a.categoryId)?.name || 'General';
         const catB = (state.settings.customCategories || state.categories || []).find(c => c.id === b.categoryId)?.name || 'General';
-        
+
         if (catA.toLowerCase() !== catB.toLowerCase()) {
           return catA.localeCompare(catB);
         }
@@ -1910,7 +1922,7 @@ export default function App() {
           { bg: "FFEDD5", text: "9A3412" }, // Orange
           { bg: "CCFBF1", text: "115E59" }  // Teal
         ];
-        
+
         let hash = 0;
         for (let i = 0; i < categoryName.length; i++) {
           hash = categoryName.charCodeAt(i) + ((hash << 5) - hash);
@@ -1944,9 +1956,9 @@ export default function App() {
 
           // Define high-quality borders. Group boundaries get a thicker top border for visual categorization
           const borderStyle = {
-            top: { 
-              style: isNewCategoryGroup ? "medium" : "thin", 
-              color: { rgb: isNewCategoryGroup ? "1E3A8A" : "E2E8F0" } 
+            top: {
+              style: isNewCategoryGroup ? "medium" : "thin",
+              color: { rgb: isNewCategoryGroup ? "1E3A8A" : "E2E8F0" }
             },
             bottom: { style: "thin", color: { rgb: "E2E8F0" } },
             left: { style: "thin", color: { rgb: "E2E8F0" } },
@@ -2035,7 +2047,7 @@ export default function App() {
       const fileNameSuffix = includeCost ? 'WITH_COST' : 'WITHOUT_COST';
       XLSX.writeFile(wb, `TS_PRICE_LIST_${fileNameSuffix}_${new Date().toISOString().split('T')[0]}.xlsx`);
       setExportCompletedSteps(prev => [...prev, 'Initiating file download to device...']);
-      
+
       // Brief pause at 100% for smooth rendering transition
       await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {
@@ -2054,7 +2066,7 @@ export default function App() {
     setExportProgress(10);
     setExportStatus('Initializing PDF vector engine...');
     setExportCompletedSteps([]);
-    
+
     try {
       if (state.items.length === 0) {
         alert("No products available to export!");
@@ -2086,23 +2098,23 @@ export default function App() {
       setExportProgress(steps[1].progress);
       setExportStatus(steps[1].status);
       await new Promise(resolve => setTimeout(resolve, steps[1].delay));
-      
+
       // Header rect
       doc.setFillColor(31, 41, 55); // Dark Slate
       doc.rect(0, 0, 210, 40, 'F');
-      
+
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(24);
       doc.setFont('helvetica', 'bold');
       doc.text('TS BIZ MANAGER', 14, 18);
-      
+
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      const subTitleText = includeCost 
-        ? 'PROFESSIONAL PRODUCT PRICE LIST (WITH COST PRICE)' 
+      const subTitleText = includeCost
+        ? 'PROFESSIONAL PRODUCT PRICE LIST (WITH COST PRICE)'
         : 'PROFESSIONAL PRODUCT PRICE LIST';
       doc.text(subTitleText, 14, 26);
-      
+
       doc.setTextColor(200, 200, 200);
       doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 32);
       setExportCompletedSteps(prev => [...prev, 'Designing brand header & document metadata...']);
@@ -2113,7 +2125,7 @@ export default function App() {
       await new Promise(resolve => setTimeout(resolve, steps[2].delay));
 
       let sNo = 1;
-      const headers = includeCost 
+      const headers = includeCost
         ? ['S.No.', 'Product Name', 'Category', 'Field Note', 'Cost/Unit', 'Retail/Unit', 'Wholesale/Unit']
         : ['S.No.', 'Product Name', 'Category', 'Field Note', 'Retail/Unit', 'Wholesale/Unit'];
 
@@ -2140,7 +2152,7 @@ export default function App() {
         head: [headers],
         body: tableData,
         theme: 'striped',
-        headStyles: { 
+        headStyles: {
           fillColor: [79, 70, 229], // Indigo
           textColor: 255,
           fontSize: 8.5,
@@ -2178,7 +2190,7 @@ export default function App() {
       setExportProgress(steps[3].progress);
       setExportStatus(steps[3].status);
       await new Promise(resolve => setTimeout(resolve, steps[3].delay));
-      
+
       const pageCount = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
@@ -2225,10 +2237,10 @@ export default function App() {
 
       const encodedMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-      
+
       // Try to open WhatsApp
       window.open(whatsappUrl, '_blank');
-      
+
     } catch (error) {
       console.error("Sharing failed", error);
       alert("Failed to share product list.");
@@ -2302,8 +2314,8 @@ export default function App() {
           if (!isMounted) return;
           if (userSnap.exists()) {
             const cloudSettings = userSnap.data();
-            setState(prev => ({ 
-              ...prev, 
+            setState(prev => ({
+              ...prev,
               user: { uid: user.uid, email: user.email },
               settings: {
                 ...prev.settings,
@@ -2313,8 +2325,8 @@ export default function App() {
             }));
           } else {
             // First-time user without existing cloud document
-            setState(prev => ({ 
-              ...prev, 
+            setState(prev => ({
+              ...prev,
               user: { uid: user.uid, email: user.email },
               settings: {
                 ...prev.settings,
@@ -2329,8 +2341,8 @@ export default function App() {
         } catch (fetchErr) {
           console.warn("Could not fetch user document upon auth change:", fetchErr);
           if (!isMounted) return;
-          setState(prev => ({ 
-            ...prev, 
+          setState(prev => ({
+            ...prev,
             user: { uid: user.uid, email: user.email },
             settings: { ...prev.settings, autoCloudSync: true }
           }));
@@ -2341,8 +2353,8 @@ export default function App() {
         const isGuest = localStorage.getItem('ts_guest_logged_in') === 'true';
         const cachedUserStr = localStorage.getItem('ts_cached_auth_user');
         if (isGuest) {
-          setState(prev => ({ 
-            ...prev, 
+          setState(prev => ({
+            ...prev,
             user: { uid: 'guest_user', email: 'Guest Merchant' },
             settings: {
               ...prev.settings,
@@ -2360,7 +2372,7 @@ export default function App() {
           try {
             const cached = JSON.parse(cachedUserStr);
             setState(prev => ({ ...prev, user: cached }));
-          } catch {}
+          } catch { }
         } else {
           localStorage.removeItem('ts_cached_auth_user');
           setState(prev => ({ ...prev, user: null }));
@@ -2450,14 +2462,14 @@ export default function App() {
     }
 
     const userDocRef = doc(db, 'users', state.user.uid);
-    
+
     // Sync Settings (remote cloud settings merged while keeping local dashboard cards authoritative)
     const unsubSettings = onSnapshot(userDocRef, (snap) => {
       if (snap.exists()) {
         const data = snap.data();
-        setState(prev => ({ 
-          ...prev, 
-          settings: mergeCloudSettingsWithLocal(data, prev.settings) 
+        setState(prev => ({
+          ...prev,
+          settings: mergeCloudSettingsWithLocal(data, prev.settings)
         }));
         if (data.printerSettings) {
           try {
@@ -2497,7 +2509,7 @@ export default function App() {
           } as Item);
         }
       });
-      
+
       itemsList.sort((a, b) => (b.lastUpdated || '').localeCompare(a.lastUpdated || ''));
 
       setState(prev => {
@@ -2525,7 +2537,7 @@ export default function App() {
     const unsubNotes = onSnapshot(notesRef, (snap) => {
       const notesList: Note[] = [];
       snap.forEach(doc => notesList.push({ ...doc.data() as Note, id: doc.id }));
-      
+
       notesList.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 
       setState(prev => {
@@ -2575,7 +2587,7 @@ export default function App() {
           });
         }
       });
-      
+
       billsList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       setAnalyticsRenderKey(k => k + 1);
@@ -2613,7 +2625,7 @@ export default function App() {
           });
         }
       });
-      
+
       const localEntries = getUnbilledEntries();
       const unsyncedEntries = localEntries.filter(le => !unbilledList.some(ue => ue.id === le.id));
       let finalUnbilled = unbilledList;
@@ -2672,7 +2684,7 @@ export default function App() {
     };
     const rgb = accents[state.settings.accentColor || 'indigo'];
     document.documentElement.style.setProperty('--primary-rgb', rgb);
-    
+
     const fontSizes: Record<string, string> = {
       standard: '16px',
       comfortable: '18px',
@@ -2792,9 +2804,9 @@ export default function App() {
       if (tx.dueDate && tx.type === 'given') {
         const customer = rawCustomers.find(c => c.id === tx.customerId);
         if (customer && customer.totalUdhar > 0) {
-          const isOverdueOrDueToday = new Date(tx.dueDate) <= new Date() || 
+          const isOverdueOrDueToday = new Date(tx.dueDate) <= new Date() ||
             new Date(tx.dueDate).toDateString() === new Date().toDateString();
-            
+
           const id = `udhar-due-${tx.id}`;
           if (isOverdueOrDueToday && !dismissed.includes(id)) {
             list.push({
@@ -2819,7 +2831,7 @@ export default function App() {
           const txDate = new Date(tx.timestamp);
           const diffMs = Date.now() - txDate.getTime();
           const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-          
+
           if (diffDays > 30) {
             const id = `udhar-30days-${tx.id}`;
             if (!dismissed.includes(id)) {
@@ -2865,14 +2877,14 @@ export default function App() {
   const filteredItems = useMemo(() => {
     return state.items.filter(item => {
       const trs = item.translations || { en: item.name || '', hi: '', mr: '', 'hi-en': '' };
-      const matchesSearch = 
+      const matchesSearch =
         (trs.en || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (trs.hi || '').includes(searchQuery) ||
         (trs.mr || '').includes(searchQuery) ||
         (trs['hi-en'] || '').toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const matchesCategory = !selectedCategory || item.categoryId === selectedCategory;
-      
+
       return matchesSearch && matchesCategory;
     });
   }, [state.items, searchQuery, selectedCategory]);
@@ -2882,9 +2894,9 @@ export default function App() {
     return state.items.filter(item => {
       const trs = item.translations || { en: item.name || '', hi: '', mr: '', 'hi-en': '' };
       return (trs.en || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-             (trs.hi || '').includes(searchQuery) ||
-             (trs.mr || '').includes(searchQuery) ||
-             (trs['hi-en'] || '').toLowerCase().includes(searchQuery.toLowerCase());
+        (trs.hi || '').includes(searchQuery) ||
+        (trs.mr || '').includes(searchQuery) ||
+        (trs['hi-en'] || '').toLowerCase().includes(searchQuery.toLowerCase());
     }).slice(0, 6);
   }, [state.items, searchQuery]);
 
@@ -2910,7 +2922,7 @@ export default function App() {
           const isoTS = ensureIsoString(tx.dueDate);
           const txDueStr = isoTS ? isoTS.split('T')[0] : '';
           const txDueNum = txDueStr ? new Date(txDueStr).getTime() : 0;
-          
+
           const diffMs = txDueNum - todayNum;
           const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
@@ -2960,8 +2972,8 @@ export default function App() {
           const userSnap = await getDoc(userDocRef);
           if (userSnap.exists()) {
             const cloudSettings = userSnap.data();
-            setState(prev => ({ 
-              ...prev, 
+            setState(prev => ({
+              ...prev,
               user: { uid: user.uid, email: user.email },
               settings: {
                 ...prev.settings,
@@ -2970,8 +2982,8 @@ export default function App() {
               }
             }));
           } else {
-            setState(prev => ({ 
-              ...prev, 
+            setState(prev => ({
+              ...prev,
               user: { uid: user.uid, email: user.email },
               settings: {
                 ...prev.settings,
@@ -2985,8 +2997,8 @@ export default function App() {
           }
         } catch (fetchErr) {
           console.warn("Could not pre-fetch user profile upon login:", fetchErr);
-          setState(prev => ({ 
-            ...prev, 
+          setState(prev => ({
+            ...prev,
             user: { uid: user.uid, email: user.email },
             settings: { ...prev.settings, autoCloudSync: true }
           }));
@@ -3020,8 +3032,8 @@ export default function App() {
         storeOpeningTime: prev.settings.storeOpeningTime || '09:00',
         storeClosingTime: prev.settings.storeClosingTime || '21:00',
       };
-      return { 
-        ...prev, 
+      return {
+        ...prev,
         user: { uid: 'guest_user', email: 'Guest Merchant' },
         settings: guestSettings
       };
@@ -3031,7 +3043,7 @@ export default function App() {
 
   const handleUpdateSettings = useCallback(async (updates: Partial<AppSettings>) => {
     if (isSyncing) return;
-    
+
     // 1. Immediately persist any dashboard card / deck updates locally in localStorage (synchronous, 0ms delay)
     saveLocalDashboardStorage(updates);
 
@@ -3076,9 +3088,9 @@ export default function App() {
         throw e; // Rethrow FirestoreErrorInfo JSON
       }
       alert(t.error + ": " + (e instanceof Error ? e.message : 'Unknown error'));
-      
+
       // Rollback local state if cloud sync was intended but failed
-      setState(prev => ({ ...prev })); 
+      setState(prev => ({ ...prev }));
     } finally {
       if (isTogglingSync) {
         // Minimum delay for animation visibility
@@ -3108,7 +3120,7 @@ export default function App() {
         lastUpdated: new Date().toISOString(),
         priceChangedAt: new Date().toISOString()
       };
-      
+
       // Unmark deleted tombstone if previously deleted
       unmarkItemsAsDeleted(id);
 
@@ -3129,10 +3141,78 @@ export default function App() {
 
       if (state.user && state.settings.autoCloudSync) {
         try {
-          await setDoc(doc(db, 'users', state.user.uid, 'items', id), sanitizeForFirestore(newItem));
+          const prevWrite = cloudinaryWriteChainRef.current.get(id) ?? Promise.resolve();
+          const createWrite: Promise<void> = prevWrite.catch(() => {}).then(async () => {
+            await setDoc(doc(db, 'users', state.user.uid, 'items', id), sanitizeForFirestore(newItem));
+          }).finally(() => {
+            if (cloudinaryWriteChainRef.current.get(id) === createWrite) {
+              cloudinaryWriteChainRef.current.delete(id);
+            }
+          });
+          cloudinaryWriteChainRef.current.set(id, createWrite);
+          await createWrite;
         } catch (e) {
           handleFirestoreError(e, OperationType.CREATE, `users/${state.user.uid}/items`);
         }
+      }
+
+      // Fire-and-forget Cloudinary upload for new products with a local Base64 image.
+      // Uses a per-item serialized write chain so an older in-flight Firestore write can never
+      // overwrite a newer image, even when network responses arrive out of order.
+      if (state.user && state.settings.autoCloudSync && newItem.imageUrl?.startsWith('data:')) {
+        const capturedUser = state.user;
+        const capturedImageUrl = newItem.imageUrl;
+        const uploadToken = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        cloudinaryUploadTokensRef.current.set(id, uploadToken);
+        (async () => {
+          try {
+            const result = await uploadProductImage(id, capturedImageUrl);
+            // Guard 1: discard if superseded before we even queue the write
+            if (cloudinaryUploadTokensRef.current.get(id) !== uploadToken) return;
+            // Chain this Firestore write behind any in-flight write for this item so writes
+            // execute in registration order regardless of network completion order.
+            const prevWrite = cloudinaryWriteChainRef.current.get(id) ?? Promise.resolve();
+            const thisWrite: Promise<void> = prevWrite.catch(() => {}).then(async () => {
+              // Guard 2: recheck at the start of our serialized write slot
+              if (cloudinaryUploadTokensRef.current.get(id) !== uploadToken) return;
+              await setDoc(doc(db, 'users', capturedUser.uid, 'items', id), {
+                imageUrl: result.imageUrl,
+                cloudinaryPublicId: result.publicId,
+                imageMigrationStatus: 'synced',
+                lastUpdated: new Date().toISOString(),
+              }, { merge: true });
+              // Guard 3: recheck after write — another upload may have started during the await
+              if (cloudinaryUploadTokensRef.current.get(id) !== uploadToken) return;
+              cloudinaryUploadTokensRef.current.delete(id);
+              setState(prev => ({
+                ...prev,
+                items: prev.items.map(item =>
+                  item.id === id
+                    ? { ...item, imageUrl: result.imageUrl, cloudinaryPublicId: result.publicId, imageMigrationStatus: 'synced' }
+                    : item
+                )
+              }));
+            }).catch((writeErr: any) => {
+              console.error('Cloudinary Firestore patch failed for new product:', writeErr);
+              if (cloudinaryUploadTokensRef.current.get(id) === uploadToken) {
+                cloudinaryUploadTokensRef.current.delete(id);
+                addToast('⚠️ Image saved on this device but could not sync to cloud. It will be available on this device only.', 'warning');
+              }
+            }).finally(() => {
+              if (cloudinaryWriteChainRef.current.get(id) === thisWrite) {
+                cloudinaryWriteChainRef.current.delete(id);
+              }
+            });
+            cloudinaryWriteChainRef.current.set(id, thisWrite);
+          } catch (uploadErr) {
+            console.error('Cloudinary upload failed for new product:', uploadErr);
+            // Local Base64 fallback preserved; Firestore has no imageUrl (stripped by sanitizeForFirestore). No false sync state.
+            if (cloudinaryUploadTokensRef.current.get(id) === uploadToken) {
+              cloudinaryUploadTokensRef.current.delete(id);
+              addToast('⚠️ Image saved on this device but could not sync to cloud. It will be available on this device only.', 'warning');
+            }
+          }
+        })();
       }
     } catch (e) {
       console.error("Add item failed", e);
@@ -3141,7 +3221,7 @@ export default function App() {
       }
       alert(t.error + ": " + (e instanceof Error ? e.message : 'Sync Error. Saved locally.'));
     }
-  }, [state.user, state.settings.autoCloudSync, t.error]);
+  }, [state.user, state.settings.autoCloudSync, t.error, addToast]);
 
   const handleBatchSaveItems = useCallback(async (itemsData: Omit<Item, 'id' | 'lastUpdated'>[]) => {
     try {
@@ -3194,9 +3274,9 @@ export default function App() {
   const handleUpdateItem = useCallback(async (id: string, data: Partial<Item>) => {
     try {
       const existingItem = state.items.find(i => i.id === id);
-      const updates: any = { 
-        ...data, 
-        lastUpdated: new Date().toISOString() 
+      const updates: any = {
+        ...data,
+        lastUpdated: new Date().toISOString()
       };
 
       if (existingItem) {
@@ -3267,6 +3347,14 @@ export default function App() {
         }
       }
 
+      // Invalidate the active upload token on explicit image removal or replacement with a non-base64 URL.
+      // This causes Guards 2 & 3 inside any pending write-chain slot to bail before touching Firestore.
+      // Do NOT delete the write chain itself here — the removal Firestore write must be sequenced
+      // *after* any in-flight image setDoc to guarantee the removal always wins in Firestore order.
+      if (isImageExplicitlyRemoved || (data.imageUrl && !data.imageUrl.startsWith('data:'))) {
+        cloudinaryUploadTokensRef.current.delete(id);
+      }
+
       // Handle product image updates on device local storage
       if (data.imageUrl) {
         saveLocalProductImage(id, data.imageUrl);
@@ -3285,9 +3373,9 @@ export default function App() {
       setState(prev => {
         const nextSettings = (data.quantity !== undefined || data.minStockLevel !== undefined) && prev.settings.dismissedNotifications
           ? {
-              ...prev.settings,
-              dismissedNotifications: prev.settings.dismissedNotifications.filter(d => d !== `low-stock-${id}`)
-            }
+            ...prev.settings,
+            dismissedNotifications: prev.settings.dismissedNotifications.filter(d => d !== `low-stock-${id}`)
+          }
           : prev.settings;
 
         return {
@@ -3310,10 +3398,84 @@ export default function App() {
               firestorePayload.cloudinaryPublicId = deleteField();
             }
           }
-          await setDoc(doc(db, 'users', state.user.uid, 'items', id), firestorePayload, { merge: true });
+
+          // Serialize this Firestore write into the per-item write chain so it executes
+          // strictly after any in-flight image upload or previous update, and keeps the
+          // chain entry active without creating any gap where a new upload can bypass serialization.
+          const prevWrite = cloudinaryWriteChainRef.current.get(id) ?? Promise.resolve();
+          const updateWrite: Promise<void> = prevWrite.catch(() => {}).then(async () => {
+            await setDoc(doc(db, 'users', state.user.uid, 'items', id), firestorePayload, { merge: true });
+          }).finally(() => {
+            if (cloudinaryWriteChainRef.current.get(id) === updateWrite) {
+              cloudinaryWriteChainRef.current.delete(id);
+            }
+          });
+          cloudinaryWriteChainRef.current.set(id, updateWrite);
+          await updateWrite;
         } catch (e) {
           handleFirestoreError(e, OperationType.UPDATE, `users/${state.user.uid}/items/${id}`);
         }
+      }
+
+      // Fire-and-forget Cloudinary upload for edits that include a local Base64 image.
+      // Uses a per-item serialized write chain so an older in-flight Firestore write can never
+      // overwrite a newer image, even when network responses arrive out of order.
+      if (state.user && state.settings.autoCloudSync && !isImageExplicitlyRemoved && data.imageUrl?.startsWith('data:')) {
+        const capturedUser = state.user;
+        const capturedImageUrl = data.imageUrl;
+        const uploadToken = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        // Register this unique upload request token for the item. Any earlier in-flight upload
+        // for the same item will find its token superseded and discard its result.
+        cloudinaryUploadTokensRef.current.set(id, uploadToken);
+        (async () => {
+          try {
+            const result = await uploadProductImage(id, capturedImageUrl);
+            // Guard 1: discard if superseded before we even queue the write
+            if (cloudinaryUploadTokensRef.current.get(id) !== uploadToken) return;
+            // Chain this Firestore write behind any in-flight write for this item so writes
+            // execute in registration order regardless of network completion order.
+            const prevWrite = cloudinaryWriteChainRef.current.get(id) ?? Promise.resolve();
+            const thisWrite: Promise<void> = prevWrite.catch(() => {}).then(async () => {
+              // Guard 2: recheck at the start of our serialized write slot
+              if (cloudinaryUploadTokensRef.current.get(id) !== uploadToken) return;
+              await setDoc(doc(db, 'users', capturedUser.uid, 'items', id), {
+                imageUrl: result.imageUrl,
+                cloudinaryPublicId: result.publicId,
+                imageMigrationStatus: 'synced',
+                lastUpdated: new Date().toISOString(),
+              }, { merge: true });
+              // Guard 3: recheck after write — another upload may have started during the await
+              if (cloudinaryUploadTokensRef.current.get(id) !== uploadToken) return;
+              cloudinaryUploadTokensRef.current.delete(id);
+              setState(prev => ({
+                ...prev,
+                items: prev.items.map(item =>
+                  item.id === id
+                    ? { ...item, imageUrl: result.imageUrl, cloudinaryPublicId: result.publicId, imageMigrationStatus: 'synced' }
+                    : item
+                )
+              }));
+            }).catch((writeErr: any) => {
+              console.error('Cloudinary Firestore patch failed for product update:', writeErr);
+              if (cloudinaryUploadTokensRef.current.get(id) === uploadToken) {
+                cloudinaryUploadTokensRef.current.delete(id);
+                addToast('⚠️ Image saved on this device but could not sync to cloud. It will be available on this device only.', 'warning');
+              }
+            }).finally(() => {
+              if (cloudinaryWriteChainRef.current.get(id) === thisWrite) {
+                cloudinaryWriteChainRef.current.delete(id);
+              }
+            });
+            cloudinaryWriteChainRef.current.set(id, thisWrite);
+          } catch (uploadErr) {
+            console.error('Cloudinary upload failed for product update:', uploadErr);
+            // Local Base64 fallback preserved; existing Cloudinary URL in Firestore is unchanged.
+            if (cloudinaryUploadTokensRef.current.get(id) === uploadToken) {
+              cloudinaryUploadTokensRef.current.delete(id);
+              addToast('⚠️ Image saved on this device but could not sync to cloud. It will be available on this device only.', 'warning');
+            }
+          }
+        })();
       }
     } catch (e) {
       console.error("Update failed", e);
@@ -3322,7 +3484,7 @@ export default function App() {
       }
       alert(t.error + ": " + (e instanceof Error ? e.message : 'Sync Error. Saved locally.'));
     }
-  }, [state.items, state.user, state.settings.autoCloudSync, state.settings.deviceName, t.error]);
+  }, [state.items, state.user, state.settings.autoCloudSync, state.settings.deviceName, t.error, addToast]);
 
   const handleSaveVoiceProducts = useCallback(async (drafts: { item: Omit<Item, 'id' | 'lastUpdated'>; mode: 'create' | 'update' | { duplicateId: string } }[]) => {
     try {
@@ -3466,8 +3628,13 @@ export default function App() {
       items: prev.items.filter(item => !idsToDelete.includes(item.id))
     }));
 
-    // Clean up local product images from device storage
+    // Clean up local product images from device storage and cancel any in-flight upload tokens.
+    // Token deletion causes Guards 2 & 3 inside any pending write-chain slot to bail.
+    // Do NOT delete the write chain entries yet — the cloud deleteDoc below must drain them first.
     removeMultipleLocalProductImages(idsToDelete);
+    idsToDelete.forEach(itemId => {
+      cloudinaryUploadTokensRef.current.delete(itemId);
+    });
 
     // 4. Immediately persist clean items to localStorage
     try {
@@ -3496,14 +3663,26 @@ export default function App() {
     const timer = setTimeout(() => setShowUndoToast(false), 5000);
     setUndoToastTimer(timer);
 
-    // 6. Delete from Cloud Firestore if authenticated user
+    // 6. Delete from Cloud Firestore if authenticated user.
+    // For each item, serialize deleteDoc onto the write chain so it executes strictly after
+    // any in-flight image write or update, and keeps the chain entry active until deleteDoc finishes,
+    // preventing any gap where an upload can bypass serialization and recreate the document.
     const isAuthenticated = state.user && state.user.uid && state.user.uid !== 'guest_user';
     if (isAuthenticated && db) {
       try {
         const uId = state.user!.uid;
         for (const id of idsToDelete) {
           try {
-            await deleteDoc(doc(db, 'users', uId, 'items', id));
+            const prevWrite = cloudinaryWriteChainRef.current.get(id) ?? Promise.resolve();
+            const deletionWrite: Promise<void> = prevWrite.catch(() => {}).then(async () => {
+              await deleteDoc(doc(db, 'users', uId, 'items', id));
+            }).finally(() => {
+              if (cloudinaryWriteChainRef.current.get(id) === deletionWrite) {
+                cloudinaryWriteChainRef.current.delete(id);
+              }
+            });
+            cloudinaryWriteChainRef.current.set(id, deletionWrite);
+            await deletionWrite;
           } catch (e) {
             console.error("Cloud delete error for item", id, e);
             handleFirestoreError(e, OperationType.DELETE, `users/${uId}/items/${id}`);
@@ -3532,7 +3711,7 @@ export default function App() {
       console.warn("Failed to register deleted products in recovery archives", err);
     }
   };
-  
+
   const handleAddCategory = useCallback(async (name: string) => {
     const newCategory = {
       id: `cat-${Date.now()}`,
@@ -3541,7 +3720,7 @@ export default function App() {
     };
     const rawCategories = state.settings.customCategories || state.categories;
     const updatedCategories = [...rawCategories, newCategory];
-    
+
     await handleUpdateSettings({ customCategories: updatedCategories });
     setShowAddCategory(false);
     return newCategory;
@@ -3550,7 +3729,7 @@ export default function App() {
   const handleEditCategory = useCallback(async (catId: string, newName: string) => {
     const rawCategories = state.settings.customCategories || state.categories;
     const updatedCategories = rawCategories.map(c => c.id === catId ? { ...c, name: newName.trim() } : c);
-    
+
     await handleUpdateSettings({ customCategories: updatedCategories });
   }, [state.settings.customCategories, state.categories, handleUpdateSettings]);
 
@@ -3558,17 +3737,17 @@ export default function App() {
     // 1. Filter out from categories list
     const rawCategories = state.settings.customCategories || state.categories;
     const updatedCategories = rawCategories.filter(c => c.id !== catId);
-    
+
     // 2. Identify items to reassign
     const affectedItems = state.items.filter(item => item.categoryId === catId);
-    
+
     // 3. Update local state
     setState(prev => ({
       ...prev,
       items: prev.items.map(item => item.categoryId === catId ? { ...item, categoryId: "", lastUpdated: new Date().toISOString() } : item),
       settings: { ...prev.settings, customCategories: updatedCategories }
     }));
-    
+
     // 4. Cloud synchronization
     if (state.user && state.settings.autoCloudSync) {
       try {
@@ -3690,8 +3869,8 @@ export default function App() {
         const mergedMap = new Map<string, Bill>();
         localBills.forEach(b => mergedMap.set(b.id, b));
         mappedBills.forEach(b => mergedMap.set(b.id, b));
-        
-        const mergedBills = Array.from(mergedMap.values()).sort((a, b) => 
+
+        const mergedBills = Array.from(mergedMap.values()).sort((a, b) =>
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
         return { ...prev, bills: mergedBills };
@@ -3720,10 +3899,10 @@ export default function App() {
   // --- SMART UNDO/REDO LOGIC CORES ---
   const performUndo = useCallback(() => {
     if (historyUndoStack.length === 0) return;
-    
+
     const entry = historyUndoStack[0];
     const remainingUndo = historyUndoStack.slice(1);
-    
+
     let redoEntry: HistoryEntry;
     if (entry.type === 'state' && entry.stateSnapshot) {
       const keys = Object.keys(entry.stateSnapshot) as (keyof AppState)[];
@@ -3768,7 +3947,7 @@ export default function App() {
     setHistoryUndoStack(remainingUndo);
     setHistoryRedoStack(prev => [redoEntry, ...prev]);
     setLastActionLabel(`Undone: ${entry.actionName}`);
-    
+
     if (navigator.vibrate) navigator.vibrate(35);
 
     setShowUndoToast(true);
@@ -3839,7 +4018,7 @@ export default function App() {
       if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
         return;
       }
-      
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         performUndo();
@@ -3867,12 +4046,12 @@ export default function App() {
         stateSnapshot: snapshot,
         actionName: actionLabel
       };
-      
+
       setHistoryUndoStack(prev => [entry, ...prev].slice(0, 20));
       setHistoryRedoStack([]);
       setLastActionLabel(actionLabel);
       setShowUndoToast(true);
-      
+
       if (undoToastTimer) clearTimeout(undoToastTimer);
       const timer = setTimeout(() => setShowUndoToast(false), 5000);
       setUndoToastTimer(timer);
@@ -4042,9 +4221,9 @@ export default function App() {
   useBackModal(selectedCategory !== null && activeTab === 'home', () => setSelectedCategory(null), 'category_filter');
 
   const toggleItemSelection = useCallback((id: string) => {
-    setSelectedItemIds(prev => 
-      prev.includes(id) 
-        ? prev.filter(i => i !== id) 
+    setSelectedItemIds(prev =>
+      prev.includes(id)
+        ? prev.filter(i => i !== id)
         : [...prev, id]
     );
   }, []);
@@ -4077,10 +4256,10 @@ export default function App() {
     return { sales: dSales, profit: dProfit };
   }, [state.bills]);
 
-  const isDetailsMissing = !state.settings.storeName || 
-                           !state.settings.storeOwnerName || 
-                           !state.settings.storePhone || 
-                           !state.settings.storeAddress;
+  const isDetailsMissing = !state.settings.storeName ||
+    !state.settings.storeOwnerName ||
+    !state.settings.storePhone ||
+    !state.settings.storeAddress;
 
   if (isInitializing) {
     return (
@@ -4103,8 +4282,8 @@ export default function App() {
   if (!state.user) {
     return (
       <div data-theme={state.settings.theme} className="min-h-screen">
-        <LoginScreen 
-          onGoogleLogin={handleGoogleLogin} 
+        <LoginScreen
+          onGoogleLogin={handleGoogleLogin}
           onGuestLogin={handleGuestLogin}
           settings={state.settings}
         />
@@ -4116,8 +4295,8 @@ export default function App() {
   if (isDetailsMissing && !isGuestUser) {
     return (
       <div data-theme={state.settings.theme} className="min-h-screen">
-        <OnboardingForm 
-          settings={state.settings} 
+        <OnboardingForm
+          settings={state.settings}
           onComplete={handleOnboardingComplete}
           userEmail={state.user.email}
           onBack={handleLogout}
@@ -4127,7 +4306,7 @@ export default function App() {
   }
 
   return (
-    <div 
+    <div
       data-theme={state.settings.theme}
       className={cn(
         "min-h-screen pb-24 md:pb-28 overflow-x-clip relative transition-colors duration-700",
@@ -4136,8 +4315,8 @@ export default function App() {
     >
 
       {/* 📱 iOS / iPhone Pull-to-Refresh & Real-Time Firestore Sync */}
-      <IOSPullToRefresh 
-        state={state} 
+      <IOSPullToRefresh
+        state={state}
         onStateUpdate={setState}
         onCatalogRefetched={(itemsCount) => {
           setSyncStatus('Synced');
@@ -4154,7 +4333,7 @@ export default function App() {
       {/* 🔄 SMART FLOATING UNDO/REDO TOAST PORTAL */}
       <AnimatePresence>
         {showUndoToast && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -4164,10 +4343,10 @@ export default function App() {
               <span className="text-[8.5px] uppercase font-black text-[var(--primary)] tracking-widest block leading-none">Action Registered</span>
               <p className="text-[10.5px] uppercase font-bold text-[var(--foreground)] truncate max-w-[170px]">{lastActionLabel}</p>
             </div>
-            
+
             <div className="flex items-center gap-1.5 border-l border-[var(--border)] pl-3 shrink-0">
               {historyUndoStack.length > 0 && (
-                <button 
+                <button
                   onClick={performUndo}
                   className="px-2.5 py-1.5 rounded-lg bg-[var(--primary)] text-white hover:bg-[var(--primary)]/95 transition-all font-black text-[9px] uppercase tracking-wider cursor-pointer active:scale-95 flex items-center gap-1 leading-none"
                 >
@@ -4176,7 +4355,7 @@ export default function App() {
                 </button>
               )}
               {historyRedoStack.length > 0 && (
-                <button 
+                <button
                   onClick={performRedo}
                   className="px-2 py-1.5 rounded-lg bg-[var(--foreground)]/[0.05] border border-[var(--border)] text-[var(--foreground)]/80 hover:bg-[var(--foreground)]/[0.1] transition-all font-black text-[9px] uppercase tracking-wider cursor-pointer active:scale-95 leading-none"
                 >
@@ -4185,7 +4364,7 @@ export default function App() {
               )}
             </div>
           </motion.div>
-      )}
+        )}
       </AnimatePresence>
 
       {/* 🔔 PREMIUM REAL-TIME NOTIFICATION POPUP PORTAL */}
@@ -4193,21 +4372,21 @@ export default function App() {
         <AnimatePresence mode="popLayout">
           {popupNotifications.map((notif) => {
             const isHigh = notif.priority === 'high';
-            
+
             // Minimalist category badge and styling: soft pastel backgrounds, vibrant icons
             let catBadge = "Notice";
             let catBadgeClass = "bg-slate-100 text-slate-700 border-slate-200/90";
             let iconContainerClass = "bg-blue-50 text-blue-600 border-blue-100";
             let IconComp = <Bell size={15} strokeWidth={2.2} />;
-            
+
             if (notif.category === 'inventory') {
               const isOut = notif.title.toLowerCase().includes('out');
               catBadge = isOut ? "Out of Stock" : "Low Stock";
-              catBadgeClass = isOut 
-                ? "bg-rose-50 text-rose-700 border-rose-200/80" 
+              catBadgeClass = isOut
+                ? "bg-rose-50 text-rose-700 border-rose-200/80"
                 : "bg-amber-50 text-amber-800 border-amber-200/80";
-              iconContainerClass = isOut 
-                ? "bg-rose-100/80 text-rose-600 border-rose-200/60" 
+              iconContainerClass = isOut
+                ? "bg-rose-100/80 text-rose-600 border-rose-200/60"
                 : "bg-amber-100/80 text-amber-600 border-amber-200/60";
               IconComp = <Package size={15} strokeWidth={2.2} />;
             } else if (notif.category === 'udhar') {
@@ -4236,7 +4415,7 @@ export default function App() {
                 onDragEnd={(_, info) => {
                   if (Math.abs(info.offset.x) > 55 || Math.abs(info.velocity.x) > 260) {
                     if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-                      try { window.navigator.vibrate(18); } catch {}
+                      try { window.navigator.vibrate(18); } catch { }
                     }
                     setPopupNotifications(prev => prev.filter(p => p.id !== notif.id));
                   }
@@ -4281,8 +4460,8 @@ export default function App() {
                 </div>
 
                 {/* Minimalist Swipe Dismiss Indicator (No 'x' button, pure swipe affordance) */}
-                <div 
-                  className="flex flex-col items-center justify-center pl-1 shrink-0 opacity-35 group-hover:opacity-70 transition-opacity" 
+                <div
+                  className="flex flex-col items-center justify-center pl-1 shrink-0 opacity-35 group-hover:opacity-70 transition-opacity"
                   title="Swipe left or right to dismiss"
                 >
                   <span className="w-1 h-4 rounded-full bg-slate-300" />
@@ -4296,7 +4475,7 @@ export default function App() {
       {/* 🔮 CUSTOM TOAST SYSTEM PORTAL (TOP OF DASHBOARD BANNER) */}
       <AnimatePresence>
         {toast && (
-          <motion.div 
+          <motion.div
             key="system-toast-pill"
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
@@ -4304,7 +4483,7 @@ export default function App() {
             onDragEnd={(_, info) => {
               if (Math.abs(info.offset.x) > 60 || Math.abs(info.velocity.x) > 280) {
                 if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-                  try { window.navigator.vibrate(18); } catch {}
+                  try { window.navigator.vibrate(18); } catch { }
                 }
                 setToast(null);
               }
@@ -4353,14 +4532,14 @@ export default function App() {
       <AnimatePresence>
         {quickPeek && (
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
               className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-2xl relative max-w-md w-full text-[var(--foreground)] flex flex-col gap-4 select-none"
             >
-              <button 
+              <button
                 onClick={() => setQuickPeek(null)}
                 className="absolute top-4 right-4 h-7 w-7 rounded-full bg-[var(--foreground)]/5 border border-[var(--border)] hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/60 hover:text-[var(--foreground)] transition-all flex items-center justify-center cursor-pointer"
               >
@@ -4453,7 +4632,7 @@ export default function App() {
               )}
               {/* Generic Close Overlay */}
               <div className="pt-2 border-t border-[var(--border)]">
-                <button 
+                <button
                   onClick={() => setQuickPeek(null)}
                   className="w-full py-2.5 rounded-xl bg-[var(--foreground)]/[0.05] hover:bg-[var(--foreground)]/[0.1] font-black text-[9px] uppercase tracking-widest text-[var(--foreground)] transition-all cursor-pointer"
                 >
@@ -4467,38 +4646,38 @@ export default function App() {
 
       {/* Immersive Background Glows with slow organic drift */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <motion.div 
-          animate={{ 
+        <motion.div
+          animate={{
             x: [0, 40, -20, 0],
             y: [0, -30, 40, 0],
             scale: [1, 1.12, 0.93, 1],
           }}
-          transition={{ 
-            duration: 25, 
-            repeat: Infinity, 
-            ease: "easeInOut" 
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "easeInOut"
           }}
-          className="glow-bg-indigo" 
+          className="glow-bg-indigo"
         />
-        <motion.div 
-          animate={{ 
+        <motion.div
+          animate={{
             x: [0, -45, 30, 0],
             y: [0, 50, -30, 0],
             scale: [1, 0.92, 1.1, 1],
           }}
-          transition={{ 
-            duration: 30, 
-            repeat: Infinity, 
-            ease: "easeInOut" 
+          transition={{
+            duration: 30,
+            repeat: Infinity,
+            ease: "easeInOut"
           }}
-          className="glow-bg-cyan" 
+          className="glow-bg-cyan"
         />
       </div>
 
       {/* PIN Screen / Change PIN / Welcome Overlay */}
       <AnimatePresence>
         {showWelcome && (
-          <PINScreen 
+          <PINScreen
             mode="create"
             onPINCreated={(pin) => handleUpdateSettings({ pin, isLocked: false })}
             onSuccess={() => setShowWelcome(false)}
@@ -4507,7 +4686,7 @@ export default function App() {
           />
         )}
         {showPINScreen && (
-          <PINScreen 
+          <PINScreen
             mode="unlock"
             correctPIN={state.settings.pin}
             onSuccess={() => {
@@ -4518,7 +4697,7 @@ export default function App() {
           />
         )}
         {showChangePIN && (
-          <PINScreen 
+          <PINScreen
             mode={isVerifyingOldPIN ? 'unlock' : 'create'}
             correctPIN={state.settings.pin}
             onSuccess={() => {
@@ -4542,10 +4721,10 @@ export default function App() {
       </AnimatePresence>
 
       {/* Header */}
-      <header 
+      <header
         id="tour-header"
         className="sticky top-0 z-40 px-2.5 sm:px-6 py-2 text-[var(--primary-foreground)] shadow-2xl transition-all border-b border-white/10 flex items-center"
-        style={{ 
+        style={{
           height: '51.5px',
           backgroundColor: 'var(--primary)',
           paddingLeft: 'max(10px, env(safe-area-inset-left))',
@@ -4555,30 +4734,30 @@ export default function App() {
       >
         <div className="flex items-center justify-between w-full max-w-7xl mx-auto gap-2 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-4 select-none min-w-0 flex-1 overflow-hidden">
-            <div 
+            <div
               className="relative group shrink-0 overflow-visible flex items-center justify-center"
               style={{ width: '35.5px', height: '35.5px' }}
             >
               {/* Dynamic theme-specific sharp luminous premium core glow */}
               <div className={`absolute inset-x-0 inset-y-0 rounded-full blur-xl opacity-60 group-hover:opacity-90 transition-opacity duration-300 pointer-events-none ${getLogoBackplateClass(state.settings.theme).glow}`} />
               <div className={`absolute -inset-1.5 bg-gradient-to-r rounded-2xl blur-md opacity-30 group-hover:opacity-70 transition-opacity duration-500 pointer-events-none ${getLogoBackplateClass(state.settings.theme).gradient}`} />
-              
+
               {/* Premium seamless borderless container with custom aspect-ratio and zoom handling */}
               <div className="relative h-9 sm:h-12 md:h-14 overflow-visible flex items-center justify-center transform group-hover:scale-105 active:scale-95 transition-all duration-300 select-none pointer-events-none shrink-0">
                 {/* Custom multi-stage SVG drop-shadow filter for sharp outlines on any background */}
-                <img 
-                  src={appLogo} 
-                  alt="TS BIZ MANAGER Logo" 
+                <img
+                  src={appLogo}
+                  alt="TS BIZ MANAGER Logo"
                   className="h-9 sm:h-12 md:h-14 w-auto max-w-[80px] sm:max-w-[120px] md:max-w-[140px] object-contain transition-all duration-350"
                   style={{
                     filter: getLogoGlowFilter(state.settings.theme)
                   }}
-                  onError={(e) => { 
-                    e.currentTarget.style.display = 'none'; 
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden'); 
-                  }} 
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
                 />
-                
+
                 {/* Non-intrusive fallback illustration block in case image fails to fetch */}
                 <div className="hidden flex h-9 w-9 sm:h-12 sm:w-12 md:h-14 md:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 shadow-inner shrink-0">
                   <Package size={20} className="text-white sm:w-7 sm:h-7" />
@@ -4587,7 +4766,7 @@ export default function App() {
             </div>
             <div className="flex flex-col justify-center min-w-0 truncate">
               <h1 className="text-base sm:text-2xl font-black tracking-tight text-white mb-0 leading-none flex items-baseline truncate">
-                TS <span 
+                TS <span
                   className="text-[10px] sm:text-xs font-bold opacity-60 ml-1 sm:ml-1.5 tracking-[0.12em] sm:tracking-[0.3em] uppercase truncate hidden min-[360px]:inline mr-0 pr-1 pl-[3px]"
                   style={{ marginRight: '0px', paddingRight: '4px', paddingLeft: '3px' }}
                 >BIZ MANAGER</span>
@@ -4601,8 +4780,8 @@ export default function App() {
                   <span className={cn(
                     "h-1.5 w-1.5 rounded-full ring-1 ring-white/10 shrink-0",
                     syncStatus === 'Synced' ? "bg-green-400 animate-pulse" :
-                    syncStatus === 'Saving' ? "bg-yellow-400 animate-bounce" :
-                    syncStatus === 'Recovering' ? "bg-cyan-400 animate-ping" : "bg-red-500"
+                      syncStatus === 'Saving' ? "bg-yellow-400 animate-bounce" :
+                        syncStatus === 'Recovering' ? "bg-cyan-400 animate-ping" : "bg-red-500"
                   )} />
                   <span className="leading-none">{syncStatus}</span>
                 </button>
@@ -4614,7 +4793,7 @@ export default function App() {
 
             {/* Notification Badge Badge with sliding drawer */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
                 className={cn(
                   "flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl transition-all border border-white/10 text-white/80 hover:bg-white/20 select-none cursor-pointer active:scale-95 duration-100 shrink-0",
@@ -4624,7 +4803,7 @@ export default function App() {
               >
                 {/* Refine Existing Notification Bell Icon with ring animations */}
                 {(notifications.filter(n => !n.isRead).length + activeAlerts.length) > 0 ? (
-                  <motion.div 
+                  <motion.div
                     animate={{ rotate: [0, -12, 12, -12, 12, -6, 6, 0] }}
                     transition={{ repeat: Infinity, duration: 2, repeatDelay: 3 }}
                     className="text-amber-400"
@@ -4645,7 +4824,7 @@ export default function App() {
             </div>
 
             {/* Lock Button */}
-            <button 
+            <button
               id="tour-lock"
               onClick={handleToggleLock}
               className={cn(
@@ -4660,24 +4839,24 @@ export default function App() {
             {/* Menu (3 vertical dot :) Button with Professional Popup */}
             <div className="relative">
               <button
-                 onClick={() => {
-                   setShowMoreMenu(prev => {
-                     if (prev) {
-                       setMoreMenuView('main');
-                       return false;
-                     }
-                     setMoreMenuView('main');
-                     return true;
-                   });
-                 }}
-                 className={cn(
-                   "flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl transition-all border border-white/10 text-white/80 hover:bg-white/20 active:scale-95 shrink-0 cursor-pointer select-none",
-                   showMoreMenu ? "bg-white/20 text-white" : "bg-white/5"
-                 )}
-                 title="Menu Options"
-                 aria-label="Menu Options"
+                onClick={() => {
+                  setShowMoreMenu(prev => {
+                    if (prev) {
+                      setMoreMenuView('main');
+                      return false;
+                    }
+                    setMoreMenuView('main');
+                    return true;
+                  });
+                }}
+                className={cn(
+                  "flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl transition-all border border-white/10 text-white/80 hover:bg-white/20 active:scale-95 shrink-0 cursor-pointer select-none",
+                  showMoreMenu ? "bg-white/20 text-white" : "bg-white/5"
+                )}
+                title="Menu Options"
+                aria-label="Menu Options"
               >
-                 <MoreVertical size={16} className="sm:w-[18px] sm:h-[18px]" />
+                <MoreVertical size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
 
               {/* Professional Dropdown Popup Menu */}
@@ -4685,12 +4864,12 @@ export default function App() {
                 {showMoreMenu && (
                   <>
                     {/* Fixed invisible backdrop for outside click */}
-                    <div 
-                      className="fixed inset-0 z-[110]" 
+                    <div
+                      className="fixed inset-0 z-[110]"
                       onClick={() => {
                         setShowMoreMenu(false);
                         setMoreMenuView('main');
-                      }} 
+                      }}
                     />
 
                     {/* Small Popup Dropdown */}
@@ -4939,7 +5118,7 @@ export default function App() {
                                   onClick={() => {
                                     handleUpdateSettings({ theme: th.id });
                                     if (state.settings.soundOn !== false) {
-                                      try { playFeedbackEvent('notification', state.settings); } catch (e) {}
+                                      try { playFeedbackEvent('notification', state.settings); } catch (e) { }
                                     }
                                   }}
                                   className={cn(
@@ -4999,493 +5178,488 @@ export default function App() {
           </div>
         ) : (
           <AnimatePresence mode="wait">
-        {activeTab === 'home' && (
-          <motion.div 
-            key="home"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ type: "spring", stiffness: 380, damping: 28 }}
-            className="space-y-8"
-          >
-            {/* Store highlight & Owner Greeting Banner */}
-            <div 
-               style={{ marginBottom: '23px' }}
-               className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-r from-[var(--primary)] to-[var(--primary)]/90 p-8 text-white shadow-xl shadow-[var(--primary)]/15"
-            >
-               {/* 🏪 Kirana Store / Business Mode Tag in TOP RIGHT CORNER of widget */}
-               <div className="absolute top-4 right-4 md:top-6 md:right-6 z-20">
-                  <span className="font-mono text-[10px] uppercase tracking-wider px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/25 shadow-xs font-black inline-flex items-center gap-1.5">
-                     <span>{BUSINESS_MODES[state.settings.businessMode]?.name || 'Kirana Store'}</span>
-                  </span>
-               </div>
+            {activeTab === 'home' && (
+              <motion.div
+                key="home"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ type: "spring", stiffness: 380, damping: 28 }}
+                className="space-y-8"
+              >
+                {/* Store highlight & Owner Greeting Banner */}
+                <div
+                  style={{ marginBottom: '23px' }}
+                  className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-r from-[var(--primary)] to-[var(--primary)]/90 p-8 text-white shadow-xl shadow-[var(--primary)]/15"
+                >
+                  {/* 🏪 Kirana Store / Business Mode Tag in TOP RIGHT CORNER of widget */}
+                  <div className="absolute top-4 right-4 md:top-6 md:right-6 z-20">
+                    <span className="font-mono text-[10px] uppercase tracking-wider px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/25 shadow-xs font-black inline-flex items-center gap-1.5">
+                      <span>{BUSINESS_MODES[state.settings.businessMode]?.name || 'Kirana Store'}</span>
+                    </span>
+                  </div>
 
-               {/* Ambient decorative elements */}
-               <div className="absolute top-0 right-0 p-6 opacity-10 translate-x-6 -translate-y-6">
-                  <Store size={150} />
-               </div>
-               <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent pointer-events-none" />
-               <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
-                  <div className="space-y-2">
-                     <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tighter leading-none text-white drop-shadow">
+                  {/* Ambient decorative elements */}
+                  <div className="absolute top-0 right-0 p-6 opacity-10 translate-x-6 -translate-y-6">
+                    <Store size={150} />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent pointer-events-none" />
+                  <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
+                    <div className="space-y-2">
+                      <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tighter leading-none text-white drop-shadow">
                         {state.settings.storeName || "My Shop(मेरी दुकान)"}
-                     </h1>
-                     <p className="text-sm font-extrabold text-white/80 select-none">
+                      </h1>
+                      <p className="text-sm font-extrabold text-white/80 select-none">
                         Hi, <span className="text-amber-300 font-black">{state.settings.storeOwnerName || "Store Owner"}</span> 👋 welcome back to your STORE MANAGER APP.
-                     </p>
-                     <div 
+                      </p>
+                      <div
                         style={{ paddingLeft: '1px', marginLeft: '-7px' }}
                         className="pt-2 flex flex-wrap items-center gap-3"
-                     >
+                      >
                         {/* 📜 AAJ KI REPORT Button */}
                         <div className="relative group p-[2px] rounded-2xl overflow-hidden shadow-lg shadow-black/20 transition-all duration-300 hover:scale-105 active:scale-95">
-                           {/* Animated multi-color glowing border */}
-                           <div className="absolute inset-0 bg-gradient-to-r from-amber-300 via-emerald-400 to-cyan-300 animate-pulse opacity-90 group-hover:opacity-100 transition-opacity" />
-                           <button
-                              onClick={() => { setMenuTab('day_closing'); setShowMenu(true); }}
-                              style={{ backgroundColor: '#ffffff', color: '#132f18', height: '28.5px' }}
-                              className="relative flex items-center gap-2 px-3 py-1 text-xs font-black uppercase tracking-wider rounded-[14px] cursor-pointer shadow-inner transition-all duration-200 select-none hover:brightness-105 active:brightness-95 overflow-hidden"
-                           >
-                              <span className="text-sm leading-none">📜</span>
-                              <span className="leading-none">AAJ KI REPORT</span>
-                           </button>
+                          {/* Animated multi-color glowing border */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-amber-300 via-emerald-400 to-cyan-300 animate-pulse opacity-90 group-hover:opacity-100 transition-opacity" />
+                          <button
+                            onClick={() => { setMenuTab('day_closing'); setShowMenu(true); }}
+                            style={{ backgroundColor: '#ffffff', color: '#132f18', height: '28.5px' }}
+                            className="relative flex items-center gap-2 px-3 py-1 text-xs font-black uppercase tracking-wider rounded-[14px] cursor-pointer shadow-inner transition-all duration-200 select-none hover:brightness-105 active:brightness-95 overflow-hidden"
+                          >
+                            <span className="text-sm leading-none">📜</span>
+                            <span className="leading-none">AAJ KI REPORT</span>
+                          </button>
                         </div>
 
                         {/* 💼 CASH BOX (Shift) Button */}
                         <div className="relative group p-[2px] rounded-2xl overflow-hidden shadow-lg shadow-black/20 transition-all duration-300 hover:scale-105 active:scale-95">
-                           {/* Dynamic animated border glow indicating active/closed cash box */}
-                           <div className={cn(
-                              "absolute inset-0 animate-pulse opacity-90 group-hover:opacity-100 transition-opacity",
-                              activeShift
-                                 ? "bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500"
-                                 : "bg-gradient-to-r from-amber-400 via-rose-400 to-amber-400"
-                           )} />
-                           <button
-                              onClick={() => setShowGoalPanel(true)}
-                              style={{ backgroundColor: '#f8f6f6', color: '#0c410c', height: '28.5px' }}
-                              className="relative flex items-center gap-2 px-3 py-1 text-xs font-black uppercase tracking-wider rounded-[14px] cursor-pointer shadow-inner transition-all duration-200 select-none hover:brightness-105 active:brightness-95 overflow-hidden"
-                              title="CASH & HISAB"
-                           >
-                              <span className="relative flex h-2 w-2 shrink-0">
-                                 {activeShift && (
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                                 )}
-                                 <span className={cn(
-                                    "relative inline-flex rounded-full h-2 w-2",
-                                    activeShift ? "bg-emerald-500" : "bg-red-500"
-                                 )} />
-                              </span>
-                              <span className="leading-none">{activeShift ? "CLOSE CASH BOX" : "OPEN CASH BOX"}</span>
-                           </button>
+                          {/* Dynamic animated border glow indicating active/closed cash box */}
+                          <div className={cn(
+                            "absolute inset-0 animate-pulse opacity-90 group-hover:opacity-100 transition-opacity",
+                            activeShift
+                              ? "bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500"
+                              : "bg-gradient-to-r from-amber-400 via-rose-400 to-amber-400"
+                          )} />
+                          <button
+                            onClick={() => setShowGoalPanel(true)}
+                            style={{ backgroundColor: '#f8f6f6', color: '#0c410c', height: '28.5px' }}
+                            className="relative flex items-center gap-2 px-3 py-1 text-xs font-black uppercase tracking-wider rounded-[14px] cursor-pointer shadow-inner transition-all duration-200 select-none hover:brightness-105 active:brightness-95 overflow-hidden"
+                            title="CASH & HISAB"
+                          >
+                            <span className="relative flex h-2 w-2 shrink-0">
+                              {activeShift && (
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                              )}
+                              <span className={cn(
+                                "relative inline-flex rounded-full h-2 w-2",
+                                activeShift ? "bg-emerald-500" : "bg-red-500"
+                              )} />
+                            </span>
+                            <span className="leading-none">{activeShift ? "CLOSE CASH BOX" : "OPEN CASH BOX"}</span>
+                          </button>
                         </div>
-                     </div>
-                  </div>
-                  <div 
-                     className="md:text-right shrink-0 flex flex-col md:items-end justify-center gap-2 mt-2 md:mt-0"
-                  >
-                     {state.settings.storeAddress && (
-                        <div>
-                           <p 
-                              style={{ color: '#c4ee22' }}
-                              className="text-[9px] font-black uppercase tracking-widest mb-0.5 flex items-center md:justify-end gap-1"
-                           >
-                              <MapPin size={11} className="stroke-[2.5]" />
-                              Store Location
-                           </p>
-                           <p className="text-xs font-black max-w-[220px] line-clamp-1 md:text-right text-white/90">{state.settings.storeAddress}</p>
-                        </div>
-                     )}
-                     {state.settings.storePhone && (
-                        <div className="flex items-center md:justify-end">
-                           <span 
-                              style={{
-                                 marginRight: '0px',
-                                 paddingRight: '10.5px',
-                                 marginLeft: '142px',
-                                 marginTop: '-31px'
-                              }}
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 text-white font-mono text-xs font-black tracking-wider shadow-xs"
-                           >
-                              <Phone size={11} className="text-emerald-300 shrink-0 stroke-[2.5]" />
-                              <span>{formatPhoneNumber(state.settings.storePhone)}</span>
-                           </span>
-                        </div>
-                     )}
-                  </div>
-               </div>
-            </div>
-
-            {/* ⚡ UNBILLED RUSH HOUR & MICRO-SALES QUICK LEDGER */}
-            <UnbilledQuickLedgerWidget
-              state={state}
-              addToast={addToast}
-              activeShiftCashier={activeShift?.cashierName}
-            />
-
-             {/* Dynamic Operations Operational Widgets Container */}
-             <DynamicStoreDashboard 
-                state={state}
-                onUpdateSettings={handleUpdateSettings}
-                onUpdateState={handleUpdateComponentState}
-                setActiveTab={setActiveTab}
-                precision={precision}
-                onOpenDeckSettings={() => {
-                  setBusinessSubTab('dashboard');
-                  setMenuTab('business_settings');
-                  setShowMenu(true);
-                }}
-             />
-
-            {/* Global Category Rail */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 px-1">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">{t.categories}</p>
-                <button 
-                  onClick={() => setShowAddCategory(true)}
-                  className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white transition-all active:scale-90 select-none cursor-pointer"
-                  title="Add Category"
-                  id="add-category-btn"
-                >
-                  <Plus className="w-[13px] h-[11px] stroke-[3.5]" />
-                </button>
-                <button 
-                  onClick={() => setShowManageCategories(true)}
-                  className="inline-flex items-center justify-center w-[18.5px] h-[19.5px] rounded-full bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white transition-all active:scale-90 select-none cursor-pointer"
-                  title="Manage Categories"
-                  id="manage-categories-btn"
-                >
-                  <Settings2 size={10} className="stroke-[2.5]" />
-                </button>
-              </div>
-              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                <Button 
-                  variant={selectedCategory === null ? 'primary' : 'outline'}
-                  size="sm"
-                  className="whitespace-nowrap px-4 py-1.5 rounded-xl border-white/5"
-                  onClick={() => setSelectedCategory(null)}
-                >
-                  {t.all}
-                </Button>
-                {activeCategories.map((cat, idx) => (
-                  <Button 
-                    key={`${cat.id || 'cat'}-${idx}`}
-                    variant={selectedCategory === cat.id ? 'primary' : 'outline'}
-                    size="sm"
-                    className="whitespace-nowrap px-4 py-1.5 rounded-xl border-white/5"
-                    onClick={() => setSelectedCategory(cat.id)}
-                  >
-                    {cat.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-               {/* Registry Grid */}
-               <div className="space-y-4">
-                 {/* Search at top of list */}
-                 <div id="tour-search" className={`relative group transition-all ${isSearchFocused && searchQuery.trim().length > 0 ? 'z-50' : 'z-20'}`}>
-                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--primary)] opacity-40 transition-opacity group-focus-within:opacity-100" size={20} style={{ marginTop: '-5px', marginBottom: '0px' }} />
-                   <input 
-                     type="text"
-                     placeholder={t.search}
-                     style={{ marginTop: '-11px', height: '43.5px' }}
-                     className="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] py-4 pl-12 pr-28 text-sm focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] focus:outline-none shadow-sm transition-all"
-                     value={searchQuery}
-                     onChange={(e) => {
-                       setSearchQuery(e.target.value);
-                       setActivePredictionIndex(-1);
-                     }}
-                     onFocus={() => setIsSearchFocused(true)}
-                     onBlur={() => {
-                       setTimeout(() => setIsSearchFocused(false), 240);
-                     }}
-                     onKeyDown={(e) => {
-                       if (e.key === 'ArrowDown') {
-                         e.preventDefault();
-                         setActivePredictionIndex(prev => 
-                           prev < predictiveItems.length - 1 ? prev + 1 : 0
-                         );
-                       } else if (e.key === 'ArrowUp') {
-                         e.preventDefault();
-                         setActivePredictionIndex(prev => 
-                           prev > 0 ? prev - 1 : predictiveItems.length - 1
-                         );
-                       } else if (e.key === 'Enter') {
-                         if (activePredictionIndex >= 0 && activePredictionIndex < predictiveItems.length) {
-                           e.preventDefault();
-                           const selectedItem = predictiveItems[activePredictionIndex];
-                           const trs = selectedItem.translations || { en: selectedItem.name || '', hi: '', mr: '', 'hi-en': '' };
-                           setSearchQuery(trs[state.settings.language] || trs.en || selectedItem.name);
-                           setIsSearchFocused(false);
-                         }
-                       } else if (e.key === 'Escape') {
-                         setIsSearchFocused(false);
-                         e.currentTarget.blur();
-                       }
-                     }}
-                   />
-
-                   {/* Search Controls: Clear & Voice Mic Button */}
-                   <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-10" style={{ marginTop: '-11px' }}>
-                     {searchQuery && (
-                       <button
-                         type="button"
-                         onClick={() => {
-                           setSearchQuery('');
-                           setActivePredictionIndex(-1);
-                         }}
-                         className="p-1 rounded-lg text-[var(--foreground)]/40 hover:text-[var(--foreground)] hover:bg-[var(--foreground)]/10 transition-colors cursor-pointer"
-                         title="Clear search"
-                       >
-                         <X size={16} />
-                       </button>
-                     )}
-                     
-                     {/* Voice Mic Button inside Home Dashboard Search Bar */}
-                     <button
-                       type="button"
-                       onClick={handleHomeVoiceSearch}
-                       style={{
-                         paddingLeft: '8.75px',
-                         paddingRight: '10.75px',
-                         paddingTop: '8.25px',
-                         marginBottom: '-9px'
-                       }}
-                       className={cn(
-                         "px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 cursor-pointer shadow-xs active:scale-95",
-                         isHomeVoiceListening
-                           ? "bg-rose-500 text-white ring-2 ring-rose-400 shadow-md shadow-rose-500/30 animate-pulse"
-                           : "bg-gradient-to-r from-[var(--primary)]/15 via-indigo-500/15 to-violet-500/15 border border-[var(--primary)]/35 text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--primary)]/25 hover:shadow-[0_0_12px_rgba(99,102,241,0.25)] hover:scale-105"
-                       )}
-                       title={isHomeVoiceListening ? "Listening... click to stop" : "Voice search products (Speak item name)"}
-                     >
-                       {isHomeVoiceListening ? (
-                         <>
-                           <MicOff size={15} className="text-white animate-bounce" />
-                           <span className="text-[11px] font-bold text-white tracking-wide">Listening...</span>
-                         </>
-                       ) : (
-                         <>
-                           <Mic size={15} className="text-[var(--primary)] stroke-[2.3]" />
-                           <span className="text-[11px] font-bold tracking-wide hidden sm:inline">Voice</span>
-                         </>
-                       )}
-                     </button>
-                   </div>
-
-                   {/* Predictive Search Suggestions Dropdown Overlay */}
-                   <AnimatePresence>
-                     {searchQuery.trim().length > 0 && isSearchFocused && (
-                       <motion.div
-                         initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                         exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                         transition={{ duration: 0.15 }}
-                         className={`absolute left-0 right-0 top-full mt-1.5 z-[999] overflow-hidden bg-[var(--card)] border shadow-2xl ${
-                           state.settings.theme === 'neo_brutalist' 
-                             ? 'border-4 border-black rounded-none shadow-[8px_8px_0px_#000]' 
-                             : 'border-[var(--border)] rounded-2xl backdrop-blur-md ring-1 ring-black/10 dark:ring-white/10'
-                         }`}
-                       >
-                         <div className="p-2.5 border-b border-[var(--border)] bg-[var(--foreground)]/[0.04] flex items-center justify-between">
-                           <span className="text-[10px] font-black uppercase tracking-wider opacity-50 flex items-center gap-1">
-                             <Sparkles size={11} className="text-[var(--primary)] animate-pulse" />
-                             Predictive suggestions:
-                           </span>
-                           <span className="text-[9px] font-bold opacity-30">Press Enter ↵ to highlight</span>
-                         </div>
-                         
-                         <div className="max-h-64 overflow-y-auto no-scrollbar">
-                           {predictiveItems.length === 0 ? (
-                             <div className="p-4 text-xs opacity-50 text-center font-bold">
-                               No direct match found. Filters will apply below anyway.
-                             </div>
-                           ) : (
-                             predictiveItems.map((item, idx) => {
-                               const trs = item.translations || { en: item.name || '', hi: '', mr: '', 'hi-en': '' };
-                               const displayName = trs[state.settings.language] || trs.en || item.name;
-                               const isQtyLow = item.quantity <= (item.minStockLevel || state.settings?.minStockLevel || 10);
-                               const isQtyOut = item.quantity <= 0;
-                               
-                               return (
-                                 <div
-                                   key={`pred-item-${item.id || 'item'}-${idx}`}
-                                   onMouseDown={(e) => {
-                                     e.preventDefault();
-                                     setSearchQuery(displayName);
-                                     setIsSearchFocused(false);
-                                   }}
-                                   onMouseEnter={() => setActivePredictionIndex(idx)}
-                                   className={`px-4 py-2.5 flex items-center justify-between cursor-pointer border-b border-[var(--border)] last:border-0 transition-colors ${
-                                     activePredictionIndex === idx 
-                                       ? 'bg-[var(--primary)] text-white' 
-                                       : 'hover:bg-[var(--foreground)]/[0.03]'
-                                   }`}
-                                 >
-                                   <div className="min-w-0 flex-1">
-                                     <div className="flex items-center gap-2">
-                                       <span className="text-xs font-black truncate">{displayName}</span>
-                                       <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider ${
-                                         activePredictionIndex === idx
-                                           ? 'bg-white/20 text-white'
-                                           : 'bg-[var(--foreground)]/[0.05] text-[var(--foreground)]/70'
-                                       }`}>
-                                         {state.categories?.find(c => c.id === item.categoryId)?.name || 'General'}
-                                       </span>
-                                     </div>
-                                     <div className={`flex items-center gap-2 mt-0.5 text-[10px] ${
-                                       activePredictionIndex === idx ? 'text-white/80' : 'text-[var(--foreground)]/60'
-                                     }`}>
-                                       <span className="font-mono">Per Unit: ₹{formatNumber(item.retailPrice, state.settings?.pricePrecision || 0)}</span>
-                                       <span>•</span>
-                                       <span>{item.unit || 'pcs'}</span>
-                                     </div>
-                                   </div>
-                                   <div className="flex flex-col items-end shrink-0 ml-2">
-                                     <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
-                                       isQtyOut 
-                                         ? 'bg-rose-500/20 text-rose-500' 
-                                         : isQtyLow 
-                                           ? 'bg-amber-500/20 text-amber-500 font-black' 
-                                           : activePredictionIndex === idx
-                                             ? 'bg-white/25 text-white'
-                                             : 'bg-emerald-500/15 text-emerald-500'
-                                     }`}>
-                                       {isQtyOut ? 'Out' : `Qty: ${item.quantity}`}
-                                     </span>
-                                   </div>
-                                 </div>
-                               );
-                             })
-                           )}
-                         </div>
-                       </motion.div>
-                   )}
-                   </AnimatePresence>
-                 </div>
-              <motion.div 
-                layout="position"
-                className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pb-20"
-              >
-                <AnimatePresence mode="popLayout" initial={false}>
-                  {filteredItems.length > 0 ? (
-                    filteredItems.map((item, index) => (
-                      <motion.div
-                        key={`filtered-item-${item.id || 'item'}-${index}`}
-                        layout
-                        initial={{ opacity: 0, scale: 0.94, y: 12 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.92, y: -8 }}
-                        transition={{ 
-                          type: "spring", 
-                          stiffness: 420, 
-                          damping: 26,
-                          delay: Math.min(index, 6) * 0.02
-                        }}
-                      >
-                        <ItemCard 
-                          item={item} 
-                          isLocked={state.settings.isLocked} 
-                          language={state.settings.language}
-                          precision={precision}
-                          onEdit={() => handleEditTrigger(item)}
-                          onDelete={() => handleDeleteItem(item.id)}
-                          onUpdateItem={handleUpdateItem}
-                          isSelected={selectedItemIds.includes(item.id)}
-                          anyItemsSelected={selectedItemIds.length > 0}
-                          onSelect={() => toggleItemSelection(item.id)}
-                          t={t}
-                          onPeek={setQuickPeek}
-                        />
-                      </motion.div>
-                    ))
-                  ) : (
-                    <motion.div 
-                      key="empty"
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="col-span-full flex flex-col items-center justify-center py-16 px-6 text-center bg-[var(--card)]/40 border-2 border-dashed border-[var(--border)] rounded-2xl md:py-24"
-                    >
-                      <div className="h-14 w-14 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center mb-4">
-                        <Package size={24} />
                       </div>
-                      <h3 className="text-sm font-black uppercase tracking-tight text-[var(--foreground)] mb-1">
-                        No Inventory Stock Registered
-                      </h3>
-                      <p className="max-w-md text-[10px] text-[var(--foreground)]/50 uppercase tracking-widest leading-relaxed mb-6">
-                        Ready to start tracking product ratios, competitive buy prices, and Wholesale thresholds? Add your first item below to unlock telemetry profiles.
-                      </p>
-                      
-                      <button
-                        onClick={() => setShowAddItem(true)}
-                        className="px-4 py-2 bg-[var(--primary)] text-white hover:bg-[var(--primary)]/90 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-lg shadow-[var(--primary)]/10"
+                    </div>
+                    <div
+                      className="md:text-right shrink-0 flex flex-col md:items-end justify-center gap-2 mt-2 md:mt-0"
+                    >
+                      {state.settings.storeAddress && (
+                        <div>
+                          <p
+                            style={{ color: '#c4ee22' }}
+                            className="text-[9px] font-black uppercase tracking-widest mb-0.5 flex items-center md:justify-end gap-1"
+                          >
+                            <MapPin size={11} className="stroke-[2.5]" />
+                            Store Location
+                          </p>
+                          <p className="text-xs font-black max-w-[220px] line-clamp-1 md:text-right text-white/90">{state.settings.storeAddress}</p>
+                        </div>
+                      )}
+                      {state.settings.storePhone && (
+                        <div className="flex items-center md:justify-end">
+                          <span
+                            style={{
+                              marginRight: '0px',
+                              paddingRight: '10.5px',
+                              marginLeft: '142px',
+                              marginTop: '-31px'
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 text-white font-mono text-xs font-black tracking-wider shadow-xs"
+                          >
+                            <Phone size={11} className="text-emerald-300 shrink-0 stroke-[2.5]" />
+                            <span>{formatPhoneNumber(state.settings.storePhone)}</span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ⚡ UNBILLED RUSH HOUR & MICRO-SALES QUICK LEDGER */}
+                <UnbilledQuickLedgerWidget
+                  state={state}
+                  addToast={addToast}
+                  activeShiftCashier={activeShift?.cashierName}
+                />
+
+                {/* Dynamic Operations Operational Widgets Container */}
+                <DynamicStoreDashboard
+                  state={state}
+                  onUpdateSettings={handleUpdateSettings}
+                  onUpdateState={handleUpdateComponentState}
+                  setActiveTab={setActiveTab}
+                  precision={precision}
+                  onOpenDeckSettings={() => {
+                    setBusinessSubTab('dashboard');
+                    setMenuTab('business_settings');
+                    setShowMenu(true);
+                  }}
+                />
+
+                {/* Global Category Rail */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 px-1">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">{t.categories}</p>
+                    <button
+                      onClick={() => setShowAddCategory(true)}
+                      className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white transition-all active:scale-90 select-none cursor-pointer"
+                      title="Add Category"
+                      id="add-category-btn"
+                    >
+                      <Plus className="w-[13px] h-[11px] stroke-[3.5]" />
+                    </button>
+                    <button
+                      onClick={() => setShowManageCategories(true)}
+                      className="inline-flex items-center justify-center w-[18.5px] h-[19.5px] rounded-full bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white transition-all active:scale-90 select-none cursor-pointer"
+                      title="Manage Categories"
+                      id="manage-categories-btn"
+                    >
+                      <Settings2 size={10} className="stroke-[2.5]" />
+                    </button>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    <Button
+                      variant={selectedCategory === null ? 'primary' : 'outline'}
+                      size="sm"
+                      className="whitespace-nowrap px-4 py-1.5 rounded-xl border-white/5"
+                      onClick={() => setSelectedCategory(null)}
+                    >
+                      {t.all}
+                    </Button>
+                    {activeCategories.map((cat, idx) => (
+                      <Button
+                        key={`${cat.id || 'cat'}-${idx}`}
+                        variant={selectedCategory === cat.id ? 'primary' : 'outline'}
+                        size="sm"
+                        className="whitespace-nowrap px-4 py-1.5 rounded-xl border-white/5"
+                        onClick={() => setSelectedCategory(cat.id)}
                       >
-                        + Register First Product
+                        {cat.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Registry Grid */}
+                <div className="space-y-4">
+                  {/* Search at top of list */}
+                  <div id="tour-search" className={`relative group transition-all ${isSearchFocused && searchQuery.trim().length > 0 ? 'z-50' : 'z-20'}`}>
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--primary)] opacity-40 transition-opacity group-focus-within:opacity-100" size={20} style={{ marginTop: '-5px', marginBottom: '0px' }} />
+                    <input
+                      type="text"
+                      placeholder={t.search}
+                      style={{ marginTop: '-11px', height: '43.5px' }}
+                      className="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] py-4 pl-12 pr-28 text-sm focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] focus:outline-none shadow-sm transition-all"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setActivePredictionIndex(-1);
+                      }}
+                      onFocus={() => setIsSearchFocused(true)}
+                      onBlur={() => {
+                        setTimeout(() => setIsSearchFocused(false), 240);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          setActivePredictionIndex(prev =>
+                            prev < predictiveItems.length - 1 ? prev + 1 : 0
+                          );
+                        } else if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          setActivePredictionIndex(prev =>
+                            prev > 0 ? prev - 1 : predictiveItems.length - 1
+                          );
+                        } else if (e.key === 'Enter') {
+                          if (activePredictionIndex >= 0 && activePredictionIndex < predictiveItems.length) {
+                            e.preventDefault();
+                            const selectedItem = predictiveItems[activePredictionIndex];
+                            const trs = selectedItem.translations || { en: selectedItem.name || '', hi: '', mr: '', 'hi-en': '' };
+                            setSearchQuery(trs[state.settings.language] || trs.en || selectedItem.name);
+                            setIsSearchFocused(false);
+                          }
+                        } else if (e.key === 'Escape') {
+                          setIsSearchFocused(false);
+                          e.currentTarget.blur();
+                        }
+                      }}
+                    />
+
+                    {/* Search Controls: Clear & Voice Mic Button */}
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-10" style={{ marginTop: '-11px' }}>
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery('');
+                            setActivePredictionIndex(-1);
+                          }}
+                          className="p-1 rounded-lg text-[var(--foreground)]/40 hover:text-[var(--foreground)] hover:bg-[var(--foreground)]/10 transition-colors cursor-pointer"
+                          title="Clear search"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+
+                      {/* Voice Mic Button inside Home Dashboard Search Bar */}
+                      <button
+                        type="button"
+                        onClick={handleHomeVoiceSearch}
+                        style={{
+                          paddingLeft: '8.75px',
+                          paddingRight: '10.75px',
+                          paddingTop: '8.25px',
+                          marginBottom: '-9px'
+                        }}
+                        className={cn(
+                          "px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 cursor-pointer shadow-xs active:scale-95",
+                          isHomeVoiceListening
+                            ? "bg-rose-500 text-white ring-2 ring-rose-400 shadow-md shadow-rose-500/30 animate-pulse"
+                            : "bg-gradient-to-r from-[var(--primary)]/15 via-indigo-500/15 to-violet-500/15 border border-[var(--primary)]/35 text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--primary)]/25 hover:shadow-[0_0_12px_rgba(99,102,241,0.25)] hover:scale-105"
+                        )}
+                        title={isHomeVoiceListening ? "Listening... click to stop" : "Voice search products (Speak item name)"}
+                      >
+                        {isHomeVoiceListening ? (
+                          <>
+                            <MicOff size={15} className="text-white animate-bounce" />
+                            <span className="text-[11px] font-bold text-white tracking-wide">Listening...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Mic size={15} className="text-[var(--primary)] stroke-[2.3]" />
+                            <span className="text-[11px] font-bold tracking-wide hidden sm:inline">Voice</span>
+                          </>
+                        )}
                       </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    </div>
+
+                    {/* Predictive Search Suggestions Dropdown Overlay */}
+                    <AnimatePresence>
+                      {searchQuery.trim().length > 0 && isSearchFocused && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                          transition={{ duration: 0.15 }}
+                          className={`absolute left-0 right-0 top-full mt-1.5 z-[999] overflow-hidden bg-[var(--card)] border shadow-2xl ${state.settings.theme === 'neo_brutalist'
+                            ? 'border-4 border-black rounded-none shadow-[8px_8px_0px_#000]'
+                            : 'border-[var(--border)] rounded-2xl backdrop-blur-md ring-1 ring-black/10 dark:ring-white/10'
+                            }`}
+                        >
+                          <div className="p-2.5 border-b border-[var(--border)] bg-[var(--foreground)]/[0.04] flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-wider opacity-50 flex items-center gap-1">
+                              <Sparkles size={11} className="text-[var(--primary)] animate-pulse" />
+                              Predictive suggestions:
+                            </span>
+                            <span className="text-[9px] font-bold opacity-30">Press Enter ↵ to highlight</span>
+                          </div>
+
+                          <div className="max-h-64 overflow-y-auto no-scrollbar">
+                            {predictiveItems.length === 0 ? (
+                              <div className="p-4 text-xs opacity-50 text-center font-bold">
+                                No direct match found. Filters will apply below anyway.
+                              </div>
+                            ) : (
+                              predictiveItems.map((item, idx) => {
+                                const trs = item.translations || { en: item.name || '', hi: '', mr: '', 'hi-en': '' };
+                                const displayName = trs[state.settings.language] || trs.en || item.name;
+                                const isQtyLow = item.quantity <= (item.minStockLevel || state.settings?.minStockLevel || 10);
+                                const isQtyOut = item.quantity <= 0;
+
+                                return (
+                                  <div
+                                    key={`pred-item-${item.id || 'item'}-${idx}`}
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      setSearchQuery(displayName);
+                                      setIsSearchFocused(false);
+                                    }}
+                                    onMouseEnter={() => setActivePredictionIndex(idx)}
+                                    className={`px-4 py-2.5 flex items-center justify-between cursor-pointer border-b border-[var(--border)] last:border-0 transition-colors ${activePredictionIndex === idx
+                                      ? 'bg-[var(--primary)] text-white'
+                                      : 'hover:bg-[var(--foreground)]/[0.03]'
+                                      }`}
+                                  >
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs font-black truncate">{displayName}</span>
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider ${activePredictionIndex === idx
+                                          ? 'bg-white/20 text-white'
+                                          : 'bg-[var(--foreground)]/[0.05] text-[var(--foreground)]/70'
+                                          }`}>
+                                          {state.categories?.find(c => c.id === item.categoryId)?.name || 'General'}
+                                        </span>
+                                      </div>
+                                      <div className={`flex items-center gap-2 mt-0.5 text-[10px] ${activePredictionIndex === idx ? 'text-white/80' : 'text-[var(--foreground)]/60'
+                                        }`}>
+                                        <span className="font-mono">Per Unit: ₹{formatNumber(item.retailPrice, state.settings?.pricePrecision || 0)}</span>
+                                        <span>•</span>
+                                        <span>{item.unit || 'pcs'}</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-col items-end shrink-0 ml-2">
+                                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${isQtyOut
+                                        ? 'bg-rose-500/20 text-rose-500'
+                                        : isQtyLow
+                                          ? 'bg-amber-500/20 text-amber-500 font-black'
+                                          : activePredictionIndex === idx
+                                            ? 'bg-white/25 text-white'
+                                            : 'bg-emerald-500/15 text-emerald-500'
+                                        }`}>
+                                        {isQtyOut ? 'Out' : `Qty: ${item.quantity}`}
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  <motion.div
+                    layout="position"
+                    className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pb-20"
+                  >
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      {filteredItems.length > 0 ? (
+                        filteredItems.map((item, index) => (
+                          <motion.div
+                            key={`filtered-item-${item.id || 'item'}-${index}`}
+                            layout
+                            initial={{ opacity: 0, scale: 0.94, y: 12 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.92, y: -8 }}
+                            transition={{
+                              type: "spring",
+                              stiffness: 420,
+                              damping: 26,
+                              delay: Math.min(index, 6) * 0.02
+                            }}
+                          >
+                            <ItemCard
+                              item={item}
+                              isLocked={state.settings.isLocked}
+                              language={state.settings.language}
+                              precision={precision}
+                              onEdit={() => handleEditTrigger(item)}
+                              onDelete={() => handleDeleteItem(item.id)}
+                              onUpdateItem={handleUpdateItem}
+                              isSelected={selectedItemIds.includes(item.id)}
+                              anyItemsSelected={selectedItemIds.length > 0}
+                              onSelect={() => toggleItemSelection(item.id)}
+                              t={t}
+                              onPeek={setQuickPeek}
+                            />
+                          </motion.div>
+                        ))
+                      ) : (
+                        <motion.div
+                          key="empty"
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="col-span-full flex flex-col items-center justify-center py-16 px-6 text-center bg-[var(--card)]/40 border-2 border-dashed border-[var(--border)] rounded-2xl md:py-24"
+                        >
+                          <div className="h-14 w-14 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center mb-4">
+                            <Package size={24} />
+                          </div>
+                          <h3 className="text-sm font-black uppercase tracking-tight text-[var(--foreground)] mb-1">
+                            No Inventory Stock Registered
+                          </h3>
+                          <p className="max-w-md text-[10px] text-[var(--foreground)]/50 uppercase tracking-widest leading-relaxed mb-6">
+                            Ready to start tracking product ratios, competitive buy prices, and Wholesale thresholds? Add your first item below to unlock telemetry profiles.
+                          </p>
+
+                          <button
+                            onClick={() => setShowAddItem(true)}
+                            className="px-4 py-2 bg-[var(--primary)] text-white hover:bg-[var(--primary)]/90 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-lg shadow-[var(--primary)]/10"
+                          >
+                            + Register First Product
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                </div>
               </motion.div>
-            </div>
-          </motion.div>
 
-        )}
-        {activeTab === 'billing' && (
-          <motion.div 
-            key="billing"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ type: "spring", stiffness: 380, damping: 28 }}
-          >
-            <BillingScreen 
-              state={state} 
-              onUpdateState={handleUpdateComponentState} 
-              t={t} 
-              onOpenHistoryDrawer={() => setShowHistoryDrawer(true)}
-              isSyncing={isSyncing}
-              onSyncBills={syncBillHistoryWithLocalAndCloud}
-              onPeek={setQuickPeek}
-            />
-          </motion.div>
-        )}
+            )}
+            {activeTab === 'billing' && (
+              <motion.div
+                key="billing"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ type: "spring", stiffness: 380, damping: 28 }}
+              >
+                <BillingScreen
+                  state={state}
+                  onUpdateState={handleUpdateComponentState}
+                  t={t}
+                  onOpenHistoryDrawer={() => setShowHistoryDrawer(true)}
+                  isSyncing={isSyncing}
+                  onSyncBills={syncBillHistoryWithLocalAndCloud}
+                  onPeek={setQuickPeek}
+                />
+              </motion.div>
+            )}
 
-        {activeTab === 'analytics' && (
-          <motion.div 
-            key={`analytics-${analyticsRenderKey}`}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ type: "spring", stiffness: 380, damping: 28 }}
-          >
-            <AnalyticsScreen 
-              state={state} 
-              t={t} 
-              onUpdateSettings={handleUpdateSettings}
-              isLocked={state.settings.isLocked}
-              onUnlock={handleToggleLock}
-            />
-          </motion.div>
-        )}
+            {activeTab === 'analytics' && (
+              <motion.div
+                key={`analytics-${analyticsRenderKey}`}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ type: "spring", stiffness: 380, damping: 28 }}
+              >
+                <AnalyticsScreen
+                  state={state}
+                  t={t}
+                  onUpdateSettings={handleUpdateSettings}
+                  isLocked={state.settings.isLocked}
+                  onUnlock={handleToggleLock}
+                />
+              </motion.div>
+            )}
 
-        {activeTab === 'udhar' && (
-          <motion.div 
-            key="udhar"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ type: "spring", stiffness: 380, damping: 28 }}
-          >
-            <UdharScreen 
-              state={state} 
-              t={t} 
-              onUpdateState={handleUpdateComponentState}
-              selectedCustomerId={selectedUdharCustomerId}
-              onSelectCustomerId={setSelectedUdharCustomerId}
-            />
-          </motion.div>
-        )}
-        </AnimatePresence>
+            {activeTab === 'udhar' && (
+              <motion.div
+                key="udhar"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ type: "spring", stiffness: 380, damping: 28 }}
+              >
+                <UdharScreen
+                  state={state}
+                  t={t}
+                  onUpdateState={handleUpdateComponentState}
+                  selectedCustomerId={selectedUdharCustomerId}
+                  onSelectCustomerId={setSelectedUdharCustomerId}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         )}
       </main>
 
@@ -5506,77 +5680,77 @@ export default function App() {
       {/* Comparison Bottom Bar - Enhanced Visibility */}
       <AnimatePresence>
         {selectedItemIds.length > 0 && activeTab === 'home' && (
-          <motion.div 
+          <motion.div
             initial={{ y: 200, opacity: 0 }}
             animate={{ y: -20, opacity: 1 }}
             exit={{ y: 200, opacity: 0 }}
             className="fixed left-4 right-4 z-[60] bottom-20 md:bottom-8"
           >
             <div className="mx-auto max-w-2xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex flex-col md:flex-row items-center justify-between border border-white/20 backdrop-blur-3xl gap-4">
-               <div className="flex items-center gap-6">
-                  <div className="flex -space-x-4">
-                    {selectedItemIds.slice(0, 4).map((id, index) => {
-                      const it = state.items.find(i => i.id === id);
-                      const cat = DEFAULT_CATEGORIES.find(c => c.id === it?.categoryId);
-                      return (
-                        <motion.div 
-                          key={`sel-item-id-${id}-${index}`} 
-                          initial={{ x: -20, opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="h-14 w-14 rounded-2xl bg-white/10 border-2 border-white/20 flex items-center justify-center text-2xl backdrop-blur-md shadow-lg"
-                        >
-                          {cat?.icon || '📦'}
-                        </motion.div>
-                      );
-                    })}
-                    {selectedItemIds.length > 4 && (
-                      <div className="h-14 w-14 rounded-2xl bg-black/40 border-2 border-white/20 flex items-center justify-center text-xs font-black">
-                        +{selectedItemIds.length - 4}
-                      </div>
-                    )}
-                  </div>
-                  <div className="border-l border-white/10 pl-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 leading-none mb-1">Comparative Intel</p>
-                    <p className="text-xl font-black tracking-tight">{selectedItemIds.length} {t.items || "Items"} {t.selected || "Selected"}</p>
-                  </div>
-               </div>
-               <div className="flex items-center gap-3 w-full md:w-auto">
-                 <Button 
-                   variant="ghost" 
-                   onClick={() => setSelectedItemIds([])}
-                   className="text-white hover:bg-white/10 rounded-2xl px-6 font-black uppercase text-[10px] tracking-widest h-12 flex-1 md:flex-none"
-                 >
-                   {t.clear || "Clear"}
-                 </Button>
+              <div className="flex items-center gap-6">
+                <div className="flex -space-x-4">
+                  {selectedItemIds.slice(0, 4).map((id, index) => {
+                    const it = state.items.find(i => i.id === id);
+                    const cat = DEFAULT_CATEGORIES.find(c => c.id === it?.categoryId);
+                    return (
+                      <motion.div
+                        key={`sel-item-id-${id}-${index}`}
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="h-14 w-14 rounded-2xl bg-white/10 border-2 border-white/20 flex items-center justify-center text-2xl backdrop-blur-md shadow-lg"
+                      >
+                        {cat?.icon || '📦'}
+                      </motion.div>
+                    );
+                  })}
+                  {selectedItemIds.length > 4 && (
+                    <div className="h-14 w-14 rounded-2xl bg-black/40 border-2 border-white/20 flex items-center justify-center text-xs font-black">
+                      +{selectedItemIds.length - 4}
+                    </div>
+                  )}
+                </div>
+                <div className="border-l border-white/10 pl-6">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 leading-none mb-1">Comparative Intel</p>
+                  <p className="text-xl font-black tracking-tight">{selectedItemIds.length} {t.items || "Items"} {t.selected || "Selected"}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <Button
+                  variant="ghost"
+                  onClick={() => setSelectedItemIds([])}
+                  className="text-white hover:bg-white/10 rounded-2xl px-6 font-black uppercase text-[10px] tracking-widest h-12 flex-1 md:flex-none"
+                >
+                  {t.clear || "Clear"}
+                </Button>
 
-                 <Button 
-                   variant="ghost"
-                   onClick={() => setDeleteConfirmation({ show: true, type: 'multiple' })}
-                   className="text-white hover:bg-red-500/20 hover:text-red-300 rounded-2xl px-6 font-black uppercase text-[10px] tracking-widest h-12 flex-1 md:flex-none"
-                 >
-                   <Trash2 size={18} className="mr-2" />
-                   Delete
-                 </Button>
-                 
-                 <Button 
-                   onClick={() => setShowComparison(true)}
-                   disabled={selectedItemIds.length < 2}
-                   className="bg-white text-[var(--primary)] hover:scale-105 active:scale-95 transition-all rounded-2xl px-10 h-12 text-xs font-black uppercase tracking-[0.1em] shadow-xl flex-1 md:flex-none disabled:opacity-50"
-                 >
-                   <TrendingUp size={18} className="mr-2" />
-                   {t.compare || "Compare"}
-                 </Button>
-               </div>
+                <Button
+                  variant="ghost"
+                  onClick={() => setDeleteConfirmation({ show: true, type: 'multiple' })}
+                  className="text-white hover:bg-red-500/20 hover:text-red-300 rounded-2xl px-6 font-black uppercase text-[10px] tracking-widest h-12 flex-1 md:flex-none"
+                >
+                  <Trash2 size={18} className="mr-2" />
+                  Delete
+                </Button>
+
+                <Button
+                  onClick={() => setShowComparison(true)}
+                  disabled={selectedItemIds.length < 2}
+                  className="bg-white text-[var(--primary)] hover:scale-105 active:scale-95 transition-all rounded-2xl px-10 h-12 text-xs font-black uppercase tracking-[0.1em] shadow-xl flex-1 md:flex-none disabled:opacity-50"
+                >
+                  <TrendingUp size={18} className="mr-2" />
+                  {t.compare || "Compare"}
+                </Button>
+              </div>
             </div>
           </motion.div>
-      )}
+        )}
       </AnimatePresence>
 
       {/* 🔮 IMMERSIVE SELF-HEALING OVERLAY */}
       <AnimatePresence>
         {showRecoveryOverlay && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -5585,14 +5759,14 @@ export default function App() {
             {/* Ambient Background Glows */}
             <div className="absolute top-1/4 left-1/4 h-80 w-80 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse" />
             <div className="absolute bottom-1/4 right-1/4 h-80 w-80 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse delay-700" />
-            
+
             {/* Visual Stacking Core info */}
             <div className="max-w-xs w-full text-center space-y-6 px-4 z-10 relative">
               <div className="relative inline-flex items-center justify-center">
                 {/* Glowing ring animation */}
                 <span className="absolute -inset-4 h-24 w-24 rounded-full border border-cyan-500/20 animate-ping duration-1000" />
                 <span className="absolute -inset-2 h-20 w-20 rounded-full border-2 border-dashed border-cyan-400/15 animate-spin" />
-                
+
                 <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-cyan-400/30">
                   <HeartPulse size={28} className="text-white animate-pulse" />
                 </div>
@@ -5606,14 +5780,14 @@ export default function App() {
               {/* Progress and indicators */}
               <div className="space-y-3.5">
                 <div className="h-1.5 w-full bg-white/[0.04] rounded-full overflow-hidden border border-white/[0.02]">
-                  <motion.div 
+                  <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${recoveryProgress}%` }}
                     transition={{ ease: 'easeOut' }}
                     className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 shadow-md shadow-cyan-500/35"
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest text-[#8b9bb4]">
                   <span className="font-mono">INTEGRITY CHECKING...</span>
                   <span className="font-mono text-cyan-400">{recoveryProgress}%</span>
@@ -5623,12 +5797,12 @@ export default function App() {
               {/* Status parameters line ticker */}
               <div className="pt-2 text-[8px] font-bold font-mono opacity-40 uppercase truncate">
                 {recoveryProgress < 30 ? 'Allocating cache boundaries...' :
-                 recoveryProgress < 60 ? 'Rehydrating held customer sessions...' :
-                 recoveryProgress < 85 ? 'Checking offline transactional queue...' : 'Verifying local database hashes...'}
+                  recoveryProgress < 60 ? 'Rehydrating held customer sessions...' :
+                    recoveryProgress < 85 ? 'Checking offline transactional queue...' : 'Verifying local database hashes...'}
               </div>
             </div>
           </motion.div>
-      )}
+        )}
       </AnimatePresence>
 
       {/* 🔮 INTELLIGENT RECOVERY DIAGNOSTICS CENTER Drawer */}
@@ -5636,7 +5810,7 @@ export default function App() {
         {showRecoveryCenter && (
           <div className="fixed inset-0 z-[999] flex justify-end text-slate-100 font-sans text-left">
             {/* Dark glass backdrop modal */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -5645,7 +5819,7 @@ export default function App() {
             />
 
             {/* Panel */}
-            <motion.div 
+            <motion.div
               initial={{ x: '100%', opacity: 0.95 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: '100%', opacity: 0.95 }}
@@ -5663,8 +5837,8 @@ export default function App() {
                     <p className="text-[8px] font-bold text-cyan-400 uppercase tracking-widest mt-0.5 leading-none font-sans">Automated Telemetry & Recovery</p>
                   </div>
                 </div>
-                
-                <button 
+
+                <button
                   onClick={() => setShowRecoveryCenter(false)}
                   className="h-7 w-7 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 transition-all flex items-center justify-center cursor-pointer active:scale-95"
                 >
@@ -5690,8 +5864,8 @@ export default function App() {
                     <span className={cn(
                       "h-1.5 w-1.5 rounded-full shrink-0",
                       syncStatus === 'Synced' ? "bg-green-400 animate-pulse" :
-                      syncStatus === 'Saving' ? "bg-amber-400 animate-bounce" :
-                      syncStatus === 'Recovering' ? "bg-cyan-400 animate-spin" : "bg-red-500"
+                        syncStatus === 'Saving' ? "bg-amber-400 animate-bounce" :
+                          syncStatus === 'Recovering' ? "bg-cyan-400 animate-spin" : "bg-red-500"
                     )} />
                     <span className="text-[10px] font-mono font-black uppercase tracking-wider text-slate-200">
                       {syncStatus}
@@ -5722,8 +5896,8 @@ export default function App() {
 
                 <div className="space-y-2 font-mono text-[9px] leading-relaxed">
                   {integrityLogs.map((log, index) => (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className="p-3 bg-slate-950/40 rounded-lg border border-slate-800/80 hover:bg-slate-950/60 transition-colors flex items-start gap-2.5"
                     >
                       <span className="text-slate-500 shrink-0 font-bold">[{log.timestamp}]</span>
@@ -5747,7 +5921,7 @@ export default function App() {
                       { timestamp: new Date().toLocaleTimeString(), msg: 'Running deep self-healing database diagnostics...', code: 'DIAGNOSTICS_BEGIN' },
                       ...prev
                     ]);
-                    
+
                     let prog = 0;
                     const tm = setInterval(() => {
                       prog += 20;
@@ -5766,8 +5940,8 @@ export default function App() {
                 >
                   ⚡ Trigger Self-Healing Diagnostics
                 </button>
-                
-                <button 
+
+                <button
                   onClick={() => {
                     if (confirm("Remove stale checkout register caches and drafts from background storage? Active tabs will remain.")) {
                       localStorage.removeItem('pos_billing_hold_drafts');
@@ -5789,18 +5963,18 @@ export default function App() {
       </AnimatePresence>
 
       {/* Bill History Drawer (Slides L-to-R, available globally on all tabs via swipe/drag) */}
-      <BillHistoryDrawer 
-        isOpen={showHistoryDrawer} 
-        onClose={() => setShowHistoryDrawer(false)} 
-        state={state} 
-        onUpdateState={handleUpdateComponentState} 
+      <BillHistoryDrawer
+        isOpen={showHistoryDrawer}
+        onClose={() => setShowHistoryDrawer(false)}
+        state={state}
+        onUpdateState={handleUpdateComponentState}
       />
 
       {/* Pro POS Business Calculator Component (Always accessible app-wide) */}
       <SmartCalculator />
 
       {/* Dynamic Notification Center */}
-      <NotificationCenter 
+      <NotificationCenter
         isOpen={showNotificationsDropdown}
         onClose={() => setShowNotificationsDropdown(false)}
         notifications={notifications}
@@ -5814,7 +5988,7 @@ export default function App() {
         onMarkAllRead={(alertIds) => {
           // 1. Mark all notifications as read in local state
           setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-          
+
           // 2. Dismiss all currently active low-stock & udhar alert IDs to clear badge counters
           if (alertIds.length > 0) {
             setState(prev => {
@@ -5856,17 +6030,15 @@ export default function App() {
             }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            className={`h-14 w-14 rounded-full z-20 cursor-pointer outline-none select-none relative flex items-center justify-center transition-all duration-200 ${
-              showPlusActionMenu ? 'bg-rose-500 shadow-lg shadow-rose-500/50 text-white' : ''
-            }`}
+            className={`h-14 w-14 rounded-full z-20 cursor-pointer outline-none select-none relative flex items-center justify-center transition-all duration-200 ${showPlusActionMenu ? 'bg-rose-500 shadow-lg shadow-rose-500/50 text-white' : ''
+              }`}
           >
             {/* Real-time scaling color overlay beneath button */}
-            <motion.div 
-              className={`absolute inset-0 rounded-full transition-all duration-300 ${
-                showPlusActionMenu
-                  ? 'bg-rose-600 shadow-xl shadow-rose-500/50'
-                  : 'bg-transparent'
-              }`}
+            <motion.div
+              className={`absolute inset-0 rounded-full transition-all duration-300 ${showPlusActionMenu
+                ? 'bg-rose-600 shadow-xl shadow-rose-500/50'
+                : 'bg-transparent'
+                }`}
             />
             {/* Standard Animated plus icon / Close Icon when menu is open */}
             {showPlusActionMenu ? (
@@ -5964,7 +6136,7 @@ export default function App() {
         </div>
       )}
       {activeTab === 'notes' && !isAnyModalOpen && (
-        <Button 
+        <Button
           className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-2xl accent-glow bg-amber-500 hover:bg-amber-600"
           onClick={() => setShowAddNote(true)}
         >
@@ -5975,7 +6147,7 @@ export default function App() {
       {/* Add/Edit Modal */}
       <AnimatePresence>
         {(showAddItem || editingItem) && (
-          <ItemFormModal 
+          <ItemFormModal
             key="item-form-modal"
             onClose={() => {
               setShowAddItem(false);
@@ -6007,7 +6179,7 @@ export default function App() {
       </AnimatePresence>
       <AnimatePresence>
         {showAddNote && (
-          <NoteFormModal 
+          <NoteFormModal
             key="note-form-modal"
             onClose={() => setShowAddNote(false)}
             onSave={handleAddNote}
@@ -6055,7 +6227,7 @@ export default function App() {
       </AnimatePresence>
       <AnimatePresence>
         {showComparison && (
-          <ComparisonModal 
+          <ComparisonModal
             key="comparison-modal"
             selectedItems={state.items.filter(i => selectedItemIds.includes(i.id))}
             onClose={() => setShowComparison(false)}
@@ -6068,7 +6240,7 @@ export default function App() {
       </AnimatePresence>
       <AnimatePresence>
         {exportModal.isOpen && (
-          <ExportCostChoiceModal 
+          <ExportCostChoiceModal
             key="export-cost-choice-modal"
             onClose={() => setExportModal({ isOpen: false, format: null })}
             onSelectOption={(includeCost) => {
@@ -6096,7 +6268,7 @@ export default function App() {
       </AnimatePresence>
       <AnimatePresence>
         {showTour && (
-          <OnboardingTour 
+          <OnboardingTour
             key="onboarding-tour-modal"
             onClose={() => {
               setShowTour(false);
@@ -6195,8 +6367,8 @@ export default function App() {
                   setTutorialPrompt({ show: true, stage: 'make_bill' });
                 }, 800);
               } else if (
-                finishedType === 'make_bill_all_items' || 
-                finishedType === 'make_bill_dashboard' || 
+                finishedType === 'make_bill_all_items' ||
+                finishedType === 'make_bill_dashboard' ||
                 finishedType === 'make_bill_search'
               ) {
                 // Completed billing tutorials
@@ -6263,10 +6435,10 @@ export default function App() {
           />
         )}
       </AnimatePresence>
-      
+
       <AnimatePresence>
         {dailyCycleModal && dailyCycleModal.isOpen && (
-          <motion.div 
+          <motion.div
             key="daily-cycle-modal-backdrop-element"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -6274,7 +6446,7 @@ export default function App() {
             onClick={() => setDailyCycleModal(null)}
             className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
           >
-            <motion.div 
+            <motion.div
               key="daily-cycle-modal-container-element"
               initial={{ scale: 0.94, opacity: 0, y: 8 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -6295,8 +6467,8 @@ export default function App() {
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-sm sm:text-base font-bold tracking-tight text-white leading-tight">
-                      {dailyCycleModal.type === 'opening' 
-                        ? "SAVE OLD BILLS" 
+                      {dailyCycleModal.type === 'opening'
+                        ? "SAVE OLD BILLS"
                         : "Daily Store Close Backup"}
                     </h3>
                   </div>
@@ -6329,7 +6501,7 @@ export default function App() {
 
               {/* Actions */}
               <div className="flex flex-col gap-2">
-                <Button 
+                <Button
                   onClick={async () => {
                     const success = await handleCycleBackupAndClear();
                     if (success) {
@@ -6346,11 +6518,11 @@ export default function App() {
                   }}
                   className="w-full h-10 py-2 px-3 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-slate-950 flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
                 >
-                  <Download size={15} className="shrink-0" /> 
+                  <Download size={15} className="shrink-0" />
                   <span>Download Backup</span>
                 </Button>
 
-                <button 
+                <button
                   type="button"
                   onClick={() => {
                     const now = new Date();
@@ -6434,7 +6606,7 @@ export default function App() {
                 ) : (
                   /* Profile, Business, Settings & Printer tab choices (Help & Aaj Ki Report are accessed directly) */
                   <div className="flex border-b border-[var(--border)] pb-2 gap-1 overflow-x-auto scrollbar-none whitespace-nowrap">
-                    <button 
+                    <button
                       onClick={() => setMenuTab('profile')}
                       className={cn(
                         "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
@@ -6443,7 +6615,7 @@ export default function App() {
                     >
                       Profile
                     </button>
-                    <button 
+                    <button
                       onClick={() => setMenuTab('business_settings')}
                       className={cn(
                         "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
@@ -6452,7 +6624,7 @@ export default function App() {
                     >
                       Biz Settings
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         setMenuTab('settings');
                         setSettingsSubTab('overview');
@@ -6464,7 +6636,7 @@ export default function App() {
                     >
                       Settings
                     </button>
-                    <button 
+                    <button
                       onClick={() => setMenuTab('printer')}
                       className={cn(
                         "flex-1 pb-2 px-2 text-[9px] uppercase font-black tracking-wider text-center border-b-2 transition-all cursor-pointer",
@@ -7076,15 +7248,15 @@ export default function App() {
                   ];
 
                   const query = drawerSearchQuery.toLowerCase().trim();
-                  const filteredDrawerResults = query 
+                  const filteredDrawerResults = query
                     ? searchableDrawerItems.filter(item => {
-                        return (
-                          item.title.toLowerCase().includes(query) ||
-                          item.description.toLowerCase().includes(query) ||
-                          item.category.toLowerCase().includes(query) ||
-                          item.keywords.some(kw => kw.toLowerCase().includes(query))
-                        );
-                      })
+                      return (
+                        item.title.toLowerCase().includes(query) ||
+                        item.description.toLowerCase().includes(query) ||
+                        item.category.toLowerCase().includes(query) ||
+                        item.keywords.some(kw => kw.toLowerCase().includes(query))
+                      );
+                    })
                     : [];
 
                   return (
@@ -7197,11 +7369,11 @@ export default function App() {
 
                 {menuTab === 'profile' ? (
                   <div className="pt-2">
-                    <ProfileScreen 
-                      state={state} 
-                      t={t} 
-                      deferredPrompt={deferredPrompt} 
-                      onInstall={handleInstallClick} 
+                    <ProfileScreen
+                      state={state}
+                      t={t}
+                      deferredPrompt={deferredPrompt}
+                      onInstall={handleInstallClick}
                       onShareProductList={handleShareProductList}
                       isSharing={isSharing}
                       onUpdate={handleUpdateSettings}
@@ -7212,22 +7384,22 @@ export default function App() {
                   </div>
                 ) : menuTab === 'business_settings' ? (
                   <div className="pt-2">
-                    <BusinessSettingsScreen 
-                      state={state} 
-                      t={t} 
-                      onUpdateSettings={handleUpdateSettings} 
+                    <BusinessSettingsScreen
+                      state={state}
+                      t={t}
+                      onUpdateSettings={handleUpdateSettings}
                       onUpdateState={handleUpdateComponentState}
                       activeSubTab={businessSubTab}
                       onChangeSubTab={setBusinessSubTab}
                     />
                   </div>
                 ) : menuTab === 'settings' ? (
-                  <SettingsScreen 
-                    state={state} 
-                    t={t} 
-                    onUpdate={handleUpdateSettings} 
+                  <SettingsScreen
+                    state={state}
+                    t={t}
+                    onUpdate={handleUpdateSettings}
                     activeSubTab={settingsSubTab}
-                    onChangeSubTab={setSettingsSubTab} 
+                    onChangeSubTab={setSettingsSubTab}
                     onResetPIN={() => {
                       setShowMenu(false);
                       if (state.settings.pin) {
@@ -7254,18 +7426,18 @@ export default function App() {
                   />
                 ) : menuTab === 'printer' ? (
                   <div className="pt-2">
-                    <PrinterSettingsScreen 
-                      state={state} 
-                      t={t} 
+                    <PrinterSettingsScreen
+                      state={state}
+                      t={t}
                       onUpdateState={handleUpdateComponentState}
                       onUpdateSettings={handleUpdateSettings}
                     />
                   </div>
                 ) : menuTab === 'day_closing' ? (
                   <div className="pt-2">
-                    <StoreClosingControlCenter 
-                      state={state} 
-                      onUpdateSettings={handleUpdateSettings} 
+                    <StoreClosingControlCenter
+                      state={state}
+                      onUpdateSettings={handleUpdateSettings}
                       onNavigateTab={(tab) => { setActiveTab(tab); setShowMenu(false); }}
                       t={t}
                     />

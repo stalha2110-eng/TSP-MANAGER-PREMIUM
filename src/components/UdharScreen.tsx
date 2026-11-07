@@ -895,7 +895,14 @@ export default function UdharScreen({
                 <div className="grid grid-cols-2 gap-2 pt-0.5">
                   <button
                     type="button"
-                    onClick={() => setShowTransactionModal('given')}
+                    onClick={() => {
+                      const now = new Date();
+                      const year = now.getFullYear();
+                      const month = String(now.getMonth() + 1).padStart(2, '0');
+                      const day = String(now.getDate()).padStart(2, '0');
+                      setTransactionDueDate(`${year}-${month}-${day}`);
+                      setShowTransactionModal('given');
+                    }}
                     className="h-9 px-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-[10.5px] uppercase tracking-wider transition-all shadow-xs active:scale-[0.98] flex items-center justify-center gap-1 cursor-pointer text-center truncate"
                   >
                     <ArrowUpRight size={13} strokeWidth={3} className="shrink-0" />
@@ -1189,6 +1196,30 @@ export default function UdharScreen({
                       className="w-full text-xs font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.03] py-3 px-4 focus:outline-none focus:border-rose-500 text-white font-mono"
                     />
                     <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const now = new Date();
+                          const year = now.getFullYear();
+                          const month = String(now.getMonth() + 1).padStart(2, '0');
+                          const day = String(now.getDate()).padStart(2, '0');
+                          setTransactionDueDate(`${year}-${month}-${day}`);
+                        }}
+                        className={cn(
+                          "px-2 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all border",
+                          (() => {
+                            const now = new Date();
+                            const year = now.getFullYear();
+                            const month = String(now.getMonth() + 1).padStart(2, '0');
+                            const day = String(now.getDate()).padStart(2, '0');
+                            return transactionDueDate === `${year}-${month}-${day}`;
+                          })()
+                            ? "bg-rose-500/20 text-rose-400 border-rose-500/40" 
+                            : "bg-white/5 text-zinc-400 border-white/5 hover:border-zinc-700"
+                        )}
+                      >
+                        Today
+                      </button>
                       {[7, 15, 30].map(days => {
                         const d = new Date();
                         d.setDate(d.getDate() + days);

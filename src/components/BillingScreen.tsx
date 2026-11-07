@@ -140,6 +140,14 @@ export function CashExchangeHandsIcon({ size = 20, className = "" }: { size?: nu
   );
 }
 
+export const getTodayDateString = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const QUICK_UNITS_DATA = [
   { id: 'Pcs', label: 'Piece', sub: 'Pcs / नग' },
   { id: 'Kg', label: 'Kg', sub: 'Kilo / किलो' },
@@ -549,7 +557,7 @@ export default function BillingScreen({
       taxPercent: 0,
       paymentMethod: 'Cash',
       billingMode: 'auto',
-      udharDueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      udharDueDate: getTodayDateString(),
       isPinned: false
     }];
   });
@@ -836,7 +844,7 @@ export default function BillingScreen({
       setTaxPercent(target.taxPercent || 0);
       setPaymentMethod(target.paymentMethod === 'Credit' ? 'Credit' : 'Cash');
       setBillingMode(target.billingMode || 'auto');
-      setUdharDueDate(target.udharDueDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
+      setUdharDueDate(target.udharDueDate || getTodayDateString());
       
       setTimeout(() => {
         isHydratingRef.current = false;
@@ -968,11 +976,7 @@ export default function BillingScreen({
   }, [cart, customerName, customerPhone, discountPercent, taxPercent, paymentMethod, billingMode, activeDraftId]);
 
   
-  const [udharDueDate, setUdharDueDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 7);
-    return d.toISOString().split('T')[0];
-  });
+  const [udharDueDate, setUdharDueDate] = useState(() => getTodayDateString());
   
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
@@ -1703,7 +1707,7 @@ export default function BillingScreen({
         taxPercent: 0,
         paymentMethod: 'Cash',
         billingMode: 'auto',
-        udharDueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+        udharDueDate: getTodayDateString(),
         lastActiveAt: Date.now(),
         restTimerStartedAt: Date.now(),
         restServiceStatus: 'ordered'
@@ -3555,7 +3559,7 @@ export default function BillingScreen({
                           taxPercent: 0,
                           paymentMethod: 'Cash',
                           billingMode: 'auto',
-                          udharDueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+                          udharDueDate: getTodayDateString(),
                           lastActiveAt: Date.now()
                         };
                         setDrafts(prev => [...prev, freshDraft]);
@@ -3897,7 +3901,7 @@ export default function BillingScreen({
                       taxPercent: 0,
                       paymentMethod: 'Cash',
                       billingMode: 'auto',
-                      udharDueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+                      udharDueDate: getTodayDateString(),
                       lastActiveAt: Date.now()
                     };
                     setDrafts(prev => [...prev, freshDraft]);
@@ -5074,15 +5078,26 @@ export default function BillingScreen({
 
                   {/* Date selection for udhar crediting */}
                   {paymentMethod === 'Credit' && (
-                    <div className="col-span-2 pt-1 border-t border-rose-500/15 space-y-1">
-                      <label className="text-[10px] font-bold text-rose-600 dark:text-rose-400 block leading-none">
-                        📅 Due Date / चुकाने की तारीख *
-                      </label>
+                    <div className="col-span-2 pt-1.5 border-t border-rose-500/15 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold text-rose-600 dark:text-rose-400 block leading-none flex items-center gap-1">
+                          <span>📅 Due Date / चुकाने की तारीख *</span>
+                          <span className="text-[9px] font-normal opacity-70">(Today by default)</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setUdharDueDate(getTodayDateString())}
+                          className="text-[9px] font-bold text-rose-500 hover:text-rose-600 hover:underline cursor-pointer transition-colors"
+                          title="Reset to today's date"
+                        >
+                          Today (आज)
+                        </button>
+                      </div>
                       <input
                         type="date"
-                        value={udharDueDate}
+                        value={udharDueDate || getTodayDateString()}
                         onChange={(e) => setUdharDueDate(e.target.value)}
-                        className="w-full text-xs font-mono font-medium border border-rose-500/25 rounded-lg px-2.5 py-1.5 bg-[var(--background)] text-[var(--foreground)] cursor-pointer outline-none focus:border-rose-500"
+                        className="w-full text-xs font-mono font-medium border border-rose-500/25 rounded-lg px-2.5 py-1.5 bg-[var(--background)] text-[var(--foreground)] cursor-pointer outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all"
                       />
                     </div>
                   )}
@@ -5700,7 +5715,13 @@ export default function BillingScreen({
                   <button
                     key={pMode.m}
                     type="button"
-                    onClick={() => setPaymentMethod(pMode.m as any)}
+                    onClick={() => {
+                      setPaymentMethod(pMode.m as any);
+                      if (pMode.m === 'Credit') {
+                        setManualCustomerOpen(true);
+                        setUdharDueDate(prev => prev || getTodayDateString());
+                      }
+                    }}
                     className={cn(
                       "py-2.5 px-3 rounded-xl border text-xs sm:text-[13px] font-black text-center uppercase tracking-wide cursor-pointer transition-all flex items-center justify-center gap-1.5 min-h-[42px] shadow-xs active:scale-98 select-none",
                       paymentMethod === pMode.m 

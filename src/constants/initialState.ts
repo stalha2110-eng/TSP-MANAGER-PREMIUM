@@ -3,7 +3,7 @@ import { DEFAULT_CATEGORIES } from '../constants';
 import { getDeviceId, getDeviceName } from '../utils/device';
 import { getUnbilledEntries } from '../lib/unbilledStorage';
 
-import { isItemDeleted } from '../utils/deletionTracker';
+import { isItemDeleted, isUdharCustomerDeleted, isUdharTxDeleted } from '../utils/deletionTracker';
 import { getLocalProductImage } from '../utils/localImageStorage';
 import { getLocalDashboardStorage } from '../utils/localDashboardStorage';
 
@@ -285,8 +285,8 @@ export const getInitialState = (): AppState => {
     settings,
     user: cachedUser,
     bills: deduplicateById(bills),
-    udharCustomers: deduplicateById(udharCustomers),
-    udharTransactions: deduplicateById(udharTransactions),
+    udharCustomers: deduplicateById(udharCustomers.filter((c: any) => c && !isUdharCustomerDeleted(c.id))),
+    udharTransactions: deduplicateById(udharTransactions.filter((t: any) => t && !isUdharTxDeleted(t.id))),
     unbilledEntries: getUnbilledEntries(),
   };
 };

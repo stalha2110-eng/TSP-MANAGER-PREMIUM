@@ -205,7 +205,9 @@ import {
   HistoryEntry,
   BusinessGoal,
   BusinessShift,
-  UnbilledEntry
+  UnbilledEntry,
+  UdharCustomer,
+  UdharTransaction
 } from './types';
 import { 
   NotificationService, 
@@ -253,7 +255,17 @@ import { ItemCard } from './components/ItemCard';
 import { NavButton } from './components/NavButton';
 import { triggerNavHaptic } from './utils/haptics';
 import { IOSPullToRefresh } from './components/IOSPullToRefresh';
-import { markItemsAsDeleted, unmarkItemsAsDeleted, isItemDeleted } from './utils/deletionTracker';
+import { 
+  markItemsAsDeleted, 
+  unmarkItemsAsDeleted, 
+  isItemDeleted,
+  markUdharCustomerDeleted,
+  unmarkUdharCustomerDeleted,
+  isUdharCustomerDeleted,
+  markUdharTxDeleted,
+  unmarkUdharTxDeleted,
+  isUdharTxDeleted
+} from './utils/deletionTracker';
 
 // @ts-ignore
 import appLogo from './components/ui/tsBizManagerLogo.png';
@@ -2672,12 +2684,118 @@ export default function App() {
       }
     });
 
+    // Sync Udhar Customers (clean remote reflection with self-healing offline preservation)
+    const udharCustomersRef = collection(db, 'users', state.user.uid, 'udharCustomers');
+    const unsubUdharCustomers = onSnapshot(udharCustomersRef, (snap) => {
+      const customersList: UdharCustomer[] = [];
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data && !isUdharCustomerDeleted(docSnap.id)) {
+          customersList.push({
+            id: docSnap.id,
+            name: data.name || '',
+            phone: data.phone || '',
+            totalUdhar: typeof data.totalUdhar === 'number' ? data.totalUdhar : Number(data.totalUdhar) || 0,
+            lastUpdated: data.lastUpdated || new Date().toISOString()
+          });
+        }
+      });
+
+      customersList.sort((a, b) => (b.lastUpdated || '').localeCompare(a.lastUpdated || ''));
+
+      setState(prev => {
+        const localCustomers = prev.udharCustomers || [];
+        const unsyncedCustomers = localCustomers.filter(lc => 
+          !customersList.some(cl => cl.id === lc.id) && !isUdharCustomerDeleted(lc.id)
+        );
+
+        // Self-heal: upload any existing offline/local customers to Firestore
+        if (unsyncedCustomers.length > 0 && state.user && state.settings.autoCloudSync) {
+          unsyncedCustomers.forEach(async (cust) => {
+            try {
+              await setDoc(doc(db, 'users', state.user!.uid, 'udharCustomers', cust.id), sanitizeForFirestore(cust));
+            } catch (e) {
+              console.warn("Background upload of offline udhar customer failed:", e);
+            }
+          });
+        }
+
+        if (customersList.length === 0 && localCustomers.length > 0) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          udharCustomers: deduplicateById([...customersList, ...unsyncedCustomers])
+        };
+      });
+    }, (error) => {
+      if (auth.currentUser) {
+        console.warn("Udhar customers sync notice:", error);
+      }
+    });
+
+    // Sync Udhar Transactions (clean remote reflection with self-healing offline preservation)
+    const udharTxRef = collection(db, 'users', state.user.uid, 'udharTransactions');
+    const unsubUdharTx = onSnapshot(udharTxRef, (snap) => {
+      const txList: UdharTransaction[] = [];
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data && !isUdharTxDeleted(docSnap.id)) {
+          txList.push({
+            id: docSnap.id,
+            customerId: data.customerId || '',
+            amount: typeof data.amount === 'number' ? data.amount : Number(data.amount) || 0,
+            type: data.type === 'received' ? 'received' : 'given',
+            note: data.note || '',
+            timestamp: data.timestamp || new Date().toISOString(),
+            dueDate: data.dueDate || undefined
+          });
+        }
+      });
+
+      txList.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+
+      setState(prev => {
+        const localTx = prev.udharTransactions || [];
+        const unsyncedTx = localTx.filter(lt => 
+          !txList.some(ct => ct.id === lt.id) && !isUdharTxDeleted(lt.id)
+        );
+
+        // Self-heal: upload any existing offline/local transactions to Firestore
+        if (unsyncedTx.length > 0 && state.user && state.settings.autoCloudSync) {
+          unsyncedTx.forEach(async (tx) => {
+            try {
+              await setDoc(doc(db, 'users', state.user!.uid, 'udharTransactions', tx.id), sanitizeForFirestore(tx));
+            } catch (e) {
+              console.warn("Background upload of offline udhar tx failed:", e);
+            }
+          });
+        }
+
+        if (txList.length === 0 && localTx.length > 0) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          udharTransactions: deduplicateById([...txList, ...unsyncedTx])
+        };
+      });
+    }, (error) => {
+      if (auth.currentUser) {
+        console.warn("Udhar transactions sync notice:", error);
+      }
+    });
+
     return () => {
       unsubSettings();
       unsubItems();
       unsubNotes();
       unsubBills();
       unsubUnbilled();
+      unsubUdharCustomers();
+      unsubUdharTx();
     };
   }, [state.user, state.settings.autoCloudSync]);
 
@@ -3982,11 +4100,83 @@ export default function App() {
             }
           }
         }
+
+        // (D) Sync Udhar Customers if updated
+        if (updates.udharCustomers) {
+          const oldCustomers = state.udharCustomers || [];
+          const newCustomers = updates.udharCustomers;
+
+          const addedOrEdited = newCustomers.filter(nc => {
+            const oc = oldCustomers.find(c => c.id === nc.id);
+            return !oc || JSON.stringify(oc) !== JSON.stringify(nc);
+          });
+
+          const deleted = oldCustomers.filter(oc => !newCustomers.some(nc => nc.id === oc.id));
+
+          if (deleted.length > 0) {
+            markUdharCustomerDeleted(deleted.map(d => d.id));
+          }
+
+          for (const cust of addedOrEdited) {
+            unmarkUdharCustomerDeleted(cust.id);
+            try {
+              await setDoc(doc(db, 'users', uId, 'udharCustomers', cust.id), sanitizeForFirestore(cust));
+            } catch (e) {
+              console.error("Error syncing udhar customer:", e);
+              handleFirestoreError(e, OperationType.WRITE, `users/${uId}/udharCustomers/${cust.id}`);
+            }
+          }
+
+          for (const cust of deleted) {
+            try {
+              await deleteDoc(doc(db, 'users', uId, 'udharCustomers', cust.id));
+            } catch (e) {
+              console.error("Error deleting udhar customer:", e);
+              handleFirestoreError(e, OperationType.DELETE, `users/${uId}/udharCustomers/${cust.id}`);
+            }
+          }
+        }
+
+        // (E) Sync Udhar Transactions if updated
+        if (updates.udharTransactions) {
+          const oldTx = state.udharTransactions || [];
+          const newTx = updates.udharTransactions;
+
+          const addedOrEdited = newTx.filter(nt => {
+            const ot = oldTx.find(t => t.id === nt.id);
+            return !ot || JSON.stringify(ot) !== JSON.stringify(nt);
+          });
+
+          const deleted = oldTx.filter(ot => !newTx.some(nt => nt.id === ot.id));
+
+          if (deleted.length > 0) {
+            markUdharTxDeleted(deleted.map(d => d.id));
+          }
+
+          for (const tx of addedOrEdited) {
+            unmarkUdharTxDeleted(tx.id);
+            try {
+              await setDoc(doc(db, 'users', uId, 'udharTransactions', tx.id), sanitizeForFirestore(tx));
+            } catch (e) {
+              console.error("Error syncing udhar transaction:", e);
+              handleFirestoreError(e, OperationType.WRITE, `users/${uId}/udharTransactions/${tx.id}`);
+            }
+          }
+
+          for (const tx of deleted) {
+            try {
+              await deleteDoc(doc(db, 'users', uId, 'udharTransactions', tx.id));
+            } catch (e) {
+              console.error("Error deleting udhar transaction:", e);
+              handleFirestoreError(e, OperationType.DELETE, `users/${uId}/udharTransactions/${tx.id}`);
+            }
+          }
+        }
       } finally {
         setIsSyncing(false);
       }
     }
-  }, [state.user, state.settings.autoCloudSync, state.bills, state.items, state.notes]);
+  }, [state.user, state.settings.autoCloudSync, state.bills, state.items, state.notes, state.udharCustomers, state.udharTransactions]);
 
   const handleToggleLock = () => {
     if (state.settings.isLocked) {

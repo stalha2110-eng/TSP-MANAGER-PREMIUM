@@ -540,7 +540,7 @@ export default function UdharScreen({
               <span>Udhar <span className="text-rose-500">Book Ledger</span></span>
             </h2>
             <p className="text-[9px] sm:text-[10px] font-bold opacity-50 uppercase tracking-widest truncate">
-              Manage regular customer credit & payments (उधार खाता डायरी)
+              Manage customers Udhar payments (उधार खाता डायरी)
             </p>
           </div>
 

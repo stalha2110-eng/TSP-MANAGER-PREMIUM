@@ -186,6 +186,34 @@
         "userEmail": { "type": "string" }
       },
       "required": ["id", "productId", "productName", "type", "timestamp", "previousVal", "newVal", "userEmail"]
+    },
+    "UdharCustomer": {
+      "title": "Udhar Customer",
+      "description": "A customer profile in the credit ledger with outstanding dues balance.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "totalUdhar": { "type": "number" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "totalUdhar", "lastUpdated"]
+    },
+    "UdharTransaction": {
+      "title": "Udhar Transaction",
+      "description": "An individual credit given or payment received ledger record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["given", "received"] },
+        "note": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "dueDate": { "type": "string" }
+      },
+      "required": ["id", "customerId", "amount", "type", "timestamp"]
     }
   },
   "firestore": {
@@ -200,6 +228,14 @@
     "/users/{userId}/bills/{billId}": {
       "schema": "Bill",
       "description": "User specific customer invoices and bills."
+    },
+    "/users/{userId}/udharCustomers/{customerId}": {
+      "schema": "UdharCustomer",
+      "description": "User specific Udhar (credit) ledger customer accounts."
+    },
+    "/users/{userId}/udharTransactions/{transactionId}": {
+      "schema": "UdharTransaction",
+      "description": "User specific Udhar credit and repayment transactions."
     },
     "/users/{userId}/notifications/{notificationId}": {
       "schema": "InAppNotification",

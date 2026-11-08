@@ -10,11 +10,11 @@ import {
   query 
 } from 'firebase/firestore';
 import { db, sanitizeForFirestore, auth } from '../firebase';
-import { AppState, Item, Bill, Note, UnbilledEntry } from '../types';
+import { AppState, Item, Bill, Note, UnbilledEntry, UdharCustomer, UdharTransaction } from '../types';
 import { RecoveryService } from './recoveryService';
 import { deduplicateById } from '../constants/initialState';
 import { getUnbilledEntries, saveUnbilledEntries } from '../lib/unbilledStorage';
-import { isItemDeleted } from '../utils/deletionTracker';
+import { isItemDeleted, isUdharCustomerDeleted, isUdharTxDeleted } from '../utils/deletionTracker';
 import { getAllLocalProductImages } from '../utils/localImageStorage';
 import { stripDashboardSettingsFromCloud, mergeCloudSettingsWithLocal } from '../utils/localDashboardStorage';
 
@@ -27,6 +27,8 @@ export interface SyncResult {
   billsSynced: number;
   notesSynced: number;
   unbilledSynced: number;
+  udharCustomersSynced?: number;
+  udharTransactionsSynced?: number;
   message: string;
   timestamp: string;
 }
@@ -286,6 +288,8 @@ export class CloudSyncService {
           billsSynced: currentState.bills.length,
           notesSynced: currentState.notes.length,
           unbilledSynced: (currentState.unbilledEntries || []).length,
+          udharCustomersSynced: (currentState.udharCustomers || []).length,
+          udharTransactionsSynced: (currentState.udharTransactions || []).length,
           message: "Guest Mode: Local records verified / गेस्ट मोड",
           timestamp: new Date().toLocaleTimeString()
         };
@@ -491,7 +495,117 @@ export class CloudSyncService {
       }
 
       // =========================================================================
-      // 6. SYNC RECOVERY & AUDIT RECORDS
+      // 6. SELF-HEALING SYNC FOR UDHAR CUSTOMERS
+      // =========================================================================
+      let udharCustomersList: UdharCustomer[] = [];
+      try {
+        const udharCustomersRef = collection(db, 'users', uid, 'udharCustomers');
+        let snap;
+        try {
+          snap = await getDocsFromServer(query(udharCustomersRef, orderBy('lastUpdated', 'desc')));
+        } catch {
+          snap = await getDocs(udharCustomersRef);
+        }
+
+        snap.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data && !isUdharCustomerDeleted(docSnap.id)) {
+            udharCustomersList.push({
+              id: docSnap.id,
+              name: data.name || '',
+              phone: data.phone || '',
+              totalUdhar: typeof data.totalUdhar === 'number' ? data.totalUdhar : Number(data.totalUdhar) || 0,
+              lastUpdated: data.lastUpdated || new Date().toISOString()
+            });
+          }
+        });
+
+        // Detect and upload unsynced offline customers
+        const localCustomers = currentState.udharCustomers || [];
+        const unsyncedCustomers = localCustomers.filter(lc => 
+          !udharCustomersList.some(cc => cc.id === lc.id) && !isUdharCustomerDeleted(lc.id)
+        );
+        if (unsyncedCustomers.length > 0) {
+          for (const cust of unsyncedCustomers) {
+            try {
+              await setDoc(doc(db, 'users', uid, 'udharCustomers', cust.id), sanitizeForFirestore(cust));
+            } catch (upErr) {
+              console.warn('[CloudSync] Failed to upload offline udhar customer:', cust.name, upErr);
+            }
+          }
+        }
+
+        const mergedCustomers = deduplicateById([...udharCustomersList, ...unsyncedCustomers]).sort((a, b) => 
+          (b.lastUpdated || '').localeCompare(a.lastUpdated || '')
+        );
+
+        if (onStateUpdate) {
+          onStateUpdate(prev => ({ ...prev, udharCustomers: mergedCustomers }));
+        }
+        udharCustomersList = mergedCustomers;
+      } catch (custErr) {
+        console.warn("[CloudSync] Udhar customers sync warning:", custErr);
+        udharCustomersList = currentState.udharCustomers || [];
+      }
+
+      // =========================================================================
+      // 7. SELF-HEALING SYNC FOR UDHAR TRANSACTIONS
+      // =========================================================================
+      let udharTxList: UdharTransaction[] = [];
+      try {
+        const udharTxRef = collection(db, 'users', uid, 'udharTransactions');
+        let snap;
+        try {
+          snap = await getDocsFromServer(query(udharTxRef, orderBy('timestamp', 'desc')));
+        } catch {
+          snap = await getDocs(udharTxRef);
+        }
+
+        snap.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data && !isUdharTxDeleted(docSnap.id)) {
+            udharTxList.push({
+              id: docSnap.id,
+              customerId: data.customerId || '',
+              amount: typeof data.amount === 'number' ? data.amount : Number(data.amount) || 0,
+              type: data.type === 'received' ? 'received' : 'given',
+              note: data.note || '',
+              timestamp: data.timestamp || new Date().toISOString(),
+              dueDate: data.dueDate || undefined
+            });
+          }
+        });
+
+        // Detect and upload unsynced offline transactions
+        const localTx = currentState.udharTransactions || [];
+        const unsyncedTx = localTx.filter(lt => 
+          !udharTxList.some(ct => ct.id === lt.id) && !isUdharTxDeleted(lt.id)
+        );
+        if (unsyncedTx.length > 0) {
+          for (const tx of unsyncedTx) {
+            try {
+              await setDoc(doc(db, 'users', uid, 'udharTransactions', tx.id), sanitizeForFirestore(tx));
+            } catch (upErr) {
+              console.warn('[CloudSync] Failed to upload offline udhar tx:', tx.id, upErr);
+            }
+          }
+        }
+
+        const mergedTx = deduplicateById([...udharTxList, ...unsyncedTx]).sort((a, b) => 
+          (b.timestamp || '').localeCompare(a.timestamp || '')
+        );
+
+        if (onStateUpdate) {
+          onStateUpdate(prev => ({ ...prev, udharTransactions: mergedTx }));
+        }
+        udharTxList = mergedTx;
+      } catch (txErr) {
+        console.warn("[CloudSync] Udhar transactions sync warning:", txErr);
+        udharTxList = currentState.udharTransactions || [];
+      }
+
+      // =========================================================================
+      // 8. SYNC RECOVERY & AUDIT RECORDS
       // =========================================================================
       try {
         await RecoveryService.syncAndFetchRecoveryData(uid);
@@ -509,6 +623,8 @@ export class CloudSyncService {
         billsSynced: billsList.length,
         notesSynced: notesList.length,
         unbilledSynced: unbilledList.length,
+        udharCustomersSynced: udharCustomersList.length,
+        udharTransactionsSynced: udharTxList.length,
         message: updateCheck.hasUpdate 
           ? "Sync complete! New app update available / नया अपडेट उपलब्ध है"
           : "✓ Firestore Cloud Database fully synced / डेटाबेस सिंक पूरा हुआ",

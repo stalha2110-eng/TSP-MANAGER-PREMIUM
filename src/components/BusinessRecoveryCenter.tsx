@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { RecoveryService, RecoveryRecord, AuditLog, PriceStockRecord } from '../services/recoveryService';
 import { AppState, Item, Category, UdharCustomer, UdharTransaction, Bill } from '../types';
-import { unmarkItemsAsDeleted } from '../utils/deletionTracker';
+import { unmarkItemsAsDeleted, unmarkUdharCustomerDeleted, unmarkUdharTxDeleted } from '../utils/deletionTracker';
 
 interface BusinessRecoveryCenterProps {
   state: AppState;
@@ -197,6 +197,11 @@ export default function BusinessRecoveryCenter({
       if (activeCustomers.some(c => c.id === customer.id)) {
         handleShowAlert(`Customer "${customer.name}" already exists.`, 'err');
         return;
+      }
+
+      unmarkUdharCustomerDeleted(customer.id);
+      if (ledger && ledger.length > 0) {
+        unmarkUdharTxDeleted(ledger.map(t => t.id));
       }
 
       onUpdateState({
@@ -391,6 +396,10 @@ export default function BusinessRecoveryCenter({
           const currentTxs = state.udharTransactions || [];
           
           if (!currentCustomers.some(c => c.id === customer.id)) {
+            unmarkUdharCustomerDeleted(customer.id);
+            if (ledger && ledger.length > 0) {
+              unmarkUdharTxDeleted(ledger.map(t => t.id));
+            }
             onUpdateState({
               udharCustomers: [customer, ...currentCustomers],
               udharTransactions: [...ledger, ...currentTxs]

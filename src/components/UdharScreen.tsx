@@ -150,13 +150,18 @@ export default function UdharScreen({
 
   // Helper to find associated bill from transaction note reference
   const getBillForTransaction = (note?: string) => {
-    if (!note) return null;
-    const match = note.match(/reference #(\d+)/i);
+    if (!note || !state.bills) return null;
+    const match = note.match(/(?:reference\s*#|bill\s*#|#)\s*([a-zA-Z0-9_\-]+)/i);
     if (match) {
       const billNum = match[1];
-      return state.bills?.find(b => b.billNumber === billNum) || null;
+      const found = state.bills.find(b => 
+        b.billNumber.toLowerCase() === billNum.toLowerCase() || 
+        b.id === billNum ||
+        b.billNumber.replace(/^INV-/, '') === billNum
+      );
+      if (found) return found;
     }
-    return null;
+    return state.bills.find(b => b.billNumber && note.includes(b.billNumber)) || null;
   };
 
   const rawCustomers = useMemo(() => state.udharCustomers || [], [state.udharCustomers]);
@@ -921,21 +926,22 @@ export default function UdharScreen({
 
               {/* Transactions Diary List view */}
               <div className="space-y-2 pt-1">
-                <div className="flex items-center justify-between gap-2 pb-1 border-b border-[var(--border)]/40">
-                  <h4 className="text-[9px] font-black uppercase opacity-50 tracking-wider">
-                    Ledger Log ({filteredLedger.length})
+                <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-[var(--border)]/40">
+                  <h4 className="text-[10px] font-black uppercase opacity-60 tracking-wider flex items-center gap-1.5 shrink-0">
+                    <Receipt size={12} className="text-rose-500" />
+                    <span>Ledger Log ({filteredLedger.length})</span>
                   </h4>
                   
                   {/* Ledger search bar */}
                   {selectedLedger.length > 0 && (
-                    <div className="relative w-44 sm:w-56">
+                    <div className="relative flex-1 max-w-[180px] sm:max-w-[220px] ml-auto">
                       <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-rose-500 opacity-60" />
                       <input 
                         type="text"
                         value={ledgerSearchQuery}
                         onChange={(e) => setLedgerSearchQuery(e.target.value)}
                         placeholder="Search entries..."
-                        className="w-full text-[10px] font-bold rounded-lg border border-[var(--border)] bg-[var(--foreground)]/[0.03] pl-7 pr-6 py-1 focus:outline-none focus:border-rose-500 text-[var(--foreground)] placeholder:text-[var(--foreground)]/40"
+                        className="w-full text-[10.5px] font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.03] pl-7 pr-6 py-1.5 focus:outline-none focus:border-rose-500 text-[var(--foreground)] placeholder:text-[var(--foreground)]/40"
                       />
                       {ledgerSearchQuery && (
                         <button 
@@ -950,14 +956,14 @@ export default function UdharScreen({
                   )}
                 </div>
 
-                <div className="divide-y divide-[var(--border)] overflow-hidden max-h-[46vh] overflow-y-auto no-scrollbar pr-0.5">
+                <div className="space-y-2.5 overflow-hidden max-h-[50vh] overflow-y-auto no-scrollbar pr-0.5">
                   {selectedLedger.length === 0 ? (
-                    <div className="py-12 text-center opacity-35 text-[9.5px] uppercase tracking-wider font-extrabold font-mono border border-dashed border-[var(--border)] rounded-xl space-y-1 select-none">
+                    <div className="py-12 text-center opacity-35 text-[9.5px] uppercase tracking-wider font-extrabold font-mono border border-dashed border-[var(--border)] rounded-2xl space-y-1 select-none">
                       <p>Empty ledger book history</p>
                       <p className="text-[8px] opacity-70">Use Give Udhar or Received Pay to add entries</p>
                     </div>
                   ) : filteredLedger.length === 0 ? (
-                    <div className="py-12 text-center opacity-35 text-[9.5px] uppercase tracking-wider font-extrabold font-mono border border-dashed border-[var(--border)] rounded-xl select-none">
+                    <div className="py-12 text-center opacity-35 text-[9.5px] uppercase tracking-wider font-extrabold font-mono border border-dashed border-[var(--border)] rounded-2xl select-none">
                       No matching records for "{ledgerSearchQuery}"
                     </div>
                   ) : (
@@ -966,78 +972,137 @@ export default function UdharScreen({
                       const billObj = getBillForTransaction(tx.note);
 
                       return (
-                        <div key={`udhar-tx-${tx.id || 'tx'}-${tIdx}`} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0 font-medium gap-2">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className={cn(
-                              "h-7 w-7 rounded-lg flex items-center justify-center shrink-0 border",
-                              isGiven 
-                                ? "bg-rose-500/15 text-rose-500 border-rose-500/25" 
-                                : "bg-emerald-500/15 text-emerald-500 border-emerald-500/25"
-                            )}>
-                              {isGiven ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[11px] font-black uppercase tracking-tight text-[var(--foreground)] truncate">
-                                {isGiven ? 'CREDIT GIVEN' : 'PAYMENT RECEIVED'}
-                              </p>
-                              <p className="text-[8.5px] opacity-45 font-mono leading-tight">
-                                {new Date(tx.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                              </p>
-                              {tx.note && (
-                                <p className="text-[8px] font-bold text-[var(--primary)] truncate mt-0.5">
-                                  ☞ {tx.note}
-                                </p>
-                              )}
-                              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                                {tx.dueDate && (
-                                  <span className="text-amber-500 font-bold uppercase text-[7px] tracking-wider bg-amber-500/10 border border-amber-500/20 px-1 py-0.2 rounded select-none">
-                                    ⏳ Due: {new Date(tx.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        <div 
+                          key={`udhar-tx-${tx.id || 'tx'}-${tIdx}`} 
+                          className={cn(
+                            "p-3 sm:p-3.5 rounded-2xl border transition-all space-y-2.5 shadow-2xs",
+                            isGiven 
+                              ? "bg-rose-500/[0.04] dark:bg-rose-950/15 border-rose-500/25 hover:border-rose-500/40" 
+                              : "bg-emerald-500/[0.04] dark:bg-emerald-950/15 border-emerald-500/25 hover:border-emerald-500/40"
+                          )}
+                        >
+                          {/* Top Row: Type Badge + Date on Left, Amount + Edit/Delete on Right */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className={cn(
+                                "h-8 w-8 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs",
+                                isGiven 
+                                  ? "bg-rose-500/15 text-rose-500 border-rose-500/25" 
+                                  : "bg-emerald-500/15 text-emerald-500 border-emerald-500/25"
+                              )}>
+                                {isGiven ? <ArrowUpRight size={15} strokeWidth={2.5} /> : <ArrowDownRight size={15} strokeWidth={2.5} />}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className={cn(
+                                    "text-[11px] sm:text-xs font-black uppercase tracking-tight",
+                                    isGiven ? "text-rose-500" : "text-emerald-500"
+                                  )}>
+                                    {isGiven ? 'उधार दिया (Credit Given)' : 'जमा मिला (Payment Recv)'}
                                   </span>
-                                )}
-                                {billObj && (
-                                  <button
-                                    onClick={() => setViewingBill(billObj)}
-                                    type="button"
-                                    className="px-1.5 py-0.2 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[7.5px] font-black uppercase tracking-wider flex items-center gap-0.5 cursor-pointer select-none"
-                                  >
-                                    <Receipt size={9} /> Bill #{billObj.billNumber}
-                                  </button>
-                                )}
+                                </div>
+                                <p className="text-[9px] opacity-50 font-mono flex items-center gap-1 mt-0.5">
+                                  <Calendar size={10} className="opacity-60" />
+                                  <span>{new Date(tx.timestamp).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Right side: Amount & Entry Edit/Delete */}
+                            <div className="text-right flex items-center gap-1.5 shrink-0">
+                              <span className={cn(
+                                "font-mono text-sm sm:text-base font-black tracking-tight",
+                                isGiven ? "text-rose-500" : "text-emerald-500"
+                              )}>
+                                {isGiven ? '-' : '+'}₹{Math.abs(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                              </span>
+                              <div className="flex items-center gap-0.5 ml-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingTransaction(tx);
+                                    setEditTxAmount(String(Math.abs(tx.amount)));
+                                    setEditTxNote(tx.note || '');
+                                    setEditTxDueDate(tx.dueDate || '');
+                                  }}
+                                  className="h-7 w-7 rounded-lg hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/45 hover:text-rose-500 flex items-center justify-center transition-colors cursor-pointer active:scale-90"
+                                  title="Edit Entry"
+                                >
+                                  <Edit size={12} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteTransaction(tx.id)}
+                                  className="h-7 w-7 rounded-lg hover:bg-rose-500/10 text-[var(--foreground)]/45 hover:text-rose-500 flex items-center justify-center transition-colors cursor-pointer active:scale-90"
+                                  title="Delete Entry"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
                               </div>
                             </div>
                           </div>
 
-                          <div className="text-right flex items-center gap-1.5 shrink-0">
-                            <span className={cn(
-                              "font-mono text-xs font-black",
-                              isGiven ? "text-rose-500" : "text-emerald-500"
-                            )}>
-                              {isGiven ? '-' : '+'}₹{Math.abs(tx.amount).toLocaleString()}
-                            </span>
-                            <div className="flex items-center gap-0.5">
+                          {/* Middle Info Row: Note / Due Date / Bill Items summary */}
+                          {(tx.note || tx.dueDate || billObj) && (
+                            <div className="pt-2 border-t border-[var(--border)]/40 flex flex-col gap-1.5 text-left">
+                              {billObj ? (
+                                <div className="flex items-center justify-between gap-2 flex-wrap text-[10px]">
+                                  <span className="font-bold opacity-80 flex items-center gap-1 text-[var(--foreground)]">
+                                    <Receipt size={12} className="text-rose-500 shrink-0" />
+                                    <span>Invoice #{billObj.billNumber} • {billObj.items.length} {billObj.items.length === 1 ? 'item' : 'items'}</span>
+                                  </span>
+                                  {tx.dueDate && (
+                                    <span className="text-amber-500 font-bold uppercase text-[8px] tracking-wider bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-1 select-none">
+                                      ⏳ Due: {new Date(tx.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  {tx.note && (
+                                    <p className="text-[9.5px] font-medium text-[var(--foreground)]/80 flex items-center gap-1.5 truncate">
+                                      <span className="opacity-40 font-bold">Note:</span> {tx.note}
+                                    </p>
+                                  )}
+                                  {tx.dueDate && (
+                                    <span className="text-amber-500 font-bold uppercase text-[8px] tracking-wider bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-1 select-none">
+                                      ⏳ Due: {new Date(tx.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Bottom Action Strip: Only when linked to a bill */}
+                          {billObj && (
+                            <div className="pt-2 border-t border-[var(--border)]/40 grid grid-cols-2 gap-2">
+                              {/* Button 1: View Invoice */}
                               <button
+                                onClick={() => setViewingBill(billObj)}
                                 type="button"
-                                onClick={() => {
-                                  setEditingTransaction(tx);
-                                  setEditTxAmount(String(Math.abs(tx.amount)));
-                                  setEditTxNote(tx.note || '');
-                                  setEditTxDueDate(tx.dueDate || '');
-                                }}
-                                className="h-6 w-6 rounded-md hover:bg-[var(--foreground)]/10 text-[var(--foreground)]/40 hover:text-rose-500 flex items-center justify-center transition-colors cursor-pointer"
-                                title="Edit Entry"
+                                className="h-9 px-2.5 rounded-xl bg-[var(--foreground)]/5 hover:bg-[var(--foreground)]/10 text-[var(--foreground)] text-[10.5px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 border border-[var(--border)] active:scale-[0.98] transition-all cursor-pointer shadow-2xs"
                               >
-                                <Edit size={11} />
+                                <Receipt size={13} className="text-rose-500 shrink-0" />
+                                <span className="truncate">View Invoice</span>
                               </button>
+
+                              {/* Button 2: Edit in Billing Counter (HIGH CONTRAST & ACCESSIBLE) */}
                               <button
+                                onClick={() => {
+                                  if (onEditBillInCounter && billObj) {
+                                    onEditBillInCounter(billObj);
+                                  }
+                                }}
                                 type="button"
-                                onClick={() => handleDeleteTransaction(tx.id)}
-                                className="h-6 w-6 rounded-md hover:bg-rose-500/10 text-[var(--foreground)]/40 hover:text-rose-500 flex items-center justify-center transition-colors cursor-pointer"
-                                title="Delete Entry"
+                                className="h-9 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-[10.5px] uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer shadow-sm border border-amber-600/30"
+                                title="Open and edit this bill directly in the Billing Counter"
                               >
-                                <Trash2 size={11} />
+                                <Edit size={13} strokeWidth={2.5} className="shrink-0" />
+                                <span className="truncate">Edit in Counter</span>
                               </button>
                             </div>
-                          </div>
+                          )}
                         </div>
                       );
                     })
@@ -1087,18 +1152,18 @@ export default function UdharScreen({
                     value={newCustomerName}
                     onChange={(e) => setNewCustomerName(e.target.value)}
                     required
-                    className="w-full text-xs font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.03] py-3 px-4 focus:outline-none focus:border-rose-500"
+                    className="w-full text-xs font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.04] py-3 px-4 focus:outline-none focus:border-rose-500 text-[var(--foreground)] placeholder:text-[var(--foreground)]/35"
                   />
                 </div>
 
                 <div className="space-y-1.5 text-left">
-                  <label className="text-[9px] font-black uppercase opacity-45">WhatsApp/Mobile (वैकल्पिक फ़ोन)</label>
+                  <label className="text-[9px] font-black uppercase opacity-60 text-[var(--foreground)]">WhatsApp/Mobile (वैकल्पिक फ़ोन)</label>
                   <input 
                     type="text" 
                     placeholder="10 digit Mobile No" 
                     value={newCustomerPhone}
                     onChange={(e) => setNewCustomerPhone(e.target.value)}
-                    className="w-full text-xs font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.03] py-3 px-4 focus:outline-none focus:border-rose-500 font-mono"
+                    className="w-full text-xs font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.04] py-3 px-4 focus:outline-none focus:border-rose-500 font-mono text-[var(--foreground)] placeholder:text-[var(--foreground)]/35"
                   />
                 </div>
 
@@ -1149,17 +1214,17 @@ export default function UdharScreen({
                 <div className="h-8 w-8 text-xs font-black bg-rose-500/10 text-rose-500 flex items-center justify-center rounded-lg uppercase shrink-0">
                   {selectedCustomer.name.substring(0, 2)}
                 </div>
-                <div>
-                  <p className="text-[10px] text-zinc-400 font-bold uppercase leading-none">Modifying Account Of</p>
-                  <p className="text-xs font-bold uppercase truncate max-w-[200px] mt-1 text-white">{selectedCustomer.name}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] opacity-50 font-bold uppercase leading-none">Modifying Account Of</p>
+                  <p className="text-xs font-bold uppercase truncate max-w-[200px] mt-1 text-[var(--foreground)]">{selectedCustomer.name}</p>
                 </div>
               </div>
 
               <form onSubmit={handleAddTransaction} className="space-y-4">
                 <div className="space-y-1.5 text-left">
-                  <label className="text-[9px] font-black uppercase opacity-45">Amount Value (रुपये की राशि)</label>
+                  <label className="text-[9px] font-black uppercase opacity-60 text-[var(--foreground)]">Amount Value (रुपये की राशि)</label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold">₹</span>
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-black text-[var(--foreground)]/70">₹</span>
                     <input 
                       type="number" 
                       placeholder="0.00" 
@@ -1167,25 +1232,26 @@ export default function UdharScreen({
                       onChange={(e) => setTransactionAmount(e.target.value)}
                       required
                       autoFocus
-                      className="w-full text-xs font-black rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.03] py-3 pl-8 pr-4 focus:outline-none focus:border-rose-500 font-mono text-white"
+                      step="any"
+                      className="w-full text-sm font-black rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.04] py-3 pl-8 pr-4 focus:outline-none focus:border-rose-500 font-mono text-[var(--foreground)] placeholder:text-[var(--foreground)]/35"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5 text-left">
-                  <label className="text-[9px] font-black uppercase opacity-45">Remarks Notes (विवरण - जैसे सामान का नाम)</label>
+                  <label className="text-[9px] font-black uppercase opacity-60 text-[var(--foreground)]">Remarks Notes (विवरण - जैसे सामान का नाम)</label>
                   <input 
                     type="text" 
                     placeholder="E.g. Kirana checklist or cash" 
                     value={transactionNote}
                     onChange={(e) => setTransactionNote(e.target.value)}
-                    className="w-full text-xs font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.03] py-3 px-4 focus:outline-none focus:border-rose-500"
+                    className="w-full text-xs font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.04] py-3 px-4 focus:outline-none focus:border-rose-500 text-[var(--foreground)] placeholder:text-[var(--foreground)]/35"
                   />
                 </div>
 
                 {showTransactionModal === 'given' && (
                   <div className="space-y-1.5 text-left">
-                    <label className="text-[9px] font-black uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+                    <label className="text-[9px] font-black uppercase tracking-wider text-rose-500 flex items-center gap-1.5">
                       <Calendar size={11} className="animate-pulse" />
                       <span>Due Date for Credit Repayment (वैकल्पिक भुगतान तिथि)</span>
                     </label>
@@ -1193,7 +1259,7 @@ export default function UdharScreen({
                       type="date" 
                       value={transactionDueDate}
                       onChange={(e) => setTransactionDueDate(e.target.value)}
-                      className="w-full text-xs font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.03] py-3 px-4 focus:outline-none focus:border-rose-500 text-white font-mono"
+                      className="w-full text-xs font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.04] py-3 px-4 focus:outline-none focus:border-rose-500 text-[var(--foreground)] font-mono"
                     />
                     <div className="flex gap-1.5 mt-1.5 flex-wrap">
                       <button
@@ -1350,15 +1416,18 @@ export default function UdharScreen({
 
               <form onSubmit={handleSaveEditTransaction} className="space-y-4 text-left">
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase opacity-45">Transaction Amount (₹)</label>
-                  <input 
-                    type="number" 
-                    step="any"
-                    value={editTxAmount} 
-                    onChange={e => setEditTxAmount(e.target.value)} 
-                    className="w-full text-xs font-bold rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.03] py-2.5 px-3 focus:outline-none focus:border-rose-500 text-[var(--foreground)] font-mono"
-                    required
-                  />
+                  <label className="text-[9px] font-black uppercase opacity-60 text-[var(--foreground)]">Transaction Amount (रुपये की राशि)</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-black text-[var(--foreground)]/70">₹</span>
+                    <input 
+                      type="number" 
+                      step="any"
+                      value={editTxAmount} 
+                      onChange={e => setEditTxAmount(e.target.value)} 
+                      className="w-full text-sm font-black rounded-xl border border-[var(--border)] bg-[var(--foreground)]/[0.04] py-3 pl-8 pr-4 focus:outline-none focus:border-rose-500 text-[var(--foreground)] font-mono placeholder:text-[var(--foreground)]/35"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
@@ -1414,28 +1483,14 @@ export default function UdharScreen({
               className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-3xl p-6 shadow-2xl space-y-4 text-[var(--foreground)]"
             >
               <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <h4 className="font-bold text-xs uppercase tracking-widest text-rose-500 flex items-center gap-1.5">
-                    <Receipt size={14} /> Invoice Details
-                  </h4>
-                  <button
-                    onClick={() => {
-                      if (onEditBillInCounter && viewingBill) {
-                        onEditBillInCounter(viewingBill);
-                        setViewingBill(null);
-                      }
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[9.5px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-all border border-rose-500/20 active:scale-95 shadow-2xs"
-                    title="Open and edit this bill directly in the Billing Counter"
-                  >
-                    <Edit size={11} /> Edit in Billing Counter
-                  </button>
-                </div>
+                <h4 className="font-bold text-xs uppercase tracking-widest text-rose-500 flex items-center gap-1.5">
+                  <Receipt size={14} /> Invoice #{viewingBill.billNumber}
+                </h4>
                 <button 
                   onClick={() => {
                     setViewingBill(null);
                   }} 
-                  className="text-[var(--foreground)]/50 hover:text-white cursor-pointer"
+                  className="text-[var(--foreground)]/50 hover:text-white cursor-pointer p-1"
                 >
                   <X size={16} />
                 </button>
@@ -1508,13 +1563,26 @@ export default function UdharScreen({
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[var(--border)]">
+              <div className="pt-2 border-t border-[var(--border)] flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => {
+                    if (onEditBillInCounter && viewingBill) {
+                      onEditBillInCounter(viewingBill);
+                      setViewingBill(null);
+                    }
+                  }}
+                  type="button"
+                  className="flex-1 py-3 px-4 bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2 cursor-pointer border border-amber-600/30"
+                >
+                  <Edit size={14} strokeWidth={2.5} />
+                  <span>Edit in Billing Counter</span>
+                </button>
                 <button
                   onClick={() => {
                     setViewingBill(null);
                   }}
                   type="button"
-                  className="w-full py-2.5 bg-[var(--primary)] text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                  className="py-3 px-5 bg-[var(--foreground)]/10 hover:bg-[var(--foreground)]/15 text-[var(--foreground)] text-xs font-black uppercase tracking-wider rounded-xl hover:opacity-90 active:scale-95 transition-all cursor-pointer border border-[var(--border)]"
                 >
                   Close Bill
                 </button>

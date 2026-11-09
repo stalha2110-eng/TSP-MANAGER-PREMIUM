@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
+import {
   CheckCircle2,
   RefreshCw,
   FileSpreadsheet,
@@ -39,24 +39,35 @@ import {
   Smartphone
 } from 'lucide-react';
 import { AppState, AppSettings, ThemeType, LanguageType, CustomApiKeyItem } from '../types';
-import { 
+import {
   NotificationService,
-  playNotificationChime, 
-  triggerVibration, 
-  requestPushPermission 
+  playNotificationChime,
+  triggerVibration,
+  requestPushPermission
 } from '../services/notificationService';
 import { playFeedbackEvent, playSynthesizedSound } from '../services/soundFeedbackService';
 import { THEMES, LANGUAGES } from '../constants';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
+import {
+  getMigrationCandidates,
+  ImageMigrationService,
+  MigrationProgress
+} from '../services/imageMigrationService';
+import { CloudinaryUploadResult } from '../services/cloudinaryService';
 
-export default function SettingsScreen({ 
+export default function SettingsScreen({
   state, t, onUpdate, onResetPIN,
   onExportExcel, onExportPDF, onImport, onBackup, onRestore, onClearCache,
   isSyncing, isExporting,
   activeSubTab: externalActiveSubTab,
-  onChangeSubTab
-}: { 
+  onChangeSubTab,
+  onMigrateSingleImage,
+  registerUploadToken,
+  isUploadTokenValid,
+  clearUploadToken,
+  getItemCurrentImage
+}: {
   state: AppState; t: any; onUpdate: (u: any) => void; onResetPIN: () => void;
   onExportExcel: () => void;
   onExportPDF: () => void;
@@ -68,6 +79,11 @@ export default function SettingsScreen({
   isExporting: boolean;
   activeSubTab?: 'overview' | 'interface' | 'security' | 'sound' | 'data';
   onChangeSubTab?: (tab: 'overview' | 'interface' | 'security' | 'sound' | 'data') => void;
+  onMigrateSingleImage: (itemId: string, result: CloudinaryUploadResult, uploadToken: string) => Promise<boolean>;
+  registerUploadToken: (itemId: string, token: string) => void;
+  isUploadTokenValid: (itemId: string, token: string) => boolean;
+  clearUploadToken: (itemId: string, expectedToken: string) => void;
+  getItemCurrentImage: (itemId: string) => string | undefined | null;
 }) {
   const [localActiveSubTab, setLocalActiveSubTab] = useState<'overview' | 'interface' | 'security' | 'sound' | 'data'>('overview');
   const activeSubTab = externalActiveSubTab || localActiveSubTab;
@@ -75,6 +91,88 @@ export default function SettingsScreen({
 
   // Collapsible state for Advanced Language Engine Configuration
   const [isAdvancedLanguageOpen, setIsAdvancedLanguageOpen] = useState(false);
+
+  // Product Image Cloud Migration State
+  const [migrationProgress, setMigrationProgress] = useState<MigrationProgress | null>(null);
+  const [isMigrating, setIsMigrating] = useState(false);
+
+  const pendingCandidates = useMemo(() => {
+    return getMigrationCandidates(state.items);
+  }, [state.items]);
+
+  const handleStartMigration = async () => {
+    if (isMigrating || ImageMigrationService.isMigrationRunning()) return;
+
+    // Validate that all required migration callbacks exist
+    if (
+      typeof onMigrateSingleImage !== 'function' ||
+      typeof registerUploadToken !== 'function' ||
+      typeof isUploadTokenValid !== 'function' ||
+      typeof clearUploadToken !== 'function' ||
+      typeof getItemCurrentImage !== 'function'
+    ) {
+      const msg = 'Cannot start migration: Required migration services are not configured.';
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('app-add-toast', { detail: { message: msg, type: 'error' } }));
+      }
+      alert(msg);
+      return;
+    }
+
+    // Authentication check
+    if (!state.user || state.user.uid === 'guest_user') {
+      const msg = 'Image migration requires an authenticated account. Please log in to sync images to the cloud.';
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('app-add-toast', { detail: { message: msg, type: 'warning' } }));
+      }
+      alert(msg);
+      return;
+    }
+
+    // Network connectivity check
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const msg = 'Device is offline. Please check your internet connection before starting image migration.';
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('app-add-toast', { detail: { message: msg, type: 'warning' } }));
+      }
+      alert(msg);
+      return;
+    }
+
+    // Candidate count check
+    if (pendingCandidates.length === 0) return;
+
+    setIsMigrating(true);
+    try {
+      await ImageMigrationService.migrateProductImages(pendingCandidates, {
+        onProgress: (p) => {
+          setMigrationProgress(p);
+          if (p.status !== 'running') {
+            setIsMigrating(false);
+          }
+        },
+        registerUploadToken,
+        isTokenValid: isUploadTokenValid,
+        clearUploadToken,
+        saveToFirestore: onMigrateSingleImage,
+        getItemCurrentImage,
+      });
+    } catch (err: any) {
+      console.error('Image migration batch error:', err);
+      const friendlyMsg = err?.message || 'Image migration encountered an unexpected error.';
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('app-add-toast', { detail: { message: `Migration error: ${friendlyMsg}`, type: 'error' } }));
+      }
+      alert(`Migration error: ${friendlyMsg}`);
+      setIsMigrating(false);
+    }
+  };
+
+  const handleCancelMigration = () => {
+    ImageMigrationService.cancelMigration();
+    // Do not set isMigrating(false) immediately.
+    // Keep the migration UI in its active/cancelling state until onProgress reports a terminal status.
+  };
 
   // Custom API Key Management State
   const [showAddKeyModal, setShowAddKeyModal] = useState(false);
@@ -93,7 +191,7 @@ export default function SettingsScreen({
   const handleTestKey = async (keyId: string, keyValue: string) => {
     setTestingKeyId(keyId);
     setKeyTestResults(prev => ({ ...prev, [keyId]: { success: false, message: 'Testing key connection...' } }));
-    
+
     const keyToTest = keyValue.trim();
     if (!keyToTest) {
       setKeyTestResults(prev => ({
@@ -134,7 +232,7 @@ export default function SettingsScreen({
       } catch (serverErr) {
         // Fallback: Validate key directly against Google Gemini REST API (useful in standalone PWA / offline / proxy states)
         console.warn('Server test-key endpoint returned non-JSON or was unreachable. Falling back to direct client API test...', serverErr);
-        
+
         try {
           const clientRes = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(keyToTest)}`,
@@ -213,7 +311,7 @@ export default function SettingsScreen({
     const newActiveId = isCurrentlyActive
       ? (updatedKeys.length > 0 ? updatedKeys[0].id : 'default')
       : activeKeyId;
-    
+
     const newActiveKeyVal = updatedKeys.find(k => k.id === newActiveId)?.key;
 
     onUpdate({
@@ -381,27 +479,27 @@ export default function SettingsScreen({
       )}
 
       {/* Dedicated Section Page Header */}
-      {activeSubTab !== 'overview' && 
-       (activeSubTab !== 'interface' || interfacePage === 'main') && 
-       (activeSubTab !== 'data' || dataPage === 'main') && 
-       (activeSubTab !== 'security' || securityPage === 'main') && 
-       (activeSubTab !== 'sound' || soundPage === 'main') && (
-        <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('overview')}
-            className="flex items-center gap-2 text-xs font-bold text-[var(--primary)] hover:underline cursor-pointer group"
-          >
-            <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
-            <span>Back to Settings</span>
-          </button>
-          <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
-            {activeSubTab === 'interface' ? 'Interface' :
-             activeSubTab === 'data' ? 'Sync & Database' :
-             activeSubTab === 'security' ? 'Security & Sync' : 'Audio & Beeps'}
-          </span>
-        </div>
-      )}
+      {activeSubTab !== 'overview' &&
+        (activeSubTab !== 'interface' || interfacePage === 'main') &&
+        (activeSubTab !== 'data' || dataPage === 'main') &&
+        (activeSubTab !== 'security' || securityPage === 'main') &&
+        (activeSubTab !== 'sound' || soundPage === 'main') && (
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('overview')}
+              className="flex items-center gap-2 text-xs font-bold text-[var(--primary)] hover:underline cursor-pointer group"
+            >
+              <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+              <span>Back to Settings</span>
+            </button>
+            <span className="text-[10px] font-mono text-[var(--foreground)]/50 uppercase font-black tracking-wider">
+              {activeSubTab === 'interface' ? 'Interface' :
+                activeSubTab === 'data' ? 'Sync & Database' :
+                  activeSubTab === 'security' ? 'Security & Sync' : 'Audio & Beeps'}
+            </span>
+          </div>
+        )}
 
       <div className="space-y-8">
         <AnimatePresence mode="wait">
@@ -502,10 +600,10 @@ export default function SettingsScreen({
 
                   <section className="space-y-6">
                     <div className="flex items-center gap-4">
-                       <div className="h-1 w-8 bg-[var(--primary)] opacity-30 rounded-full" />
-                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--primary)]">SELECT LANGUAGE</label>
+                      <div className="h-1 w-8 bg-[var(--primary)] opacity-30 rounded-full" />
+                      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--primary)]">SELECT LANGUAGE</label>
                     </div>
-                    
+
                     <div className="grid gap-8">
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -515,8 +613,8 @@ export default function SettingsScreen({
                               onClick={() => onUpdate({ language: lang.id })}
                               className={cn(
                                 "group relative flex flex-col items-center gap-3 rounded-[2rem] border p-6 transition-all cursor-pointer",
-                                state.settings.language === lang.id 
-                                  ? "border-[var(--primary)] bg-[var(--primary)]/10 shadow-lg" 
+                                state.settings.language === lang.id
+                                  ? "border-[var(--primary)] bg-[var(--primary)]/10 shadow-lg"
                                   : "border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)]/40"
                               )}
                             >
@@ -553,7 +651,7 @@ export default function SettingsScreen({
                                 )}
                               </div>
                               <p className="text-[10px] sm:text-[11px] opacity-60 font-medium leading-relaxed">
-                                {isAdvancedLanguageOpen 
+                                {isAdvancedLanguageOpen
                                   ? "Click to collapse fine-grained linguistic rules & validation sandbox"
                                   : "Click to configure strict translation modes, validation rules & preview tools"}
                               </p>
@@ -592,7 +690,7 @@ export default function SettingsScreen({
                                       <p className="text-xs font-bold text-[var(--foreground)]">Strict Language Mode</p>
                                       <p className="text-[10px] opacity-50 mt-0.5">Enforces only the selected language in all UI components</p>
                                     </div>
-                                    <button 
+                                    <button
                                       onClick={() => onUpdate({ enableStrictLanguageMode: !state.settings.enableStrictLanguageMode })}
                                       className={cn(
                                         "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
@@ -609,7 +707,7 @@ export default function SettingsScreen({
                                       <p className="text-xs font-bold text-[var(--foreground)]">Allow Mixed Language</p>
                                       <p className="text-[10px] opacity-50 mt-0.5">Displays translation helpers alongside terms (not recommended)</p>
                                     </div>
-                                    <button 
+                                    <button
                                       onClick={() => onUpdate({ allowMixedLanguage: !state.settings.allowMixedLanguage })}
                                       className={cn(
                                         "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
@@ -626,7 +724,7 @@ export default function SettingsScreen({
                                       <p className="text-xs font-bold text-[var(--foreground)]">Translation Validation</p>
                                       <p className="text-[10px] opacity-50 mt-0.5">Scans & auto-corrects mismatched strings on the fly</p>
                                     </div>
-                                    <button 
+                                    <button
                                       onClick={() => onUpdate({ enableTranslationValidation: !state.settings.enableTranslationValidation })}
                                       className={cn(
                                         "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
@@ -643,7 +741,7 @@ export default function SettingsScreen({
                                       <p className="text-xs font-bold text-[var(--foreground)]">Instant Language Refresh</p>
                                       <p className="text-[10px] opacity-50 mt-0.5">Applies system-wide linguistic reload instantly on select</p>
                                     </div>
-                                    <button 
+                                    <button
                                       onClick={() => onUpdate({ enableInstantLanguageRefresh: !state.settings.enableInstantLanguageRefresh })}
                                       className={cn(
                                         "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
@@ -660,7 +758,7 @@ export default function SettingsScreen({
                                       <p className="text-xs font-bold text-[var(--foreground)]">Interactive Language Preview Panel</p>
                                       <p className="text-[10px] opacity-50 mt-0.5">Displays a real-time translation card for the selected mode below</p>
                                     </div>
-                                    <button 
+                                    <button
                                       onClick={() => onUpdate({ showLanguagePreview: !state.settings.showLanguagePreview })}
                                       className={cn(
                                         "h-7 w-14 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 cursor-pointer shrink-0",
@@ -683,7 +781,7 @@ export default function SettingsScreen({
                                         Strict Mode Active
                                       </span>
                                     </div>
-                                    
+
                                     <div className="grid grid-cols-2 gap-3 text-xs">
                                       <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]/40">
                                         <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Add Product</p>
@@ -691,21 +789,21 @@ export default function SettingsScreen({
                                           {state.settings.language === 'en' ? 'Add Product' : state.settings.language === 'hi-en' ? 'Saman Add Karo' : state.settings.language === 'hi' ? 'सामान जोड़ें' : 'सामान जोडा'}
                                         </p>
                                       </div>
-                                      
+
                                       <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]/40">
                                         <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Create Bill</p>
                                         <p className="font-bold text-[var(--foreground)] mt-0.5">
                                           {state.settings.language === 'en' ? 'Create Bill' : state.settings.language === 'hi-en' ? 'Bill Banao' : state.settings.language === 'hi' ? 'बिल बनाएं' : 'बिल तयार करा'}
                                         </p>
                                       </div>
-                                      
+
                                       <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]/40">
                                         <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Customer Info</p>
                                         <p className="font-bold text-[var(--foreground)] mt-0.5">
                                           {state.settings.language === 'en' ? 'Customer Info' : state.settings.language === 'hi-en' ? 'Customer Info' : state.settings.language === 'hi' ? 'ग्राहक की जानकारी' : 'ग्राहक माहिती'}
                                         </p>
                                       </div>
-                                      
+
                                       <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]/40">
                                         <p className="text-[9px] opacity-40 font-bold uppercase tracking-widest">Stock</p>
                                         <p className="font-bold text-[var(--foreground)] mt-0.5">
@@ -745,8 +843,8 @@ export default function SettingsScreen({
 
                   <section className="space-y-6">
                     <div className="flex items-center gap-4">
-                       <div className="h-1 w-8 bg-violet-500 opacity-40 rounded-full" />
-                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-violet-500">{t.themeDeck}</label>
+                      <div className="h-1 w-8 bg-violet-500 opacity-40 rounded-full" />
+                      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-violet-500">{t.themeDeck}</label>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -758,8 +856,8 @@ export default function SettingsScreen({
                             onClick={() => onUpdate({ theme: theme.id })}
                             className={cn(
                               "relative flex items-center gap-5 rounded-[2.5rem] border p-6 text-left transition-all overflow-hidden group cursor-pointer theme-card-solid shadow-sm",
-                              isSelected 
-                                ? "border-[var(--primary)] bg-[var(--card-solid,#111a2e)] ring-2 ring-[var(--primary)]/40 shadow-xl scale-[1.02]" 
+                              isSelected
+                                ? "border-[var(--primary)] bg-[var(--card-solid,#111a2e)] ring-2 ring-[var(--primary)]/40 shadow-xl scale-[1.02]"
                                 : "border-[var(--border)] bg-[var(--card-solid,#111a2e)] hover:border-[var(--primary)]/40 hover:bg-[var(--card-solid,#111a2e)]"
                             )}
                           >
@@ -825,8 +923,8 @@ export default function SettingsScreen({
                           </span>
                           <span className={cn(
                             "text-[9px] font-bold px-2 py-0.5 rounded-full border",
-                            state.settings.pin 
-                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                            state.settings.pin
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                               : "bg-orange-500/10 text-orange-500 border-orange-500/20"
                           )}>
                             {state.settings.pin ? "Protected" : "No PIN"}
@@ -932,8 +1030,8 @@ export default function SettingsScreen({
                           </h4>
                           <span className={cn(
                             "text-[9px] font-bold px-2 py-0.5 rounded-full border",
-                            state.settings.pin 
-                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                            state.settings.pin
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                               : "bg-orange-500/10 text-orange-500 border-orange-500/20"
                           )}>
                             {state.settings.pin ? "PIN Initialized" : "Disabled"}
@@ -947,14 +1045,14 @@ export default function SettingsScreen({
                       <div className="flex items-center gap-2 self-start sm:self-auto">
                         {state.settings.pin ? (
                           <>
-                            <Button 
+                            <Button
                               variant="outline"
                               onClick={onResetPIN}
                               className="rounded-full px-5 h-10 text-[10px] uppercase font-black border-orange-500/30 hover:bg-orange-500/10 text-orange-500"
                             >
                               Update PIN
                             </Button>
-                            <Button 
+                            <Button
                               variant="ghost"
                               onClick={() => onUpdate({ pin: null })}
                               className="rounded-full px-4 h-10 text-[10px] uppercase font-black opacity-50 hover:opacity-100 text-rose-500 hover:bg-rose-500/10"
@@ -963,7 +1061,7 @@ export default function SettingsScreen({
                             </Button>
                           </>
                         ) : (
-                          <Button 
+                          <Button
                             variant="primary"
                             onClick={onResetPIN}
                             className="rounded-full px-6 h-10 text-[10px] uppercase font-black bg-orange-500 hover:bg-orange-600 text-white shadow-md"
@@ -984,7 +1082,7 @@ export default function SettingsScreen({
                           {t.stealthDesc}
                         </p>
                       </div>
-                      <button 
+                      <button
                         onClick={() => onUpdate({ hideBuyingPriceByDefault: !state.settings.hideBuyingPriceByDefault })}
                         className={cn(
                           "h-8 w-16 rounded-full transition-all relative overflow-hidden ring-1 ring-white/10 shadow-inner cursor-pointer shrink-0 ml-4",
@@ -992,7 +1090,7 @@ export default function SettingsScreen({
                         )}
                       >
                         <div className={cn(
-                          "absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all", 
+                          "absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all",
                           state.settings.hideBuyingPriceByDefault ? "translate-x-8" : ""
                         )} />
                       </button>
@@ -1056,7 +1154,7 @@ export default function SettingsScreen({
                             <RefreshCw size={16} />
                           </motion.div>
                         )}
-                        <button 
+                        <button
                           disabled={isSyncing || state.user?.uid === 'guest_user'}
                           onClick={() => onUpdate({ autoCloudSync: !state.settings.autoCloudSync })}
                           className={cn(
@@ -1065,7 +1163,7 @@ export default function SettingsScreen({
                           )}
                         >
                           <div className={cn(
-                            "absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all", 
+                            "absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-xl transition-all",
                             state.settings.autoCloudSync && state.user?.uid !== 'guest_user' ? "translate-x-8" : ""
                           )} />
                         </button>
@@ -1083,7 +1181,7 @@ export default function SettingsScreen({
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-4">
-                        <Button 
+                        <Button
                           onClick={() => onUpdate({ minStockLevel: Math.max(1, (state.settings.minStockLevel || 5) - 1) })}
                           className="h-8 w-8 rounded-lg border border-[var(--border)] bg-[var(--background)] flex items-center justify-center font-bold text-lg select-none p-0 text-[var(--foreground)] hover:bg-[var(--foreground)]/5"
                           variant="ghost"
@@ -1091,13 +1189,170 @@ export default function SettingsScreen({
                         <span className="font-mono text-xs font-black px-3 h-8 flex items-center bg-[var(--background)] border border-[var(--border)] rounded-lg min-w-[3rem] justify-center text-[var(--foreground)]">
                           {state.settings.minStockLevel || 5}
                         </span>
-                        <Button 
+                        <Button
                           onClick={() => onUpdate({ minStockLevel: (state.settings.minStockLevel || 5) + 1 })}
                           className="h-8 w-8 rounded-lg border border-[var(--border)] bg-[var(--background)] flex items-center justify-center font-bold text-lg select-none p-0 text-[var(--foreground)] hover:bg-[var(--foreground)]/5"
                           variant="ghost"
                         >+</Button>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Product Image Cloud Migration Card */}
+                  <div className="card p-6 sm:p-8 rounded-3xl border border-[var(--border)] bg-[var(--card)] space-y-6 shadow-sm relative overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="text-blue-500" size={18} />
+                          <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">
+                            Product Image Cloud Migration
+                          </h4>
+                          <span className={cn(
+                            "text-[9px] font-bold px-2 py-0.5 rounded-full border",
+                            pendingCandidates.length === 0
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              : "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                          )}>
+                            {pendingCandidates.length === 0
+                              ? "All Images Synced"
+                              : `${pendingCandidates.length} Pending Migration`}
+                          </span>
+                        </div>
+                        <p className="text-[10px] opacity-50 font-medium mt-1 leading-relaxed text-[var(--foreground)] max-w-md">
+                          Migrate your locally-stored product images to secure Cloudinary storage so they are automatically available across all your synced devices.
+                        </p>
+                        {state.user?.uid === 'guest_user' && (
+                          <p className="text-[9px] text-amber-500 font-extrabold mt-1.5 uppercase tracking-wider">
+                            ⚠️ Guest Mode: Image migration requires logging in with a Google account
+                          </p>
+                        )}
+                        {typeof navigator !== 'undefined' && !navigator.onLine && (
+                          <p className="text-[9px] text-rose-500 font-extrabold mt-1.5 uppercase tracking-wider">
+                            ⚠️ Device is offline. Reconnect to the internet to migrate images.
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                        {isMigrating ? (
+                          <Button
+                            variant="outline"
+                            onClick={handleCancelMigration}
+                            disabled={migrationProgress?.status === 'cancelled'}
+                            className="rounded-full px-5 h-10 text-[10px] uppercase font-black border-rose-500/30 hover:bg-rose-500/10 text-rose-500 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                          >
+                            <XCircle size={15} />
+                            {migrationProgress?.status === 'cancelled' ? 'Cancelling...' : 'Cancel Migration'}
+                          </Button>
+                        ) : (
+                          <Button
+                            disabled={
+                              pendingCandidates.length === 0 ||
+                              isMigrating ||
+                              !state.user ||
+                              state.user?.uid === 'guest_user' ||
+                              (typeof navigator !== 'undefined' && !navigator.onLine)
+                            }
+                            onClick={handleStartMigration}
+                            className="rounded-full px-5 h-10 text-[10px] uppercase font-black bg-blue-500 hover:bg-blue-600 text-white shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                          >
+                            <Upload size={15} />
+                            {pendingCandidates.length === 0
+                              ? "All Images Synced"
+                              : `Migrate ${pendingCandidates.length} Image${pendingCandidates.length > 1 ? 's' : ''}`}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Migration Progress Bar & Status */}
+                    {isMigrating && migrationProgress && (
+                      <div className="space-y-3 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-[var(--foreground)] flex items-center gap-2">
+                            <RefreshCw size={14} className="animate-spin text-blue-500" />
+                            {migrationProgress.status === 'cancelled'
+                              ? 'Cancelling migration...'
+                              : `Migrating ${migrationProgress.current} of ${migrationProgress.total}:`}
+                            {migrationProgress.status !== 'cancelled' && (
+                              <span className="text-blue-500 truncate max-w-[180px] sm:max-w-xs">
+                                {migrationProgress.currentItemName}
+                              </span>
+                            )}
+                          </span>
+                          <span className="font-mono text-xs font-black text-blue-500">
+                            {migrationProgress.total > 0
+                              ? Math.round((migrationProgress.current / migrationProgress.total) * 100)
+                              : 0}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-[var(--background)] h-2 rounded-full overflow-hidden border border-[var(--border)]">
+                          <div
+                            className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: `${migrationProgress.total > 0 ? (migrationProgress.current / migrationProgress.total) * 100 : 0}%`
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Completion / Status Summary */}
+                    {migrationProgress && !isMigrating && migrationProgress.status !== 'idle' && (
+                      <div className={cn(
+                        "p-4 rounded-2xl border space-y-3",
+                        migrationProgress.status === 'completed' && migrationProgress.failureCount === 0
+                          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                          : migrationProgress.status === 'cancelled'
+                            ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                            : "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                      )}>
+                        <div className="flex items-center justify-between text-xs font-bold">
+                          <div className="flex items-center gap-2">
+                            {migrationProgress.status === 'completed' && migrationProgress.failureCount === 0 ? (
+                              <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                            ) : migrationProgress.status === 'cancelled' ? (
+                              <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+                            ) : (
+                              <XCircle size={16} className="text-rose-500 shrink-0" />
+                            )}
+                            <span>
+                              {migrationProgress.status === 'completed' && migrationProgress.failureCount === 0
+                                ? `Migration complete: ${migrationProgress.successCount} product image${migrationProgress.successCount !== 1 ? 's' : ''} uploaded to Cloudinary${migrationProgress.skippedCount > 0 ? ` (${migrationProgress.skippedCount} skipped/superseded)` : ''}.`
+                                : migrationProgress.status === 'cancelled'
+                                  ? `Migration stopped by user. ${migrationProgress.successCount} uploaded, ${migrationProgress.total - migrationProgress.current + 1} remaining.`
+                                  : `Migration finished with ${migrationProgress.failureCount} error${migrationProgress.failureCount > 1 ? 's' : ''}. (${migrationProgress.successCount} succeeded${migrationProgress.skippedCount > 0 ? `, ${migrationProgress.skippedCount} skipped` : ''})`}
+                            </span>
+                          </div>
+                          {migrationProgress.failureCount > 0 && (
+                            <Button
+                              variant="outline"
+                              onClick={handleStartMigration}
+                              className="h-7 rounded-lg text-[9px] uppercase font-black px-2.5 border-rose-500/30 text-rose-400 hover:bg-rose-500/10"
+                            >
+                              Retry Failed
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Failed Items List */}
+                        {migrationProgress.failures.length > 0 && (
+                          <div className="mt-2 space-y-1.5 pt-2 border-t border-rose-500/20">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-rose-400 block">
+                              Items Requiring Attention:
+                            </span>
+                            <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
+                              {migrationProgress.failures.map((f, idx) => (
+                                <div key={`fail-${f.id}-${idx}`} className="text-[10px] text-rose-300 font-mono flex items-center justify-between bg-black/20 px-2 py-1 rounded">
+                                  <span className="font-bold truncate max-w-[200px]">{f.name}</span>
+                                  <span className="opacity-70 truncate max-w-[220px]">{f.error}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1154,7 +1409,7 @@ export default function SettingsScreen({
                         <div>
                           <span className="text-[9px] font-black tracking-widest text-amber-500 uppercase block">Active AI Engine Key</span>
                           <p className="text-xs font-bold text-[var(--foreground)]">
-                            {activeKeyObj 
+                            {activeKeyObj
                               ? `Custom Key: ${activeKeyObj.name} (${activeKeyObj.key.slice(0, 6)}...${activeKeyObj.key.slice(-4)})`
                               : 'Default System Gemini Key (Built-in)'
                             }
@@ -1175,8 +1430,8 @@ export default function SettingsScreen({
                       {/* Default System Key Option */}
                       <div className={cn(
                         "p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3",
-                        isDefaultActive 
-                          ? "bg-indigo-500/10 border-indigo-500/40 ring-1 ring-indigo-500/30" 
+                        isDefaultActive
+                          ? "bg-indigo-500/10 border-indigo-500/40 ring-1 ring-indigo-500/30"
                           : "bg-[var(--card)] border-[var(--border)] opacity-80 hover:opacity-100"
                       )}>
                         <div className="flex items-center gap-3">
@@ -1217,8 +1472,8 @@ export default function SettingsScreen({
                         return (
                           <div key={`custom-key-${item.id || 'key'}-${index}`} className={cn(
                             "p-4 rounded-2xl border transition-all space-y-3",
-                            isActive 
-                              ? "bg-amber-500/10 border-amber-500/40 ring-1 ring-amber-500/30" 
+                            isActive
+                              ? "bg-amber-500/10 border-amber-500/40 ring-1 ring-amber-500/30"
                               : "bg-[var(--card)] border-[var(--border)]"
                           )}>
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1237,8 +1492,8 @@ export default function SettingsScreen({
                                   </div>
                                   <div className="flex items-center gap-2 mt-1">
                                     <span className="font-mono text-[11px] opacity-70 bg-black/20 px-2 py-0.5 rounded border border-white/10">
-                                      {isRevealed 
-                                        ? item.key 
+                                      {isRevealed
+                                        ? item.key
                                         : `${item.key.slice(0, 6)}••••••••••••${item.key.slice(-4)}`
                                       }
                                     </span>
@@ -1296,8 +1551,8 @@ export default function SettingsScreen({
                             {testResult && (
                               <div className={cn(
                                 "text-[10px] font-bold px-3 py-1.5 rounded-xl border flex items-center gap-2",
-                                testResult.success 
-                                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
+                                testResult.success
+                                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
                                   : "bg-rose-500/10 border-rose-500/30 text-rose-400"
                               )}>
                                 {testResult.success ? <Check size={12} /> : <AlertTriangle size={12} />}
@@ -1350,7 +1605,7 @@ export default function SettingsScreen({
                           </span>
                           <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
                             {state.settings.soundStylePack === 'classic_pos' ? 'Classic POS' :
-                             state.settings.soundStylePack === 'professional' ? 'Executive' : 'Digital'}
+                              state.settings.soundStylePack === 'professional' ? 'Executive' : 'Digital'}
                           </span>
                         </div>
                       </div>
@@ -1378,12 +1633,12 @@ export default function SettingsScreen({
                           </span>
                           <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
                             {state.settings.soundFeedbackMode === 'silent' ? 'Silent' :
-                             state.settings.soundFeedbackMode === 'vibrate_only' ? 'Tactile' : 'Sound + Tactile'}
+                              state.settings.soundFeedbackMode === 'vibrate_only' ? 'Tactile' : 'Sound + Tactile'}
                           </span>
                           <span className={cn(
                             "text-[9px] font-bold px-2 py-0.5 rounded-full border",
-                            state.settings.notificationsOn !== false 
-                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                            state.settings.notificationsOn !== false
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                               : "bg-slate-500/10 text-slate-500 border-slate-500/20"
                           )}>
                             {state.settings.notificationsOn !== false ? 'Alerts ON' : 'Muted'}
@@ -1677,7 +1932,7 @@ export default function SettingsScreen({
                           <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">In-App Alerts</h4>
                           <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed text-[var(--foreground)]">Show alerts center panel and real-time popups</p>
                         </div>
-                        <button 
+                        <button
                           onClick={() => onUpdate({ notificationsOn: state.settings.notificationsOn === false ? true : false })}
                           className={cn(
                             "h-8 w-16 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer shrink-0 ml-4",
@@ -1693,7 +1948,7 @@ export default function SettingsScreen({
                           <h4 className="font-black uppercase tracking-tight text-sm text-[var(--foreground)]">Push Notifications</h4>
                           <p className="text-[10px] opacity-45 font-black mt-1 uppercase tracking-widest leading-relaxed font-semibold text-[var(--foreground)]">Receive instant status updates to all synced devices</p>
                         </div>
-                        <button 
+                        <button
                           onClick={async () => {
                             const currentVal = state.settings.pushOn !== false;
                             if (!currentVal) {
@@ -1744,7 +1999,7 @@ export default function SettingsScreen({
                             <h4 className="font-black tracking-tight text-xs uppercase text-[var(--foreground)]">Sound Alerts</h4>
                             <p className="text-[9px] opacity-45 uppercase tracking-widest mt-0.5 leading-none text-[var(--foreground)]">Play synthesized chime</p>
                           </div>
-                          <button 
+                          <button
                             onClick={() => {
                               const toVal = state.settings.soundOn === false ? true : false;
                               onUpdate({ soundOn: toVal });
@@ -1764,7 +2019,7 @@ export default function SettingsScreen({
                             <h4 className="font-black tracking-tight text-xs uppercase text-[var(--foreground)]">Haptic Vibration</h4>
                             <p className="text-[9px] opacity-45 uppercase tracking-widest mt-0.5 leading-none text-[var(--foreground)]">Vibrate mobile hand-device</p>
                           </div>
-                          <button 
+                          <button
                             onClick={() => {
                               const toVal = state.settings.vibrationOn === false ? true : false;
                               onUpdate({ vibrationOn: toVal });
@@ -1954,9 +2209,9 @@ export default function SettingsScreen({
                                   <span className="font-mono text-[10px] font-bold text-amber-500">{val}%</span>
                                   <button
                                     onClick={() => {
-                                      playSynthesizedSound(vol.testEvent as any, { 
-                                        settings: { ...state.settings, [vol.key]: val }, 
-                                        isTestPreview: true 
+                                      playSynthesizedSound(vol.testEvent as any, {
+                                        settings: { ...state.settings, [vol.key]: val },
+                                        isTestPreview: true
                                       });
                                     }}
                                     className="text-[9px] uppercase font-black tracking-widest text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-md hover:bg-amber-500/20 active:scale-95 transition-all outline-none cursor-pointer"
@@ -2069,8 +2324,8 @@ export default function SettingsScreen({
                                   }}
                                   className={cn(
                                     "flex-1 flex items-center justify-between px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all cursor-pointer active:scale-95",
-                                    sOn 
-                                      ? "border-amber-500 bg-amber-500/10 text-amber-500" 
+                                    sOn
+                                      ? "border-amber-500 bg-amber-500/10 text-amber-500"
                                       : "border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] opacity-60"
                                   )}
                                 >
@@ -2088,8 +2343,8 @@ export default function SettingsScreen({
                                   }}
                                   className={cn(
                                     "flex-1 flex items-center justify-between px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all cursor-pointer active:scale-95",
-                                    vOn 
-                                      ? "border-indigo-500 bg-indigo-500/10 text-indigo-500" 
+                                    vOn
+                                      ? "border-indigo-500 bg-indigo-500/10 text-indigo-500"
                                       : "border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] opacity-60"
                                   )}
                                 >
@@ -2210,26 +2465,26 @@ export default function SettingsScreen({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-                      <Button 
-                        onClick={onExportExcel} 
+                      <Button
+                        onClick={onExportExcel}
                         disabled={isExporting}
-                        variant="outline" 
+                        variant="outline"
                         className="justify-start gap-3.5 rounded-2xl py-6 px-5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-50 cursor-pointer transition-all"
                       >
-                        {isExporting ? <RefreshCw size={20} className="animate-spin" /> : <FileSpreadsheet size={20} />} 
+                        {isExporting ? <RefreshCw size={20} className="animate-spin" /> : <FileSpreadsheet size={20} />}
                         <div className="text-left">
                           <span className="text-[11px] font-black uppercase block">{isExporting ? 'Processing...' : 'Export data excel'}</span>
                           <span className="text-[9px] opacity-60 block">Spreadsheet (.xlsx format)</span>
                         </div>
                       </Button>
 
-                      <Button 
-                        onClick={onExportPDF} 
+                      <Button
+                        onClick={onExportPDF}
                         disabled={isExporting}
-                        variant="outline" 
+                        variant="outline"
                         className="justify-start gap-3.5 rounded-2xl py-6 px-5 border-red-500/30 text-red-500 hover:bg-red-500/10 disabled:opacity-50 cursor-pointer transition-all"
                       >
-                        {isExporting ? <RefreshCw size={20} className="animate-spin" /> : <FilePdf size={20} />} 
+                        {isExporting ? <RefreshCw size={20} className="animate-spin" /> : <FilePdf size={20} />}
                         <div className="text-left">
                           <span className="text-[11px] font-black uppercase block">{isExporting ? 'Processing...' : 'Export data to pdf'}</span>
                           <span className="text-[9px] opacity-60 block">Print-ready document (.pdf)</span>
@@ -2374,7 +2629,7 @@ export default function SettingsScreen({
                           </p>
                         </div>
                         <div>
-                          <button 
+                          <button
                             onClick={() => onUpdate({ scheduledBackupEnabled: !state.settings.scheduledBackupEnabled })}
                             className={cn(
                               "h-8 w-16 rounded-full transition-all relative overflow-hidden ring-1 ring-[var(--border)] shadow-inner cursor-pointer",
@@ -2387,9 +2642,9 @@ export default function SettingsScreen({
                       </div>
 
                       {state.settings.scheduledBackupEnabled && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: -10 }} 
-                          animate={{ opacity: 1, y: 0 }} 
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
                           className="pt-4 border-t border-[var(--border)] space-y-6"
                         >
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2439,7 +2694,7 @@ export default function SettingsScreen({
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--foreground)] opacity-60 flex items-center gap-1.5 flex-wrap">
                               <Cloud size={12} className="text-[var(--primary)]" /> External Cloud Vault Storage Provider
                             </label>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                               {[
                                 { id: 'firestore_vault', name: 'Firebase Sync Vault', desc: 'Saves securely in Firestore database sync records', badge: 'Active & Cloud' },
@@ -2473,7 +2728,7 @@ export default function SettingsScreen({
                               <div className="grid grid-cols-2 gap-x-6 gap-y-1 max-w-sm pt-1">
                                 <span className="text-[9px] font-bold opacity-50 uppercase">LAST PIPELINE RUN:</span>
                                 <span className="text-[9px] font-black text-[var(--foreground)] font-mono">{state.settings.lastScheduledBackupTime || 'NEVER'}</span>
-                                
+
                                 <span className="text-[9px] font-bold opacity-50 uppercase">NEXT PLANNED DISPATCH:</span>
                                 <span className="text-[9px] font-black text-amber-500 font-mono">
                                   TODAY AT {state.settings.scheduledBackupTime || '21:00'} ({state.settings.scheduledBackupRecurrence || 'daily'})

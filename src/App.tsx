@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   TrendingUp,
@@ -105,7 +105,8 @@ import XLSX from 'xlsx-js-style';
 import { BUSINESS_MODES } from './services/businessModeConfig';
 import { RecoveryService } from './services/recoveryService';
 import { CloudSyncService } from './services/cloudSyncService';
-import { uploadProductImage } from './services/cloudinaryService';
+import { uploadProductImage, CloudinaryUploadResult } from './services/cloudinaryService';
+import { ImageMigrationService } from './services/imageMigrationService';
 import BusinessSettingsScreen from './components/BusinessSettingsScreen';
 import StoreClosingControlCenter from './components/StoreClosingControlCenter';
 import SettingsScreen from './components/SettingsScreen';
@@ -153,7 +154,8 @@ import {
   saveLocalProductImage,
   removeLocalProductImage,
   removeMultipleLocalProductImages,
-  getAllLocalProductImages
+  getAllLocalProductImages,
+  getLocalProductImage
 } from './utils/localImageStorage';
 import {
   saveLocalDashboardStorage,
@@ -330,9 +332,9 @@ export default function App() {
     { timestamp: new Date().toLocaleTimeString(), msg: 'Auto-healing system initialized on ports.', code: 'RECOVERY_HEALTHY' }
   ]);
 
-  // Reference to always capture latest AppState inside event listeners
+  // Reference to always capture latest AppState synchronously after each committed state change
   const stateRef = useRef(state);
-  useEffect(() => {
+  useLayoutEffect(() => {
     stateRef.current = state;
   }, [state]);
 
@@ -2943,8 +2945,16 @@ export default function App() {
 
   // --- Handlers ---
   const handleLogout = useCallback(async () => {
+    // Cancel any active image migration and purge upload tokens synchronously
+    ImageMigrationService.cancelMigration();
+    cloudinaryUploadTokensRef.current.clear();
+
     localStorage.removeItem('ts_guest_logged_in');
     localStorage.removeItem('ts_cached_auth_user');
+    stateRef.current = {
+      ...stateRef.current,
+      user: null
+    };
     await auth.signOut();
     setState(prev => ({
       ...prev,
@@ -3485,6 +3495,111 @@ export default function App() {
       alert(t.error + ": " + (e instanceof Error ? e.message : 'Sync Error. Saved locally.'));
     }
   }, [state.items, state.user, state.settings.autoCloudSync, state.settings.deviceName, t.error, addToast]);
+
+  // Handler for migrating an existing product's image to Cloudinary and safely persisting to Firestore & state.
+  // Returns true if write succeeded, false if intentionally skipped (token superseded, deleted, guest/unauth).
+  const handleMigrateSingleProductImage = useCallback(async (
+    itemId: string,
+    result: CloudinaryUploadResult,
+    uploadToken: string
+  ): Promise<boolean> => {
+    const activeUser = stateRef.current.user ?? state.user;
+    if (!activeUser || activeUser.uid === 'guest_user') return false;
+    if (isItemDeleted(itemId)) return false;
+    if (cloudinaryUploadTokensRef.current.get(itemId) !== uploadToken) return false;
+
+    const capturedUser = activeUser;
+    let didWriteSucceed = false;
+
+    const prevWrite = cloudinaryWriteChainRef.current.get(itemId) ?? Promise.resolve();
+    const thisWrite: Promise<void> = prevWrite.catch(() => {}).then(async () => {
+      // Guard 2: recheck token & deletion status at start of serialized write slot
+      if (cloudinaryUploadTokensRef.current.get(itemId) !== uploadToken) return;
+      if (isItemDeleted(itemId)) return;
+
+      // Account safety: verify currently authenticated application account still matches captured user
+      if (!stateRef.current.user || stateRef.current.user.uid !== capturedUser.uid) return;
+
+      await setDoc(doc(db, 'users', capturedUser.uid, 'items', itemId), {
+        imageUrl: result.imageUrl,
+        cloudinaryPublicId: result.publicId,
+        imageMigrationStatus: 'synced',
+        lastUpdated: new Date().toISOString()
+      }, { merge: true });
+
+      // Guard 3: recheck token & deletion status after write completes
+      if (cloudinaryUploadTokensRef.current.get(itemId) !== uploadToken) return;
+      if (isItemDeleted(itemId)) return;
+
+      // Account safety: recheck currently authenticated application account before touching state or localStorage
+      if (!stateRef.current.user || stateRef.current.user.uid !== capturedUser.uid) return;
+
+      // Safely clear token only if it still matches this upload's token
+      if (cloudinaryUploadTokensRef.current.get(itemId) === uploadToken) {
+        cloudinaryUploadTokensRef.current.delete(itemId);
+      }
+
+      setState(prev => ({
+        ...prev,
+        items: prev.items.map(it => it.id === itemId
+          ? { ...it, imageUrl: result.imageUrl, cloudinaryPublicId: result.publicId, imageMigrationStatus: 'synced' }
+          : it
+        )
+      }));
+
+      // Update cached state in localStorage (preserving local base64 in localImageStorage untouched)
+      try {
+        const cached = localStorage.getItem('price_manager_state');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed?.items)) {
+            parsed.items = parsed.items.map((it: any) => it.id === itemId
+              ? { ...it, imageUrl: result.imageUrl, cloudinaryPublicId: result.publicId, imageMigrationStatus: 'synced' }
+              : it
+            );
+            localStorage.setItem('price_manager_state', JSON.stringify(parsed));
+          }
+        }
+      } catch {}
+
+      didWriteSucceed = true;
+    }).finally(() => {
+      if (cloudinaryWriteChainRef.current.get(itemId) === thisWrite) {
+        cloudinaryWriteChainRef.current.delete(itemId);
+      }
+    });
+
+    cloudinaryWriteChainRef.current.set(itemId, thisWrite);
+    await thisWrite;
+
+    return didWriteSucceed;
+  }, [state.user]);
+
+  const registerMigrationToken = useCallback((itemId: string, token: string) => {
+    cloudinaryUploadTokensRef.current.set(itemId, token);
+  }, []);
+
+  const isMigrationTokenValid = useCallback((itemId: string, token: string) => {
+    return cloudinaryUploadTokensRef.current.get(itemId) === token;
+  }, []);
+
+  const clearMigrationToken = useCallback((itemId: string, expectedToken: string) => {
+    if (cloudinaryUploadTokensRef.current.get(itemId) === expectedToken) {
+      cloudinaryUploadTokensRef.current.delete(itemId);
+    }
+  }, []);
+
+  // Hook to retrieve the actual latest product image from live stateRef (or local storage fallback).
+  // Ensures migration verifies image freshness against the live state rather than a stale closure.
+  const getItemCurrentImage = useCallback((itemId: string): string | undefined | null => {
+    const item = stateRef.current.items.find(it => it.id === itemId);
+    if (!item) return null;
+    if (item.imageUrl !== undefined && item.imageUrl !== '') {
+      return item.imageUrl;
+    }
+    const localImg = getLocalProductImage(itemId);
+    return localImg || null;
+  }, []);
 
   const handleSaveVoiceProducts = useCallback(async (drafts: { item: Omit<Item, 'id' | 'lastUpdated'>; mode: 'create' | 'update' | { duplicateId: string } }[]) => {
     try {
@@ -7423,6 +7538,11 @@ export default function App() {
                     }}
                     isSyncing={isSyncing}
                     isExporting={isExporting}
+                    onMigrateSingleImage={handleMigrateSingleProductImage}
+                    registerUploadToken={registerMigrationToken}
+                    isUploadTokenValid={isMigrationTokenValid}
+                    clearUploadToken={clearMigrationToken}
+                    getItemCurrentImage={getItemCurrentImage}
                   />
                 ) : menuTab === 'printer' ? (
                   <div className="pt-2">

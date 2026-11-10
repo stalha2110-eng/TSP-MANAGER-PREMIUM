@@ -4,7 +4,7 @@ import {
   verifyAssetSafeToDelete,
   FIREBASE_PROJECT_ID,
   FIRESTORE_DATABASE_ID,
-} from '../_utils.ts';
+} from '../_utils.js';
 
 let passed = 0;
 let failed = 0;
@@ -48,7 +48,7 @@ async function runTests() {
 
   // Test 2: Unauthenticated / Invalid Token Rejection
   console.log('\nTest Suite 2: Firebase ID Token Validation Guardrails');
-  const { verifyFirebaseIdToken } = await import('../_utils.ts');
+  const { verifyFirebaseIdToken } = await import('../_utils.js');
 
   try {
     await verifyFirebaseIdToken(undefined);

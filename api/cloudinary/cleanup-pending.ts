@@ -2,7 +2,7 @@ import {
   FIREBASE_PROJECT_ID,
   FIRESTORE_DATABASE_ID,
   destroyCloudinaryAsset,
-} from './_utils.ts';
+} from './_utils.js';
 
 export default async function handler(req: any, res: any) {
   // Allow GET or POST for Vercel Cron invocation

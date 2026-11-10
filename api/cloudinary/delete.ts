@@ -2,7 +2,7 @@ import {
   verifyFirebaseIdToken,
   verifyAssetSafeToDelete,
   destroyCloudinaryAsset,
-} from './_utils.ts';
+} from './_utils.js';
 
 export default async function handler(req: any, res: any) {
   // Allow only POST method

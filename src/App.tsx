@@ -134,6 +134,7 @@ import AnalyticsScreen from './components/AnalyticsScreen';
 import UdharScreen from './components/UdharScreen';
 import BillHistoryDrawer from './components/BillHistoryDrawer';
 import NotificationCenter from './components/NotificationCenter';
+import { InstallAppModal } from './components/InstallAppModal';
 import { backNavManager, useBackModal } from './utils/backNavigationManager';
 import PrinterSettingsScreen from './components/PrinterSettingsScreen';
 import { LatestAchievementWidget } from './components/MilestonesTab';
@@ -997,6 +998,20 @@ export default function App() {
   const [notesExpanded, setNotesExpanded] = useState(true);
   const [showAddNote, setShowAddNote] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [isAppInstalled, setIsAppInstalled] = useState<boolean>(() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      return (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes('android-app://') ||
+        localStorage.getItem('ts_app_installed') === 'true'
+      );
+    } catch {
+      return false;
+    }
+  });
   const [isSyncing, setIsSyncing] = useState(false);
   const [analyticsRenderKey, setAnalyticsRenderKey] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
@@ -1666,42 +1681,69 @@ export default function App() {
     targetId?: string;
   }>({ show: false, type: 'single' });
 
-  // PWA Install Logic
+  // PWA Install Logic with Standalone Detection & Suppression
   useEffect(() => {
+    // Standalone detection
+    const isStandalone = 
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true ||
+      document.referrer.includes('android-app://') ||
+      localStorage.getItem('ts_app_installed') === 'true';
+
+    if (isStandalone) {
+      setIsAppInstalled(true);
+      try {
+        localStorage.setItem('ts_app_installed', 'true');
+      } catch {}
+      return;
+    }
+
     const handleBeforeInstall = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Automatically show welcome or install banner if it's the first visit
-      const hasSeenInstall = localStorage.getItem('ts_install_seen');
-      if (!hasSeenInstall) {
-        setShowWelcome(true);
-      }
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setIsAppInstalled(true);
+      setShowInstallModal(false);
+      try {
+        localStorage.setItem('ts_app_installed', 'true');
+      } catch {}
+      console.log('TS BIZ MANAGER WebApp was installed successfully');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    
-    window.addEventListener('appinstalled', () => {
-      setDeferredPrompt(null);
-      localStorage.setItem('ts_install_seen', 'true');
-      console.log('PWA was installed');
-    });
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // Check if user dismissed the install popup recently (24-hour cooldown)
+    const dismissedUntil = localStorage.getItem('ts_install_dismissed_until');
+    const isCoolingDown = dismissedUntil && Date.now() < Number(dismissedUntil);
+
+    // Smooth 2.5s timer to show install popup on browser visit if not cooling down
+    let timer: any = null;
+    if (!isCoolingDown) {
+      timer = setTimeout(() => {
+        const currentStandalone = 
+          window.matchMedia('(display-mode: standalone)').matches ||
+          (window.navigator as any).standalone === true ||
+          localStorage.getItem('ts_app_installed') === 'true';
+
+        if (!currentStandalone) {
+          setShowInstallModal(true);
+        }
+      }, 2500);
+    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+      if (timer) clearTimeout(timer);
     };
   }, []);
 
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      alert(t.installApp + ": " + t.error);
-      return;
-    }
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-      localStorage.setItem('ts_install_seen', 'true');
-    }
+  const handleInstallClick = () => {
+    setShowInstallModal(true);
   };
 
   // --- Data Management ---
@@ -4260,6 +4302,7 @@ export default function App() {
   useBackModal(selectedItemIds.length > 0, () => setSelectedItemIds([]), 'item_selection_mode');
   useBackModal(selectedUdharCustomerId !== null, () => setSelectedUdharCustomerId(null), 'udhar_customer_detail');
   useBackModal(selectedCategory !== null && activeTab === 'home', () => setSelectedCategory(null), 'category_filter');
+  useBackModal(showInstallModal, () => setShowInstallModal(false), 'install_app_modal');
 
   const toggleItemSelection = useCallback((id: string) => {
     setSelectedItemIds(prev => 
@@ -4831,6 +4874,19 @@ export default function App() {
           </div>
           <div className="flex items-center justify-end gap-2.5 sm:gap-3.5 shrink-0 z-10 ml-auto">
 
+            {/* Download WebApp Button - Only visible when NOT installed in standalone */}
+            {!isAppInstalled && (
+              <button
+                type="button"
+                onClick={() => setShowInstallModal(true)}
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-[9px] sm:text-[11px] shadow-md shadow-amber-500/25 active:scale-95 transition-all cursor-pointer select-none shrink-0"
+                title="Download TS BIZ MANAGER WebApp to your device"
+              >
+                <Download size={13} className="shrink-0 animate-bounce" />
+                <span className="font-black uppercase tracking-wider hidden min-[400px]:inline">Download App</span>
+                <span className="font-black uppercase tracking-wider min-[400px]:hidden">App</span>
+              </button>
+            )}
 
             {/* Notification Badge Badge with sliding drawer */}
             <div className="relative">
@@ -4936,6 +4992,26 @@ export default function App() {
                     >
                       {moreMenuView === 'main' ? (
                         <>
+                          {/* 0. Download App (Only visible if not installed) */}
+                          {!isAppInstalled && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowMoreMenu(false);
+                                setShowInstallModal(true);
+                              }}
+                              className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold hover:bg-amber-500/10 text-amber-500 transition-colors text-left cursor-pointer group select-none border-b border-[var(--border)]/40"
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                  <Download size={15} />
+                                </div>
+                                <span className="text-[12px] font-extrabold tracking-wide text-amber-400">Download App</span>
+                              </div>
+                              <ChevronRight size={14} className="text-amber-500/60 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" />
+                            </button>
+                          )}
+
                           {/* 1. Profile */}
                           <button
                             type="button"
@@ -7644,6 +7720,20 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Plug-and-Play Install WebApp Modal */}
+      <InstallAppModal
+        isOpen={showInstallModal && !isAppInstalled}
+        onClose={() => setShowInstallModal(false)}
+        deferredPrompt={deferredPrompt}
+        onInstalledSuccess={() => {
+          setIsAppInstalled(true);
+          setDeferredPrompt(null);
+          try {
+            localStorage.setItem('ts_app_installed', 'true');
+          } catch {}
+        }}
+      />
     </div>
   );
 }

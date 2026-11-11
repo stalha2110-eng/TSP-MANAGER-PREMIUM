@@ -1250,7 +1250,12 @@ export function ProfileScreen({
             <div className="h-px flex-1 bg-[var(--border)] mx-4 opacity-10" />
          </div>
 
-         {deferredPrompt && (
+         {/* PWA Install Button - only shown if not already installed in standalone mode */}
+         {typeof window !== 'undefined' && !(
+           window.matchMedia('(display-mode: standalone)').matches ||
+           (window.navigator as any).standalone === true ||
+           localStorage.getItem('ts_app_installed') === 'true'
+         ) && (
            <button 
              onClick={onInstall}
              className="w-full flex items-center justify-between p-8 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-[2.5rem] shadow-2xl shadow-amber-500/30 active:scale-[0.98] transition-all group overflow-hidden relative cursor-pointer"
@@ -1261,8 +1266,8 @@ export function ProfileScreen({
                     <Download size={28} />
                  </div>
                  <div className="text-left">
-                    <p className="text-xl font-black uppercase tracking-tight">{t.deployNode}</p>
-                    <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest">{t.pwaInstallHint}</p>
+                    <p className="text-xl font-black uppercase tracking-tight">{t.deployNode || "Download App"}</p>
+                    <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest">{t.pwaInstallHint || "Install on Home Screen"}</p>
                  </div>
               </div>
               <ChevronRight size={24} className="relative z-10 opacity-60 group-hover:translate-x-1 transition-transform" />

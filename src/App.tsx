@@ -1720,7 +1720,7 @@ export default function App() {
     const dismissedUntil = localStorage.getItem('ts_install_dismissed_until');
     const isCoolingDown = dismissedUntil && Date.now() < Number(dismissedUntil);
 
-    // Smooth 2.5s timer to show install popup on browser visit if not cooling down
+    // Smooth 1.8s timer to show install popup on browser visit if not cooling down
     let timer: any = null;
     if (!isCoolingDown) {
       timer = setTimeout(() => {
@@ -1732,7 +1732,7 @@ export default function App() {
         if (!currentStandalone) {
           setShowInstallModal(true);
         }
-      }, 2500);
+      }, 1800);
     }
 
     return () => {
@@ -4370,6 +4370,21 @@ export default function App() {
           onGoogleLogin={handleGoogleLogin} 
           onGuestLogin={handleGuestLogin}
           settings={state.settings}
+          onOpenInstall={() => setShowInstallModal(true)}
+          isAppInstalled={isAppInstalled}
+        />
+        {/* Plug-and-Play Install WebApp Modal for Login Page */}
+        <InstallAppModal
+          isOpen={showInstallModal && !isAppInstalled}
+          onClose={() => setShowInstallModal(false)}
+          deferredPrompt={deferredPrompt}
+          onInstalledSuccess={() => {
+            setIsAppInstalled(true);
+            setDeferredPrompt(null);
+            try {
+              localStorage.setItem('ts_app_installed', 'true');
+            } catch {}
+          }}
         />
       </div>
     );
@@ -4384,6 +4399,18 @@ export default function App() {
           onComplete={handleOnboardingComplete}
           userEmail={state.user.email}
           onBack={handleLogout}
+        />
+        <InstallAppModal
+          isOpen={showInstallModal && !isAppInstalled}
+          onClose={() => setShowInstallModal(false)}
+          deferredPrompt={deferredPrompt}
+          onInstalledSuccess={() => {
+            setIsAppInstalled(true);
+            setDeferredPrompt(null);
+            try {
+              localStorage.setItem('ts_app_installed', 'true');
+            } catch {}
+          }}
         />
       </div>
     );

@@ -21,7 +21,8 @@ import {
   Info,
   XCircle,
   KeyRound,
-  ShieldAlert
+  ShieldAlert,
+  Download
 } from 'lucide-react';
 import { AppSettings } from '../types';
 import logoBizManager from '../logoBizManager.png';
@@ -38,9 +39,17 @@ interface LoginScreenProps {
   onGoogleLogin: () => Promise<void>;
   onGuestLogin: () => void;
   settings: AppSettings;
+  onOpenInstall?: () => void;
+  isAppInstalled?: boolean;
 }
 
-export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScreenProps) {
+export function LoginScreen({ 
+  onGoogleLogin, 
+  onGuestLogin, 
+  settings,
+  onOpenInstall,
+  isAppInstalled = false
+}: LoginScreenProps) {
   const [isLoggingInGoogle, setIsLoggingInGoogle] = useState(false);
   const [isLoggingInGuest, setIsLoggingInGuest] = useState(false);
 
@@ -342,6 +351,18 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
           </div>
 
           <div className="flex items-center gap-2">
+            {!isAppInstalled && onOpenInstall && (
+              <button
+                type="button"
+                onClick={onOpenInstall}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-[11px] sm:text-xs shadow-md shadow-amber-500/25 active:scale-95 transition-all cursor-pointer select-none"
+                title="Download TS BIZ MANAGER WebApp to your device"
+              >
+                <Download size={13} className="shrink-0 animate-bounce" />
+                <span className="font-extrabold uppercase tracking-wide">Download App</span>
+              </button>
+            )}
+
             <span className="hidden sm:inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 rounded-full px-3.5 py-1 text-[9px] font-mono font-extrabold border border-slate-200/60">
               SECURE SESSION
             </span>
@@ -536,6 +557,28 @@ export function LoginScreen({ onGoogleLogin, onGuestLogin, settings }: LoginScre
                           )}
                           <span>Guest Mode</span>
                         </button>
+
+                        {/* Option: Download WebApp to Home Screen */}
+                        {!isAppInstalled && onOpenInstall && (
+                          <button
+                            type="button"
+                            onClick={onOpenInstall}
+                            className="w-full flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-500/30 hover:border-amber-500/50 hover:bg-amber-500/15 text-left transition-all cursor-pointer group active:scale-[0.98]"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                <Download size={15} />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-black text-slate-800 tracking-tight">Download WebApp to Home Screen</p>
+                                <p className="text-[10px] text-slate-500 font-medium truncate">1-tap direct access • Works offline • 0 MB space</p>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider bg-amber-500/15 px-2 py-0.5 rounded-full shrink-0 ml-1">
+                              Install
+                            </span>
+                          </button>
+                        )}
                       </div>
 
                       {/* Secure Trust Info Panel */}

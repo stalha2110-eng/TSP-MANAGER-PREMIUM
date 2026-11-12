@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ts-biz-manager-v9';
+const CACHE_NAME = 'ts-biz-manager-v10';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

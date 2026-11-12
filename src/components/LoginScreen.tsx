@@ -570,7 +570,7 @@ export function LoginScreen({
                                 <Download size={15} />
                               </div>
                               <div className="min-w-0">
-                                <p className="text-xs font-black text-slate-800 tracking-tight">Download WebApp to Home Screen</p>
+                                <p className="text-xs font-black text-slate-800 tracking-tight">Download WebApp Now!</p>
                                 <p className="text-[10px] text-slate-500 font-medium truncate">1-tap direct access • Works offline • 0 MB space</p>
                               </div>
                             </div>

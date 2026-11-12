@@ -6,11 +6,9 @@ import {
   Share, 
   PlusSquare, 
   CheckCircle2, 
-  Smartphone, 
-  Zap, 
   HardDriveDownload,
-  ShieldCheck,
-  Check
+  Check,
+  Sparkles
 } from 'lucide-react';
 
 interface InstallAppModalProps {
@@ -54,7 +52,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
           setTimeout(() => {
             onInstalledSuccess();
             onClose();
-          }, 1500);
+          }, 1200);
         } else {
           setIsInstalling(false);
         }
@@ -75,7 +73,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
     setTimeout(() => {
       onInstalledSuccess();
       onClose();
-    }, 800);
+    }, 600);
   };
 
   const handleDismiss = () => {
@@ -92,66 +90,57 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-3 sm:p-4">
-        {/* Backdrop */}
+      {/* Top Floating Overlay Container */}
+      <div 
+        className="fixed inset-x-0 top-0 z-[9999] flex justify-center px-3 pt-2.5 sm:pt-4 pointer-events-none"
+        style={{
+          paddingTop: 'max(10px, env(safe-area-inset-top))'
+        }}
+      >
+        {/* Backdrop for outside click */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.15 }}
           onClick={handleDismiss}
-          className="fixed inset-0 bg-black/75 backdrop-blur-sm cursor-pointer"
+          className="fixed inset-0 bg-black/50 backdrop-blur-[2px] pointer-events-auto cursor-pointer"
         />
 
-        {/* Short & Professional Compact Modal Card */}
+        {/* Compact, High-Density Mobile Card */}
         <motion.div
-          initial={{ y: 40, opacity: 0, scale: 0.96 }}
+          initial={{ y: -40, opacity: 0, scale: 0.96 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: 40, opacity: 0, scale: 0.96 }}
-          transition={{ type: 'spring', damping: 26, stiffness: 340 }}
+          exit={{ y: -30, opacity: 0, scale: 0.96 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 380 }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-sm bg-[#0d1527] text-white rounded-3xl border border-white/15 shadow-2xl overflow-hidden z-10 flex flex-col"
-          style={{
-            paddingBottom: 'max(12px, env(safe-area-inset-bottom))'
-          }}
+          className="relative w-full max-w-[390px] bg-[#0c1322]/95 backdrop-blur-xl text-white rounded-2xl border border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.65)] overflow-hidden pointer-events-auto z-10 p-2.5 sm:p-3 flex flex-col gap-2"
         >
-          {/* Subtle top accent gradient */}
-          <div className="h-1 w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-400" />
+          {/* Subtle Top Amber Hairline */}
+          <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-amber-500 via-orange-500 to-amber-400" />
 
-          {/* Close Button */}
-          <button
-            type="button"
-            onClick={handleDismiss}
-            aria-label="Close"
-            className="absolute top-3.5 right-3.5 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors cursor-pointer select-none active:scale-90 z-20"
-          >
-            <X size={15} />
-          </button>
-
-          <div className="p-4 sm:p-5">
-            {installedSuccess ? (
-              /* Success State */
-              <div className="py-5 text-center flex flex-col items-center justify-center">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2.5 ring-4 ring-emerald-500/10 animate-bounce">
-                  <CheckCircle2 size={26} />
-                </div>
-                <h3 className="text-base font-black text-white tracking-tight">
-                  App Installed Successfully!
-                </h3>
-                <p className="text-[11px] text-white/70 mt-1 max-w-[240px]">
-                  TS BIZ MANAGER is now on your home screen for quick 1-tap access.
-                </p>
+          {installedSuccess ? (
+            /* Streamlined Success State */
+            <div className="py-2 px-1 flex items-center justify-center gap-2.5 text-center">
+              <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 ring-2 ring-emerald-500/30 animate-bounce">
+                <CheckCircle2 size={16} />
               </div>
-            ) : (
-              <>
-                {/* Header: App Icon + Title + Version */}
-                <div className="flex items-center gap-3 mb-3 pr-6">
+              <div className="text-left">
+                <h4 className="text-xs font-black text-white tracking-tight">App Installed Successfully!</h4>
+                <p className="text-[10px] text-white/70">Added to your home screen for quick 1-tap access.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Streamlined Row 1: App Identity + Specs + Close */}
+              <div className="flex items-center justify-between gap-2 pt-0.5">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <div className="relative shrink-0">
-                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-0.5 shadow-md shadow-amber-500/20 flex items-center justify-center overflow-hidden">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-[1.5px] shadow-sm shadow-amber-500/25 flex items-center justify-center overflow-hidden">
                       <img 
                         src="/pwa-192x192.png" 
                         alt="TS BIZ MANAGER" 
-                        className="w-full h-full object-cover rounded-[10px]"
+                        className="w-full h-full object-cover rounded-[9px]"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}
@@ -159,118 +148,116 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <h3 className="text-sm font-black text-white tracking-tight truncate">
+                      <h4 className="text-xs sm:text-[13px] font-black text-white tracking-tight truncate leading-tight">
                         TS BIZ MANAGER
-                      </h3>
-                      <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-[8px] font-black uppercase tracking-wider">
-                        WEB APP
+                      </h4>
+                      <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-400 text-[8px] font-black uppercase tracking-wider shrink-0 flex items-center gap-0.5">
+                        <Sparkles size={8} />
+                        APP
                       </span>
                     </div>
-                    <p className="text-[11px] text-white/60 truncate mt-0.5">
-                      Add to your Home Screen
+                    <p className="text-[10px] text-slate-300/80 truncate leading-tight mt-0.5">
+                      ★ 4.9 • Fast 1-Tap Access • Offline Ready
                     </p>
                   </div>
                 </div>
 
-                {/* Compact Feature Pills - Efficient Space Utilization */}
-                <div className="grid grid-cols-3 gap-1.5 mb-3.5">
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.05] border border-white/5 text-[10px] text-white/80 font-medium truncate">
-                    <Zap size={11} className="text-amber-400 shrink-0" />
-                    <span className="truncate">1-Tap Open</span>
-                  </div>
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.05] border border-white/5 text-[10px] text-white/80 font-medium truncate">
-                    <Smartphone size={11} className="text-emerald-400 shrink-0" />
-                    <span className="truncate">Full Screen</span>
-                  </div>
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.05] border border-white/5 text-[10px] text-white/80 font-medium truncate">
-                    <ShieldCheck size={11} className="text-cyan-400 shrink-0" />
-                    <span className="truncate">0 MB Space</span>
-                  </div>
-                </div>
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={handleDismiss}
+                  aria-label="Close"
+                  className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer select-none active:scale-90 shrink-0"
+                >
+                  <X size={13} />
+                </button>
+              </div>
 
-                {/* Platform Specific Action */}
-                {isIOS ? (
-                  /* Compact iOS Safari 2-Step Guide */
-                  <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-2.5 mb-3 space-y-1.5">
-                    <div className="flex items-center gap-2 text-[11px] text-white/90">
-                      <span className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[9px] font-black shrink-0">1</span>
-                      <span>Tap <strong className="text-white inline-flex items-center gap-0.5 px-1 rounded bg-white/10 font-bold"><Share size={10} className="text-blue-400" /> Share</strong> in Safari toolbar</span>
+              {/* Row 2: Action Button Prominently Fills the Bottom Area */}
+              {isIOS ? (
+                /* iOS Safari Compact Step Bar & Prominent Button */
+                <div className="space-y-1.5">
+                  <div className="rounded-xl bg-blue-500/10 border border-blue-500/25 px-2.5 py-1 flex items-center justify-between text-[10px] text-white/90">
+                    <div className="flex items-center gap-1">
+                      <span className="w-3.5 h-3.5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[8.5px] font-black shrink-0">1</span>
+                      <span>Tap <strong className="text-white inline-flex items-center gap-0.5 font-bold"><Share size={9} className="text-blue-400" /> Share</strong></span>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-white/90">
-                      <span className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[9px] font-black shrink-0">2</span>
-                      <span>Scroll & tap <strong className="text-white inline-flex items-center gap-0.5 px-1 rounded bg-white/10 font-bold"><PlusSquare size={10} className="text-amber-400" /> Add to Home Screen</strong></span>
+                    <span className="text-white/40 font-bold">→</span>
+                    <div className="flex items-center gap-1">
+                      <span className="w-3.5 h-3.5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[8.5px] font-black shrink-0">2</span>
+                      <span>Tap <strong className="text-white inline-flex items-center gap-0.5 font-bold"><PlusSquare size={9} className="text-amber-400" /> Add to Home Screen</strong></span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleManualConfirmInstalled}
-                      className="mt-1 w-full py-1.5 px-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-[11px] font-bold tracking-wide transition-all active:scale-95 flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <Check size={12} />
-                      I Added it to Home Screen
-                    </button>
                   </div>
-                ) : deferredPrompt ? (
-                  /* Android & Chromium 1-Click Action Button */
-                  <div className="mb-3">
-                    <button
-                      type="button"
-                      onClick={handleInstallClick}
-                      disabled={isInstalling}
-                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs tracking-wide shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-60"
-                    >
-                      {isInstalling ? (
-                        <>
-                          <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                          <span>Installing App...</span>
-                        </>
-                      ) : (
-                        <>
-                          <HardDriveDownload size={15} />
-                          <span>Download & Install App</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                ) : (
-                  /* Standard Browser Fallback */
-                  <div className="space-y-1.5 mb-3">
-                    <button
-                      type="button"
-                      onClick={handleInstallClick}
-                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs tracking-wide shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                    >
-                      <Download size={15} />
-                      <span>Download App</span>
-                    </button>
-                    <p className="text-[10px] text-center text-white/50">
-                      Or tap browser menu (⋮) $\rightarrow$ "Install app"
-                    </p>
-                  </div>
-                )}
-
-                {/* Minimal Footer */}
-                <div className="flex items-center justify-between pt-2 border-t border-white/10 text-[11px]">
-                  <button
-                    type="button"
-                    onClick={handleDismiss}
-                    className="text-white/50 hover:text-white transition-colors cursor-pointer select-none py-1"
-                  >
-                    Maybe Later
-                  </button>
 
                   <button
                     type="button"
                     onClick={handleManualConfirmInstalled}
-                    className="text-amber-400/70 hover:text-amber-400 font-medium transition-colors cursor-pointer select-none py-1"
+                    className="w-full py-2.5 px-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-black text-xs uppercase tracking-wider shadow-md shadow-blue-500/25 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer"
                   >
-                    Already Installed?
+                    <Check size={13} className="stroke-[2.5]" />
+                    <span>I Added it to Home Screen</span>
                   </button>
                 </div>
-              </>
-            )}
-          </div>
+              ) : deferredPrompt ? (
+                /* Android / Chromium Prominent 1-Click Action Button */
+                <button
+                  type="button"
+                  onClick={handleInstallClick}
+                  disabled={isInstalling}
+                  className="w-full py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-amber-500/25 flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
+                >
+                  {isInstalling ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                      <span>Installing WebApp...</span>
+                    </>
+                  ) : (
+                    <>
+                      <HardDriveDownload size={14} className="stroke-[2.5]" />
+                      <span>Download & Install App</span>
+                      <span className="text-[9px] font-bold opacity-70 bg-black/15 px-1.5 py-0.5 rounded ml-auto">
+                        0 MB • Free
+                      </span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                /* Fallback Action Button for Other Browsers */
+                <button
+                  type="button"
+                  onClick={handleInstallClick}
+                  className="w-full py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-amber-500/25 flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  <Download size={14} className="stroke-[2.5]" />
+                  <span>Download WebApp</span>
+                  <span className="text-[9px] font-bold opacity-70 bg-black/15 px-1.5 py-0.5 rounded ml-auto">
+                    0 MB • Free
+                  </span>
+                </button>
+              )}
+
+              {/* Row 3: Micro Space-Saving Footer */}
+              <div className="flex items-center justify-between text-[10px] text-slate-400 px-1 pt-0.5">
+                <button
+                  type="button"
+                  onClick={handleDismiss}
+                  className="hover:text-white transition-colors cursor-pointer select-none py-0.5"
+                >
+                  Maybe later
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleManualConfirmInstalled}
+                  className="text-amber-400/80 hover:text-amber-400 font-semibold transition-colors cursor-pointer select-none py-0.5"
+                >
+                  Already installed?
+                </button>
+              </div>
+            </>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>

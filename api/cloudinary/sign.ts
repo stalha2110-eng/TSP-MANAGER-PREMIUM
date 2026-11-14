@@ -58,7 +58,6 @@ export default async function handler(req: any, res: any) {
     const paramsToSign = {
       allowed_formats: 'jpg,png,webp',
       folder,
-      max_file_size: 5242880, // 5MB
       public_id: publicId,
       timestamp,
     };

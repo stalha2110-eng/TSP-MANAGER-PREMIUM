@@ -198,7 +198,6 @@ export class CloudinaryService {
     formData.append('public_id', String(signData.publicId));
     formData.append('folder', String(signData.folder || ''));
     formData.append('allowed_formats', 'jpg,png,webp');
-    formData.append('max_file_size', '5242880');
 
     let uploadRes: Response;
     try {

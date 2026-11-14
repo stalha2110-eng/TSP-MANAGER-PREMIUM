@@ -31,14 +31,13 @@ async function runTests() {
     public_id: 'ts_biz_manager/users/test_uid_123/items/item_abc_1740980000',
     timestamp: 1740980000,
     allowed_formats: 'jpg,png,webp',
-    max_file_size: 5242880,
   };
   const testSecret = 'sample_secret_key_xyz987';
 
   // Manual expected SHA1:
-  // Sorted keys: allowed_formats, folder, max_file_size, public_id, timestamp
+  // Sorted keys: allowed_formats, folder, public_id, timestamp
   const expectedStringToSign =
-    'allowed_formats=jpg,png,webp&folder=ts_biz_manager/users/test_uid_123/items&max_file_size=5242880&public_id=ts_biz_manager/users/test_uid_123/items/item_abc_1740980000&timestamp=1740980000' +
+    'allowed_formats=jpg,png,webp&folder=ts_biz_manager/users/test_uid_123/items&public_id=ts_biz_manager/users/test_uid_123/items/item_abc_1740980000&timestamp=1740980000' +
     testSecret;
   const expectedHash = crypto.createHash('sha1').update(expectedStringToSign).digest('hex');
 

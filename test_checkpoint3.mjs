@@ -395,7 +395,7 @@ await itAsync('Successfully uploads valid JPEG Data URL and validates parameters
       assert.strictEqual(fd.get('public_id'), 'ts_biz_manager/users/u123/items/prod_1_1700000000');
       assert.strictEqual(fd.get('folder'), 'ts_biz_manager/users/u123/items');
       assert.strictEqual(fd.get('allowed_formats'), 'jpg,png,webp');
-      assert.strictEqual(fd.get('max_file_size'), '5242880');
+      assert.strictEqual(fd.get('max_file_size'), null);
       assert.ok(fd.get('file') instanceof Blob);
       cloudinaryFormDataChecked = true;
 

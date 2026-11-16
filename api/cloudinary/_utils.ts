@@ -270,25 +270,153 @@ export async function verifyAssetSafeToDelete(
     }
 
     // Case 3: Document DOES NOT EXIST (404)
-    // Check pending deletions queue or confirm deletion marker
-    const pendingDocUrl = `${getFirestoreRestEndpoint()}/users/${uid}/pending_deletions/${itemId}`;
-    const pendingRes = await fetch(pendingDocUrl, {
+    // A missing product document alone is NOT sufficient to authorize deletion.
+    // A valid, unexpired, non-undone pending-deletion queue record is required.
+    const assetKey = publicId.split('/').pop() || publicId;
+    const cleanKey = assetKey.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const cleanItem = itemId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const docId = cleanKey.startsWith(cleanItem) ? cleanKey : `${cleanItem}_${cleanKey}`;
+
+    const pendingDocUrl = `${getFirestoreRestEndpoint()}/users/${uid}/pending_deletions/${docId}`;
+    let pendingRes = await fetch(pendingDocUrl, {
       headers: { Authorization: `Bearer ${rawToken}` },
     });
 
-    if (pendingRes.ok || pendingRes.status === 404) {
+    if (pendingRes.status === 404) {
+      // Fallback: check legacy itemId-based document path for backward compatibility
+      const legacyUrl = `${getFirestoreRestEndpoint()}/users/${uid}/pending_deletions/${itemId}`;
+      pendingRes = await fetch(legacyUrl, {
+        headers: { Authorization: `Bearer ${rawToken}` },
+      });
+    }
+
+    // No queue record found on either path — fail closed.
+    // We require an explicit pending-deletion record to authorize any Cloudinary deletion.
+    if (pendingRes.status === 404) {
       return {
-        safeToDelete: true,
-        reason: 'Product confirmed deleted and no longer referenced.',
+        safeToDelete: false,
+        reason: 'No pending-deletion record found. Deletion requires an explicit queue record.',
         retryable: false,
       };
     }
 
-    return {
-      safeToDelete: false,
-      reason: 'Safety verification uncertain. Retrying later.',
-      retryable: true,
-    };
+    // Firestore error reading queue record — fail safe
+    if (!pendingRes.ok) {
+      return {
+        safeToDelete: false,
+        reason: `Error reading pending-deletion record: HTTP ${pendingRes.status}.`,
+        retryable: true,
+      };
+    }
+
+    // Queue record exists — validate ALL fields before authorizing deletion.
+    // Every required field must be present, correct, and in an eligible state.
+    // Any missing, mismatched, or ineligible field fails closed.
+    const ELIGIBLE_STATUSES = new Set(['pending', 'processing', 'failed']);
+    const ELIGIBLE_REASONS = new Set(['replaced', 'removed', 'deleted']);
+
+    try {
+      const queueDoc = await pendingRes.json();
+      const fields = queueDoc.fields || {};
+
+      // 1. uid — must be present and match the authenticated user (cross-user protection)
+      const recordUid = fields.uid?.stringValue;
+      if (!recordUid || recordUid !== uid) {
+        return {
+          safeToDelete: false,
+          reason: 'Queue record uid is missing or does not match the requesting user.',
+          retryable: false,
+        };
+      }
+
+      // 2. itemId — must be present and match the requested product
+      const recordItemId = fields.itemId?.stringValue;
+      if (!recordItemId || recordItemId !== itemId) {
+        return {
+          safeToDelete: false,
+          reason: 'Queue record itemId is missing or does not match the requested product.',
+          retryable: false,
+        };
+      }
+
+      // 3. publicId — must be present and exactly match the asset being evaluated
+      const recordPublicId = fields.publicId?.stringValue;
+      if (!recordPublicId || recordPublicId !== publicId) {
+        return {
+          safeToDelete: false,
+          reason: 'Queue record publicId is missing or does not match the asset being evaluated.',
+          retryable: false,
+        };
+      }
+
+      // 4. undone — must be exactly false (true or missing blocks deletion)
+      const undone = fields.undone?.booleanValue;
+      if (undone !== false) {
+        return {
+          safeToDelete: false,
+          reason: 'Deletion was cancelled by an Undo operation or undone field is not explicitly false.',
+          retryable: false,
+        };
+      }
+
+      // 5. deleteAfter — must be a valid, elapsed timestamp (missing or future blocks deletion)
+      const deleteAfterStr = fields.deleteAfter?.stringValue;
+      if (!deleteAfterStr) {
+        return {
+          safeToDelete: false,
+          reason: 'Queue record is missing deleteAfter timestamp. Cannot verify grace period.',
+          retryable: true,
+        };
+      }
+      const deleteAfterMs = new Date(deleteAfterStr).getTime();
+      if (isNaN(deleteAfterMs)) {
+        return {
+          safeToDelete: false,
+          reason: `Queue record deleteAfter is not a valid timestamp: "${deleteAfterStr}".`,
+          retryable: true,
+        };
+      }
+      if (deleteAfterMs > Date.now()) {
+        return {
+          safeToDelete: false,
+          reason: `Deletion grace period has not elapsed. deleteAfter: ${deleteAfterStr}.`,
+          retryable: true,
+        };
+      }
+
+      // 6. status — must be an explicitly eligible value (unknown or completed statuses are denied)
+      const recordStatus = fields.status?.stringValue;
+      if (!recordStatus || !ELIGIBLE_STATUSES.has(recordStatus)) {
+        return {
+          safeToDelete: false,
+          reason: `Queue record status "${recordStatus ?? '(missing)'}" is not eligible for deletion.`,
+          retryable: false,
+        };
+      }
+
+      // 7. reason — must be one of the recognised deletion reasons
+      const recordReason = fields.reason?.stringValue;
+      if (!recordReason || !ELIGIBLE_REASONS.has(recordReason)) {
+        return {
+          safeToDelete: false,
+          reason: `Queue record reason "${recordReason ?? '(missing)'}" is not a recognised deletion reason.`,
+          retryable: false,
+        };
+      }
+
+      // All seven checks passed — asset is confirmed queued for deletion and eligible
+      return {
+        safeToDelete: true,
+        reason: 'Product confirmed deleted and pending-deletion record is fully validated and eligible.',
+        retryable: false,
+      };
+    } catch (parseErr: any) {
+      return {
+        safeToDelete: false,
+        reason: `Failed to parse pending-deletion record: ${parseErr?.message || String(parseErr)}`,
+        retryable: true,
+      };
+    }
   } catch (err: any) {
     return {
       safeToDelete: false,

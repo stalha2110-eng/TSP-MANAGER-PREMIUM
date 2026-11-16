@@ -106,6 +106,7 @@ import { BUSINESS_MODES } from './services/businessModeConfig';
 import { RecoveryService } from './services/recoveryService';
 import { CloudSyncService } from './services/cloudSyncService';
 import { uploadProductImage, CloudinaryUploadResult } from './services/cloudinaryService';
+import { enqueuePendingDeletion, enqueueMultiplePendingDeletions, cancelMultiplePendingDeletions } from './services/cleanupQueueService';
 import { ImageMigrationService } from './services/imageMigrationService';
 import BusinessSettingsScreen from './components/BusinessSettingsScreen';
 import StoreClosingControlCenter from './components/StoreClosingControlCenter';
@@ -348,6 +349,16 @@ export default function App() {
   // This ensures writes execute in registration order so an older in-flight write can never
   // overwrite a newer image, even when network responses arrive out of order.
   const cloudinaryWriteChainRef = useRef<Map<string, Promise<void>>>(new Map());
+
+  // Checkpoint A: Tracks assets written to Firestore pending_deletions (with undone=false + deleteAfter grace period)
+  // that may need to be cancelled if the user clicks Undo within the 5-second grace window.
+  // batchId -> { assets: { itemId, publicId }[], uid, isUndone: boolean, enqueuePromise?: Promise<number> }
+  const pendingDeletionBatchesRef = useRef<Map<string, {
+    assets: { itemId: string; publicId: string }[];
+    uid: string;
+    isUndone: boolean;
+    enqueuePromise?: Promise<number>;
+  }>>(new Map());
 
   // Listener for Offline / Online state shifts
   useEffect(() => {
@@ -2948,6 +2959,7 @@ export default function App() {
     // Cancel any active image migration and purge upload tokens synchronously
     ImageMigrationService.cancelMigration();
     cloudinaryUploadTokensRef.current.clear();
+    pendingDeletionBatchesRef.current.clear();
 
     localStorage.removeItem('ts_guest_logged_in');
     localStorage.removeItem('ts_cached_auth_user');
@@ -3152,7 +3164,7 @@ export default function App() {
       if (state.user && state.settings.autoCloudSync) {
         try {
           const prevWrite = cloudinaryWriteChainRef.current.get(id) ?? Promise.resolve();
-          const createWrite: Promise<void> = prevWrite.catch(() => {}).then(async () => {
+          const createWrite: Promise<void> = prevWrite.catch(() => { }).then(async () => {
             await setDoc(doc(db, 'users', state.user.uid, 'items', id), sanitizeForFirestore(newItem));
           }).finally(() => {
             if (cloudinaryWriteChainRef.current.get(id) === createWrite) {
@@ -3182,7 +3194,7 @@ export default function App() {
             // Chain this Firestore write behind any in-flight write for this item so writes
             // execute in registration order regardless of network completion order.
             const prevWrite = cloudinaryWriteChainRef.current.get(id) ?? Promise.resolve();
-            const thisWrite: Promise<void> = prevWrite.catch(() => {}).then(async () => {
+            const thisWrite: Promise<void> = prevWrite.catch(() => { }).then(async () => {
               // Guard 2: recheck at the start of our serialized write slot
               if (cloudinaryUploadTokensRef.current.get(id) !== uploadToken) return;
               await setDoc(doc(db, 'users', capturedUser.uid, 'items', id), {
@@ -3413,7 +3425,7 @@ export default function App() {
           // strictly after any in-flight image upload or previous update, and keeps the
           // chain entry active without creating any gap where a new upload can bypass serialization.
           const prevWrite = cloudinaryWriteChainRef.current.get(id) ?? Promise.resolve();
-          const updateWrite: Promise<void> = prevWrite.catch(() => {}).then(async () => {
+          const updateWrite: Promise<void> = prevWrite.catch(() => { }).then(async () => {
             await setDoc(doc(db, 'users', state.user.uid, 'items', id), firestorePayload, { merge: true });
           }).finally(() => {
             if (cloudinaryWriteChainRef.current.get(id) === updateWrite) {
@@ -3422,6 +3434,16 @@ export default function App() {
           });
           cloudinaryWriteChainRef.current.set(id, updateWrite);
           await updateWrite;
+
+          // Checkpoint A: After Firestore persistence succeeds, enqueue the removed asset
+          if (isImageExplicitlyRemoved && existingItem?.cloudinaryPublicId && state.user?.uid) {
+            const currentUid = stateRef.current.user?.uid;
+            if (currentUid && currentUid === state.user.uid) {
+              enqueuePendingDeletion(currentUid, id, existingItem.cloudinaryPublicId, 'removed').catch(err => {
+                console.warn('[CleanupQueue] Background enqueue warning:', err);
+              });
+            }
+          }
         } catch (e) {
           handleFirestoreError(e, OperationType.UPDATE, `users/${state.user.uid}/items/${id}`);
         }
@@ -3433,6 +3455,7 @@ export default function App() {
       if (state.user && state.settings.autoCloudSync && !isImageExplicitlyRemoved && data.imageUrl?.startsWith('data:')) {
         const capturedUser = state.user;
         const capturedImageUrl = data.imageUrl;
+        const previousPublicId = existingItem?.cloudinaryPublicId;
         const uploadToken = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
         // Register this unique upload request token for the item. Any earlier in-flight upload
         // for the same item will find its token superseded and discard its result.
@@ -3445,7 +3468,7 @@ export default function App() {
             // Chain this Firestore write behind any in-flight write for this item so writes
             // execute in registration order regardless of network completion order.
             const prevWrite = cloudinaryWriteChainRef.current.get(id) ?? Promise.resolve();
-            const thisWrite: Promise<void> = prevWrite.catch(() => {}).then(async () => {
+            const thisWrite: Promise<void> = prevWrite.catch(() => { }).then(async () => {
               // Guard 2: recheck at the start of our serialized write slot
               if (cloudinaryUploadTokensRef.current.get(id) !== uploadToken) return;
               await setDoc(doc(db, 'users', capturedUser.uid, 'items', id), {
@@ -3465,6 +3488,17 @@ export default function App() {
                     : item
                 )
               }));
+
+              // Checkpoint A: Enqueue replaced obsolete asset only after new asset is safely written to Firestore
+              if (
+                previousPublicId &&
+                previousPublicId !== result.publicId &&
+                stateRef.current.user?.uid === capturedUser.uid
+              ) {
+                enqueuePendingDeletion(capturedUser.uid, id, previousPublicId, 'replaced').catch(err => {
+                  console.warn('[CleanupQueue] Background enqueue warning:', err);
+                });
+              }
             }).catch((writeErr: any) => {
               console.error('Cloudinary Firestore patch failed for product update:', writeErr);
               if (cloudinaryUploadTokensRef.current.get(id) === uploadToken) {
@@ -3512,7 +3546,7 @@ export default function App() {
     let didWriteSucceed = false;
 
     const prevWrite = cloudinaryWriteChainRef.current.get(itemId) ?? Promise.resolve();
-    const thisWrite: Promise<void> = prevWrite.catch(() => {}).then(async () => {
+    const thisWrite: Promise<void> = prevWrite.catch(() => { }).then(async () => {
       // Guard 2: recheck token & deletion status at start of serialized write slot
       if (cloudinaryUploadTokensRef.current.get(itemId) !== uploadToken) return;
       if (isItemDeleted(itemId)) return;
@@ -3560,7 +3594,7 @@ export default function App() {
             localStorage.setItem('price_manager_state', JSON.stringify(parsed));
           }
         }
-      } catch {}
+      } catch { }
 
       didWriteSucceed = true;
     }).finally(() => {
@@ -3733,6 +3767,15 @@ export default function App() {
       setSelectedItemIds([]);
     }
 
+    // Checkpoint A: Capture Cloudinary assets for items being deleted before optimistic removal
+    const assetsToEnqueue: { itemId: string; publicId: string }[] = [];
+    idsToDelete.forEach(id => {
+      const it = state.items.find(i => i.id === id);
+      if (it?.cloudinaryPublicId) {
+        assetsToEnqueue.push({ itemId: id, publicId: it.cloudinaryPublicId });
+      }
+    });
+
     // 2. Mark in persistent tombstone tracker so no snapshot or background sync can resurrect them
     markItemsAsDeleted(idsToDelete);
 
@@ -3784,12 +3827,43 @@ export default function App() {
     // preventing any gap where an upload can bypass serialization and recreate the document.
     const isAuthenticated = state.user && state.user.uid && state.user.uid !== 'guest_user';
     if (isAuthenticated && db) {
+      const uId = state.user!.uid;
+      const batchId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const batchEntry: {
+        assets: { itemId: string; publicId: string }[];
+        uid: string;
+        isUndone: boolean;
+        enqueuePromise?: Promise<number>;
+      } = {
+        assets: assetsToEnqueue,
+        uid: uId,
+        isUndone: false,
+      };
+
+      if (assetsToEnqueue.length > 0) {
+        // Register synchronously in-memory so performUndo can immediately locate this batch (I2 fix)
+        pendingDeletionBatchesRef.current.set(batchId, batchEntry);
+      }
+
+      const successfullyDeletedIds = new Set<string>();
       try {
-        const uId = state.user!.uid;
         for (const id of idsToDelete) {
+          // Guard 1: Stop the deletion loop immediately if Undo has already occurred
+          if (batchEntry.isUndone) {
+            break;
+          }
+          // Guard 2: Check whether the item is still marked as deleted
+          if (!isItemDeleted(id)) {
+            continue;
+          }
+
           try {
             const prevWrite = cloudinaryWriteChainRef.current.get(id) ?? Promise.resolve();
-            const deletionWrite: Promise<void> = prevWrite.catch(() => {}).then(async () => {
+            const deletionWrite: Promise<void> = prevWrite.catch(() => { }).then(async () => {
+              // Guard 3: Guard inside serialized write slot before calling deleteDoc
+              if (batchEntry.isUndone || !isItemDeleted(id)) {
+                return;
+              }
               await deleteDoc(doc(db, 'users', uId, 'items', id));
             }).finally(() => {
               if (cloudinaryWriteChainRef.current.get(id) === deletionWrite) {
@@ -3798,6 +3872,11 @@ export default function App() {
             });
             cloudinaryWriteChainRef.current.set(id, deletionWrite);
             await deletionWrite;
+
+            // Only add if deletion completed and Undo has not occurred
+            if (!batchEntry.isUndone && isItemDeleted(id)) {
+              successfullyDeletedIds.add(id);
+            }
           } catch (e) {
             console.error("Cloud delete error for item", id, e);
             handleFirestoreError(e, OperationType.DELETE, `users/${uId}/items/${id}`);
@@ -3805,6 +3884,58 @@ export default function App() {
         }
       } catch (e) {
         console.error("Cloud delete failed", e);
+      }
+
+      // Checkpoint A (Durable): Write pending deletion records to Firestore immediately with
+      // deleteAfter = now + 5000ms. This survives browser tab crashes — the cron worker
+      // (Checkpoint B) will only process records where undone=false AND deleteAfter < now.
+      // If the user clicks Undo within the grace period, cancelMultiplePendingDeletions()
+      // sets undone=true so the cron will skip those records.
+      //
+      // Filter assets to ONLY those whose product document deletion actually succeeded in Firestore (I1 fix)
+      const successfullyDeletedAssets = assetsToEnqueue.filter(a => successfullyDeletedIds.has(a.itemId));
+      batchEntry.assets = successfullyDeletedAssets;
+
+      if (successfullyDeletedAssets.length > 0) {
+        // Check if user has already switched accounts or logged out during deleteDoc
+        if (stateRef.current.user?.uid !== uId) {
+          pendingDeletionBatchesRef.current.delete(batchId);
+          return;
+        }
+
+        // If Undo was ALREADY clicked during the deleteDoc await, do not enqueue (I2 fix)
+        if (batchEntry.isUndone) {
+          pendingDeletionBatchesRef.current.delete(batchId);
+          return;
+        }
+
+        const enqueuePromise = enqueueMultiplePendingDeletions(uId, successfullyDeletedAssets, 'deleted');
+        batchEntry.enqueuePromise = enqueuePromise;
+
+        enqueuePromise.then(count => {
+          if (count === 0) {
+            pendingDeletionBatchesRef.current.delete(batchId);
+            return;
+          }
+          // If Undo was clicked while enqueue was in-flight, cancel now that the enqueue write has landed
+          if (batchEntry.isUndone) {
+            if (stateRef.current.user?.uid === uId) {
+              cancelMultiplePendingDeletions(uId, successfullyDeletedAssets).catch(err => {
+                console.warn('[CleanupQueue] Post-enqueue Undo cancel warning:', err);
+              });
+            }
+            pendingDeletionBatchesRef.current.delete(batchId);
+          }
+        }).catch(err => {
+          console.warn('[CleanupQueue] Background enqueue warning:', err);
+          pendingDeletionBatchesRef.current.delete(batchId);
+        });
+
+        // Auto-remove from in-memory tracker after grace period expires (cleanup only)
+        setTimeout(() => pendingDeletionBatchesRef.current.delete(batchId), 5500);
+      } else {
+        // No assets were successfully deleted, clean up tracker (I1 fix)
+        pendingDeletionBatchesRef.current.delete(batchId);
       }
     }
 
@@ -4033,6 +4164,31 @@ export default function App() {
 
       if (entry.stateSnapshot.items) {
         unmarkItemsAsDeleted(entry.stateSnapshot.items.map(i => i.id));
+        // Checkpoint A (Durable): Cancel pending deletion records in Firestore by setting undone=true
+        // for any items being restored by this Undo action.
+        const restoredIds = new Set(entry.stateSnapshot.items.map(i => i.id));
+        pendingDeletionBatchesRef.current.forEach((val, batchId) => {
+          const matchingAssets = val.assets.filter(a => restoredIds.has(a.itemId));
+          if (matchingAssets.length > 0) {
+            val.isUndone = true;
+            pendingDeletionBatchesRef.current.delete(batchId);
+            // Verify user identity before scheduling cancellation
+            if (stateRef.current.user?.uid === val.uid) {
+              // Wait for in-flight enqueue to finish (if any) before executing cancel (I2 fix)
+              const waitPromise = val.enqueuePromise ?? Promise.resolve(0);
+              waitPromise
+                .catch(() => 0)
+                .then(async () => {
+                  if (stateRef.current.user?.uid === val.uid) {
+                    await cancelMultiplePendingDeletions(val.uid, matchingAssets);
+                  }
+                })
+                .catch(err => {
+                  console.warn('[CleanupQueue] Undo cancel warning:', err);
+                });
+            }
+          }
+        });
       }
 
       setState(prev => ({ ...prev, ...entry.stateSnapshot }));
@@ -4227,7 +4383,17 @@ export default function App() {
               saveLocalProductImage(item.id, item.imageUrl);
             }
             try {
-              await setDoc(doc(db, 'users', uId, 'items', item.id), sanitizeForFirestore(item));
+              // Serialize restoration write through write-chain so it executes strictly after any in-flight deleteDoc
+              const prevWrite = cloudinaryWriteChainRef.current.get(item.id) ?? Promise.resolve();
+              const restoreWrite: Promise<void> = prevWrite.catch(() => { }).then(async () => {
+                await setDoc(doc(db, 'users', uId, 'items', item.id), sanitizeForFirestore(item));
+              }).finally(() => {
+                if (cloudinaryWriteChainRef.current.get(item.id) === restoreWrite) {
+                  cloudinaryWriteChainRef.current.delete(item.id);
+                }
+              });
+              cloudinaryWriteChainRef.current.set(item.id, restoreWrite);
+              await restoreWrite;
             } catch (e) {
               console.error("Error syncing stock item:", e);
               handleFirestoreError(e, OperationType.WRITE, `users/${uId}/items/${item.id}`);
